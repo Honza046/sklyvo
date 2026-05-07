@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm install && pip install -r requirements.txt",
   "functions": {
     "api/sniper.py": {
       "maxDuration": 60
