@@ -1,0 +1,142 @@
+// Nastavení Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // <-- TOTO TAM CHYBĚLO!
+}
+
+// DEFINICE ENUMŮ
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  REPLIED
+  MEETING_SET
+  CLOSED_WON
+  CLOSED_LOST
+}
+
+// TABULKA: UŽIVATEL
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  avatarUrl     String?
+  role          UserRole  @default(MEMBER)
+  
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// TABULKA: PRACOVNÍ PROSTOR
+model Workspace {
+  id            String    @id @default(cuid())
+  name          String
+
+  companyName    String?
+  industry       String?
+  targetAudience String?
+  defaultTone    String?
+  offeredServices String[] @default([])
+
+  subscriptionStatus String   @default("FREE")
+  trialEndsAt        DateTime?
+  subscriptionPeriodEnd DateTime?
+  stripeCustomerId   String?
+  stripeSubscriptionId String?
+  planTier           String   @default("NONE")
+
+  creditsUsed      Int @default(0)
+  creditsTotal     Int @default(10)
+  leadsCount       Int @default(0)
+  emailsSent       Int @default(0)
+  activeDeals      Int @default(0)
+  pipelineValue    Int @default(0)
+  
+  emailSignature String?  @db.Text
+  systemPrompt   String?  @db.Text
+  webhookUrl     String?
+  crmApiKey      String?
+  
+  members       User[]
+  leads         Lead[]
+  templates     Template[]
+  services      Service[]
+  activityLogs  ActivityLog[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ActivityLog {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actionType  String
+  title       String
+  description String?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+}
+
+// TABULKA: SLUŽBY (nabídka pro Sniper / outreach)
+model Service {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// TABULKA: LEAD
+model Lead {
+  id            String     @id @default(cuid())
+  companyName   String
+  domain        String?
+  placeId       String?
+  value         Int?       @default(0)
+  email         String?
+  phone         String?
+  contactEmail  String?
+  contactPhone  String?
+  industry      String?
+  status        LeadStatus @default(NEW)
+  
+  workspaceId   String
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id])
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([workspaceId, placeId])
+  @@index([workspaceId, domain])
+}
+
+// TABULKA: ŠABLONY
+model Template {
+  id            String    @id @default(cuid())
+  name          String
+  subject       String
+  body          String    @db.Text
+  
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+}

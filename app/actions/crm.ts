@@ -1,0 +1,423 @@
+"use server";
+
+import { getSessionUser } from "@/app/actions/auth";
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+type CrmLead = {
+  id: string;
+  company: string;
+  url: string;
+  status: "new" | "contacted" | "follow_up" | "meeting";
+  leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+  date: string;
+  createdAt: string;
+  value: number;
+  avatar: string;
+  placeId: string | null;
+  email: string;
+  phone: string;
+};
+
+function mapLeadStatus(status: string): CrmLead["status"] {
+  if (status === "CONTACTED") return "contacted";
+  if (status === "REPLIED") return "follow_up";
+  if (status === "MEETING_SET" || status === "CLOSED_WON" || status === "CLOSED_LOST") return "meeting";
+  return "new";
+}
+
+function getInitials(companyName: string) {
+  return companyName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function toDomain(value: string | null | undefined) {
+  const raw = (value ?? "").trim();
+  if (!raw) return "";
+  try {
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return new URL(withProtocol).hostname.replace(/^www\./i, "");
+  } catch {
+    return raw;
+  }
+}
+
+export async function getLeads() {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen.", leads: [] as CrmLead[] };
+  }
+
+  const leadsRaw = await prisma.lead.findMany({
+    where: { workspaceId: session.workspace.id },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      companyName: true,
+      domain: true,
+      placeId: true,
+      contactEmail: true,
+      contactPhone: true,
+      status: true,
+      createdAt: true,
+      value: true,
+    },
+  });
+
+  const leads: CrmLead[] = leadsRaw.map((lead) => ({
+    id: lead.id,
+    company: lead.companyName,
+    url: lead.domain ?? "",
+    status: mapLeadStatus(lead.status),
+    leadStatus: lead.status,
+    date: lead.createdAt.toLocaleDateString("cs-CZ"),
+    createdAt: lead.createdAt.toISOString(),
+    value: lead.value ?? 0,
+    avatar: getInitials(lead.companyName),
+    placeId: lead.placeId ?? null,
+    email: lead.contactEmail ?? "",
+    phone: lead.contactPhone ?? "",
+  }));
+
+  return { leads };
+}
+
+type AddLeadFromRadarInput = {
+  companyName: string;
+  url?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  placeId?: string;
+};
+
+export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const companyName = input.companyName?.trim();
+  if (!companyName) {
+    return { error: "Chybí název firmy." };
+  }
+
+  const domain = toDomain(input.url);
+  const email = input.email?.trim() || null;
+  const contactPhone = input.phone?.trim() || null;
+  const lead = await prisma.lead.create({
+    data: {
+      companyName,
+      domain,
+      placeId: input.placeId?.trim() || null,
+      contactEmail: email,
+      contactPhone,
+      status: "NEW",
+      workspaceId: session.workspace.id,
+      industry: null,
+    } as any,
+    select: {
+      id: true,
+    },
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/radar");
+  revalidatePath("/");
+
+  return { success: true as const, leadId: lead.id };
+}
+
+type CreateManualLeadInput = {
+  companyName: string;
+  domain?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  value?: number;
+};
+
+export async function createManualLead(data: CreateManualLeadInput) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const companyName = data.companyName?.trim();
+  if (!companyName) {
+    return { error: "Chybí název firmy." };
+  }
+
+  const domainRaw = (data.domain ?? "").trim();
+  const domain = domainRaw ? toDomain(domainRaw) : "";
+
+  const value =
+    typeof data.value === "number" && Number.isFinite(data.value)
+      ? Math.max(0, Math.round(data.value))
+      : 0;
+
+  const lead = await prisma.lead.create({
+    data: {
+      companyName,
+      domain: domain || null,
+      placeId: null,
+      contactEmail: data.contactEmail?.trim() || null,
+      contactPhone: data.contactPhone?.trim() || null,
+      value,
+      status: "NEW",
+      workspaceId: session.workspace.id,
+      industry: null,
+    } as any,
+    select: { id: true },
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/");
+
+  return { success: true as const, leadId: lead.id };
+}
+
+type ImportLeadInput = {
+  companyName?: string;
+  name?: string;
+  url?: string;
+  email?: string;
+  phone?: string;
+  placeId?: string;
+};
+
+export async function importMultipleLeads(leads: ImportLeadInput[]) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  if (!Array.isArray(leads) || leads.length === 0) {
+    return { createdCount: 0, skippedCount: 0, inCrmPlaceIds: [] as string[] };
+  }
+
+  const workspaceId = session.workspace.id;
+  const normalized = leads
+    .map((lead) => {
+      const companyName = (lead.companyName ?? lead.name ?? "").trim();
+      const placeId = lead.placeId?.trim() || null;
+      const domain = toDomain(lead.url);
+      const email = lead.email?.trim() || null;
+      const contactPhone = lead.phone?.trim() || null;
+      return { companyName, placeId, domain, email, contactPhone };
+    })
+    .filter((lead) => lead.companyName.length > 0);
+
+  if (normalized.length === 0) {
+    return { createdCount: 0, skippedCount: 0, inCrmPlaceIds: [] as string[] };
+  }
+
+  const placeIds = Array.from(
+    new Set(normalized.map((lead) => lead.placeId).filter((id): id is string => Boolean(id))),
+  );
+  const domains = Array.from(
+    new Set(normalized.map((lead) => lead.domain).filter((domain) => Boolean(domain))),
+  );
+
+  const existingRaw = await prisma.lead.findMany({
+    where: {
+      workspaceId,
+      OR: [
+        ...(placeIds.length > 0 ? [{ placeId: { in: placeIds } }] : []),
+        ...(domains.length > 0 ? [{ domain: { in: domains } }] : []),
+      ],
+    } as any,
+    select: { placeId: true, domain: true } as any,
+  });
+  const existing = existingRaw as unknown as Array<{ placeId: string | null; domain: string }>;
+
+  const existingPlaceIds = new Set(existing.map((lead) => lead.placeId).filter(Boolean) as string[]);
+  const existingDomains = new Set(existing.map((lead) => lead.domain).filter(Boolean));
+  const inBatchPlaceIds = new Set<string>();
+  const inBatchDomains = new Set<string>();
+
+  const toCreate: Array<{
+    companyName: string;
+    domain: string;
+    placeId: string | null;
+    contactPhone: string | null;
+    status: "NEW";
+    workspaceId: string;
+    industry: null;
+    contactEmail: string | null;
+  }> = [];
+  let skippedCount = 0;
+
+  for (const lead of normalized) {
+    const duplicateByPlaceId =
+      !!lead.placeId && (existingPlaceIds.has(lead.placeId) || inBatchPlaceIds.has(lead.placeId));
+    const duplicateByDomain =
+      !!lead.domain && (existingDomains.has(lead.domain) || inBatchDomains.has(lead.domain));
+
+    if (duplicateByPlaceId || duplicateByDomain) {
+      skippedCount += 1;
+      continue;
+    }
+
+    toCreate.push({
+      companyName: lead.companyName,
+      domain: lead.domain,
+      placeId: lead.placeId,
+      contactPhone: lead.contactPhone,
+      contactEmail: lead.email,
+      status: "NEW",
+      workspaceId,
+      industry: null,
+    });
+
+    if (lead.placeId) inBatchPlaceIds.add(lead.placeId);
+    if (lead.domain) inBatchDomains.add(lead.domain);
+  }
+
+  if (toCreate.length > 0) {
+    await prisma.lead.createMany({ data: toCreate });
+  }
+
+  revalidatePath("/crm");
+  revalidatePath("/radar");
+  revalidatePath("/");
+
+  const inCrmPlaceIds = Array.from(
+    new Set(
+      normalized
+        .map((lead) => lead.placeId)
+        .filter((id): id is string => Boolean(id))
+        .filter((id) => existingPlaceIds.has(id) || inBatchPlaceIds.has(id)),
+    ),
+  );
+
+  return {
+    createdCount: toCreate.length,
+    skippedCount,
+    inCrmPlaceIds,
+  };
+}
+
+type LeadStatusInput = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+
+export async function bulkUpdateLeads(
+  ids: string[],
+  data: Partial<{ status: LeadStatusInput; value: number }>,
+) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const uniqueIds = Array.from(new Set((ids ?? []).filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return { updatedCount: 0 };
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (data.status) payload.status = data.status;
+  if (typeof data.value === "number") payload.value = data.value;
+
+  if (Object.keys(payload).length === 0) {
+    return { updatedCount: 0 };
+  }
+
+  const result = await prisma.lead.updateMany({
+    where: { workspaceId: session.workspace.id, id: { in: uniqueIds } },
+    data: payload as any,
+  });
+
+  revalidatePath("/crm");
+  return { updatedCount: result.count };
+}
+
+export async function bulkDeleteLeads(ids: string[]) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const uniqueIds = Array.from(new Set((ids ?? []).filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return { deletedCount: 0 };
+  }
+
+  const result = await prisma.lead.deleteMany({
+    where: { workspaceId: session.workspace.id, id: { in: uniqueIds } },
+  });
+
+  revalidatePath("/crm");
+  return { deletedCount: result.count };
+}
+
+export async function updateLeadDetails(
+  id: string,
+  data: { company?: string; value?: number; url?: string; email?: string; phone?: string },
+) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const leadId = id?.trim();
+  if (!leadId) {
+    return { error: "Chybí ID leadu." };
+  }
+
+  const payload: Record<string, unknown> = {};
+  if (typeof data.company === "string" && data.company.trim()) {
+    payload.companyName = data.company.trim();
+  }
+  if (typeof data.value === "number" && Number.isFinite(data.value)) {
+    payload.value = Math.max(0, Math.round(data.value));
+  }
+  if (typeof data.url === "string") {
+    payload.domain = toDomain(data.url);
+  }
+  if (typeof data.email === "string") {
+    const email = data.email.trim() || null;
+    payload.contactEmail = email;
+  }
+  if (typeof data.phone === "string") {
+    const phone = data.phone.trim() || null;
+    payload.contactPhone = phone;
+  }
+
+  if (Object.keys(payload).length === 0) {
+    return { error: "Nejsou žádné změny k uložení." };
+  }
+
+  const result = await prisma.lead.updateMany({
+    where: {
+      id: leadId,
+      workspaceId: session.workspace.id,
+    },
+    data: payload as any,
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/");
+  return { success: true as const, updatedCount: result.count };
+}
+
+export async function updateSingleLeadStatus(id: string, status: LeadStatusInput) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+  const leadId = id?.trim();
+  if (!leadId) {
+    return { error: "Chybí ID leadu." };
+  }
+
+  const result = await prisma.lead.updateMany({
+    where: { id: leadId, workspaceId: session.workspace.id },
+    data: { status } as any,
+  });
+
+  revalidatePath("/crm");
+  return { success: true as const, updatedCount: result.count };
+}
