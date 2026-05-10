@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Wand2, Loader2, Mail, Globe, FileText, Send, Copy, Settings2, RefreshCw } from "lucide-react";
@@ -63,7 +63,7 @@ Dávalo by vám smysl si k tomu na 15 minut zavolat tento čtvrtek?
 S pozdravem,
 Tým Venegard`;
 
-export default function SniperPage() {
+function SniperContent() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
@@ -557,5 +557,13 @@ export default function SniperPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function SniperPage() {
+  return (
+    <Suspense fallback={<div>Načítání...</div>}>
+      <SniperContent />
+    </Suspense>
   );
 }
