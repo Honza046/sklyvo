@@ -48,7 +48,8 @@ function StatusBadge({ status }: { status: TeamMemberStatus }) {
 }
 
 export function TeamAccessPanel() {
-  const currentPlan = "STARTER";
+  // OPRAVA: Přidán typ 'string', aby TypeScript nepanikařil při porovnávání níže
+  const currentPlan: string = "STARTER";
 
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     { id: 1, name: "Jan Sedlář", email: "jansedlar@post.cz", role: "VLASTNÍK", status: "AKTIVNÍ" },
