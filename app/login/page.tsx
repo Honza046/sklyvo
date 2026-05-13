@@ -10,8 +10,6 @@ import { loginUser } from "@/app/actions/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  no_account:
-    "Účet s tímto e-mailem z Google neexistuje. Nejprve se zaregistrujte e-mailem a heslem.",
   exchange: "Přihlášení přes Google se nepodařilo dokončit. Zkuste to znovu.",
   user: "Nepodařilo se načíst údaje z Google. Zkuste to prosím znovu.",
   callback: "Chybí autorizační kód. Zkuste přihlášení znovu.",
@@ -51,6 +49,9 @@ export default function LoginPage() {
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: "select_account",
+          },
         },
       });
       if (error) {

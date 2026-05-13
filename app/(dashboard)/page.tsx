@@ -8,14 +8,20 @@ import {
   DashboardBodySkeleton,
   DASHBOARD_SUBTITLE,
 } from "@/components/dashboard-loading";
+import { DashboardOnboardingGate } from "@/components/dashboard-onboarding-gate";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await getSessionUser();
   const firstName = session.user?.firstName ?? "Uživatel";
   const emailsSent = session.workspace?.emailsSent ?? 0;
+  const needsOnboarding =
+    !!session.workspace && !(session.workspace.companyName ?? "").trim();
 
   return (
     <>
+      <DashboardOnboardingGate needsOnboarding={needsOnboarding}>
       <div className="mx-auto flex h-[calc(100vh-100px)] min-h-0 w-full max-w-7xl flex-col gap-3 overflow-hidden p-3 md:p-4">
         <div className="mb-2 flex w-full shrink-0 flex-col justify-between gap-2 md:flex-row md:items-end">
           <div className="space-y-1">
@@ -62,6 +68,7 @@ export default async function DashboardPage() {
           </>
         </Suspense>
       </div>
+      </DashboardOnboardingGate>
     </>
   );
 }

@@ -19,6 +19,8 @@ import { SettingsSaveButton } from "@/app/settings/settings-save-button";
 import { SubscriptionBillingButton } from "@/app/settings/subscription-billing-button";
 import { TeamAccessPanel } from "@/app/settings/team-access-panel";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const session = await getSessionUser();
   const workspace = session.workspace;

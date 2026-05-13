@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Crosshair, Radio, Users, Settings, LogOut, Moon, Sun, User, LifeBuoy, LayoutDashboard, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,12 +42,14 @@ export function DashboardShell({
   // Načtení aktuálního tématu
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [subscriptionState, setSubscriptionState] = useState<{
     trialRemainingDays: number;
     isTrial: boolean;
+    subscriptionStatus: string;
     planTier: string;
     creditsUsed: number;
     creditsTotal: number;
@@ -68,47 +70,64 @@ export function DashboardShell({
     [displayName],
   );
 
-  // KONTROLA PŘIHLÁŠENÍ + načtení profilu
+  const loadWorkspaceSession = useCallback(async () => {
+    const session = await getWorkspaceAccessState();
+
+    if (!session.user || !session.workspace) {
+      router.replace("/login");
+      return;
+    }
+
+    setSessionUser({
+      name: session.user.name,
+      email: session.user.email,
+      avatarUrl: session.user.avatarUrl ?? null,
+      image: session.user.image ?? null,
+    });
+    const w = session.workspace;
+    const toISO = (v: Date | string | null | undefined) => {
+      if (v == null) return null;
+      const d = v instanceof Date ? v : new Date(v);
+      return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    };
+    setSubscriptionState({
+      trialRemainingDays: session.trialRemainingDays,
+      isTrial: session.isTrial,
+      subscriptionStatus: session.workspace.subscriptionStatus ?? "FREE",
+      planTier: session.workspace.planTier,
+      creditsUsed: session.workspace.creditsUsed,
+      creditsTotal: session.workspace.creditsTotal,
+      trialEndsAtISO: toISO(w.trialEndsAt),
+      subscriptionPeriodEndISO: toISO(w.subscriptionPeriodEnd),
+    });
+    router.refresh();
+  }, [router]);
+
+  // Při každé navigaci / návratu na tab znovu načteme workspace z DB (žádný zastaralý stav po ruční úpravě v Supabase)
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
-      const session = await getWorkspaceAccessState();
-      if (cancelled) return;
-
-      if (!session.user || !session.workspace) {
-        router.replace("/login");
-        return;
+      await loadWorkspaceSession();
+      if (!cancelled) {
+        setIsSessionLoading(false);
       }
-
-      setSessionUser({
-        name: session.user.name,
-        email: session.user.email,
-        avatarUrl: session.user.avatarUrl ?? null,
-        image: session.user.image ?? null,
-      });
-      const w = session.workspace;
-      const toISO = (v: Date | string | null | undefined) => {
-        if (v == null) return null;
-        const d = v instanceof Date ? v : new Date(v);
-        return Number.isNaN(d.getTime()) ? null : d.toISOString();
-      };
-      setSubscriptionState({
-        trialRemainingDays: session.trialRemainingDays,
-        isTrial: session.isTrial,
-        planTier: session.workspace.planTier,
-        creditsUsed: session.workspace.creditsUsed,
-        creditsTotal: session.workspace.creditsTotal,
-        trialEndsAtISO: toISO(w.trialEndsAt),
-        subscriptionPeriodEndISO: toISO(w.subscriptionPeriodEnd),
-      });
-      setIsSessionLoading(false);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [loadWorkspaceSession, pathname]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void loadWorkspaceSession();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [loadWorkspaceSession]);
 
   useEffect(() => {
     const handleAvatarUpdate = (event: Event) => {
@@ -139,18 +158,30 @@ export function DashboardShell({
 
   const trialDays = subscriptionState?.trialRemainingDays ?? 0;
   const isTrialActive = subscriptionState?.isTrial && trialDays > 0;
-  const isTrialExpired = subscriptionState?.isTrial && trialDays <= 0;
 
   const planTier = subscriptionState?.planTier;
+  const subscriptionStatus = subscriptionState?.subscriptionStatus ?? "FREE";
   const isFreePlanTier =
     !planTier || planTier === "NONE" || planTier === "FREE";
+  const hasPaidPlanTier = Boolean(
+    planTier && planTier !== "NONE" && planTier !== "FREE",
+  );
 
   const dbCreditsTotal = subscriptionState?.creditsTotal ?? 10;
   const dbCreditsUsed = subscriptionState?.creditsUsed ?? 0;
 
-  const isFreeTier = !planTier || planTier === "NONE" || isTrialExpired;
+  const hasFullCreditAllowance =
+    subscriptionStatus === "ACTIVE" ||
+    hasPaidPlanTier ||
+    (Boolean(subscriptionState?.isTrial) && trialDays > 0);
 
-  const displayCreditsTotal = isFreeTier ? 10 : dbCreditsTotal;
+  const displayCreditsTotal = hasFullCreditAllowance ? dbCreditsTotal : 10;
+
+  const isTrialExpired =
+    Boolean(subscriptionState?.isTrial) &&
+    trialDays <= 0 &&
+    subscriptionStatus !== "ACTIVE" &&
+    !hasPaidPlanTier;
 
   const creditsRemaining = Math.max(0, displayCreditsTotal - dbCreditsUsed);
 
@@ -160,6 +191,9 @@ export function DashboardShell({
       : 0;
 
   const displayPlan = (() => {
+    if (hasPaidPlanTier || subscriptionStatus === "ACTIVE") {
+      return planTier ?? "Free verze";
+    }
     if (!planTier || planTier === "NONE" || planTier === "FREE" || isTrialExpired) {
       if (isTrialExpired) return "Free verze";
       if (isTrialActive && isFreePlanTier) return "Free verze (Trial)";

@@ -1,47 +1,63 @@
 "use client";
 
 import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Lock, User, ArrowRight, ArrowLeft } from "lucide-react";
-import { registerUser } from "@/app/actions/auth"; // Importujeme naši novou serverovou funkci
+import { registerUser } from "@/app/actions/auth";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
-  
-  // Funkce pro klasickou registraci přes e-mail
-  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    // Získáme data z formuláře
+    setErrorMessage("");
+
     const formData = new FormData(e.currentTarget);
-    
-    // Pošleme data do databáze
     const result = await registerUser(formData);
 
     if ("error" in result && result.error) {
-      alert(result.error); // Pokud e-mail už existuje, vyhodí chybu
+      setErrorMessage(result.error);
       return;
     }
 
-    // Úspěch! Session cookie je nastavena v server action a jdeme na onboarding
-    window.location.href = "/onboarding"; // <-- ZMĚNĚNO: Teď to pošle nového uživatele rovnou vyplnit dotazník
+    window.location.href = "/onboarding";
   };
 
-  // Dočasná funkce pro Google (dokud nemáme napojený Google OAuth)
-  const handleGoogle = () => {
-    alert("Google přihlášení zapojíme později, zatím prosím použijte registraci e-mailem.");
+  const handleGoogleLogin = async () => {
+    setErrorMessage("");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) {
+        console.error("Chyba Google přihlášení:", error);
+        setErrorMessage("Nepodařilo se připojit ke Googlu. Zkuste to prosím znovu.");
+      }
+    } catch (e) {
+      console.error("Chyba Google přihlášení:", e);
+      setErrorMessage(
+        "Konfigurace přihlášení není kompletní (Supabase). Zkontrolujte proměnné prostředí.",
+      );
+    }
   };
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center bg-muted/20 dark:bg-background p-4 relative overflow-hidden">
-      
-      {/* Background blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 dark:bg-blue-600/20 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-500/10 rounded-full blur-[100px]" />
 
       <div className="w-full max-w-[400px] flex flex-col gap-8 relative z-10">
-        
         <div className="flex justify-center items-center gap-3">
           <div className="h-4 w-4 rounded-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]" />
           <span className="text-xl font-bold tracking-[0.2em] text-foreground">
@@ -50,7 +66,6 @@ export default function RegisterPage() {
         </div>
 
         <div className="rounded-3xl border border-border/60 bg-card p-8 shadow-xl flex flex-col gap-8">
-          
           <div className="space-y-1.5 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               Vytvořit účet
@@ -69,7 +84,7 @@ export default function RegisterPage() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                 <Input
                   type="text"
-                  name="name" // PŘIDÁNO
+                  name="name"
                   placeholder="Jméno Příjmení"
                   className="pl-10 h-12 rounded-xl bg-background border-border/50 text-base focus-visible:ring-blue-600"
                   required
@@ -85,7 +100,7 @@ export default function RegisterPage() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                 <Input
                   type="email"
-                  name="email" // PŘIDÁNO
+                  name="email"
                   placeholder="name@company.com"
                   className="pl-10 h-12 rounded-xl bg-background border-border/50 text-base focus-visible:ring-blue-600"
                   required
@@ -101,7 +116,7 @@ export default function RegisterPage() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                 <Input
                   type="password"
-                  name="password" // PŘIDÁNO
+                  name="password"
                   placeholder="••••••••"
                   className="pl-10 h-12 rounded-xl bg-background border-border/50 text-base focus-visible:ring-blue-600"
                   required
@@ -115,6 +130,12 @@ export default function RegisterPage() {
             </Button>
           </form>
 
+          {errorMessage && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-500">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-border/60"></div>
@@ -124,10 +145,10 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            type="button" 
-            onClick={handleGoogle} // ZMĚNĚNO NA handleGoogle
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => void handleGoogleLogin()}
             className="w-full h-12 rounded-xl border-border/60 bg-background hover:bg-muted font-semibold"
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -136,7 +157,7 @@ export default function RegisterPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
             </svg>
-            Registrace přes Google
+            Pokračovat s Google
           </Button>
         </div>
 
@@ -152,7 +173,6 @@ export default function RegisterPage() {
             Zpět na login
           </Link>
         </div>
-
       </div>
     </div>
   );

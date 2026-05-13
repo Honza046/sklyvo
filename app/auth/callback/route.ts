@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
@@ -31,15 +32,41 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?oauth_error=user", url.origin));
   }
 
-  const dbUser = await prisma.user.findFirst({
-    where: {
-      email: { equals: user.email.trim(), mode: "insensitive" },
-    },
+  const email = user.email.trim();
+  const meta = user.user_metadata ?? {};
+
+  let dbUser = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
   });
 
   if (!dbUser) {
-    await supabase.auth.signOut();
-    return NextResponse.redirect(new URL("/login?oauth_error=no_account", url.origin));
+    const displayName =
+      (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+      (typeof meta.name === "string" && meta.name.trim()) ||
+      email.split("@")[0] ||
+      "Uživatel";
+
+    const avatarUrl =
+      (typeof meta.avatar_url === "string" && meta.avatar_url.trim()) ||
+      (typeof meta.picture === "string" && meta.picture.trim()) ||
+      undefined;
+
+    const workspace = await prisma.workspace.create({
+      data: {
+        name: `Prostor - ${displayName}`,
+      },
+    });
+
+    dbUser = await prisma.user.create({
+      data: {
+        email,
+        name: displayName,
+        passwordHash: `__oauth__${randomUUID()}`,
+        workspaceId: workspace.id,
+        role: "OWNER",
+        ...(avatarUrl ? { avatarUrl } : {}),
+      },
+    });
   }
 
   const cookieStore = await cookies();

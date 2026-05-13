@@ -1,7 +1,17 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import Stripe from "stripe";
+import {
+  creditsForPlanTier,
+  resolvePlanTierFromSubscription,
+  resolvePlanTierFromInvoiceLines,
+  resolvePlanTierFromStripePriceIds,
+} from "@/lib/stripe-plan-tiers";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+
+export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2026-04-22.dahlia",
@@ -16,27 +26,18 @@ function mapSubscriptionStatus(status: Stripe.Subscription.Status) {
   return status.toUpperCase();
 }
 
-/** Kredity podle tarifu (soulad s app/pricing/page.tsx). */
-function creditsForPlanTier(tier: string): number {
-  const key = tier.toUpperCase();
-  const map: Record<string, number> = {
-    STARTER: 1500,
-    PRO: 4500,
-    PREMIUM: 12000,
-    AGENCY_STARTER: 6000,
-    AGENCY_GROWTH: 15000,
-    AGENCY_SCALE: 36000,
-  };
-  return map[key] ?? 10;
-}
-
-/** Checkout s probíhajícím Stripe trialem dostane jen 60 kreditů; plný tarif přijde při invoice.paid. */
-function creditsOnCheckoutCompleted(
-  sub: Stripe.Subscription | null,
-  normalizedPlanTier: string,
-): number {
-  if (sub?.status === "trialing") return 60;
-  return creditsForPlanTier(normalizedPlanTier);
+function extractCheckoutSessionPriceIds(session: Stripe.Checkout.Session): string[] {
+  const li = session.line_items as unknown;
+  if (!li || typeof li !== "object" || !("data" in (li as object))) return [];
+  const data = (li as { data: unknown[] }).data ?? [];
+  const ids: string[] = [];
+  for (const raw of data) {
+    if (!raw || typeof raw !== "object") continue;
+    const price = (raw as { price?: string | { id: string } | null }).price;
+    if (!price) continue;
+    ids.push(typeof price === "string" ? price : price.id);
+  }
+  return ids;
 }
 
 function invoiceLinePeriodEndSeconds(invoice: Stripe.Invoice): number | null {
@@ -56,45 +57,116 @@ function getInvoiceCustomerId(invoice: Stripe.Invoice): string | null {
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  if ((invoice.amount_paid ?? 0) <= 0) return;
-
-  const customerId = getInvoiceCustomerId(invoice);
-  if (!customerId) {
-    console.error("invoice.paid: invoice bez customer ID");
+  const amountPaid = invoice.amount_paid ?? 0;
+  if (amountPaid <= 0) {
+    console.log(
+      "[stripe webhook] invoice.paid — přeskočeno (žádná skutečná platba, amount_paid <= 0)",
+      JSON.stringify({ invoiceId: invoice.id, amountPaid }),
+    );
     return;
   }
 
-  const workspace = await prisma.workspace.findFirst({
-    where: { stripeCustomerId: customerId },
-  });
-  if (!workspace) {
-    console.error("invoice.paid: workspace pro zákazníka nenalezen", {
-      customerId,
+  const subscriptionId = getInvoiceSubscriptionId(invoice);
+  const customerId = getInvoiceCustomerId(invoice);
+  if (!customerId && !subscriptionId) {
+    console.error("invoice.paid: chybí customer i subscription na faktuře", {
+      invoiceId: invoice.id,
     });
     return;
   }
 
+  let workspace =
+    customerId != null
+      ? await prisma.workspace.findFirst({
+          where: { stripeCustomerId: customerId },
+        })
+      : null;
+
+  if (!workspace && subscriptionId) {
+    workspace = await prisma.workspace.findFirst({
+      where: { stripeSubscriptionId: subscriptionId },
+    });
+  }
+
+  if (!workspace) {
+    console.error("invoice.paid: workspace nenalezen", {
+      customerId,
+      subscriptionId,
+      invoiceId: invoice.id,
+    });
+    return;
+  }
+
+  const lines = invoice.lines?.data ?? [];
+  let tier = resolvePlanTierFromInvoiceLines(lines)?.toUpperCase() ?? null;
+
+  if ((!tier || tier === "NONE") && subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      tier = resolvePlanTierFromSubscription(sub) ?? tier;
+    } catch (e) {
+      console.error("invoice.paid: retrieve subscription", e);
+    }
+  }
+
+  if (!tier || tier === "NONE") {
+    tier = "STARTER";
+  }
+
+  const creditsTotal = creditsForPlanTier(tier);
   const periodEndUnix = invoiceLinePeriodEndSeconds(invoice);
   const subscriptionPeriodEnd =
     periodEndUnix !== null ? new Date(periodEndUnix * 1000) : undefined;
 
-  const tier = (workspace.planTier || "NONE").toUpperCase();
-  const creditsTotal = creditsForPlanTier(tier);
+  const data: Prisma.WorkspaceUpdateInput = {
+    stripeCustomerId: customerId ?? workspace.stripeCustomerId ?? undefined,
+    stripeSubscriptionId: subscriptionId ?? workspace.stripeSubscriptionId ?? undefined,
+    planTier: tier,
+    creditsTotal,
+    subscriptionStatus: "ACTIVE",
+    trialEndsAt: null,
+    ...(subscriptionPeriodEnd ? { subscriptionPeriodEnd } : {}),
+  };
 
   await prisma.workspace.update({
     where: { id: workspace.id },
-    data: {
-      creditsTotal,
-      ...(subscriptionPeriodEnd ? { subscriptionPeriodEnd } : {}),
-      ...(workspace.subscriptionStatus === "TRIAL" ? { subscriptionStatus: "ACTIVE" } : {}),
-    },
+    data,
   });
 
-  console.log("invoice.paid: plné kredity a období nastaveny", {
-    workspaceId: workspace.id,
-    creditsTotal,
-    subscriptionPeriodEnd,
-  });
+  revalidatePath("/", "layout");
+  revalidatePath("/settings");
+
+  console.log(
+    "[stripe webhook] invoice.paid OK — ostrá platba, tvrdý update workspace",
+    JSON.stringify(
+      {
+        workspaceId: workspace.id,
+        workspaceName: workspace.name,
+        stripeCustomerId: customerId ?? workspace.stripeCustomerId,
+        stripeSubscriptionId: subscriptionId ?? workspace.stripeSubscriptionId,
+        invoiceId: invoice.id,
+        amountPaid,
+        currency: invoice.currency,
+        firstLinePriceId: lines[0] ? getInvoiceLinePriceIdForLog(lines[0]) : null,
+        planTier: tier,
+        creditsTotal,
+        subscriptionStatus: "ACTIVE",
+        trialEndsAt: null,
+        subscriptionPeriodEnd: subscriptionPeriodEnd?.toISOString() ?? null,
+      },
+      null,
+      0,
+    ),
+  );
+}
+
+function getInvoiceLinePriceIdForLog(line: Stripe.InvoiceLineItem): string | null {
+  const pd = line.pricing?.price_details?.price;
+  if (pd) return typeof pd === "string" ? pd : pd.id;
+  const legacy = (line as unknown as { price?: string | { id: string } }).price;
+  if (typeof legacy === "string") return legacy;
+  if (legacy && typeof legacy === "object" && "id" in legacy) return legacy.id;
+  return null;
 }
 
 function getCheckoutSubscriptionId(session: Stripe.Checkout.Session): string | null {
@@ -111,7 +183,17 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
     return (parentSub as Stripe.Subscription).id;
   }
   const legacy = (invoice as unknown as { subscription?: unknown }).subscription;
-  return typeof legacy === "string" ? legacy : null;
+  if (typeof legacy === "string") return legacy;
+
+  const lines = invoice.lines?.data ?? [];
+  for (const line of lines) {
+    const ls = line.subscription;
+    if (typeof ls === "string") return ls;
+    if (ls && typeof ls === "object" && "id" in ls) {
+      return (ls as Stripe.Subscription).id;
+    }
+  }
+  return null;
 }
 
 async function resolveWorkspaceId(session: Stripe.Checkout.Session): Promise<string | null> {
@@ -131,22 +213,49 @@ async function resolveWorkspaceId(session: Stripe.Checkout.Session): Promise<str
   return user?.workspaceId ?? null;
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  const userId = session.metadata?.userId ?? null;
-  let planTier = (session.metadata?.planTier ?? "").toUpperCase();
-  const subscriptionId = getCheckoutSubscriptionId(session);
+async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Session) {
+  let session: Stripe.Checkout.Session = rawSession;
+  try {
+    session = await stripe.checkout.sessions.retrieve(rawSession.id, {
+      expand: ["line_items.data.price", "subscription"],
+    });
+  } catch (e) {
+    console.error("checkout.session.completed: retrieve expanded session", e);
+  }
 
   let sub: Stripe.Subscription | null = null;
-  if (subscriptionId) {
+  const subField = session.subscription;
+  if (subField && typeof subField === "object" && "status" in subField) {
+    sub = subField as Stripe.Subscription;
+  } else if (typeof subField === "string") {
     try {
-      sub = await stripe.subscriptions.retrieve(subscriptionId);
-      if ((!planTier || planTier === "NONE") && sub.metadata?.planTier) {
-        planTier = String(sub.metadata.planTier).toUpperCase();
-      }
+      sub = await stripe.subscriptions.retrieve(subField);
     } catch (e) {
       console.error("checkout.session.completed: retrieve subscription", e);
     }
   }
+
+  const isTrialStart = sub?.status === "trialing";
+
+  let planTier = (session.metadata?.planTier ?? "").toUpperCase().trim();
+  if (!planTier || planTier === "NONE") {
+    const sm = sub?.metadata?.planTier?.trim();
+    if (sm) planTier = sm.toUpperCase();
+  }
+  if (!planTier || planTier === "NONE") {
+    const fromPrices = resolvePlanTierFromStripePriceIds(extractCheckoutSessionPriceIds(session));
+    if (fromPrices) planTier = fromPrices;
+  }
+  if (!planTier || planTier === "NONE") {
+    planTier = "STARTER";
+  }
+
+  const subscriptionStatus = sub ? mapSubscriptionStatus(sub.status) : "TRIAL";
+
+  /** Trial: vždy 60 kreditů; bez trialu (okamžitě active): plný pool z `creditsForPlanTier`. */
+  const creditsTotal = isTrialStart ? 60 : creditsForPlanTier(planTier);
+
+  const subscriptionId = getCheckoutSubscriptionId(session);
 
   const customerId =
     typeof session.customer === "string"
@@ -155,12 +264,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         ? (session.customer as Stripe.Customer).id
         : null;
 
-  const subscriptionStatus = sub ? mapSubscriptionStatus(sub.status) : "TRIAL";
-  const trialEndsAt =
-    sub?.trial_end != null ? new Date(sub.trial_end * 1000) : undefined;
+  const trialPatch: Prisma.WorkspaceUpdateInput = isTrialStart
+    ? sub?.trial_end != null
+      ? { trialEndsAt: new Date(sub.trial_end * 1000) }
+      : {}
+    : { trialEndsAt: null };
 
-  // planTier + kredity žijí na Workspace (User je vázaný přes workspaceId). isTrialExpired v DB nemáme — trial drží trialEndsAt + subscriptionStatus.
-  if (userId && planTier) {
+  const userId = session.metadata?.userId ?? null;
+
+  if (userId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { workspaceId: true },
@@ -170,8 +282,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       return;
     }
 
-    const checkoutCreditsTotal = creditsOnCheckoutCompleted(sub, planTier);
-
     await prisma.workspace.update({
       where: { id: user.workspaceId },
       data: {
@@ -179,12 +289,36 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         stripeSubscriptionId: subscriptionId ?? undefined,
         subscriptionStatus,
         planTier,
-        creditsTotal: checkoutCreditsTotal,
-        ...(trialEndsAt !== undefined ? { trialEndsAt } : {}),
+        creditsTotal,
+        ...trialPatch,
       },
     });
 
-    console.log(`Uživatel ${userId} úspěšně aktualizován na tarif ${planTier}`);
+    revalidatePath("/", "layout");
+    revalidatePath("/settings");
+
+    console.log(
+      "[stripe webhook] checkout.session.completed OK",
+      JSON.stringify(
+        {
+          phase: isTrialStart ? "trial_start" : "checkout_no_trial_or_post_trial",
+          workspaceId: user.workspaceId,
+          userId,
+          sessionId: session.id,
+          subscriptionId,
+          planTier,
+          creditsTotal,
+          subscriptionStatus,
+          trialEndsAt:
+            isTrialStart && sub?.trial_end != null
+              ? new Date(sub.trial_end * 1000).toISOString()
+              : null,
+          stripeSubscriptionStatus: sub?.status ?? null,
+        },
+        null,
+        0,
+      ),
+    );
     return;
   }
 
@@ -197,31 +331,42 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  let fallbackTier = planTier;
-  if (!fallbackTier || fallbackTier === "NONE") {
-    fallbackTier = "STARTER";
-  }
-
-  const checkoutCreditsTotal = creditsOnCheckoutCompleted(sub, fallbackTier);
-
   await prisma.workspace.update({
     where: { id: workspaceId },
     data: {
       stripeCustomerId: customerId ?? undefined,
       stripeSubscriptionId: subscriptionId ?? undefined,
       subscriptionStatus,
-      planTier: fallbackTier,
-      creditsTotal: checkoutCreditsTotal,
-      ...(trialEndsAt !== undefined ? { trialEndsAt } : {}),
+      planTier,
+      creditsTotal,
+      ...trialPatch,
     },
   });
 
-  console.log("checkout.session.completed (fallback workspace):", {
-    workspaceId,
-    customerEmail: session.customer_email,
-    planTier: fallbackTier,
-    creditsTotal: checkoutCreditsTotal,
-  });
+  revalidatePath("/", "layout");
+  revalidatePath("/settings");
+
+  console.log(
+    "[stripe webhook] checkout.session.completed OK (fallback workspace)",
+    JSON.stringify(
+      {
+        phase: isTrialStart ? "trial_start" : "checkout_no_trial_or_post_trial",
+        workspaceId,
+        sessionId: session.id,
+        subscriptionId,
+        planTier,
+        creditsTotal,
+        subscriptionStatus,
+        trialEndsAt:
+          isTrialStart && sub?.trial_end != null
+            ? new Date(sub.trial_end * 1000).toISOString()
+            : null,
+        stripeSubscriptionStatus: sub?.status ?? null,
+      },
+      null,
+      0,
+    ),
+  );
 }
 
 export async function POST(req: Request) {
@@ -254,17 +399,55 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
-      const wsId = subscription.metadata?.workspaceId;
-      if (wsId) {
-        await prisma.workspace.update({
-          where: { id: wsId },
-          data: {
-            stripeCustomerId: subscription.customer as string,
-            stripeSubscriptionId: subscription.id,
-            subscriptionStatus: mapSubscriptionStatus(subscription.status),
-            trialEndsAt: subscription.trial_end
+      const customerId =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer && "id" in subscription.customer
+            ? (subscription.customer as Stripe.Customer).id
+            : null;
+
+      const metaWs = subscription.metadata?.workspaceId?.trim();
+      let workspace = metaWs
+        ? await prisma.workspace.findUnique({ where: { id: metaWs } })
+        : null;
+
+      if (!workspace) {
+        workspace = await prisma.workspace.findFirst({
+          where: {
+            OR: [
+              { stripeSubscriptionId: subscription.id },
+              ...(customerId ? [{ stripeCustomerId: customerId }] : []),
+            ],
+          },
+        });
+      }
+
+      if (!workspace) {
+        console.error("customer.subscription.updated: workspace nenalezen", {
+          subscriptionId: subscription.id,
+          workspaceIdMeta: metaWs,
+        });
+      } else {
+        const resolvedTier =
+          resolvePlanTierFromSubscription(subscription) || workspace.planTier;
+        const tier = (resolvedTier || "STARTER").toUpperCase();
+        const newStatus = mapSubscriptionStatus(subscription.status);
+
+        const trialEndsAt =
+          newStatus === "ACTIVE"
+            ? null
+            : subscription.trial_end
               ? new Date(subscription.trial_end * 1000)
-              : undefined,
+              : null;
+
+        await prisma.workspace.update({
+          where: { id: workspace.id },
+          data: {
+            stripeCustomerId: customerId ?? workspace.stripeCustomerId ?? undefined,
+            stripeSubscriptionId: subscription.id,
+            subscriptionStatus: newStatus,
+            planTier: tier,
+            trialEndsAt,
           },
         });
       }

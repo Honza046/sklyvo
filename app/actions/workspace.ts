@@ -50,6 +50,8 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
         offeredServices: normalizedOfferedServices,
       } as any,
     });
+    revalidatePath("/", "layout");
+    revalidatePath("/onboarding");
     return { success: true as const };
   } catch (error) {
     console.error("Chyba při ukládání onboardingu:", error);

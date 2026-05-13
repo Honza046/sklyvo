@@ -1,5 +1,6 @@
 "use server";
 
+import { unstable_noStore as noStore } from "next/cache";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
@@ -70,6 +71,7 @@ export async function registerUser(formData: FormData) {
 }
 
 export async function getSessionUser() {
+  noStore();
   const cookieStore = await cookies();
   const userId = cookieStore.get(SESSION_COOKIE)?.value;
 

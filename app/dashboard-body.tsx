@@ -1,7 +1,16 @@
 import { getDashboardData } from "@/app/actions/dashboard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Users, Mail, Target, ArrowRight, Activity, Zap, Clock, MessageCircleWarning } from "lucide-react";
+import {
+  Users,
+  Mail,
+  Target,
+  ArrowRight,
+  Activity,
+  Zap,
+  Clock,
+  MessageCircleWarning,
+  ClipboardList,
+} from "lucide-react";
 import Link from "next/link";
 
 const formatCurrency = (amount: number) => {
@@ -95,20 +104,6 @@ const STATUS_META: Array<{
   },
 ];
 
-const STATUS_LABEL: Record<LeadStatus, string> = Object.fromEntries(
-  STATUS_META.map((item) => [item.key, item.label]),
-) as Record<LeadStatus, string>;
-
-const STATUS_BADGE: Record<LeadStatus, string> = Object.fromEntries(
-  STATUS_META.map((item) => [item.key, item.badgeClass]),
-) as Record<LeadStatus, string>;
-
-const STATIC_ATTENTION_TASKS = [
-  { id: "static-1", companyName: "Alfa Vertical s.r.o.", status: "REPLIED" as LeadStatus },
-  { id: "static-2", companyName: "Beta Solutions a.s.", status: "REPLIED" as LeadStatus },
-  { id: "static-3", companyName: "Delta Logistics s.r.o.", status: "NEW" as LeadStatus },
-];
-
 function attentionTaskSubtitle(status: LeadStatus): string {
   if (status === "NEW") return "Čeká na první oslovení";
   return "Klient odpověděl, nutná reakce";
@@ -155,8 +150,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
     count: dashboardData.statusCounts[item.key],
     width: getFunnelWidth(dashboardData.statusCounts[item.key]),
   }));
-  const attentionRows =
-    dashboardData.attentionTasks.length > 0 ? dashboardData.attentionTasks : STATIC_ATTENTION_TASKS;
+  const attentionRows = dashboardData.attentionTasks;
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
@@ -246,29 +240,50 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
           </div>
 
           {/* ZDE ZAČÍNÁ BLOK NEDÁVNÉ AKTIVITY */}
-          <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-gray-200 bg-white p-6">
-            
-            {/* Hlavička */}
+          <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border/60 bg-card p-6 shadow-sm">
             <div className="mb-4 flex shrink-0 items-center justify-between">
-              <h3 className="m-0 text-lg font-bold text-gray-900">Nedávná aktivita</h3>
-              <span className="text-xs text-gray-400">Poslední 3 akce</span>
+              <h3 className="m-0 text-lg font-bold text-foreground">Nedávná aktivita</h3>
+              <span className="text-xs text-muted-foreground">
+                {recentActivity.length > 0
+                  ? `${recentActivity.length} nejnovějších`
+                  : "Za poslední dobu"}
+              </span>
             </div>
 
-            {/* Šedé políčko - bez tlačítka, flex-1 to krásně roztáhne podle volného místa */}
-            <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-gray-50 p-6 text-center">
-              <h4 className="mb-2 m-0 text-base font-semibold text-gray-900">Zatím žádná aktivita</h4>
-              <p className="m-0 text-sm text-gray-500">
-                Jakmile spustíte první akci, objeví se tady chronologie.
-              </p>
-            </div>
+            {recentActivity.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-border/40 bg-muted/30 p-6 text-center dark:bg-muted/20">
+                <h4 className="mb-2 m-0 text-base font-semibold text-foreground">Zatím žádná aktivita</h4>
+                <p className="m-0 text-sm text-muted-foreground">
+                  Jakmile spustíte první akci, objeví se tady chronologie.
+                </p>
+              </div>
+            ) : (
+              <ul className="custom-scrollbar mb-4 max-h-[min(280px,40vh)] flex-1 divide-y divide-border/50 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
+                {recentActivity.map((item) => (
+                  <li key={item.id} className="px-4 py-3">
+                    <p className="text-sm font-medium leading-snug text-foreground">
+                      Přidán nový lead:{" "}
+                      <Link
+                        href="/crm"
+                        className="font-semibold text-foreground underline-offset-4 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
+                      >
+                        {item.companyName}
+                      </Link>
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatActivityTime(item.createdAt)}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-            {/* Odkaz do CRM */}
             <div className="mt-1 shrink-0 w-full text-center">
-              <Link href="/crm" className="text-sm text-blue-600 transition-colors hover:text-blue-800">
+              <Link
+                href="/crm"
+                className="text-sm text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+              >
                 Zobrazit celou historii v CRM →
               </Link>
             </div>
-
           </div>
           {/* ZDE KONČÍ BLOK NEDÁVNÉ AKTIVITY */}
         </div> {/* <--- TADY JE TEN CHYBĚJÍCÍ DIV PRO LEVÝ SLOUPEC! */}
@@ -319,27 +334,41 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
           <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
             <h3 className="shrink-0 font-semibold text-foreground">K řešení</h3>
             <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
-              <div className="flex flex-col gap-0">
-                {attentionRows.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between border-b border-border/40 p-3 transition-colors last:border-0 hover:bg-muted/50"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <AttentionTaskIcon status={task.status} />
-                      <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="truncate text-sm font-medium">{task.companyName}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {attentionTaskSubtitle(task.status)}
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
-                      <Link href="/crm">Vyřešit</Link>
-                    </Button>
+              {attentionRows.length === 0 ? (
+                <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center">
+                  <div className="rounded-full bg-muted p-4 text-muted-foreground">
+                    <ClipboardList className="h-8 w-8" />
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">Zatím žádné úkoly k řešení</p>
+                    <p className="max-w-[260px] text-xs text-muted-foreground">
+                      Jakmile se objeví nové firmy, uvidíte je zde.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-0">
+                  {attentionRows.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between border-b border-border/40 p-3 transition-colors last:border-0 hover:bg-muted/50"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <AttentionTaskIcon status={task.status} />
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <span className="truncate text-sm font-medium">{task.companyName}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {attentionTaskSubtitle(task.status)}
+                          </span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                        <Link href="/crm">Vyřešit</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

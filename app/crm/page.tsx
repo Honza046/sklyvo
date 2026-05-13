@@ -50,7 +50,6 @@ import {
   Pencil,
   Trash,
   Users,
-  Banknote
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -61,6 +60,7 @@ import {
   updateLeadDetails,
   updateSingleLeadStatus,
 } from "@/app/actions/crm";
+import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
 import { toast } from "sonner";
 
 type Lead = {
@@ -319,7 +319,11 @@ function CrmPageContent() {
     return "new";
   };
 
-  const handleQuickStatus = async (leadId: string, nextStatus: Lead["leadStatus"]) => {
+  const handleQuickStatus = async (
+    leadId: string,
+    nextStatus: Lead["leadStatus"],
+    options?: { silentToast?: boolean },
+  ) => {
     setLeads((prev) =>
       prev.map((lead) =>
         lead.id === leadId
@@ -333,7 +337,14 @@ function CrmPageContent() {
       await loadLeads();
       return;
     }
-    toast.success("Status leadu aktualizován.");
+    if (result.updatedCount === 0) {
+      toast.error("Status se nepodařilo uložit.");
+      await loadLeads();
+      return;
+    }
+    if (!options?.silentToast) {
+      toast.success("Status leadu aktualizován.");
+    }
   };
 
   const handleDeleteSingleLead = (leadId: string) => {
@@ -546,121 +557,142 @@ function CrmPageContent() {
           </div>
 
           {view === "board" && (
-            <div className="flex w-full min-h-0 flex-1 gap-4 pb-4 pt-2 overflow-x-auto snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {isLoading && (
-                <div className="col-span-full rounded-2xl border border-border/60 bg-card p-6 text-sm font-semibold text-muted-foreground">
-                  Načítám dealy...
-                </div>
-              )}
-              {!isLoading && COLUMNS.map((col) => {
-                const columnLeads = filteredLeads.filter((l) => l.status === col.id);
-                const columnValue = columnLeads.reduce((sum, lead) => sum + lead.value, 0);
+            <CrmKanbanBoard
+              columns={COLUMNS}
+              leads={filteredLeads}
+              isLoading={isLoading}
+              formatCurrency={formatCurrency}
+              onLeadMoved={(leadId, columnId) => {
+                const nextByColumn: Record<string, Lead["leadStatus"]> = {
+                  new: "NEW",
+                  contacted: "CONTACTED",
+                  follow_up: "REPLIED",
+                  communication: "MEETING_SET",
+                  agreed: "CLOSED_WON",
+                  rejected: "CLOSED_LOST",
+                };
+                const next = nextByColumn[columnId];
+                if (!next) return;
+                void handleQuickStatus(leadId, next, { silentToast: true });
+              }}
+              onEdit={handleOpenEdit}
+              onDelete={handleDeleteSingleLead}
+              onQuickStatus={(leadId, status) =>
+                void handleQuickStatus(leadId, status as Lead["leadStatus"])
+              }
+              renderLeadCard={({
+                lead,
+                column: col,
+                drag,
+                isDragOverlay,
+                onEdit,
+                onDelete,
+                onQuickStatus,
+              }) => {
+                const overlay = Boolean(isDragOverlay);
 
                 return (
-                  <div key={col.id} className="flex h-full min-h-0 w-[300px] sm:w-[320px] shrink-0 snap-center flex-col gap-3">
-                    
-                    <div className="flex flex-col rounded-xl bg-card border border-border/60 p-3 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 truncate">
-                          <div className={cn("h-2.5 w-2.5 shrink-0 rounded-full shadow-sm", col.dot)} />
-                          <h3 className="font-semibold text-xs text-foreground uppercase tracking-wider truncate">{col.title}</h3>
-                        </div>
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground">
-                          {columnLeads.length}
-                        </span>
+                <div
+                  ref={!overlay && drag ? drag.ref : undefined}
+                  style={!overlay ? drag?.style : undefined}
+                  {...(!overlay && drag ? drag.listeners : {})}
+                  {...(!overlay && drag ? drag.attributes : {})}
+                  className={cn(
+                    "group flex flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 box-border min-w-0 w-full shadow-sm transition-all touch-none",
+                    !overlay &&
+                      "cursor-grab active:cursor-grabbing hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md",
+                    overlay && "cursor-grabbing shadow-2xl ring-2 ring-blue-500/35",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[10px] font-bold text-blue-700 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
+                        {lead.avatar}
                       </div>
-                      <div className="text-xs font-bold text-muted-foreground/80 flex items-center">
-                         <Banknote className="h-3 w-3 mr-1.5 opacity-70" />
-                         {formatCurrency(columnValue)}
-                      </div>
-                    </div>
-
-                    <div className="flex-1 space-y-3 overflow-y-auto rounded-xl border border-border/30 bg-muted/30 p-2 pb-4 pr-1 min-h-[220px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                      {columnLeads.map((lead) => (
-                        <div 
-                          key={lead.id} 
-                          className="group flex flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md cursor-grab active:cursor-grabbing"
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-sm text-foreground leading-none mb-1 truncate">
+                          {lead.company}
+                        </h4>
+                        <a
+                          href={`https://${lead.url}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center text-[9px] text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
+                          onPointerDown={(e) => e.stopPropagation()}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[10px] font-bold text-blue-700 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
-                                {lead.avatar}
-                              </div>
-                              <div className="min-w-0">
-                                <h4 className="font-bold text-sm text-foreground leading-none mb-1 truncate">{lead.company}</h4>
-                                <a href={`https://${lead.url}`} target="_blank" rel="noreferrer" className="flex items-center text-[9px] text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate">
-                                  <Globe className="mr-1 h-2.5 w-2.5 shrink-0" />
-                                  <span className="truncate">{lead.url}</span>
-                                </a>
-                              </div>
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  type="button"
-                                  className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground p-1 hover:bg-muted rounded-md"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="w-48 bg-white dark:bg-zinc-950 z-50 border shadow-md"
-                              >
-                                <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Upravit deal
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteSingleLead(lead.id)}
-                                  className="text-red-600 focus:text-red-700"
-                                >
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Smazat
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-1 pt-2.5 border-t border-border/40">
-                            <div className="flex items-center text-[10px] text-muted-foreground font-medium">
-                              <Calendar className="mr-1.5 h-3 w-3" />
-                              {lead.date}
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={cn("px-1.5 py-0.5 rounded-md text-[8px] font-bold border uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer", col.color)}
-                                >
-                                  {col.title}
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      ))}
-
-                      {columnLeads.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-full rounded-xl border-2 border-dashed border-border/40 py-6 text-center opacity-60">
-                          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Žádné dealy</p>
-                        </div>
-                      )}
+                          <Globe className="mr-1 h-2.5 w-2.5 shrink-0" />
+                          <span className="truncate">{lead.url}</span>
+                        </a>
+                      </div>
                     </div>
-
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground p-1 hover:bg-muted rounded-md"
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48 bg-white dark:bg-zinc-950 z-50 border shadow-md"
+                      >
+                        <DropdownMenuItem onClick={() => onEdit()}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Upravit deal
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDelete()}
+                          className="text-red-600 focus:text-red-700"
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Smazat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
+
+                  <div className="flex items-center justify-between mt-1 pt-2.5 border-t border-border/40">
+                    <div className="flex items-center text-[10px] text-muted-foreground font-medium">
+                      <Calendar className="mr-1.5 h-3 w-3" />
+                      {lead.date}
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            "px-1.5 py-0.5 rounded-md text-[8px] font-bold border uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer",
+                            col.color,
+                          )}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          {col.title}
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                        <DropdownMenuItem onClick={() => onQuickStatus("NEW")}>NOVÝ LEAD</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onQuickStatus("CONTACTED")}>
+                          KONTAKTOVÁNO
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onQuickStatus("REPLIED")}>FOLLOW UP</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onQuickStatus("MEETING_SET")}>
+                          KOMUNIKACE
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onQuickStatus("CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onQuickStatus("CLOSED_LOST")}>
+                          NEDOMLUVENO
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
                 );
-              })}
-            </div>
+              }}
+            />
           )}
 
           {view === "list" && (
