@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +17,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getSessionUser, updateUserPassword } from "@/app/actions/auth";
+import {
+  getSessionUser,
+  updateUserPassword,
+  requestEmailChange,
+  verifyEmailChange,
+} from "@/app/actions/auth";
 import { uploadProfileAvatar } from "@/app/actions/user";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ProfilePageSkeleton } from "@/components/profile-loading";
 
@@ -35,6 +48,12 @@ export default function AccountPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  const [emailValue, setEmailValue] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isConfirmingCode, setIsConfirmingCode] = useState(false);
+
   useEffect(() => {
     void (async () => {
       try {
@@ -45,6 +64,7 @@ export default function AccountPage() {
             email: session.user.email,
             avatarUrl: session.user.avatarUrl ?? session.user.image ?? null,
           });
+          setEmailValue(session.user.email);
         }
         if (session.workspace) {
           setWorkspace(session.workspace);
@@ -116,7 +136,57 @@ export default function AccountPage() {
     }
   };
 
-  const handleSaveProfile = () => toast.success("Uloženo", { description: "Vaše osobní údaje byly úspěšně uloženy." });
+  const handleSaveProfile = async () => {
+    const nextEmail = emailValue.trim();
+    const emailChanged = !!user && nextEmail.toLowerCase() !== user.email.trim().toLowerCase();
+
+    // E-mail se nemění → klasické uložení ostatních údajů.
+    if (!emailChanged) {
+      toast.success("Uloženo", { description: "Vaše osobní údaje byly úspěšně uloženy." });
+      return;
+    }
+
+    // E-mail se mění → nejdřív vyžádáme ověřovací kód na novou adresu.
+    setIsSavingProfile(true);
+    try {
+      const result = await requestEmailChange(nextEmail);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      setVerificationCode("");
+      setIsVerifyingEmail(true);
+      toast.success("Ověřovací kód byl odeslán", {
+        description: `Zadejte 6místný kód, který jsme poslali na ${nextEmail}.`,
+      });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleConfirmEmailChange = async () => {
+    const code = verificationCode.trim();
+    if (code.length !== 6) {
+      toast.error("Zadejte 6místný kód.");
+      return;
+    }
+    setIsConfirmingCode(true);
+    try {
+      const result = await verifyEmailChange(code);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      setUser((prev) => (prev ? { ...prev, email: result.email } : prev));
+      setEmailValue(result.email);
+      setIsVerifyingEmail(false);
+      setVerificationCode("");
+      toast.success("E-mail byl úspěšně změněn.");
+      router.refresh();
+    } finally {
+      setIsConfirmingCode(false);
+    }
+  };
 
   const handlePasswordUpdate = async () => {
     if (newPassword !== confirmPassword) {
@@ -149,7 +219,6 @@ export default function AccountPage() {
       setIsUpdatingPassword(false);
     }
   };
-  const handleAddEmail = () => toast.info("Připojení schránky", { description: "Přesměrování na Google/Outlook účet..." });
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
@@ -251,12 +320,32 @@ export default function AccountPage() {
                       <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                         <Mail className="h-3.5 w-3.5" /> E-mailová adresa
                       </Label>
-                      <Input type="email" className="h-12 rounded-xl bg-background border-border/50 text-base" defaultValue={user?.email ?? ""} />
+                      <Input
+                        type="email"
+                        className="h-12 rounded-xl bg-background border-border/50 text-base"
+                        value={emailValue}
+                        onChange={(e) => setEmailValue(e.target.value)}
+                        disabled={isSavingProfile}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Změna e-mailu se potvrzuje 6místným kódem, který pošleme na novou adresu.
+                      </p>
                     </div>
                     
                     <div className="flex justify-end pt-2">
-                      <Button onClick={handleSaveProfile} className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm">
-                        Uložit změny
+                      <Button
+                        onClick={() => void handleSaveProfile()}
+                        disabled={isSavingProfile}
+                        className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
+                      >
+                        {isSavingProfile ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Odesílám kód…
+                          </>
+                        ) : (
+                          "Uložit změny"
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -363,8 +452,10 @@ export default function AccountPage() {
                   </span>
                 </div>
 
-                <Button onClick={handleAddEmail} variant="outline" className="w-full border-dashed border-2 rounded-xl h-12 text-muted-foreground hover:text-foreground hover:bg-muted">
-                  <Plus className="mr-2 h-4 w-4" /> Přidat další schránku
+                <Button asChild variant="outline" className="w-full border-dashed border-2 rounded-xl h-12 text-muted-foreground hover:text-foreground hover:bg-muted">
+                  <Link href="/settings/connect-email">
+                    <Plus className="mr-2 h-4 w-4" /> Přidat další schránku
+                  </Link>
                 </Button>
               </AccordionContent>
             </AccordionItem>
@@ -512,6 +603,67 @@ export default function AccountPage() {
           </Accordion>
 
         </div>
+
+        <Dialog
+          open={isVerifyingEmail}
+          onOpenChange={(open) => {
+            if (!isConfirmingCode) setIsVerifyingEmail(open);
+          }}
+        >
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Ověření nové e-mailové adresy</DialogTitle>
+              <DialogDescription>
+                Zadejte 6místný kód, který jsme poslali na{" "}
+                <span className="font-semibold text-foreground">{emailValue}</span>.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <Input
+                inputMode="numeric"
+                maxLength={6}
+                autoFocus
+                value={verificationCode}
+                onChange={(e) =>
+                  setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                }
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void handleConfirmEmailChange();
+                }}
+                placeholder="000000"
+                className="h-14 rounded-xl text-center text-2xl font-bold tracking-[0.5em]"
+                disabled={isConfirmingCode}
+              />
+
+              <div className="flex justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsVerifyingEmail(false)}
+                  disabled={isConfirmingCode}
+                >
+                  Zrušit
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => void handleConfirmEmailChange()}
+                  disabled={isConfirmingCode || verificationCode.length !== 6}
+                  className="bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                >
+                  {isConfirmingCode ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Ověřuji…
+                    </>
+                  ) : (
+                    "Potvrdit a změnit e-mail"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
   );
 }

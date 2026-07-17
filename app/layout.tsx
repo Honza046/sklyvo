@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider"; // Přidali jsme import
+import { AppProviders } from "@/components/app-providers";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -32,14 +32,9 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrains.variable} min-h-screen font-sans`}
       >
         {/* PŘIDÁNO: ThemeProvider obalující celou aplikaci */}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light" // Nastavil jsem výchozí na tvůj oblíbený světlý clean look
-          enableSystem
-          disableTransitionOnChange
-        >
+        <AppProviders>
           <AppShell>{children}</AppShell>
-        </ThemeProvider>
+        </AppProviders>
         
         {/* Tímto aktivujeme vyskakovací notifikace v celé appce */}
         <Toaster position="bottom-right" richColors />

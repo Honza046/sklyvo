@@ -4,7 +4,20 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Crosshair, Radio, Users, Settings, LogOut, Moon, Sun, User, LifeBuoy, LayoutDashboard, Zap } from "lucide-react";
+import {
+  Crosshair,
+  Radio,
+  Users,
+  Settings,
+  LogOut,
+  Moon,
+  Sun,
+  User,
+  LifeBuoy,
+  LayoutDashboard,
+  Zap,
+  Rocket,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,13 +30,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { VenegardOnboardingTour } from "@/components/venegard-onboarding-tour";
+import { AICopilotWidget } from "@/components/ai/AICopilotWidget";
+import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
 const mainNav = [
-  { href: "/", label: "Přehled", icon: LayoutDashboard }, // Přidáno na první místo
-  { href: "/sniper", label: "Sniper", icon: Crosshair },
-  { href: "/radar", label: "Radar", icon: Radio },
-  { href: "/crm", label: "CRM", icon: Users },
+  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard },
+  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair },
+  { href: "/radar", labelKey: "nav.radar", icon: Radio },
+  { href: "/crm", labelKey: "nav.crm", icon: Users },
 ] as const;
+
+const autopilotSubNav = [
+  { href: "/autopilot/radar", labelKey: "nav.autopilotCollect" },
+  { href: "/autopilot/sniper", labelKey: "nav.autopilotSend" },
+  { href: "/autopilot/full-auto", labelKey: "nav.autopilotFullAuto" },
+] as const;
+
+function isWorkspaceSettingsRoute(pathname: string) {
+  return (
+    pathname === "/settings" ||
+    pathname === "/settings/billing" ||
+    pathname.startsWith("/settings/billing/")
+  );
+}
 
 export function DashboardShell({
   children,
@@ -33,6 +64,7 @@ export function DashboardShell({
   children: React.ReactNode;
   activeHref: string;
   user?: {
+    id?: string;
     name: string | null;
     email: string | null;
     avatarUrl?: string | null;
@@ -41,8 +73,14 @@ export function DashboardShell({
 }) {
   // Načtení aktuálního tématu
   const { theme, setTheme } = useTheme();
+  const { t, dayWord, language } = useLanguage();
+  const dateLocale = DATE_LOCALE[language];
   const router = useRouter();
   const pathname = usePathname();
+
+  const isAutopilotActive = pathname.startsWith("/autopilot");
+  const isWorkspaceSettingsActive = isWorkspaceSettingsRoute(pathname);
+  const lockMainScroll = pathname.startsWith("/autopilot/sniper") || pathname === "/";
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -56,6 +94,7 @@ export function DashboardShell({
     trialEndsAtISO: string | null;
     subscriptionPeriodEndISO: string | null;
   } | null>(null);
+  const [onboardingTourCompleted, setOnboardingTourCompleted] = useState<boolean | null>(null);
 
   const displayName = sessionUser?.name?.trim();
   const displayEmail = sessionUser?.email?.trim();
@@ -79,6 +118,7 @@ export function DashboardShell({
     }
 
     setSessionUser({
+      id: session.user.id,
       name: session.user.name,
       email: session.user.email,
       avatarUrl: session.user.avatarUrl ?? null,
@@ -100,7 +140,7 @@ export function DashboardShell({
       trialEndsAtISO: toISO(w.trialEndsAt),
       subscriptionPeriodEndISO: toISO(w.subscriptionPeriodEnd),
     });
-    router.refresh();
+    setOnboardingTourCompleted(session.user.onboardingTourCompleted ?? false);
   }, [router]);
 
   // Při každé navigaci / návratu na tab znovu načteme workspace z DB (žádný zastaralý stav po ruční úpravě v Supabase)
@@ -154,6 +194,10 @@ export function DashboardShell({
     router.push("/login");
   };
 
+  const handleOnboardingTourCompleted = useCallback(() => {
+    setOnboardingTourCompleted(true);
+  }, []);
+
   const hasSessionData = !isSessionLoading && !!sessionUser && !!subscriptionState;
 
   const trialDays = subscriptionState?.trialRemainingDays ?? 0;
@@ -166,6 +210,14 @@ export function DashboardShell({
   const hasPaidPlanTier = Boolean(
     planTier && planTier !== "NONE" && planTier !== "FREE",
   );
+
+  /** Stejný význam jako u štítku tarifu (`displayPlan` pro placené řádně vychází z `planTier`). */
+  const creditsWidgetHref = useMemo(() => {
+    if (!hasSessionData) return "/pricing";
+    const t = typeof planTier === "string" ? planTier.trim() : "";
+    if (!t || t === "FREE" || t === "NONE") return "/pricing";
+    return "/settings/billing";
+  }, [hasSessionData, planTier]);
 
   const dbCreditsTotal = subscriptionState?.creditsTotal ?? 10;
   const dbCreditsUsed = subscriptionState?.creditsUsed ?? 0;
@@ -192,12 +244,12 @@ export function DashboardShell({
 
   const displayPlan = (() => {
     if (hasPaidPlanTier || subscriptionStatus === "ACTIVE") {
-      return planTier ?? "Free verze";
+      return planTier ?? t("nav.planFree");
     }
     if (!planTier || planTier === "NONE" || planTier === "FREE" || isTrialExpired) {
-      if (isTrialExpired) return "Free verze";
-      if (isTrialActive && isFreePlanTier) return "Free verze (Trial)";
-      return "Free verze";
+      if (isTrialExpired) return t("nav.planFree");
+      if (isTrialActive && isFreePlanTier) return t("nav.planFreeTrial");
+      return t("nav.planFree");
     }
     return planTier;
   })();
@@ -209,13 +261,19 @@ export function DashboardShell({
       ? Date.parse(subscriptionState.trialEndsAtISO)
       : NaN;
     if (!Number.isNaN(trialEnd) && now < trialEnd) {
-      return `Zkušební doba končí: ${new Date(trialEnd).toLocaleDateString("cs-CZ")}`;
+      return t("nav.trialEndsOn", {
+        date: new Date(trialEnd).toLocaleDateString(dateLocale),
+      });
     }
     const periodEnd = subscriptionState.subscriptionPeriodEndISO
       ? Date.parse(subscriptionState.subscriptionPeriodEndISO)
       : NaN;
     if (!Number.isNaN(periodEnd)) {
-      return `Předplatné končí: ${new Date(periodEnd).toLocaleDateString("cs-CZ")}`;
+      const dateStr = new Date(periodEnd).toLocaleDateString(dateLocale);
+      if (subscriptionStatus === "ACTIVE") {
+        return t("nav.planRenewsOn", { date: dateStr });
+      }
+      return t("nav.subscriptionEndsOn", { date: dateStr });
     }
     return null;
   })();
@@ -224,7 +282,10 @@ export function DashboardShell({
     <div className="flex h-screen w-full overflow-hidden bg-background">
       
       {/* BOČNÍ PANEL */}
-      <aside className="hidden w-64 flex-shrink-0 h-full overflow-y-auto border-r bg-background md:flex md:flex-col">
+      <aside
+        data-tour="onboarding-sidebar"
+        className="hidden w-64 flex-shrink-0 h-full overflow-y-auto border-r bg-background md:flex md:flex-col"
+      >
         
         {/* LOGO */}
         <div className="flex h-16 shrink-0 items-center gap-3 px-6">
@@ -237,14 +298,21 @@ export function DashboardShell({
         {/* HLAVNÍ NAVIGACE */}
         <nav className="flex flex-col gap-1.5 px-4 mt-4">
           <span className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Nástroje
+            {t("nav.tools")}
           </span>
-          {mainNav.map(({ href, label, icon: Icon }) => {
+          {mainNav.map(({ href, labelKey, icon: Icon }) => {
             const active = href === activeHref;
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={
+                  href === "/radar"
+                    ? "onboarding-radar"
+                    : href === "/sniper"
+                      ? "onboarding-sniper"
+                      : undefined
+                }
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                   active
@@ -252,16 +320,69 @@ export function DashboardShell({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <Icon 
+                <Icon
                   className={cn(
                     "size-5 shrink-0 transition-colors",
-                    active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
-                  )} 
+                    active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70",
+                  )}
                 />
-                {label}
+                {t(labelKey)}
               </Link>
             );
           })}
+
+          <div className="flex flex-col gap-0.5">
+            <Link
+              href="/autopilot/radar"
+              className={cn(
+                "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                isAutopilotActive
+                  ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <Rocket
+                className={cn(
+                  "size-5 shrink-0 transition-colors",
+                  isAutopilotActive
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-muted-foreground/70",
+                )}
+              />
+              {t("nav.autopilot")}
+            </Link>
+
+            {isAutopilotActive && (
+              <div className="flex flex-col gap-0.5 pl-6">
+                {autopilotSubNav.map(({ href, labelKey }) => {
+                  const subActive =
+                    pathname === href || pathname.startsWith(`${href}/`);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl py-2 pl-2 pr-3 text-xs font-medium transition-colors",
+                        subActive
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 shrink-0 rounded-full transition-colors",
+                          subActive
+                            ? "bg-blue-600 dark:bg-blue-400"
+                            : "bg-transparent",
+                        )}
+                      />
+                      {t(labelKey)}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="flex-1" /> {/* Flex spacer */}
@@ -283,42 +404,42 @@ export function DashboardShell({
               "size-4 shrink-0 transition-colors",
               activeHref === "/help" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
             )} />
-            Centrum nápovědy
+            {t("nav.help")}
           </Link>
           
           {/* Nastavení Agentury */}
           <Link
             href="/settings"
+            data-tour="onboarding-settings"
             className={cn(
               "flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200 mb-2",
-              activeHref === "/settings" 
+              isWorkspaceSettingsActive
                 ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" 
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             <Settings className={cn(
               "size-4 shrink-0 transition-colors",
-              activeHref === "/settings" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
+              isWorkspaceSettingsActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
             )} />
-            Pracovní prostor
+            {t("nav.workspace")}
           </Link>
 
           <div className="mb-2 flex flex-col gap-2">
             {hasSessionData && isTrialActive && isFreePlanTier && (
               <div className="rounded-xl border border-amber-300/50 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-                Trial končí za {trialDays}{" "}
-                {trialDays === 1 ? "den" : trialDays > 1 && trialDays < 5 ? "dny" : "dní"}
+                {t("nav.trialEndsIn", { days: trialDays, dayWord: dayWord(trialDays) })}
               </div>
             )}
 
             {hasSessionData && isTrialExpired && (
               <div className="rounded-xl border border-red-300/50 bg-red-50/70 px-3 py-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-                Zkušební doba vypršela
+                {t("nav.trialExpired")}
               </div>
             )}
 
             <Link
-              href="/settings/billing"
+              href={creditsWidgetHref}
               className={cn(
                 "block cursor-pointer rounded-xl border border-border/40 bg-muted/50 p-3 transition-all",
                 "hover:bg-muted/80 hover:shadow-sm",
@@ -331,18 +452,18 @@ export function DashboardShell({
                     <div className="flex items-center gap-1.5">
                       <Zap className="h-3 w-3 text-blue-600 dark:text-blue-400" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Kredity
+                        {t("nav.credits")}
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-foreground">
-                      {creditsRemaining.toLocaleString("cs-CZ")} / {displayCreditsTotal.toLocaleString("cs-CZ")}
+                      {creditsRemaining.toLocaleString(dateLocale)} / {displayCreditsTotal.toLocaleString(dateLocale)}
                     </span>
                   </div>
                   <div className="h-1 w-full overflow-hidden rounded-full bg-border/60">
                     <div className="h-full rounded-full bg-blue-600" style={{ width: `${creditsPercentage}%` }} />
                   </div>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Tarif: {displayPlan}
+                    {t("nav.plan")}: {displayPlan}
                   </p>
                   {subscriptionDateLabel && (
                     <p className="mt-1 text-[9px] leading-snug text-muted-foreground/90">
@@ -363,15 +484,14 @@ export function DashboardShell({
             </Link>
           </div>
 
-          {/* Interní Profil */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <button className="flex w-full items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-muted text-left border border-transparent hover:border-border/50 outline-none focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0">
+              <button className="flex w-full items-center gap-3 rounded-2xl border border-transparent p-2 text-left transition-colors hover:border-border/50 hover:bg-muted outline-none focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0">
                 {hasSessionData ? (
                   <>
                     <Avatar className="h-9 w-9 rounded-xl border border-border/50">
                       <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
-                      <AvatarFallback className="rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-bold text-sm">
+                      <AvatarFallback className="rounded-xl bg-blue-50 text-sm font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -395,27 +515,26 @@ export function DashboardShell({
                 )}
               </button>
             </DropdownMenuTrigger>
-            
-            <DropdownMenuContent 
-              className="w-60 rounded-xl p-2 shadow-xl border-border/60 bg-card" 
-              align="start" 
-              side="top" 
+
+            <DropdownMenuContent
+              className="w-60 rounded-xl border-border/60 bg-card p-2 shadow-xl"
+              align="start"
+              side="top"
               sideOffset={12}
             >
-              <DropdownMenuLabel className="font-normal px-2 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-bold">
-                Můj profil
+              <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                {t("nav.myProfile")}
               </DropdownMenuLabel>
-              
-              <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium hover:bg-muted transition-colors">
+
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
                 <Link href="/account">
                   <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>Nastavení účtu</span>
+                  <span>{t("nav.accountSettings")}</span>
                 </Link>
               </DropdownMenuItem>
-              
-              {/* TLAČÍTKO PRO PŘEPÍNÁNÍ TÉMATU */}
-              <DropdownMenuItem 
-                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium hover:bg-muted transition-colors"
+
+              <DropdownMenuItem
+                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               >
                 {theme === "dark" ? (
@@ -423,17 +542,17 @@ export function DashboardShell({
                 ) : (
                   <Moon className="mr-2 h-4 w-4 text-muted-foreground" />
                 )}
-                <span>{theme === "dark" ? "Světlý režim" : "Tmavý režim"}</span>
+                <span>{theme === "dark" ? t("nav.lightMode") : t("nav.darkMode")}</span>
               </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1 opacity-50 border-border/60" />
-              
-              <DropdownMenuItem 
+
+              <DropdownMenuSeparator className="my-1 border-border/60 opacity-50" />
+
+              <DropdownMenuItem
                 onClick={() => void handleLogout()}
-                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 focus:bg-red-50 focus:text-red-700 dark:focus:bg-red-950/50 dark:text-red-500 transition-colors"
+                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 transition-colors focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-950/50"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Odhlásit se</span>
+                <span>{t("nav.logout")}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -442,11 +561,30 @@ export function DashboardShell({
       </aside>
 
       {/* HLAVNÍ OBSAHOVÁ ČÁST */}
-      <div className="flex-1 h-full overflow-y-auto relative min-w-0">
-        <main className="min-h-full p-4 md:p-6">
+      <div
+        className={cn(
+          "relative min-w-0 flex-1",
+          lockMainScroll
+            ? "h-screen max-h-screen overflow-hidden"
+            : "h-full overflow-y-auto",
+        )}
+      >
+        <main
+          className={cn(
+            lockMainScroll
+              ? "flex h-full max-h-full min-h-0 flex-col overflow-hidden p-4 md:px-6 md:py-4"
+              : "min-h-full p-4 md:p-6",
+          )}
+        >
           {children}
         </main>
       </div>
+      <VenegardOnboardingTour
+        active={hasSessionData && onboardingTourCompleted === false}
+        userId={sessionUser?.id ?? null}
+        onCompleted={handleOnboardingTourCompleted}
+      />
+      {hasSessionData && <AICopilotWidget />}
     </div>
   );
 }

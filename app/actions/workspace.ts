@@ -59,29 +59,128 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
   }
 }
 
-export async function updateOfferedServices(services: string[]) {
+export async function updateCompanyContext(companyContext: string) {
+  const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    return { error: "Nejste přihlášen. Přihlaste se prosím znovu." };
+  }
+
+  const trimmed = companyContext.trim();
+
+  try {
+    await prisma.workspace.update({
+      where: { id: session.user.workspaceId },
+      data: {
+        companyContext: trimmed.length > 0 ? trimmed : null,
+      },
+    });
+    revalidatePath("/settings");
+    revalidatePath("/account");
+    revalidatePath("/sniper");
+    return { success: true as const, companyContext: trimmed };
+  } catch (e) {
+    console.error("updateCompanyContext:", e);
+    const message = e instanceof Error ? e.message : String(e);
+    return { error: `Nepodařilo se uložit profil firmy.${message ? ` (${message})` : ""}` };
+  }
+}
+
+export type WorkspaceServicesInput = {
+  offeredServices: string[];
+  companyServices: string;
+};
+
+export async function updateWorkspaceServicesSettings(input: WorkspaceServicesInput) {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
     return { error: "Nejste přihlášen. Přihlaste se prosím znovu." };
   }
 
   const normalized = Array.from(
-    new Set((services ?? []).map((item) => item.trim()).filter(Boolean)),
+    new Set((input.offeredServices ?? []).map((item) => item.trim()).filter(Boolean)),
   );
+  const companyServices = input.companyServices.trim();
 
   try {
     await prisma.workspace.update({
       where: { id: session.user.workspaceId },
       data: {
         offeredServices: normalized,
-      } as any,
+        companyServices: companyServices.length > 0 ? companyServices : null,
+      },
     });
     revalidatePath("/settings");
     revalidatePath("/sniper");
     revalidatePath("/");
-    return { success: true as const, services: normalized };
+    return {
+      success: true as const,
+      offeredServices: normalized,
+      companyServices,
+    };
   } catch (e) {
-    console.error("updateOfferedServices:", e);
-    return { error: "Nepodařilo se uložit nabízené služby." };
+    console.error("updateWorkspaceServicesSettings:", e);
+    const message = e instanceof Error ? e.message : String(e);
+    return { error: `Nepodařilo se uložit nabízené služby.${message ? ` (${message})` : ""}` };
   }
+}
+
+import { serializeSystemPromptWithForbiddenWords } from "@/lib/ai-behavior-settings";
+
+export type AiBehaviorSettingsInput = {
+  emailSignature: string;
+  systemPrompt: string;
+  forbiddenWords: string;
+};
+
+export async function updateAiBehaviorSettings(input: AiBehaviorSettingsInput) {
+  const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    return { error: "Nejste přihlášen. Přihlaste se prosím znovu." };
+  }
+
+  const emailSignature = input.emailSignature.trim();
+  const systemPrompt = input.systemPrompt.trim();
+  const forbiddenWords = input.forbiddenWords.trim();
+  const storedSystemPrompt = serializeSystemPromptWithForbiddenWords(systemPrompt, forbiddenWords);
+
+  try {
+    await prisma.workspace.update({
+      where: { id: session.user.workspaceId },
+      data: {
+        emailSignature: emailSignature.length > 0 ? emailSignature : null,
+        systemPrompt: storedSystemPrompt.length > 0 ? storedSystemPrompt : null,
+      },
+    });
+    revalidatePath("/settings");
+    revalidatePath("/sniper");
+    revalidatePath("/autopilot/sniper");
+    return {
+      success: true as const,
+      emailSignature,
+      systemPrompt,
+      forbiddenWords,
+    };
+  } catch (e) {
+    console.error("updateAiBehaviorSettings:", e);
+    const message = e instanceof Error ? e.message : String(e);
+    return { error: `Nepodařilo se uložit chování AI.${message ? ` (${message})` : ""}` };
+  }
+}
+
+/** @deprecated Použij updateWorkspaceServicesSettings */
+export async function updateOfferedServices(services: string[]) {
+  const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    return { error: "Nejste přihlášen. Přihlaste se prosím znovu." };
+  }
+
+  const existing = await prisma.workspace.findUnique({
+    where: { id: session.user.workspaceId },
+    select: { companyServices: true },
+  });
+
+  return updateWorkspaceServicesSettings({
+    offeredServices: services,
+    companyServices: existing?.companyServices ?? "",
+  });
 }

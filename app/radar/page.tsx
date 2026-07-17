@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/select";
 import { 
   Search, Target, ListOrdered, Loader2, 
-  Globe, Crosshair, Plus, Zap, Check, Mail
+  Globe, Crosshair, Plus, Zap, Check, Mail, Radar, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchRadarLeads } from "@/app/actions/radar";
 import { addLeadFromRadar, importMultipleLeads } from "@/app/actions/crm";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 
 type RadarResult = {
   id: string;
@@ -34,7 +35,28 @@ type RadarResult = {
   email: string | null;
 };
 
+const RADAR_HELP_SECTIONS = [
+  {
+    title: "Deep Scan",
+    description: "Prohledá i podstránky pro skryté emaily.",
+  },
+  {
+    title: "Vyloučit v CRM",
+    description: "Skryje firmy, které už máte uložené.",
+  },
+  {
+    title: "Pouze s emailem",
+    description: "Ukáže jen výsledky s nalezeným kontaktem.",
+  },
+] as const;
+
 export default function RadarPage() {
+  const { t } = useLanguage();
+  const searchInspirations = [
+    t("radar.inspiration1"),
+    t("radar.inspiration2"),
+    t("radar.inspiration3"),
+  ];
   const [query, setQuery] = useState("");
   const [count, setCount] = useState("5");
   const [isSearching, setIsSearching] = useState(false);
@@ -62,6 +84,7 @@ export default function RadarPage() {
     const radarResponse = await searchRadarLeads({
       query,
       limit: Number(count),
+      excludeCrm,
     });
 
     setIsSearching(false);
@@ -72,7 +95,9 @@ export default function RadarPage() {
       return;
     }
 
-    setResults(radarResponse.results ?? []);
+    const raw = radarResponse.results ?? [];
+    const filtered = onlyEmail ? raw.filter((r) => Boolean(r.email?.trim())) : raw;
+    setResults(filtered);
     setHasResults(true);
   };
 
@@ -88,6 +113,7 @@ export default function RadarPage() {
     const result = await addLeadFromRadar({
       companyName: lead.name,
       url: lead.url,
+      email: lead.email ?? undefined,
       phone: lead.phone,
       address: lead.address,
       placeId: lead.placeId,
@@ -111,6 +137,7 @@ export default function RadarPage() {
       results.map((lead) => ({
         companyName: lead.name,
         url: lead.url,
+        email: lead.email ?? undefined,
         phone: lead.phone,
         placeId: lead.placeId,
       })),
@@ -134,18 +161,23 @@ export default function RadarPage() {
   return (
       <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-8">
         
-        <div className="mb-4 text-center space-y-2">
+        <div className="mb-2 text-center space-y-1">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-2xl">
+              <Radar className="h-8 w-8" />
+            </div>
+          </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Auto Prospector
+            {t("radar.title")}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Hledejte nové klienty pomocí AI analýzy trhu v reálném čase.
+          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+            {t("radar.subtitle")}
           </p>
         </div>
 
         <div className="w-full max-w-6xl px-4 md:px-8 flex flex-col gap-6">
           
-          <div className="rounded-2xl border border-border/60 bg-card p-6 md:p-8 shadow-sm flex flex-col gap-8 transition-all">
+          <div className="relative flex flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all md:p-8">
             
             <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
               <div className="space-y-2">
@@ -163,6 +195,21 @@ export default function RadarPage() {
                     autoComplete="off"
                   />
                 </div>
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-[11px] text-muted-foreground">{t("radar.inspirationLabel")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {searchInspirations.map((text) => (
+                      <button
+                        key={text}
+                        type="button"
+                        onClick={() => setQuery(text)}
+                        className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -177,7 +224,7 @@ export default function RadarPage() {
                   <SelectContent className="bg-card rounded-xl shadow-lg border-border/60">
                     <SelectItem value="5">5 výsledků</SelectItem>
                     <SelectItem value="10">10 výsledků</SelectItem>
-                    <SelectItem value="20">20 výsledků</SelectItem>
+                    <SelectItem value="15">15 výsledků</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -191,7 +238,7 @@ export default function RadarPage() {
                   onCheckedChange={setDeepScan} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="deep-scan" className="text-sm font-semibold flex items-center gap-1.5 cursor-pointer">
+                <Label htmlFor="deep-scan" className="text-sm font-semibold flex cursor-pointer items-center gap-1.5">
                   <Zap className={cn("h-3.5 w-3.5", deepScan ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
                   Deep Scan (Kontakty)
                 </Label>
@@ -204,7 +251,9 @@ export default function RadarPage() {
                   onCheckedChange={setExcludeCrm} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="exclude-crm" className="text-sm font-semibold cursor-pointer">Vyloučit firmy v CRM</Label>
+                <Label htmlFor="exclude-crm" className="text-sm font-semibold cursor-pointer">
+                  Vyloučit firmy v CRM
+                </Label>
               </div>
 
               <div className="flex items-center space-x-3">
@@ -214,7 +263,9 @@ export default function RadarPage() {
                   onCheckedChange={setOnlyEmail} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="only-email" className="text-sm font-semibold cursor-pointer">Pouze s e-mailem</Label>
+                <Label htmlFor="only-email" className="text-sm font-semibold cursor-pointer">
+                  Pouze s e-mailem
+                </Label>
               </div>
             </div>
 
@@ -223,11 +274,47 @@ export default function RadarPage() {
               disabled={isSearching || !query.trim()}
               className="w-full md:w-auto md:self-start h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-10 text-base font-bold shadow-md transition-all active:scale-95 disabled:bg-blue-400"
             >
-              {isSearching ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Hledám...</> : <><Search className="mr-2 h-5 w-5" /> Spustit vyhledávání</>}
+              {isSearching ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t("radar.searching")}</> : <><Search className="mr-2 h-5 w-5" /> {t("radar.runSearch")}</>}
             </Button>
             {searchError && (
               <p className="text-sm font-medium text-red-600 dark:text-red-400">{searchError}</p>
             )}
+
+            <div className="absolute bottom-4 right-4 z-40">
+              <div
+                tabIndex={0}
+                className="group relative inline-flex outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 rounded-md"
+              >
+                <div
+                  id="radar-switch-help-tooltip"
+                  role="tooltip"
+                  className={cn(
+                    "absolute bottom-full right-1 z-50 mb-2 w-[min(20rem,calc(100vw-2.5rem))]",
+                    "origin-bottom-right translate-y-2 scale-[0.98] opacity-0 transition-all duration-200 ease-out",
+                    "pointer-events-none rounded-xl border border-border/70 bg-white p-4 shadow-xl dark:border-zinc-700/90 dark:bg-zinc-950",
+                    "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100",
+                    "group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
+                  )}
+                >
+                  <div className="space-y-3">
+                    {RADAR_HELP_SECTIONS.map((section) => (
+                      <div key={section.title}>
+                        <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                          {section.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <span
+                  className="inline-flex cursor-default text-gray-400 transition-colors group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-400"
+                  aria-describedby="radar-switch-help-tooltip"
+                >
+                  <Info className="h-4 w-4" aria-hidden />
+                </span>
+              </div>
+            </div>
           </div>
 
           {hasResults && (

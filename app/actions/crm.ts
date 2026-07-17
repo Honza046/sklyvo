@@ -60,6 +60,8 @@ export async function getLeads() {
       companyName: true,
       domain: true,
       placeId: true,
+      email: true,
+      phone: true,
       contactEmail: true,
       contactPhone: true,
       status: true,
@@ -79,8 +81,8 @@ export async function getLeads() {
     value: lead.value ?? 0,
     avatar: getInitials(lead.companyName),
     placeId: lead.placeId ?? null,
-    email: lead.contactEmail ?? "",
-    phone: lead.contactPhone ?? "",
+    email: (lead.contactEmail ?? lead.email ?? "").trim(),
+    phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
   }));
 
   return { leads };
@@ -114,6 +116,8 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
       companyName,
       domain,
       placeId: input.placeId?.trim() || null,
+      email,
+      phone: contactPhone,
       contactEmail: email,
       contactPhone,
       status: "NEW",
@@ -159,13 +163,17 @@ export async function createManualLead(data: CreateManualLeadInput) {
       ? Math.max(0, Math.round(data.value))
       : 0;
 
+  const ce = data.contactEmail?.trim() || null;
+  const cp = data.contactPhone?.trim() || null;
   const lead = await prisma.lead.create({
     data: {
       companyName,
       domain: domain || null,
       placeId: null,
-      contactEmail: data.contactEmail?.trim() || null,
-      contactPhone: data.contactPhone?.trim() || null,
+      email: ce,
+      phone: cp,
+      contactEmail: ce,
+      contactPhone: cp,
       value,
       status: "NEW",
       workspaceId: session.workspace.id,
@@ -243,6 +251,8 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     companyName: string;
     domain: string;
     placeId: string | null;
+    email: string | null;
+    phone: string | null;
     contactPhone: string | null;
     status: "NEW";
     workspaceId: string;
@@ -266,6 +276,8 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       companyName: lead.companyName,
       domain: lead.domain,
       placeId: lead.placeId,
+      email: lead.email,
+      phone: lead.contactPhone,
       contactPhone: lead.contactPhone,
       contactEmail: lead.email,
       status: "NEW",
@@ -380,10 +392,12 @@ export async function updateLeadDetails(
   if (typeof data.email === "string") {
     const email = data.email.trim() || null;
     payload.contactEmail = email;
+    payload.email = email;
   }
   if (typeof data.phone === "string") {
     const phone = data.phone.trim() || null;
     payload.contactPhone = phone;
+    payload.phone = phone;
   }
 
   if (Object.keys(payload).length === 0) {

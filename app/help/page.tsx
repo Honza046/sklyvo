@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useLanguage } from "@/context/LanguageContext";
+import { getHelpFaqs } from "@/lib/i18n/help-faqs";
 import { 
   LifeBuoy, 
   Search, 
@@ -14,6 +16,7 @@ import {
   ExternalLink,
   BookOpen,
   X,
+  Rocket,
 } from "lucide-react";
 import {
   Accordion,
@@ -22,79 +25,10 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const allFAQs: { question: string; answer: ReactNode }[] = [
-  {
-    question: "Jak se počítá spotřeba kreditů?",
-    answer: (
-      <>
-        Kredity se odečítají za každou úspěšnou AI operaci. Vygenerování jednoho e-mailu přes{" "}
-        <strong>Sniper</strong> stojí typicky 1 kredit. Použití funkce <strong>Deep Scan v Radaru</strong>{" "}
-        stojí 2 kredity za každou prohledanou firmu, protože provádí hloubkovou analýzu a hledání e-mailů
-        přes více zdrojů naráz. Nevyužité kredity se do dalšího měsíce nepřevádějí.
-      </>
-    ),
-  },
-  {
-    question: "Mohu používat vlastní klíč k OpenAI (BYOK)?",
-    answer: (
-      <>
-        Z důvodu optimalizace našich vlastních modelů a zajištění nejvyšší kvality výstupů{" "}
-        <strong>nepodporujeme</strong> vkládání vlastních API klíčů. Celý systém běží na našich optimalizovaných
-        serverech. Vy si pouze kupujete balíčky kreditů a nemusíte řešit žádné skryté poplatky u OpenAI nebo
-        Googlu.
-      </>
-    ),
-  },
-  {
-    question: "Jak napojím svůj Google Workspace nebo Outlook?",
-    answer: (
-      <>
-        Přejděte do svého <strong>Osobního profilu</strong> (kliknutím na jméno vlevo dole) a vyberte sekci{" "}
-        <strong>Propojené e-mailové účty</strong>. Tam můžete přes bezpečné OAuth přihlášení (jako když se
-        přihlašujete do jiných aplikací) propojit svou firemní schránku. Venegard získá oprávnění pouze k
-        odesílání e-mailů.
-      </>
-    ),
-  },
-  {
-    question: "Kde najdu svoje měsíční faktury za předplatné?",
-    answer: (
-      <>
-        Veškeré faktury a správu platební karty najdete ve svém <strong>Osobním profilu</strong> v sekci{" "}
-        <strong>Fakturace a předplatné</strong>. Faktury si můžete stáhnout ve formátu PDF pro své účetnictví.
-        Generují se vždy první den vašeho zúčtovacího období.
-      </>
-    ),
-  },
-  {
-    question: "Jak importovat vlastní kontakty (CSV)?",
-    answer:
-      "V CRM nebo v přípravě kampaně vyberte možnost importu kontaktů a nahrajte CSV soubor ve formátu, který zobrazíme v nápovědě u importu (obvykle sloupce: firma, jméno, e-mail, pozice). Systém kontroluje duplicity podle e-mailu a chybné řádky označí, abyste je mohli opravit a nahrát znovu.",
-  },
-  {
-    question: "Jaké jsou limity pro odesílání e-mailů?",
-    answer:
-      "Limity závisí na vašem tarifu a na ochraně domény: počet odešlých zpráv za hodinu/den držíme v bezpečném pásmu, aby se doručitelnost netrpěla. Při přiblížení se limitu uvidíte upozornění ve Sniperovi; přesný strop pro váš účet je uveden v nastavení předplatné nebo podpory.",
-  },
-  {
-    question: "Jak funguje ochrana domény proti spamu?",
-    answer:
-      "Ochrana domain reputation znamená postupné odesílání (throttling), střídání obsahu šablon a respektování odhlášení. Důrazně doporučujeme mít správně nastavené SPF, DKIM a DMARC u vaší odesílací domény — bez toho ani nejlepší aplikace nespolehne na doručení do primární schránky.",
-  },
-  {
-    question: "Lze propojit CRM s Pipedrive?",
-    answer:
-      "Ano, typicky přes webhooky nebo automatizaci (Make.com, Zapier). Nové leady a změny stavů mohou odejít jako události do vašeho Pipedrive; konkrétní pole a mapování nastavíte v sekci Integrace. Pro firemní nasazení umíme doporučit i šablonu scénáře podle vašeho pipeline.",
-  },
-  {
-    question: "Kde nastavím podpis do e-mailu?",
-    answer:
-      "Podpis se nastavuje v Osobním profilu v části propojených e-mailových účtů nebo v šablonách zpráv ve Sniperovi — podle toho, zda chcete jeden společný firemní podpis, nebo osobní variantu u každého odesílatele. Změny se projeví u nově generovaných kampaní.",
-  },
-];
-
 export default function HelpCenterPage() {
-  const [activeModal, setActiveModal] = useState<"sniper" | "radar" | "crm" | null>(null);
+  const { t, language } = useLanguage();
+  const allFAQs = getHelpFaqs(language);
+  const [activeModal, setActiveModal] = useState<"sniper" | "radar" | "crm" | "autopilot" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredFAQs = allFAQs.filter(
@@ -119,10 +53,10 @@ export default function HelpCenterPage() {
               </div>
             </div>
             <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Jak vám můžeme pomoci?
+              {t("help.title")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Projděte si návody k nástrojům, nejčastější dotazy nebo nám napište napřímo.
+              {t("help.subtitle")}
             </p>
           </div>
 
@@ -131,7 +65,7 @@ export default function HelpCenterPage() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Hledat v nápovědě (např. 'jak nastavit doménu')..."
+              placeholder={t("help.searchPlaceholder")}
               className="h-14 rounded-2xl border-border/60 bg-card pl-12 text-base focus-visible:ring-blue-500"
             />
           </div>
@@ -141,7 +75,7 @@ export default function HelpCenterPage() {
           {searchQuery.trim() === "" && (
             <>
               {/* RYCHLÍ PRŮVODCI (KARTY) */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div
                   role="button"
                   tabIndex={0}
@@ -158,10 +92,10 @@ export default function HelpCenterPage() {
                     <Crosshair className="h-5 w-5" />
                   </div>
                   <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
-                    Průvodce Sniperem
+                    {t("help.guideSniper")}
                   </h3>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Naučte se psát vysoce konverzní e-maily a spravovat cílové segmenty.
+                    {t("help.guideSniperDesc")}
                   </p>
                 </div>
 
@@ -181,10 +115,10 @@ export default function HelpCenterPage() {
                     <Radio className="h-5 w-5" />
                   </div>
                   <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                    Jak na Radar
+                    {t("help.guideRadar")}
                   </h3>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Jak správně filtrovat leady a využívat Deep Scan pro dohledání kontaktů.
+                    {t("help.guideRadarDesc")}
                   </p>
                 </div>
 
@@ -204,10 +138,33 @@ export default function HelpCenterPage() {
                     <Users className="h-5 w-5" />
                   </div>
                   <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                    CRM a Integrace
+                    {t("help.guideCrm")}
                   </h3>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Napojení na Make.com, synchronizace s vaším stávajícím Pipedrive a další.
+                    {t("help.guideCrmDesc")}
+                  </p>
+                </div>
+
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setActiveModal("autopilot")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setActiveModal("autopilot");
+                    }
+                  }}
+                  className="group cursor-pointer rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700"
+                >
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400">
+                    <Rocket className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                    {t("help.guideAutopilot")}
+                  </h3>
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    {t("help.guideAutopilotDesc")}
                   </p>
                 </div>
               </div>
@@ -222,12 +179,12 @@ export default function HelpCenterPage() {
               <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                 <BookOpen className="h-5 w-5" />
               </div>
-              <h2 className="text-xl font-bold">Nejčastější dotazy (FAQ)</h2>
+              <h2 className="text-xl font-bold">{t("help.faqTitle")}</h2>
             </div>
 
             {showEmptySearch ? (
               <p className="py-4 text-center text-gray-500 dark:text-muted-foreground">
-                Pro tento dotaz jsme nic nenašli.
+                {t("help.faqEmpty")}
               </p>
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-3">
@@ -254,19 +211,19 @@ export default function HelpCenterPage() {
             <div className="h-12 w-12 bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4">
               <MessageCircle className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-bold mb-2">Nenašli jste, co jste hledali?</h3>
+            <h3 className="text-lg font-bold mb-2">{t("help.contactTitle")}</h3>
             <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-              Náš tým podpory je vám k dispozici každý všední den od 9:00 do 17:00. Běžně odpovídáme do dvou hodin.
+              {t("help.contactDesc")}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button asChild className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-6 font-semibold shadow-sm cursor-pointer">
                 <a href="mailto:podpora@venegard.com?subject=Dotaz z aplikace">
-                  <Mail className="mr-2 h-4 w-4" /> Napsat na podporu
+                  <Mail className="mr-2 h-4 w-4" /> {t("help.contactEmail")}
                 </a>
               </Button>
               <Button asChild variant="outline" className="h-11 rounded-xl border-border/60 px-6 font-semibold bg-background hover:bg-muted cursor-pointer">
                 <a href="https://youtube.com" target="_blank" rel="noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" /> Video tutoriály
+                  <ExternalLink className="mr-2 h-4 w-4" /> {t("help.contactVideos")}
                 </a>
               </Button>
             </div>
@@ -362,6 +319,26 @@ export default function HelpCenterPage() {
                   </div>
                   <p className="mt-4 p-3 bg-amber-50 text-amber-800 rounded-lg">
                     ⚙️ <strong>Kde to najdu:</strong> Všechny e-mailové účty, API klíče a webhooky se nastavují v hlavní sekci Nastavení - Integrace.
+                  </p>
+                </div>
+              </div>
+              )}
+              {activeModal === "autopilot" && (
+                <div>
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2 dark:text-foreground">
+                  <Rocket className="h-5 w-5 text-violet-600 dark:text-violet-400" /> Jak na Autopilot
+                </h2>
+                <div className="space-y-4 text-sm text-gray-600 leading-relaxed dark:text-muted-foreground">
+                  <p>
+                    <strong>Autopilot</strong> je váš plně automatizovaný systém, který spojuje celý proces outreach kampaní do jednoho plynulého cyklu. Skládá se ze 3 hlavních možností/kroků:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Sběr firem:</strong> Automatické vyhledávání a stahování nových leadů a firem z databáze na základě vašich zadaných kritérií.</li>
+                    <li><strong>Odesílání:</strong> Plně automatizované sekvence e-mailů a sledování follow-upů bez nutnosti vaší neustálé kontroly.</li>
+                    <li><strong>Full Auto:</strong> Kompletní autopilot, který spojí vyhledávání i odesílání dohromady a běží nepřetržitě na pozadí.</li>
+                  </ul>
+                  <p className="mt-4 p-3 bg-violet-50 text-violet-800 rounded-lg dark:bg-violet-900/20 dark:text-violet-200">
+                    💡 <strong>Profi tip:</strong> Než zapnete režim Full Auto, otestujte si kvalitu vygenerovaných textů a segmentů ručně v záložce Sniper.
                   </p>
                 </div>
               </div>

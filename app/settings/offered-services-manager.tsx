@@ -1,141 +1,153 @@
 "use client";
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PREDEFINED_SERVICES } from "@/lib/constants";
-import { updateOfferedServices } from "@/app/actions/workspace";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { PREDEFINED_SERVICE_GROUPS } from "@/lib/constants";
+import { updateWorkspaceServicesSettings } from "@/app/actions/workspace";
+import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-const PREDEFINED_SET = new Set<string>([...PREDEFINED_SERVICES]);
+type OfferedServicesManagerProps = {
+  initialServices: string[];
+  initialCompanyServices: string;
+};
 
-function isPredefinedService(name: string) {
-  return PREDEFINED_SET.has(name);
-}
-
-export function OfferedServicesManager({ initialServices }: { initialServices: string[] }) {
+export function OfferedServicesManager({
+  initialServices,
+  initialCompanyServices,
+}: OfferedServicesManagerProps) {
+  const router = useRouter();
+  const registry = useSettingsSaveRegistry();
   const [services, setServices] = useState<string[]>(initialServices);
-  const [newService, setNewService] = useState("");
+  const [companyServices, setCompanyServices] = useState(initialCompanyServices);
   const [isSaving, setIsSaving] = useState(false);
 
-  const persist = async (nextServices: string[]) => {
-    setIsSaving(true);
-    const result = await updateOfferedServices(nextServices);
-    setIsSaving(false);
-    if ("error" in result && result.error) return false;
-    setServices(nextServices);
-    return true;
-  };
-
-  const handleTogglePredefined = async (service: (typeof PREDEFINED_SERVICES)[number]) => {
+  const handleToggleService = (service: string) => {
     if (isSaving) return;
-    const exists = services.includes(service);
-    const nextServices = exists
-      ? services.filter((item) => item !== service)
-      : [...services, service];
-    await persist(nextServices);
+    setServices((prev) =>
+      prev.includes(service) ? prev.filter((item) => item !== service) : [...prev, service],
+    );
   };
 
-  const handleAddCustom = async () => {
-    const name = newService.trim();
-    if (!name || isSaving) return;
-    if (services.includes(name)) {
-      setNewService("");
-      return;
+  const handleSave = useCallback(async () => {
+    setIsSaving(true);
+    const result = await updateWorkspaceServicesSettings({
+      offeredServices: services,
+      companyServices,
+    });
+    setIsSaving(false);
+
+    if ("error" in result && result.error) {
+      toast.error(result.error);
+      return false;
     }
 
-    const ok = await persist([...services, name]);
-    if (ok) setNewService("");
-  };
+    router.refresh();
+    return true;
+  }, [companyServices, router, services]);
 
-  const handleRemove = async (serviceName: string) => {
-    if (isSaving) return;
-    await persist(services.filter((item) => item !== serviceName));
-  };
+  useEffect(() => {
+    if (!registry) return;
+    return registry.registerSaveHandler("offered-services", handleSave);
+  }, [registry, handleSave]);
 
-  const customServices = services.filter((s) => !isPredefinedService(s));
+  useEffect(() => {
+    setServices(initialServices);
+    setCompanyServices(initialCompanyServices);
+  }, [initialCompanyServices, initialServices]);
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Předdefinované služby
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {PREDEFINED_SERVICES.map((service) => {
-            const selected = services.includes(service);
-            return (
-              <button
-                key={service}
-                type="button"
-                disabled={isSaving}
-                onClick={() => void handleTogglePredefined(service)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-60",
-                  selected
-                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                    : "border-border/60 bg-background text-muted-foreground hover:border-blue-200 hover:text-foreground",
-                )}
-              >
-                {service}
-              </button>
-            );
-          })}
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Základní obory
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Vyberte kategorie, které nejlépe vystihují vaši nabídku. Sniper z nich nabídne zaměření
+            konkrétního e-mailu.
+          </p>
         </div>
+
+        <div className="space-y-5">
+          {PREDEFINED_SERVICE_GROUPS.map((group) => (
+            <div key={group.id} className="space-y-2">
+              <p className="text-[11px] font-semibold text-foreground/80">{group.label}</p>
+              <div className="flex flex-wrap gap-2">
+                {group.services.map((service) => {
+                  const selected = services.includes(service);
+                  return (
+                    <button
+                      key={service}
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => handleToggleService(service)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-semibold leading-snug transition-all disabled:opacity-60",
+                        selected
+                          ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                          : "border-border/60 bg-background text-muted-foreground hover:border-blue-200 hover:text-foreground",
+                      )}
+                    >
+                      {service}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {services.length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Vybráno: {services.length}{" "}
+            {services.length === 1 ? "obor" : services.length >= 2 && services.length <= 4 ? "obory" : "oborů"}
+          </p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Vlastní služby
+        <Label
+          htmlFor="company-services"
+          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+        >
+          Detailní popis služeb
+        </Label>
+        <Textarea
+          id="company-services"
+          value={companyServices}
+          onChange={(e) => setCompanyServices(e.target.value)}
+          disabled={isSaving}
+          placeholder="Popište podrobně, co přesně nabízíte, pro koho, jak probíhá spolupráce, termíny dodání, ceny nebo typické výsledky pro klienty..."
+          className="min-h-[220px] resize-y rounded-xl border-border/60 bg-background text-sm"
+        />
+        <p className="text-xs text-muted-foreground">
+          Sem patří rozepsaný text se specifikacemi služeb. AI ho použije spolu s profilem firmy při psaní
+          e-mailů.
         </p>
-        {customServices.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {customServices.map((service) => (
-              <span
-                key={service}
-                className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-              >
-                {service}
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  className="rounded-full p-0.5 hover:bg-blue-100 disabled:opacity-50 dark:hover:bg-blue-800/70"
-                  onClick={() => void handleRemove(service)}
-                  aria-label={`Smazat službu ${service}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Žádné vlastní služby. Přidejte je níže.</p>
-        )}
+      </div>
 
-        <div className="flex gap-2 pt-1">
-          <Input
-            value={newService}
-            onChange={(e) => setNewService(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void handleAddCustom();
-              }
-            }}
-            placeholder="Např. Branding, E-mail marketing..."
-            className="h-11 rounded-xl"
-            disabled={isSaving}
-          />
-          <Button
-            type="button"
-            onClick={() => void handleAddCustom()}
-            disabled={isSaving || !newService.trim()}
-            className="h-11 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white hover:bg-blue-700"
-          >
-            {isSaving ? "Ukládám..." : "Přidat"}
-          </Button>
-        </div>
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={isSaving}
+          className="h-10 rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Ukládám…
+            </>
+          ) : (
+            "Uložit nabízené služby"
+          )}
+        </Button>
       </div>
     </div>
   );

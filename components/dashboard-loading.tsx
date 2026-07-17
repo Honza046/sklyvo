@@ -1,7 +1,8 @@
 import { Loader2 } from "lucide-react";
+import { cz } from "@/lib/i18n/messages/cz";
 
-export const DASHBOARD_SUBTITLE =
-  "Tady je přehled vaší obchodní aktivity za posledních 30 dní.";
+/** Server-safe default subtitle (Czech). Client pages use `DashboardSubtitle` for i18n. */
+export const DASHBOARD_SUBTITLE = cz.dashboard.subtitle;
 
 /** Obsah pod hlavičkou – karty s borderem, uvnitř pulzující „duchové“. */
 function DashboardSkeletonBody() {
@@ -25,8 +26,11 @@ function DashboardSkeletonBody() {
         <div className="col-span-1 flex h-full flex-col gap-4 lg:col-span-2">
           <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
             <div className="flex h-full flex-col gap-4 animate-pulse">
-              <div className="mb-4 h-5 w-40 rounded-md bg-slate-200 dark:bg-slate-800" />
-              {[...Array(5)].map((_, i) => (
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="h-5 w-40 rounded-md bg-slate-200 dark:bg-slate-800" />
+                <div className="h-8 w-[148px] shrink-0 rounded-md bg-slate-100 dark:bg-slate-800/50" />
+              </div>
+              {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
                   className="h-4 w-full rounded-md bg-slate-100 dark:bg-slate-800/50"
@@ -38,7 +42,7 @@ function DashboardSkeletonBody() {
             <div className="animate-pulse flex min-h-0 flex-1 flex-col gap-4">
               <div className="mb-2 flex items-center justify-between">
                 <div className="h-5 w-32 rounded-md bg-slate-200 dark:bg-slate-800" />
-                <div className="h-4 w-16 rounded-md bg-slate-200 dark:bg-slate-800" />
+                <div className="h-4 w-20 rounded-md bg-slate-200 dark:bg-slate-800" />
               </div>
               {[...Array(3)].map((_, i) => (
                 <div
@@ -90,7 +94,7 @@ function DashboardSkeletonBody() {
 /** Celá stránka pro `app/loading.tsx` – zarovnání jako na `page.tsx`. */
 export function DashboardLoading() {
   return (
-    <div className="mx-auto flex h-[calc(100vh-100px)] min-h-0 w-full max-w-7xl flex-col gap-3 overflow-hidden p-3 md:p-4">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-3 overflow-hidden p-4 md:p-6">
       <div className="mb-2 flex w-full shrink-0 flex-col justify-between gap-2 md:flex-row md:items-end">
         <div className="space-y-2">
           <div className="h-8 w-[220px] animate-pulse rounded-md bg-slate-200 dark:bg-slate-800 md:w-[280px]" />
@@ -98,7 +102,7 @@ export function DashboardLoading() {
             {DASHBOARD_SUBTITLE}{" "}
             <span className="ml-3 inline-flex animate-in fade-in items-center text-sm font-medium text-blue-500">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Načítám data...
+              {cz.common.loading}
             </span>
           </p>
         </div>
@@ -115,7 +119,7 @@ export function DashboardLoading() {
 /** Fallback uvnitř `Suspense` – jen obsah pod reálnou hlavičkou. */
 export function DashboardBodySkeleton() {
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col overflow-auto">
+    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
       <DashboardSkeletonBody />
     </div>
   );

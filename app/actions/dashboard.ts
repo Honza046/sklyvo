@@ -3,7 +3,7 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 
-type LeadStatus = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+export type LeadStatus = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
 
 type DashboardLeadActivity = {
   id: string;
@@ -57,7 +57,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     prisma.lead.findMany({
       where: { workspaceId },
       orderBy: { updatedAt: "desc" },
-      take: 3,
+      take: 5,
       select: {
         id: true,
         companyName: true,
@@ -123,4 +123,43 @@ export async function getDashboardData(): Promise<DashboardData> {
     attentionTasks,
     totalValue: valueAggregate._sum.value ?? 0,
   };
+}
+
+const EMPTY_FUNNEL_COUNTS: Record<LeadStatus, number> = {
+  NEW: 0,
+  CONTACTED: 0,
+  REPLIED: 0,
+  MEETING_SET: 0,
+  CLOSED_WON: 0,
+  CLOSED_LOST: 0,
+};
+
+/** Počty leadů podle stavu za posledních `days` dní (podle data vytvoření záznamu). */
+export async function getDashboardFunnelStats(days: number): Promise<Record<LeadStatus, number>> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+
+  if (!workspaceId) {
+    return { ...EMPTY_FUNNEL_COUNTS };
+  }
+
+  const safeDays = Math.min(3650, Math.max(1, Math.floor(Number(days)) || 30));
+  const since = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+
+  const groupedCounts = await prisma.lead.groupBy({
+    by: ["status"],
+    where: {
+      workspaceId,
+      createdAt: { gte: since },
+    },
+    _count: { _all: true },
+  });
+
+  return groupedCounts.reduce(
+    (acc, item) => {
+      acc[item.status as LeadStatus] = item._count._all;
+      return acc;
+    },
+    { ...EMPTY_FUNNEL_COUNTS },
+  );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,9 @@ import {
   Pencil,
   Trash,
   Users,
+  Target,
+  Send,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -61,6 +65,7 @@ import {
   updateSingleLeadStatus,
 } from "@/app/actions/crm";
 import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
+import { AutopilotDialog, type AutopilotLead } from "@/app/crm/autopilot-dialog";
 import { toast } from "sonner";
 
 type Lead = {
@@ -92,6 +97,22 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(amount);
 };
 
+function leadFullWebsiteUrl(domainOrUrl: string): string {
+  const raw = (domainOrUrl ?? "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw.replace(/^\/+/, "")}`;
+}
+
+function buildSniperLeadHref(lead: Pick<Lead, "url" | "email">): string {
+  const website = leadFullWebsiteUrl(lead.url);
+  const email = (lead.email ?? "").trim();
+  const qs: string[] = [];
+  if (website) qs.push(`url=${encodeURIComponent(website)}`);
+  if (email) qs.push(`email=${encodeURIComponent(email)}`);
+  return qs.length > 0 ? `/sniper?${qs.join("&")}` : "/sniper";
+}
+
 function CrmPageContent() {
   const ITEMS_PER_PAGE = 10;
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "value_high" | "value_low">("newest");
@@ -100,6 +121,7 @@ function CrmPageContent() {
   const [dateFilter, setDateFilter] = useState<"all" | "last_7_days" | "last_30_days" | "this_year">("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
+  const [autopilotLeads, setAutopilotLeads] = useState<AutopilotLead[] | null>(null);
   const [isBulkRunning, setIsBulkRunning] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [editForm, setEditForm] = useState({
@@ -176,7 +198,9 @@ function CrmPageContent() {
       const matchText =
         !q ||
         lead.company.toLowerCase().includes(q) ||
-        lead.url.toLowerCase().includes(q);
+        lead.url.toLowerCase().includes(q) ||
+        lead.email.toLowerCase().includes(q) ||
+        lead.phone.toLowerCase().includes(q);
 
       const matchStatus = statusFilter === "all" || lead.leadStatus === statusFilter;
       const matchSource =
@@ -266,6 +290,21 @@ function CrmPageContent() {
   const handleBulkDelete = () => {
     if (selectedLeads.length === 0) return;
     setLeadsToDelete(selectedLeads);
+  };
+
+  const handleStartAutopilot = () => {
+    if (selectedLeads.length === 0) return;
+    const selectedSet = new Set(selectedLeads);
+    const targets: AutopilotLead[] = leads
+      .filter((lead) => selectedSet.has(lead.id))
+      .map((lead) => ({
+        id: lead.id,
+        company: lead.company,
+        email: (lead.email ?? "").trim(),
+        url: lead.url,
+      }));
+    if (targets.length === 0) return;
+    setAutopilotLeads(targets);
   };
 
   const executeDelete = async () => {
@@ -398,31 +437,40 @@ function CrmPageContent() {
   };
 
   return (
-      <div className="flex h-[calc(100vh-100px)] w-full flex-col items-center justify-start overflow-hidden">
+      <div className="flex h-[calc(100vh-2rem)] w-full flex-col items-center overflow-hidden md:h-[calc(100vh-3rem)]">
         
-        <div className="mb-2 text-center space-y-1">
+        <div className="mb-2 shrink-0 space-y-1 text-center">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-2xl">
               <Users className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            Pipeline a Lead management
+            CRM
           </h1>
           <p className="text-sm text-muted-foreground max-w-lg mx-auto">
             Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
           </p>
         </div>
 
-        <div className="flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 px-4 md:px-8">
+        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 overflow-hidden px-4 md:px-8">
           
-          <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all min-h-[76px] flex items-center">
+          <div className="flex shrink-0 items-center rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all min-h-[76px]">
             {selectedLeads.length > 0 ? (
               <div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-md bg-blue-50 p-2 dark:bg-blue-900/20">
                 <span className="px-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
                   Vybráno: {selectedLeads.length} firem
                 </span>
                 <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => handleStartAutopilot()}
+                    disabled={isBulkRunning}
+                    className="bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                  >
+                    <Rocket className="mr-2 h-4 w-4" />
+                    Spustit Autopilota
+                  </Button>
                   <Select onValueChange={(v) => void handleBulkStatusUpdate(v as Lead["leadStatus"])} disabled={isBulkRunning}>
                     <SelectTrigger className="h-8 w-[190px] bg-background">
                       <SelectValue placeholder="Změnit status" />
@@ -557,6 +605,7 @@ function CrmPageContent() {
           </div>
 
           {view === "board" && (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <CrmKanbanBoard
               columns={COLUMNS}
               leads={filteredLeads}
@@ -590,6 +639,7 @@ function CrmPageContent() {
                 onQuickStatus,
               }) => {
                 const overlay = Boolean(isDragOverlay);
+                const companyWeb = leadFullWebsiteUrl(lead.url);
 
                 return (
                 <div
@@ -613,8 +663,9 @@ function CrmPageContent() {
                         <h4 className="font-bold text-sm text-foreground leading-none mb-1 truncate">
                           {lead.company}
                         </h4>
+                        {companyWeb ? (
                         <a
-                          href={`https://${lead.url}`}
+                          href={companyWeb}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center text-[9px] text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
@@ -623,6 +674,12 @@ function CrmPageContent() {
                           <Globe className="mr-1 h-2.5 w-2.5 shrink-0" />
                           <span className="truncate">{lead.url}</span>
                         </a>
+                        ) : (
+                          <span className="flex items-center text-[9px] text-muted-foreground truncate">
+                            <Globe className="mr-1 h-2.5 w-2.5 shrink-0 opacity-50" />
+                            –
+                          </span>
+                        )}
                       </div>
                     </div>
                     <DropdownMenu>
@@ -642,6 +699,12 @@ function CrmPageContent() {
                         <DropdownMenuItem onClick={() => onEdit()}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Upravit deal
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={buildSniperLeadHref(lead)} className="flex cursor-pointer items-center">
+                            <Target className="mr-2 h-4 w-4" />
+                            Odeslat do Snipera
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -693,29 +756,35 @@ function CrmPageContent() {
                 );
               }}
             />
+            </div>
           )}
 
           {view === "list" && (
-            <div className="flex flex-col rounded-2xl border border-border/60 bg-card shadow-sm animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden rounded-2xl border border-border/60 bg-card shadow-sm animate-in fade-in zoom-in-95 duration-300">
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-sm">
+              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <table className="w-full table-fixed text-sm">
                   <thead>
-                    <tr className="bg-muted/30 border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                      <th className="w-[44px] px-3 py-3 text-center font-semibold">
+                    <tr className="border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
+                      <th className="sticky top-0 z-10 w-[44px] bg-white px-3 py-3 text-center font-semibold dark:bg-zinc-950">
                         <div className="flex justify-center">
                           <Checkbox checked={allPageSelected} onCheckedChange={toggleAllOnPage} />
                         </div>
                       </th>
-                      <th className="px-3 py-3 font-semibold">Firma</th>
-                      <th className="px-3 py-3 font-semibold">Datum přidání</th>
-                      <th className="px-3 py-3 font-semibold">Hodnota</th>
-                      <th className="px-3 py-3 font-semibold">Status</th>
-                      <th className="px-3 py-3 font-semibold text-right">Akce</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[26%]">Firma</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[14%]">Datum přidání</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[26%]">KONTAKT</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Hodnota</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Status</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 text-right font-semibold dark:bg-zinc-950 w-[96px]">Akce</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedLeads.map((lead) => (
+                    {paginatedLeads.map((lead) => {
+                      const companyWeb = leadFullWebsiteUrl(lead.url);
+                      const emailTrim = (lead.email ?? "").trim();
+                      const phoneTrim = (lead.phone ?? "").trim();
+                      return (
                       <tr key={lead.id} className="border-b border-border/40 hover:bg-muted/40 transition-colors">
                         <td className="px-3 py-3 text-center">
                           <div className="flex justify-center">
@@ -731,15 +800,40 @@ function CrmPageContent() {
                               {lead.avatar}
                             </div>
                             <div className="min-w-0">
-                              <p className="font-semibold text-foreground truncate">{lead.company}</p>
-                              <a href={`https://${lead.url}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 truncate">
-                                {lead.url}
+                              <p className="font-semibold text-foreground break-words">{lead.company}</p>
+                              {companyWeb ? (
+                              <a href={companyWeb} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 break-words block">
+                                {lead.url || companyWeb}
                               </a>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">–</span>
+                              )}
                             </div>
                           </div>
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
-                        <td className="px-3 py-3 font-semibold text-foreground">{formatCurrency(lead.value)}</td>
+                        <td className="px-3 py-3 align-top">
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <span
+                              className={cn(
+                                "break-words text-sm",
+                                emailTrim ? "text-foreground" : "text-muted-foreground",
+                              )}
+                              title={emailTrim || undefined}
+                            >
+                              {emailTrim || "Bez emailu"}
+                            </span>
+                            {phoneTrim ? (
+                              <span
+                                className="break-words text-xs text-muted-foreground"
+                                title={phoneTrim}
+                              >
+                                {phoneTrim}
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">{formatCurrency(lead.value)}</td>
                         <td className="px-3 py-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -760,42 +854,64 @@ function CrmPageContent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="px-3 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 px-2">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-950 z-50 border shadow-md">
-                              <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Upravit deal
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteSingleLead(lead.id)}
-                                className="text-red-600 focus:text-red-700"
+                        <td className="px-3 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 shrink-0 rounded-lg border-blue-200 bg-blue-50 p-0 text-blue-700 shadow-sm hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-200"
+                            >
+                              <Link
+                                href={buildSniperLeadHref(lead)}
+                                className="flex size-full items-center justify-center"
+                                title="Odeslat do Snipera"
+                                aria-label="Odeslat do Snipera"
                               >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Smazat
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                <Send className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 px-2">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-950 z-50 border shadow-md">
+                                <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Upravit deal
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteSingleLead(lead.id)}
+                                  className="text-red-600 focus:text-red-700"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Smazat
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                     {!isLoading && paginatedLeads.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                          Žádné firmy neodpovídají hledání.
+                        <td colSpan={7} className="p-0">
+                          <div className="flex min-h-[300px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                            Žádné firmy neodpovídají hledání.
+                          </div>
                         </td>
                       </tr>
                     )}
                     {isLoading && (
                       <tr>
-                        <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                          Načítám dealy...
+                        <td colSpan={7} className="p-0">
+                          <div className="flex min-h-[300px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                            Načítám dealy...
+                          </div>
                         </td>
                       </tr>
                     )}
@@ -803,7 +919,7 @@ function CrmPageContent() {
                 </table>
               </div>
 
-              <div className="mt-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border/60 bg-muted/30 px-4 py-4 sm:px-6">
+              <div className="mt-0 flex shrink-0 flex-col gap-3 border-t border-border/60 bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p className="text-xs text-muted-foreground">
                   Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
                 </p>
@@ -986,6 +1102,18 @@ function CrmPageContent() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <AutopilotDialog
+          open={autopilotLeads !== null}
+          onOpenChange={(open) => {
+            if (!open) setAutopilotLeads(null);
+          }}
+          leads={autopilotLeads ?? []}
+          onFinished={() => {
+            setSelectedLeads([]);
+            void loadLeads();
+          }}
+        />
 
         <AlertDialog open={leadsToDelete !== null} onOpenChange={(open) => !open && setLeadsToDelete(null)}>
           <AlertDialogContent className="bg-white dark:bg-zinc-950 border shadow-md">

@@ -1,10 +1,11 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { getSessionUser } from "@/app/actions/auth";
+import { getEmailConnectionState } from "@/app/actions/email-connection";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase
+  Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase, Mail
 } from "lucide-react";
 import {
   Accordion,
@@ -14,10 +15,17 @@ import {
 } from "@/components/ui/accordion";
 import { Progress } from "@/components/ui/progress";
 import { OfferedServicesManager } from "@/app/settings/offered-services-manager";
+import { CompanyProfileForm } from "@/app/settings/company-profile-form";
 import { IntegrationsPanel } from "@/app/settings/integrations-panel";
+import {
+  AiBehaviorSettingsForm,
+  SettingsSaveProvider,
+} from "@/app/settings/ai-behavior-settings-form";
 import { SettingsSaveButton } from "@/app/settings/settings-save-button";
 import { SubscriptionBillingButton } from "@/app/settings/subscription-billing-button";
 import { TeamAccessPanel } from "@/app/settings/team-access-panel";
+import { EmailIntegrationPanel } from "@/app/settings/email-integration-panel";
+import { parseStoredAiBehaviorSettings } from "@/lib/ai-behavior-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -46,10 +54,44 @@ export default async function SettingsPage() {
   const nowMs = Date.now();
   const trialEndsAt = workspace?.trialEndsAt;
   const subscriptionPeriodEnd = workspace?.subscriptionPeriodEnd;
+  const subscriptionStatus = workspace?.subscriptionStatus ?? "FREE";
+
+  const isTrialWithFutureEnd =
+    subscriptionStatus === "TRIAL" &&
+    trialEndsAt &&
+    !Number.isNaN(trialEndsAt.getTime()) &&
+    nowMs < trialEndsAt.getTime();
+
+  const renewalReferenceDate = isTrialWithFutureEnd ? trialEndsAt : subscriptionPeriodEnd;
+
+  const daysUntilRenewal =
+    renewalReferenceDate && !Number.isNaN(renewalReferenceDate.getTime())
+      ? Math.max(
+          0,
+          Math.ceil(
+            (renewalReferenceDate.getTime() - nowMs) / (1000 * 60 * 60 * 24),
+          ),
+        )
+      : null;
+
+  const creditsRenewalSubline = (() => {
+    if (daysUntilRenewal === null) return null;
+    const d = daysUntilRenewal;
+    const dayWord = d === 1 ? "den" : d >= 2 && d <= 4 ? "dny" : "dní";
+    if (isTrialWithFutureEnd) {
+      return `Zkušební doba končí za ${d} ${dayWord}.`;
+    }
+    return `Váš měsíční limit se obnoví za ${d} ${dayWord}.`;
+  })();
+
   const subscriptionDateLine = (() => {
     if (!trialEndsAt || Number.isNaN(trialEndsAt.getTime())) {
       if (subscriptionPeriodEnd && !Number.isNaN(subscriptionPeriodEnd.getTime())) {
-        return `Předplatné končí: ${subscriptionPeriodEnd.toLocaleDateString("cs-CZ")}`;
+        const dateStr = subscriptionPeriodEnd.toLocaleDateString("cs-CZ");
+        if (subscriptionStatus === "ACTIVE") {
+          return `Tarif se obnoví: ${dateStr}`;
+        }
+        return `Předplatné končí: ${dateStr}`;
       }
       return null;
     }
@@ -57,10 +99,17 @@ export default async function SettingsPage() {
       return `Zkušební doba končí: ${trialEndsAt.toLocaleDateString("cs-CZ")}`;
     }
     if (subscriptionPeriodEnd && !Number.isNaN(subscriptionPeriodEnd.getTime())) {
-      return `Předplatné končí: ${subscriptionPeriodEnd.toLocaleDateString("cs-CZ")}`;
+      const dateStr = subscriptionPeriodEnd.toLocaleDateString("cs-CZ");
+      if (subscriptionStatus === "ACTIVE") {
+        return `Tarif se obnoví: ${dateStr}`;
+      }
+      return `Předplatné končí: ${dateStr}`;
     }
     return null;
   })();
+
+  const aiBehaviorSettings = parseStoredAiBehaviorSettings(workspace?.systemPrompt);
+  const emailConnection = isWorkspaceReady ? await getEmailConnectionState() : null;
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-12">
@@ -78,6 +127,7 @@ export default async function SettingsPage() {
         </p>
       </div>
 
+      <SettingsSaveProvider>
       <div className="flex w-full max-w-3xl flex-col gap-6 px-4">
         
         {/* PŮVODNÍ HLAVIČKA S PŘEDPLATNÝM */}
@@ -111,7 +161,36 @@ export default async function SettingsPage() {
           )}
         </div>
 
-        <Accordion type="single" collapsible defaultValue="offered-services" className="w-full space-y-4">
+        <Accordion type="single" collapsible defaultValue="company-profile" className="w-full space-y-4">
+
+          {/* PROFIL FIRMY PRO AI */}
+          <AccordionItem
+            value="company-profile"
+            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+          >
+            <AccordionTrigger className="py-6 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                  <Bot className="h-5 w-5" />
+                </div>
+                <h2 className="text-lg font-bold">Profil vaší firmy</h2>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-5 pb-6 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Popis firmy, služeb a výhod, podle kterého Sniper personalizuje odchozí e-maily.
+              </p>
+              {isWorkspaceReady ? (
+                <CompanyProfileForm initialContext={workspace?.companyContext ?? ""} />
+              ) : (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-44 w-full rounded-xl" />
+                  <Skeleton className="h-10 w-36 rounded-xl" />
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
           
           {/* NABÍZENÉ SLUŽBY FIRMY */}
           <AccordionItem
@@ -131,7 +210,10 @@ export default async function SettingsPage() {
                 Služby, které vaše firma nabízí. Sniper je používá při generování obchodních e-mailů.
               </p>
               {isWorkspaceReady ? (
-                <OfferedServicesManager initialServices={workspace?.offeredServices ?? []} />
+                <OfferedServicesManager
+                  initialServices={workspace?.offeredServices ?? []}
+                  initialCompanyServices={workspace?.companyServices ?? ""}
+                />
               ) : (
                 <div className="space-y-3">
                   <Skeleton className="h-9 w-full max-w-md rounded-full" />
@@ -147,7 +229,7 @@ export default async function SettingsPage() {
             value="credits"
             className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger id="credits-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                   <Coins className="h-5 w-5" />
@@ -162,7 +244,9 @@ export default async function SettingsPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="text-sm font-semibold">Zbývající kredity</h4>
-                        <p className="mt-0.5 text-xs text-muted-foreground">Váš měsíční limit se obnoví za 12 dní.</p>
+                        {creditsRenewalSubline ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{creditsRenewalSubline}</p>
+                        ) : null}
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-foreground">
@@ -214,12 +298,39 @@ export default async function SettingsPage() {
             </AccordionContent>
           </AccordionItem>
 
+          {/* PROPOJENÍ FIREMNÍHO E-MAILU */}
+          <AccordionItem
+            value="email-integration"
+            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+          >
+            <AccordionTrigger id="email-integration-trigger" className="py-6 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <Mail className="h-5 w-5" />
+                </div>
+                <h2 className="text-lg font-bold">Propojení firemního e-mailu</h2>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-6 pt-2">
+              {emailConnection ? (
+                <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+                  <EmailIntegrationPanel initialState={emailConnection} />
+                </Suspense>
+              ) : (
+                <div className="space-y-3">
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-56 w-full rounded-xl" />
+                </div>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+
           {/* PŮVODNÍ SEKCE: INTEGRACE */}
           <AccordionItem
             value="integrations"
             className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger id="integrations-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <LinkIcon className="h-5 w-5" />
@@ -246,37 +357,19 @@ export default async function SettingsPage() {
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-5 pb-6 pt-2">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Podpis na konci zprávy (Sniper)
-                </Label>
-                <textarea
-                  className="min-h-[100px] w-full resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500"
+              {isWorkspaceReady ? (
+                <AiBehaviorSettingsForm
+                  initialEmailSignature={workspace?.emailSignature ?? ""}
+                  initialSystemPrompt={aiBehaviorSettings.systemPrompt}
+                  initialForbiddenWords={aiBehaviorSettings.forbiddenWords}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  ZAKÁZANÁ SLOVA A FRÁZE (BLACKLIST)
-                </Label>
-                <textarea
-                  rows={2}
-                  className="w-full resize-y rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500"
-                  placeholder="např. synergie, namontujeme, -"
-                />
-                <p className="mt-1 text-[10px] text-gray-500">
-                  Tato slova AI nikdy nepoužije. Oddělujte čárkou (např. synergie, inovativní, zaručeně).
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Základní instrukce (System Prompt)
-                </Label>
-                <textarea
-                  className="min-h-[150px] w-full resize-y rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-blue-500"
-                  defaultValue="Jsi špičkový obchodník. Tvojí úlohou je psát stručné, úderné a vysoce konverzní texty. Nepoužívej zbytečné fráze. Zaměř se na hodnotu pro klienta."
-                />
-                <p className="text-[10px] text-muted-foreground">Tato instrukce ovlivňuje, jakým stylem Sniper generuje e-maily.</p>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <Skeleton className="h-[100px] w-full rounded-lg" />
+                  <Skeleton className="h-[60px] w-full rounded-lg" />
+                  <Skeleton className="h-[150px] w-full rounded-lg" />
+                </div>
+              )}
             </AccordionContent>
           </AccordionItem>
 
@@ -303,6 +396,7 @@ export default async function SettingsPage() {
           <SettingsSaveButton />
         </div>
       </div>
+      </SettingsSaveProvider>
     </div>
   );
 }

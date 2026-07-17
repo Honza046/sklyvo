@@ -2,10 +2,13 @@
 
 import { unstable_noStore as noStore } from "next/cache";
 import { cookies } from "next/headers";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationCodeEmail, sendPasswordResetEmail } from "@/app/actions/email";
 
 const SESSION_COOKIE = "session_user_id";
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING"]);
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function getFirstName(fullName: string | null | undefined) {
   if (!fullName) return null;
@@ -87,6 +90,7 @@ export async function getSessionUser() {
       email: true,
       avatarUrl: true,
       workspaceId: true,
+      onboardingTourCompleted: true,
     },
   });
 
@@ -123,6 +127,10 @@ export async function getSessionUser() {
     activeDeals?: number | null;
     pipelineValue?: number | null;
     offeredServices?: string[] | null;
+    companyContext?: string | null;
+    companyServices?: string | null;
+    emailSignature?: string | null;
+    systemPrompt?: string | null;
   };
 
   return {
@@ -134,6 +142,7 @@ export async function getSessionUser() {
       image: user.avatarUrl ?? null,
       avatarUrl: user.avatarUrl ?? null,
       workspaceId: user.workspaceId,
+      onboardingTourCompleted: user.onboardingTourCompleted,
     },
     workspace: {
       id: workspace.id,
@@ -155,6 +164,10 @@ export async function getSessionUser() {
       activeDeals: workspace.activeDeals ?? 0,
       pipelineValue: workspace.pipelineValue ?? 0,
       offeredServices: workspace.offeredServices ?? [],
+      companyContext: workspace.companyContext ?? null,
+      companyServices: workspace.companyServices ?? null,
+      emailSignature: workspace.emailSignature ?? null,
+      systemPrompt: workspace.systemPrompt ?? null,
     },
   };
 }
@@ -267,6 +280,216 @@ export async function updateUserPassword(input: {
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash: newPassword },
+  });
+
+  return { success: true };
+}
+
+/**
+ * Krok 1 bezpečné změny e-mailu: vygeneruje 6místný kód, uloží čekající adresu + kód
+ * s 15minutovou expirací a odešle kód na NOVOU adresu. Hlavní e-mail se zatím nemění.
+ */
+export async function requestEmailChange(
+  newEmail: string,
+): Promise<{ success: true } | { error: string }> {
+  const email = newEmail?.trim().toLowerCase();
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return { error: "Zadejte platnou e-mailovou adresu." };
+  }
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!userId) {
+    return { error: "Nejste přihlášeni." };
+  }
+
+  const current = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true },
+  });
+  if (!current) {
+    return { error: "Účet nebyl nalezen." };
+  }
+  if (current.email.trim().toLowerCase() === email) {
+    return { error: "Toto je již vaše aktuální e-mailová adresa." };
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" }, NOT: { id: userId } },
+    select: { id: true },
+  });
+  if (existing) {
+    return { error: "Tento e-mail už používá jiný účet." };
+  }
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      pendingEmail: email,
+      emailVerificationCode: code,
+      emailVerificationCodeExpiresAt: expiresAt,
+    },
+  });
+
+  const sent = await sendVerificationCodeEmail(email, code);
+  if (!sent.success) {
+    return { error: sent.error };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Krok 2 bezpečné změny e-mailu: ověří kód a jeho platnost. Při úspěchu nastaví hlavní
+ * `email` na hodnotu z `pendingEmail` a vymaže všechny ověřovací sloupce.
+ * Identita uživatele žije v Prisma (vlastní cookie session), takže není potřeba
+ * synchronizovat externí auth provider.
+ */
+export async function verifyEmailChange(
+  code: string,
+): Promise<{ success: true; email: string } | { error: string }> {
+  const trimmedCode = code?.trim();
+  if (!trimmedCode) {
+    return { error: "Zadejte ověřovací kód." };
+  }
+
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!userId) {
+    return { error: "Nejste přihlášeni." };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      pendingEmail: true,
+      emailVerificationCode: true,
+      emailVerificationCodeExpiresAt: true,
+    },
+  });
+
+  if (!user || !user.pendingEmail || !user.emailVerificationCode) {
+    return { error: "Nemáte žádnou čekající změnu e-mailu." };
+  }
+  if (
+    !user.emailVerificationCodeExpiresAt ||
+    user.emailVerificationCodeExpiresAt.getTime() < Date.now()
+  ) {
+    return { error: "Platnost kódu vypršela. Vyžádejte si nový." };
+  }
+  if (user.emailVerificationCode !== trimmedCode) {
+    return { error: "Ověřovací kód není správný." };
+  }
+
+  const newEmail = user.pendingEmail;
+
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: newEmail, mode: "insensitive" }, NOT: { id: userId } },
+    select: { id: true },
+  });
+  if (existing) {
+    return { error: "Tento e-mail mezitím začal používat jiný účet." };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      email: newEmail,
+      pendingEmail: null,
+      emailVerificationCode: null,
+      emailVerificationCodeExpiresAt: null,
+    },
+  });
+
+  return { success: true, email: newEmail };
+}
+
+/**
+ * Krok 1 obnovy hesla: najde uživatele podle e-mailu, vygeneruje bezpečný unikátní token
+ * s 60minutovou expirací, uloží ho a odešle odkaz pro nastavení nového hesla.
+ * Z bezpečnostních důvodů (zabránění zjišťování existence účtů) vrací úspěch i tehdy,
+ * když uživatel s daným e-mailem neexistuje.
+ */
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ success: true } | { error: string }> {
+  const normalized = email?.trim().toLowerCase();
+  if (!normalized || !EMAIL_REGEX.test(normalized)) {
+    return { error: "Zadejte platnou e-mailovou adresu." };
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: normalized, mode: "insensitive" } },
+    select: { id: true, email: true },
+  });
+
+  // Neexistující účet: tváříme se úspěšně, ale nic neposíláme.
+  if (!user) {
+    return { success: true };
+  }
+
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordResetToken: token,
+      passwordResetExpiresAt: expiresAt,
+    },
+  });
+
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+  const resetLink = `${baseUrl}/obnova-hesla?token=${token}`;
+
+  const sent = await sendPasswordResetEmail(user.email, resetLink);
+  if (!sent.success) {
+    return { error: sent.error };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Krok 2 obnovy hesla: ověří platnost tokenu, nastaví nové heslo a token zneplatní.
+ * Pozn.: heslo se ukládá stejným způsobem jako ve zbytku aplikace (pole passwordHash).
+ * Skutečné hashování (bcrypt) je třeba zavést napříč celou autentizací (registrace, login,
+ * změna hesla) v jednom kroku, jinak by se uživatel nemohl přihlásit.
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ success: true } | { error: string }> {
+  const trimmedToken = token?.trim();
+  if (!trimmedToken) {
+    return { error: "Chybí ověřovací token." };
+  }
+  if (!newPassword || newPassword.length < 8) {
+    return { error: "Nové heslo musí mít alespoň 8 znaků." };
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { passwordResetToken: trimmedToken },
+    select: { id: true, passwordResetExpiresAt: true },
+  });
+
+  if (!user) {
+    return { error: "Neplatný nebo již použitý odkaz pro obnovu hesla." };
+  }
+  if (!user.passwordResetExpiresAt || user.passwordResetExpiresAt.getTime() < Date.now()) {
+    return { error: "Platnost odkazu vypršela. Vyžádejte si nový." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordHash: newPassword,
+      passwordResetToken: null,
+      passwordResetExpiresAt: null,
+    },
   });
 
   return { success: true };

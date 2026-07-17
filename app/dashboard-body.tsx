@@ -1,4 +1,6 @@
-import { getDashboardData } from "@/app/actions/dashboard";
+import { getDashboardData, getDashboardFunnelStats } from "@/app/actions/dashboard";
+import type { LeadStatus } from "@/app/actions/dashboard";
+import { DashboardConversionFunnel } from "@/components/dashboard-conversion-funnel";
 import { Button } from "@/components/ui/button";
 import {
   Users,
@@ -45,65 +47,6 @@ const formatActivityTime = (date: Date) => {
   }).format(date);
 };
 
-type LeadStatus = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
-
-const STATUS_META: Array<{
-  key: LeadStatus;
-  label: string;
-  dotClass: string;
-  rowBgClass: string;
-  badgeClass: string;
-}> = [
-  {
-    key: "NEW",
-    label: "Nový lead",
-    dotClass: "bg-slate-500",
-    rowBgClass: "bg-slate-500 dark:bg-slate-400",
-    badgeClass:
-      "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
-  },
-  {
-    key: "CONTACTED",
-    label: "Kontaktováno",
-    dotClass: "bg-blue-500",
-    rowBgClass: "bg-blue-500 dark:bg-blue-400",
-    badgeClass:
-      "border-blue-100 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  },
-  {
-    key: "REPLIED",
-    label: "Follow up",
-    dotClass: "bg-amber-500",
-    rowBgClass: "bg-amber-500 dark:bg-amber-400",
-    badgeClass:
-      "border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  },
-  {
-    key: "MEETING_SET",
-    label: "Komunikace",
-    dotClass: "bg-violet-500",
-    rowBgClass: "bg-violet-500 dark:bg-violet-400",
-    badgeClass:
-      "border-violet-100 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400",
-  },
-  {
-    key: "CLOSED_WON",
-    label: "Domluveno",
-    dotClass: "bg-emerald-500",
-    rowBgClass: "bg-emerald-500 dark:bg-emerald-400",
-    badgeClass:
-      "border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
-  },
-  {
-    key: "CLOSED_LOST",
-    label: "Nedomluveno",
-    dotClass: "bg-rose-500",
-    rowBgClass: "bg-rose-500 dark:bg-rose-400",
-    badgeClass:
-      "border-rose-100 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-400",
-  },
-];
-
 function attentionTaskSubtitle(status: LeadStatus): string {
   if (status === "NEW") return "Čeká na první oslovení";
   return "Klient odpověděl, nutná reakce";
@@ -133,23 +76,15 @@ type DashboardActivityItem = {
 };
 
 export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
-  const dashboardData = await getDashboardData();
+  const [dashboardData, funnelInitialCounts] = await Promise.all([
+    getDashboardData(),
+    getDashboardFunnelStats(30),
+  ]);
   const recentActivity: DashboardActivityItem[] = dashboardData.recentActivities;
   const leadsCount = dashboardData.statusCounts.NEW;
   const totalLeads = Object.values(dashboardData.statusCounts).reduce((sum, count) => sum + count, 0);
   const activeDeals = Math.max(0, totalLeads - dashboardData.statusCounts.CLOSED_LOST);
   const pipelineValue = dashboardData.totalValue;
-  const maxFunnelBase = totalLeads > 0 ? totalLeads : 0;
-  const getFunnelWidth = (value: number) => {
-    if (maxFunnelBase === 0 || value <= 0) return 0;
-    return Math.max(0, Math.min(100, Math.round((value / maxFunnelBase) * 100)));
-  };
-
-  const funnelRows = STATUS_META.map((item) => ({
-    ...item,
-    count: dashboardData.statusCounts[item.key],
-    width: getFunnelWidth(dashboardData.statusCounts[item.key]),
-  }));
   const attentionRows = dashboardData.attentionTasks;
 
   return (
@@ -211,33 +146,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-4">
         <div className="flex h-full min-h-0 flex-col gap-4 lg:col-span-2">
-          <div className="flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-base font-bold">
-                Konverzní trychtýř{" "}
-                <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
-                  30 dní
-                </span>
-              </h2>
-            </div>
-
-            <div className="flex min-h-0 flex-1 flex-col justify-center gap-2.5">
-              {funnelRows.map((row) => (
-                <div key={row.key} className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`} />{" "}
-                      <span className="truncate">{row.label}</span>
-                    </span>
-                    <span className="shrink-0 tabular-nums">{row.count}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                    <div className={`h-full ${row.rowBgClass} rounded-full`} style={{ width: `${row.width}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
 
           {/* ZDE ZAČÍNÁ BLOK NEDÁVNÉ AKTIVITY */}
           <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border/60 bg-card p-6 shadow-sm">

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "RadarSettings" ADD COLUMN IF NOT EXISTS "maxCompaniesPerRun" INTEGER NOT NULL DEFAULT 50;

@@ -4,9 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL") // <-- TOTO TAM CHYBĚLO!
+  provider = "postgresql"
 }
 
 // DEFINICE ENUMŮ
@@ -25,6 +23,24 @@ enum LeadStatus {
   CLOSED_LOST
 }
 
+enum EmailQueueStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum EmailConnectionProvider {
+  GOOGLE
+  OUTLOOK_SMTP
+  CUSTOM_SMTP
+}
+
+enum EmailConnectionStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
+}
+
 // TABULKA: UŽIVATEL
 model User {
   id            String    @id @default(cuid())
@@ -36,7 +52,18 @@ model User {
   
   workspaceId   String
   workspace     Workspace @relation(fields: [workspaceId], references: [id])
-  
+
+  onboardingTourCompleted Boolean @default(false)
+
+  /** Bezpečná změna e-mailu: čekající nová adresa + 6místný ověřovací kód s expirací. */
+  pendingEmail                   String?
+  emailVerificationCode          String?
+  emailVerificationCodeExpiresAt DateTime?
+
+  /** Obnova zapomenutého hesla: unikátní token s expirací. */
+  passwordResetToken     String?   @unique
+  passwordResetExpiresAt DateTime?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -68,6 +95,12 @@ model Workspace {
   
   emailSignature String?  @db.Text
   systemPrompt   String?  @db.Text
+  /** Zakázaná slova a fráze pro AI generování (čárkou oddělená). */
+  forbiddenWords String?  @db.Text
+  /** Profil firmy pro AI generování e-mailů (Sniper). */
+  companyContext String?  @db.Text
+  /** Detailní popis nabízených služeb pro AI generování e-mailů. */
+  companyServices String? @db.Text
   webhookUrl     String?
   crmApiKey      String?
   
@@ -76,9 +109,33 @@ model Workspace {
   templates     Template[]
   services      Service[]
   activityLogs  ActivityLog[]
+  radarSettings RadarSettings?
+  emailConnection WorkspaceEmailConnection?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model RadarSettings {
+  id                String    @id @default(cuid())
+  workspaceId       String    @unique
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  /** Cílové obory — jeden záznam = jeden obor. */
+  targetIndustries  String[]  @default([])
+  /** Lokality — každý řádek v UI = jedna lokalita (ukládáno jako newline text). */
+  locations         String    @default("") @db.Text
+  /** any | micro | small | medium | large */
+  companySize       String    @default("any")
+  autoStartOutreach Boolean   @default(false)
+
+  scheduleDays      Int[]     @default([1, 4])
+  scheduleTime      String    @default("03:00")
+  resultsPerQuery   Int       @default(8)
+  maxCompaniesPerRun Int      @default(50)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model ActivityLog {
@@ -123,11 +180,54 @@ model Lead {
   workspaceId   String
   workspace     Workspace  @relation(fields: [workspaceId], references: [id])
   
+  emailQueue    EmailQueue[]
+
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   @@unique([workspaceId, placeId])
   @@index([workspaceId, domain])
+}
+
+model EmailQueue {
+  id           String           @id @default(cuid())
+  leadId       String
+  lead         Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  subject      String
+  htmlBody     String           @db.Text
+  scheduledAt  DateTime
+  status       EmailQueueStatus @default(PENDING)
+  errorMessage String?
+  createdAt    DateTime         @default(now())
+
+  @@index([status, scheduledAt])
+  @@index([leadId, status])
+}
+
+model WorkspaceEmailConnection {
+  id          String                  @id @default(cuid())
+  workspaceId String                  @unique
+  workspace   Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  provider    EmailConnectionProvider?
+  status      EmailConnectionStatus     @default(DISCONNECTED)
+
+  senderName  String?
+  senderEmail String?
+  smtpHost    String?
+  smtpPort    Int?
+  /** AES-256-GCM encrypted app password / SMTP secret */
+  smtpSecret  String?                   @db.Text
+
+  googleAccessToken      String?       @db.Text
+  googleRefreshToken     String?       @db.Text
+  googleTokenExpiresAt   DateTime?
+
+  connectedAt DateTime?
+  lastError   String?
+
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
 }
 
 // TABULKA: ŠABLONY
