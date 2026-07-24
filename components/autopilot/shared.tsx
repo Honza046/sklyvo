@@ -28,7 +28,7 @@ export type WorkspaceLead = {
   email: string;
   phone: string;
   createdAt: string;
-  leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+  leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP";
 };
 
 export type RunStatus = "pending" | "processing" | "queued" | "error";

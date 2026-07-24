@@ -397,7 +397,7 @@ export async function importHistoricalOutreachSheet(input: {
     phone: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
-    status: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+    status: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP";
     source: "RADAR" | "SNIPER";
     author: string | null;
     workspaceId: string;
