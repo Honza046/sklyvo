@@ -538,8 +538,11 @@ function parseScheduleTimeToMinutes(raw: string): number | null {
 }
 
 /**
- * Spustí naplánovaný Radar pro workspace, jejichž den + čas (Europe/Prague)
- * padne do aktuálního 10min okna cronu. Max 1× denně (lastScheduledRunAt).
+ * Spustí naplánovaný Radar pro workspace, jejichž den (Europe/Prague)
+ * sedí a dnes ještě neběžel.
+ *
+ * Pozn.: Na Vercel Hobby může cron běžet max 1× denně (typicky ~01:00 UTC ≈ 03:00 Praha v létě).
+ * Proto nečekáme na přesné 10min okno — stačí shoda dne + max 1 běh / den.
  */
 export async function processScheduledRadarRuns(): Promise<{
   ok: true;
@@ -547,7 +550,7 @@ export async function processScheduledRadarRuns(): Promise<{
   ran: number;
   results: Array<{ workspaceId: string; createdCount?: number; error?: string }>;
 }> {
-  const { weekday, minutesOfDay, dateKey } = getPragueParts();
+  const { weekday, dateKey } = getPragueParts();
   const settings = await prisma.radarSettings.findMany({
     select: {
       workspaceId: true,
@@ -563,12 +566,6 @@ export async function processScheduledRadarRuns(): Promise<{
   for (const row of settings) {
     const days = row.scheduleDays?.length ? row.scheduleDays : [1, 4];
     if (!days.includes(weekday)) continue;
-
-    const target = parseScheduleTimeToMinutes(row.scheduleTime || "03:00");
-    if (target == null) continue;
-
-    // 10min cron window: [target, target+10)
-    if (minutesOfDay < target || minutesOfDay >= target + 10) continue;
 
     if (row.lastScheduledRunAt) {
       const last = getPragueParts(row.lastScheduledRunAt);
