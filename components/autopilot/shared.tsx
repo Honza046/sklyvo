@@ -146,6 +146,7 @@ export function leadStatusLabel(status: WorkspaceLead["leadStatus"]): string {
     MEETING_SET: "Schůzka",
     CLOSED_WON: "Vyhráno",
     CLOSED_LOST: "Ztraceno",
+    BREAK_UP: "Breakup",
   };
   return labels[status];
 }
@@ -154,6 +155,7 @@ export function leadStatusClassName(status: WorkspaceLead["leadStatus"]): string
   if (status === "NEW") return "text-emerald-700 dark:text-emerald-400";
   if (status === "CONTACTED" || status === "REPLIED") return "text-blue-700 dark:text-blue-400";
   if (status === "MEETING_SET" || status === "CLOSED_WON") return "text-violet-700 dark:text-violet-400";
+  if (status === "BREAK_UP") return "text-amber-700 dark:text-amber-400";
   return "text-muted-foreground";
 }
 
@@ -164,6 +166,7 @@ const WORKSPACE_LEAD_STATUS_KEYS: Record<WorkspaceLead["leadStatus"], string> = 
   MEETING_SET: "autopilot.workspaceLead.MEETING_SET",
   CLOSED_WON: "autopilot.workspaceLead.CLOSED_WON",
   CLOSED_LOST: "autopilot.workspaceLead.CLOSED_LOST",
+  BREAK_UP: "autopilot.workspaceLead.BREAK_UP",
 };
 
 export function useAutopilotLabels() {

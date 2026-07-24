@@ -207,6 +207,7 @@ export const de: MessageTree = {
       MEETING_SET: "Termin",
       CLOSED_WON: "Gewonnen",
       CLOSED_LOST: "Verloren",
+      BREAK_UP: "Breakup",
     },
     status: {
       found: "Gefunden",

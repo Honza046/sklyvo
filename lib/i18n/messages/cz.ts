@@ -206,6 +206,7 @@ export const cz = {
       MEETING_SET: "Schůzka",
       CLOSED_WON: "Vyhráno",
       CLOSED_LOST: "Ztraceno",
+      BREAK_UP: "Breakup",
     },
     status: {
       found: "Nalezeno",
