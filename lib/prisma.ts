@@ -5,7 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const connectionString = process.env.DATABASE_URL;
 
 /** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "workspace-email-connection-v1";
+const PRISMA_SCHEMA_FINGERPRINT = "outreach-followup-breakup-v1";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -23,6 +23,19 @@ declare global {
   var prisma: undefined | PrismaClient;
 }
 
+function leadModelHasAuthorField(client: PrismaClient): boolean {
+  try {
+    const runtime = (client as unknown as {
+      _runtimeDataModel?: { models?: Record<string, { fields?: Record<string, unknown> }> };
+    })._runtimeDataModel;
+    const fields = runtime?.models?.Lead?.fields;
+    if (!fields) return true;
+    return "author" in fields;
+  } catch {
+    return true;
+  }
+}
+
 /** Dev HMR can keep an outdated client after `prisma generate` — recreate if delegates are missing. */
 function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (!client) return true;
@@ -30,10 +43,14 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (fingerprinted.__fingerprint !== PRISMA_SCHEMA_FINGERPRINT) {
     return true;
   }
+  if (!leadModelHasAuthorField(client)) {
+    return true;
+  }
   return (
     !("radarSettings" in client) ||
     !("emailQueue" in client) ||
-    !("workspaceEmailConnection" in client)
+    !("workspaceEmailConnection" in client) ||
+    !("workspaceGoogleSheetsConnection" in client)
   );
 }
 

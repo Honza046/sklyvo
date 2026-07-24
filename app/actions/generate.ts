@@ -67,6 +67,11 @@ const FORBIDDEN_SUBSTRINGS = [
   "inovativní",
   "posunout na další úroveň",
   "odemykat potenciál",
+  "v digitální době",
+  "v dnešní digitální",
+  "digitální vizitka",
+  "vizitkou vaší",
+  "online důvěryhodnost",
 ] as const;
 
 /** Typické „AI“ závěry — nesmí se objevit v těle ani v předmětu. */
@@ -76,6 +81,13 @@ const BANNED_CHEESY_PHRASES = [
   "budu se těšit na odpověď",
   "pojďme se spojit",
   "pojďme se spojit na krátký hovor",
+  "v dnešní době",
+  "v digitální době",
+  "silná digitální přítomnost",
+  "digitální přítomnost",
+  "online vizitka",
+  "vizitkou ordinace",
+  "zvýšit důvěryhodnost",
 ] as const;
 
 /** Prázdné ledoborce — první věta musí být konkrétní detail z webu, ne obecná chvála. */
@@ -86,11 +98,13 @@ const BANNED_GENERIC_ICEBREAKERS = [
   "prošel jsem váš web a zaujalo mě",
   "na vašem webu mě zaujalo, jak srozumitelně",
   "pár postřehů k vašemu webu",
+  "všiml jsem si vašeho webu",
+  "narazil jsem na váš web",
 ] as const;
 
 /** Min./max. počet odstavců v těle e-mailu (včetně rozloučení s podpisem). */
-const SNIPER_EMAIL_PARAGRAPHS_MIN = 4;
-const SNIPER_EMAIL_PARAGRAPHS_MAX = 5;
+const SNIPER_EMAIL_PARAGRAPHS_MIN = 3;
+const SNIPER_EMAIL_PARAGRAPHS_MAX = 4;
 
 const DASH_REGEX = /[-‐‑‒–—―]/;
 
@@ -304,12 +318,41 @@ function ensureVygenerovanePredmetyCount(subjects: string[], nabizenaSluzba: str
   return out.slice(0, SNIPER_SUBJECT_VARIANTS_MAX);
 }
 
+/** Oddělí a zformátuje podpis: vždy na vlastním bloku, jméno na dalším řádku. */
+function formatClosingSignatureBlock(block: string): string {
+  const cleaned = block.replace(/\s+/g, " ").trim();
+  const match = cleaned.match(/^(S\s+(?:pozdravem|úctou))[,.]?\s*(.*)$/i);
+  if (!match) return cleaned;
+  const isUctou = /úctou/i.test(match[1] ?? "");
+  const greeting = isUctou ? "S úctou," : "S pozdravem,";
+  const rest = (match[2] ?? "").trim();
+  if (!rest) return greeting;
+  return `${greeting}\n${rest}`;
+}
+
 /** Nahradí pomlčky mezerou; u těla e-mailu zachová odstavce (oddělené prázdným řádkem). */
 function normalizeSniperEmailBody(text: string): string {
   const dashless = text.replace(DASH_REGEX, " ");
-  return dashless
+  // CTA a podpis nesmí zůstat na jednom řádku
+  const separated = dashless
+    .replace(/([.!?])\s+(S\s+(?:pozdravem|úctou)\b)/gi, "$1\n\n$2")
+    .replace(/(\?)\s+(S\s+(?:pozdravem|úctou)\b)/gi, "$1\n\n$2");
+
+  return separated
     .split(/\n\s*\n+/)
-    .map((block) => block.replace(/[ \t\r\f\v]+/g, " ").replace(/\n+/g, " ").trim())
+    .map((block) => {
+      const trimmed = block.trim();
+      if (!trimmed) return "";
+      if (/^S\s+(?:pozdravem|úctou)\b/i.test(trimmed)) {
+        return formatClosingSignatureBlock(trimmed);
+      }
+      // Pokud je podpis nalepený uprostřed bloku, rozděl
+      const glued = trimmed.match(/^(.*?)([.!?])\s+(S\s+(?:pozdravem|úctou)\b[\s\S]*)$/i);
+      if (glued?.[1] && glued[2] && glued[3]) {
+        return `${glued[1].trim()}${glued[2]}\n\n${formatClosingSignatureBlock(glued[3])}`;
+      }
+      return trimmed.replace(/[ \t\r\f\v]+/g, " ").replace(/\n+/g, " ").trim();
+    })
     .filter(Boolean)
     .join("\n\n");
 }
@@ -426,11 +469,10 @@ function finalizeSniperEmailOutput(
       return x.length > 0
         ? x
         : [
-            "Na vašem webu jste výslovně zmiňovali, komu pomáháte a v jakých situacích vás klienti nejčastěji hledají, a právě to mě přimělo napsat.",
-            `U klientů podobných vám často pomáháme s tím, aby se k vám dostali jen lidé, kteří opravdu sedí na vaši nabídku okolo ${nabizenaSluzba.trim() || "naší práce"}, takže méně času trávíte u telefonu s poptávkami, které stejně nevedou nikam.`,
-            "Obvykle začínáme krátkým postupem, který máte hned v ruce, a teprve pak ladíme detaily podle vaší reality.",
-            "Měli byste příští týden asi deset minut na krátký hovor? Stačí odpověď, co vám vyhovuje.",
-            `S pozdravem\n${authorFullName.trim() || "Váš kontakt"}`,
+            "Na webu jasně ukazujete, komu pomáháte, a právě to mě přimělo napsat.",
+            `U podobných firem často pomáháme s tím, aby se k vám dostali dřív relevantní zájemci kolem ${nabizenaSluzba.trim() || "naší práce"}.`,
+            "Měli byste příští týden deset minut na krátký hovor? Stačí napsat, co vám sedí.",
+            `S pozdravem,\n${authorFullName.trim() || "Váš kontakt"}`,
           ].join("\n\n");
     })(),
   };
@@ -469,11 +511,10 @@ function minimalFallbackSniperEmail(
       nabizenaSluzba,
     ),
     vygenerovany_email: [
-      "Z textu na vašem webu je vidět, jak konkrétně popisujete své služby a pro koho je máte nastavené.",
-      `U podobných firem často pomáháme s tím, aby se k vám dostali dřív jen relevantní zájemci okolo ${nab}, takže méně času trávíte u poptávek, které stejně nevedou nikam.`,
-      "Obvykle začínáme malým krokem, který máte hned použitelný, a teprve pak ladíme detaily podle toho, jak reálně pracujete.",
-      "Měli byste příští týden asi deset minut na krátký hovor? Stačí krátká odpověď, co vám vyhovuje.",
-      `S pozdravem\n${sign}`,
+      "Na webu jasně ukazujete, komu pomáháte a jak u vás péče vypadá, a právě to mě přimělo napsat.",
+      `U podobných praxí často pomáháme s tím, aby web líp přivedl relevantní zájemce k ${nab}, bez zbytečné vaty a dlouhých úprav.`,
+      "Měli byste příští týden deset minut na krátký hovor? Stačí napsat, co vám sedí.",
+      `S pozdravem,\n${sign}`,
     ].join("\n\n"),
   };
 }
@@ -577,7 +618,7 @@ async function fetchClientWebsiteSnippet(urlRaw: string): Promise<string> {
       .slice(0, SNIPER_WEB_TEXT_MAX);
     return text.length > 0 ? text : "(Stránka neobsahovala čitelný text.)";
   } catch {
-    return "(Obsah stránky se nepodařilo načíst — pracuj s informacemi z URL a obecným kontextem segmentu.)";
+    return "(Obsah stránky se nepodařilo načíst — pracuj jen s informacemi z URL a názvu domény. NEVYMÝŠLEJ SaaS ani jiný obor, pokud z URL jasně neplyne.)";
   } finally {
     clearTimeout(timer);
   }
@@ -688,6 +729,60 @@ function clientSiteLabelFromUrl(urlRaw: string): string {
   }
 }
 
+/** Heuristika segmentu z textu webu — přebije špatnou LLM detekci (např. SaaS u ordinace). */
+function inferSegmentFromWebsiteText(
+  text: string,
+): (typeof SNIPER_DETECTED_SEGMENTS)[number] | null {
+  const t = text.toLowerCase();
+  if (
+    /gynekolog|ordinace|klinik|lékař|lekar|pacient|zdravot|dentist|stomatolog|fyzioter|nemocnic|porodn|ultrazvuk|ambulance/.test(
+      t,
+    )
+  ) {
+    return "healthcare";
+  }
+  if (/advokát|advokat|právn|pravn|notář|notar|advokacie|\.legal\b/.test(t)) {
+    return "legal";
+  }
+  if (/restaurace|kavárna|kavarna|bistro|hospoda|menu|gastro|pizzerie|cukrárna/.test(t)) {
+    return "gastro";
+  }
+  if (/e-?shop|eshop|košík|kosik|doprava zdarma/.test(t)) {
+    return "ecommerce";
+  }
+  if (/reality|nemovitost|byt[yu]|developersk|pronájem|pronajem/.test(t)) {
+    return "reality";
+  }
+  if (/účetní|ucetni|danov|hypote|pojišťov|pojistov/.test(t)) {
+    return "finance";
+  }
+  if (/logistik|doprav|spedice|skladován|skladovan|zásilk|zasilk/.test(t)) {
+    return "logistics";
+  }
+  if (/výrob|vyrob|průmysl|prumysl|strojíren|strojiren|\bcnc\b/.test(t)) {
+    return "production";
+  }
+  if (/\bsaas\b|b2b software|cloud platform|subscription software/.test(t)) {
+    return "b2b_saas";
+  }
+  return null;
+}
+
+function resolveDetectedSegment(
+  websiteText: string,
+  modelSegment: string | null | undefined,
+): (typeof SNIPER_DETECTED_SEGMENTS)[number] | null {
+  const inferred = inferSegmentFromWebsiteText(websiteText);
+  if (inferred) return inferred;
+  if (
+    modelSegment &&
+    (SNIPER_DETECTED_SEGMENTS as readonly string[]).includes(modelSegment)
+  ) {
+    return modelSegment as (typeof SNIPER_DETECTED_SEGMENTS)[number];
+  }
+  return null;
+}
+
 function getAuthorFromSession(session: Awaited<ReturnType<typeof getSessionUser>>): SniperAuthorContext {
   const u = session.user;
   if (!u) {
@@ -705,6 +800,23 @@ function getAuthorFromSession(session: Awaited<ReturnType<typeof getSessionUser>
   return { fullName: full, firstName };
 }
 
+async function getAuthorForWorkspace(workspaceId: string): Promise<SniperAuthorContext> {
+  const owner = await prisma.user.findFirst({
+    where: { workspaceId, role: { in: ["OWNER", "ADMIN"] } },
+    orderBy: { createdAt: "asc" },
+    select: { name: true, email: true },
+  });
+  if (!owner) {
+    return { fullName: "Kolega", firstName: "Kolega" };
+  }
+  const full =
+    owner.name?.trim() ||
+    owner.email.split("@")[0]?.replace(/\./g, " ").trim() ||
+    "Kolega";
+  const firstName = full.split(/\s+/).filter(Boolean)[0] || full;
+  return { fullName: full, firstName };
+}
+
 function buildSniperSystemPrompt(
   ctx: SniperWorkspaceContext,
   author: SniperAuthorContext,
@@ -719,10 +831,14 @@ function buildSniperSystemPrompt(
     .join(", ");
   const signatureInstruction = ctx.emailSignature
     ? `Použij přesně tento podpis na konci těla e-mailu (za rozloučením):\n${ctx.emailSignature}`
-    : `řádek „S úctou“ nebo „S pozdravem“, nový řádek a podpis: ${author.fullName}.`;
+    : `řádek „S pozdravem“, nový řádek a podpis: ${author.fullName}. Nikdy nepodepisuj „Tým …“, pokud to není v profilu firmy.`;
   const personaIntro = ctx.systemPrompt.trim()
     ? ctx.systemPrompt.trim()
-    : "Jsi zkušený B2B obchodník. Píšeš cold e-maily tak, aby působily, že je napsal člověk z praxe, ne chatbot. Styl: sebevědomý, stručný, lidský, bez agresivního prodeje. Krátké věty. Žádné katalogové fráze.";
+    : [
+        "Píšeš jako zkušený člověk z praxe, ne jako copywriter ani chatbot.",
+        "Styl: elegantní, klidný, profesionální, ale ne formalistický. Krátké věty. Žádná vata.",
+        "Čtenář má pocit, že mu píše konkrétní člověk, který web opravdu viděl — ne agentura s šablonou.",
+      ].join(" ");
   const knowledgeBase = ctx.companyServices
     ? [
         "",
@@ -733,13 +849,12 @@ function buildSniperSystemPrompt(
   const taskBlock = isAutodetect
     ? [
         "TVŮJ ÚKOL (REŽIM AUTODETEKCE SLUŽBY):",
-        "Tvým úkolem je nejprve provést analýzu webu cílového klienta. Na základě této analýzy se podívej do seznamu našich detailních služeb (viz znalostní báze výše) a sám vyber, která jedna až dvě služby nejlépe vyřeší jeho problémy. Tyto služby pak přirozeně zakomponuj do e-mailu.",
-        "Pokud firma nemá na webu žádné zjevné nedostatky, nabídni jim chytré propojení jejich stávajících systémů s moderními AI nástroji.",
-        "Čtenář musí poznat, že jsi web opravdu prošel a chápeš, čím se živí. Neprodávej funkce — prodávej úsporu času a konkrétní výsledek v jejich provozu.",
+        "Nejdřív z webu pochop, čím se klient živí. Z naší znalostní báze vyber 1 službu (max. 2), která dává smysl právě jim.",
+        "E-mail postav na konkrétním postřehu z webu + jedné jasné nabídce pomoci. Žádné obecné AI/SaaS řeči.",
       ]
     : [
         "TVŮJ ÚKOL:",
-        "Z textu webu potenciálního klienta napiš prvotní cold e-mail. Čtenář musí poznat, že jsi web opravdu prošel a chápeš, čím se živí. Neprodávej funkce — prodávej úsporu času a konkrétní výsledek v jejich provozu.",
+        "Z textu webu napiš krátký cold e-mail. Čtenář musí poznat, že jsi web opravdu prošel. Jedna myšlenka, žádná vata.",
       ];
   return [
     `Píšeš obchodní e-mail jménem uživatele. Informace o jeho firmě, nabízených službách a hodnotách, které musíš v e-mailu přirozeně použít, najdeš zde:`,
@@ -750,43 +865,51 @@ function buildSniperSystemPrompt(
     "",
     ...taskBlock,
     "",
+    "STYL PSANÍ (povinné):",
+    "• Profesionální a elegantní, lehce neformální — jako zpráva od člověka, ne od marketingu.",
+    "• Max. 2 věty na odstavec. Žádné výčty benefitů (SEO, marketing, důvěryhodnost…) v řadě.",
+    "• Jedna konkrétní myšlenka z webu + jedna nabídka + měkké CTA. Nic navíc.",
+    "• Zakázaná vata: „v digitální době“, „online vizitka“, „silná digitální přítomnost“, „zvýšit důvěryhodnost“, obecné chválení webu.",
+    "• Nepoužívej oslovení typu „týme [doména]“. Piš „Dobrý den,“ nebo konkrétní jméno, pokud je na webu.",
+    "",
     "KDO PÍŠE (identita odesílatele):",
     `• Jmenuješ se ${author.fullName}. V češtině drž správný rod podle křestního jména „${author.firstName}“ (např. Jan → „četl jsem“, „napadlo mě“; Jana → ženský rod). V jiných jazycích obdobně.`,
     "• Nikdy neodvozuj název firmy odesílatele z e-mailové domény příjemce ani nehádej poskytovatele schránky. Zakázáno např. „Jan z Postu“, „Jsem ze Seznamu“. Kdo jsme, vycházej z profilu firmy výše; jinak piš obecně „U nás…“, „Zabýváme se…“.",
     "",
     "STRUKTURA JSON POLÍ:",
-    "• osloveni: pouze řádek pozdravu (např. „Dobrý den,“ nebo „Dobrý den, pane Nováku,“ pokud z webu bezpečně plyne oslovení).",
-    `• vygenerovany_email: tělo BEZ pozdravu. Striktně ${SNIPER_EMAIL_PARAGRAPHS_MIN} až ${SNIPER_EMAIL_PARAGRAPHS_MAX} krátkých odstavců. Mezi každým odstavcem prázdný řádek (v řetězci \\n\\n). Uvnitř odstavce žádné zbytečné prázdné řádky. Každý odstavec max. 2 až 3 věty.`,
+    "• osloveni: pouze řádek pozdravu (např. „Dobrý den,“). Bez domény v oslovení.",
+    `• vygenerovany_email: tělo BEZ pozdravu. Striktně ${SNIPER_EMAIL_PARAGRAPHS_MIN} až ${SNIPER_EMAIL_PARAGRAPHS_MAX} krátkých odstavců. Mezi každým odstavcem prázdný řádek (\\n\\n). Každý odstavec max. 2 věty.`,
     "",
     "STRUKTURA TĚLA (vygenerovany_email) — přesně v tomto pořadí:",
-    "1) Ledoborec (1 odstavec): První věta hned po oslovení musí obsahovat konkrétní detail z jejich webu. U právníka uveď oblast práva nebo typ klientů z webu. U řemeslníka typ realizací nebo materiálů. U agentury konkrétní službu nebo segment. Zakázány prázdné věty typu „Zaujal mě váš web“, „Prošel jsem váš web a zaujalo mě…“, „Pár postřehů k vašemu webu“. Piš, co přesně jsi na webu viděl.",
+    "1) Ledoborec: jedna konkrétní věc z webu (specializace, služba, typ klientů). Bez chvály a bez SaaS frází.",
     isAutodetect
-      ? "2) Přínos (1 odstavec): Úspora času nebo reálný výsledek v návaznosti na službu (nebo dvě), kterou jsi vybral v autodetekci. Ne vypisuj funkce ani moduly. Piš dopad: např. filtrace zájemců dřív než vám zavolají, méně ruční práce s poptávkami, rychlejší reakce na leady, méně ztracených hovorů. Čtenář musí hned chápat, co z toho má."
-      : `2) Přínos (1 odstavec): Úspora času nebo reálný výsledek v návaznosti na „${nab}“. Ne vypisuj funkce ani moduly. Piš dopad: např. filtrace zájemců dřív než vám zavolají, méně ruční práce s poptávkami, rychlejší reakce na leady, méně ztracených hovorů. Čtenář musí hned chápat, co z toho má.`,
-    "3) Jak to vypadá v praxi (1 odstavec): Krátký konkrétní princip nebo mini-příklad z naší praxe — bez technického slovníku, bez seznamu funkcí.",
-    "4) CTA (1 odstavec): Měkká výzva na krátký hovor v horizontu dní (např. zda by měli příští týden deset minut). Bez nátlaku, bez katalogu AI frází.",
-    `5) Rozloučení (poslední odstavec, volitelně sloučené s CTA pokud celkem zůstane ${SNIPER_EMAIL_PARAGRAPHS_MIN} až ${SNIPER_EMAIL_PARAGRAPHS_MAX} odstavců): ${signatureInstruction}`,
+      ? "2) Nabídka: jedna věc, kterou bychom jim mohli zlepšit / ušetřit — navázaná na jejich obor a 1 vybranou službu. Bez výčtu funkcí."
+      : `2) Nabídka: jedna věc ke zlepšení z jejich webu v návaznosti na „${nab}“. Bez výčtu funkcí a bez obecného marketingového pitchování.`,
+    "3) CTA: jen krátká otázka (např. jestli mají příští týden 10 minut). BEZ podpisu v tomto odstavci.",
+    "4) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek). Přesný formát:",
+    "   S pozdravem,",
+    `   ${author.fullName} … (nebo uložený podpis níže; jméno vždy na novém řádku pod „S pozdravem,“)`,
+    `   ${signatureInstruction}`,
     "",
     "STRIKTNÍ ZÁKAZY (porušení = neplatný výstup):",
-    "• DOMÉNY A URL: NIKDY v těle e-mailu, oslovení ani předmětech nepiš syrovou doménu, hostitele ani tvar slovo.tld. Zakázáno např. „macek.legal“, „prace.cz“, „www.neco.cz“. Místo toho piš „váš web“, „vaše kancelář“, „vaše firma“, „vaše podnikání“ apod.",
-    `• ABSOLUTNÍ ZÁKAZ SLOV: „synergie“ a „namontujeme“ — ani v jiném tvaru.${customForbiddenLine ? ` Dále zakázáno: ${customForbiddenLine}.` : ""}`,
-    "• POMLČKY: v celém textu (tělo, předměty, oslovení) je zakázán znak minus, en dash, em dash i jiné pomlčkové znaky. Piš celé věty bez pomlček.",
-    "• Zakázané typické AI závěry: „Mám pro vás rychlou myšlenku…“, „Budu se těšit na odpověď“, „Pojďme se spojit na krátký hovor“ a podobné.",
-    "• Zakázané prázdné ledoborce: „Zaujal mě váš web“, „Zaujal mě váš přístup“, „Prošel jsem váš web a zaujalo mě…“ a jakákoli obecná chvála bez konkrétního detailu z webu.",
+    "• DOMÉNY A URL: NIKDY v těle e-mailu, oslovení ani předmětech nepiš syrovou doménu, hostitele ani tvar slovo.tld. Zakázáno např. „macek.legal“, „gynekologietereza.cz“. Místo toho „vaše ordinace“, „váš web“, „vaše firma“.",
+    `• ABSOLUTNÍ ZÁKAZ SLOV/FRÁZÍ: „synergie“, „namontujeme“, „v digitální době“, „digitální přítomnost“, „online vizitka“.${customForbiddenLine ? ` Dále: ${customForbiddenLine}.` : ""}`,
+    "• POMLČKY: v celém textu je zakázán znak minus, en dash, em dash. Piš celé věty bez pomlček.",
+    "• Zakázané AI závěry: „Mám pro vás rychlou myšlenku…“, „Budu se těšit na odpověď“, „Pojďme se spojit…“.",
+    "• Zakázané prázdné ledoborce: „Zaujal mě váš web“, „Všiml jsem si vašeho webu…“ bez konkrétního detailu.",
     "",
     "PŘEDMĚTY (pole vygenerovane_predmety):",
     `• Vrať ${SNIPER_SUBJECT_VARIANTS_MIN} až ${SNIPER_SUBJECT_VARIANTS_MAX} různých předmětů, žádné duplicity.`,
-    `• Délka každého předmětu: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov. Začni malým písmenem. Žádná suchá klíčová slova ani reklamní štítky.`,
+    `• Délka každého předmětu: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov. Začni malým písmenem. Lidsky, ne reklamně.`,
     "• V předmětech platí stejný zákaz syrových domén, URL a pomlček jako výše.",
     "",
     "Psychologické vzorce předmětů (každý vzorec právě jednou, v rozumném pořadí):",
-    "A) Konkrétní postřeh k obsahu webu (ne obecné „k vašemu webu“).",
-    "B) Konkrétní dotaz na jejich službu nebo způsob práce z textu webu.",
+    "A) Konkrétní postřeh k obsahu webu.",
+    "B) Konkrétní dotaz na jejich službu z textu webu.",
     isAutodetect
       ? "C) Propojení jejich světa s tou naší službou, kterou jsi vybral podle analýzy webu."
       : `C) Propojení jejich světa s nabídkou „${nab}“.`,
     "D) Neformální přímý dotaz k tématu z webu.",
-    "Závorky v příkladech nahraď konkrétními slovy z webu klienta.",
     "",
     "Výstup: striktně JSON podle schématu, bez markdownu kolem.",
   ].join("\n");
@@ -794,13 +917,24 @@ function buildSniperSystemPrompt(
 
 function buildLanguageToneSegmentBlock(params: GenerateEmailParams): string {
   const isAutodetect = params.selectedOfferedService?.trim() === SNIPER_AUTODETECT_VALUE;
+  const toneHint =
+    params.tone === "friendly"
+      ? "přátelský = klidný a lidský, ne familiární a ne marketingově „uvolněný“"
+      : params.tone === "professional"
+        ? "profesionální = elegantní a věcný, ne úřední"
+        : params.tone === "nobullshit"
+          ? "stručný a úderný, bez ozdob"
+          : params.tone;
+
   return [
     `Jazyk výstupu (všechny textové pole v JSON): ${params.language}`,
-    `Tón: ${params.tone}`,
-    `Segment klienta (orientační kontext): ${params.segment}`,
+    `Tón: ${params.tone} (${toneHint})`,
+    "SEGMENT KLIENTA: Vždy odvoď VÝHRADNĚ z textu webu (např. gynekologická ordinace → healthcare). Nikdy nevnucuj B2B SaaS.",
+    "STYL: elegantní, věcný, krátký. Žádná AI vata („digitální doba“, „vizitka“, výčet SEO/marketing).",
+    "ZÁKLAD: 1) co firma dělá, 2) jedna konkrétní příležitost, 3) jak pomůžeme, 4) měkké CTA.",
     isAutodetect
-      ? "Službu vyber sám: na základě analýzy webu klienta zvol z naší znalostní báze 1 až 2 nejvhodnější služby."
-      : `Služba, kterou v tomto e-mailu primárně nabízíš (z nabídky uživatele): ${params.selectedOfferedService}`,
+      ? "Službu vyber sám: 1 (max. 2) z naší znalostní báze podle webu."
+      : `Služba, kterou v tomto e-mailu primárně nabízíš: ${params.selectedOfferedService}`,
   ].join("\n");
 }
 
@@ -861,7 +995,8 @@ async function generateWithValidation<T>(args: {
 }
 
 type SniperGenerationInput = {
-  session: Awaited<ReturnType<typeof getSessionUser>>;
+  session?: Awaited<ReturnType<typeof getSessionUser>> | null;
+  author?: SniperAuthorContext;
   workspaceId: string;
   targetUrl: string;
   selectedOfferedService: string;
@@ -869,6 +1004,8 @@ type SniperGenerationInput = {
   tone: string;
   segment: string;
   pdfBase64?: string;
+  outreachKind?: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
+  priorEmails?: Array<{ kind: string; subject: string; body: string; sentAt: string }>;
 };
 
 /**
@@ -878,7 +1015,7 @@ type SniperGenerationInput = {
 async function runSniperEmailGeneration(
   input: SniperGenerationInput,
 ): Promise<z.infer<typeof sniperEmailOutputSchema>> {
-  const { session, workspaceId, targetUrl, selectedOfferedService, language, tone, segment, pdfBase64 } =
+  const { workspaceId, targetUrl, selectedOfferedService, language, tone, segment, pdfBase64 } =
     input;
 
   const choice = selectedOfferedService.trim();
@@ -886,7 +1023,9 @@ async function runSniperEmailGeneration(
   const offerForPrompts = isAutodetect ? "" : choice.slice(0, 80);
 
   const ctx = await loadSniperWorkspaceContext(workspaceId);
-  const author = getAuthorFromSession(session);
+  const author =
+    input.author ??
+    (input.session ? getAuthorFromSession(input.session) : { fullName: "Kolega", firstName: "Kolega" });
   const clientSiteLabel = clientSiteLabelFromUrl(targetUrl);
   const clientWebsiteData = await fetchClientWebsiteSnippet(targetUrl);
 
@@ -906,6 +1045,45 @@ async function runSniperEmailGeneration(
       ]
     : [];
 
+  const kind = input.outreachKind ?? "INITIAL";
+  const prior = input.priorEmails ?? [];
+  const outreachBlock =
+    kind === "INITIAL"
+      ? [
+          "",
+          "TYP ZPRÁVY: první cold outreach. Piš jako první kontakt — krátce, konkrétně, bez zmínky o předchozí komunikaci.",
+        ]
+      : kind === "FOLLOW_UP"
+        ? [
+            "",
+            "TYP ZPRÁVY: FOLLOW-UP (navázání na předchozí mail, na který neodpověděli).",
+            "Naváž na to, co jsi už psal — nepřepisuj stejný cold pitch. Buď kratší, jemně urgovat, nabídni konkrétní další krok.",
+            "Nepiš „posílám follow-up“ ani „připomínám se podruhé“ — piš jako člověk, co se přirozeně ozývá.",
+            prior.length
+              ? [
+                  "HISTORIE NAŠICH ODESLANÝCH MAILŮ (od nejstaršího):",
+                  ...prior.map(
+                    (m, i) =>
+                      `--- #${i + 1} [${m.kind}] ${m.sentAt} | předmět: ${m.subject}\n${m.body.slice(0, 1200)}`,
+                  ),
+                ].join("\n")
+              : "Historie mailů chybí — piš krátký follow-up obecně.",
+          ]
+        : [
+            "",
+            "TYP ZPRÁVY: BREAKUP (poslední mail v sekvenci — zdvořile uzavíráme, pokud nemají zájem).",
+            "Buď velmi krátký, lidský, bez nátlaku. Dej jim prostor se ozvat, pokud se situace změní. Žádná vina, žádný drama.",
+            prior.length
+              ? [
+                  "HISTORIE NAŠICH ODESLANÝCH MAILŮ:",
+                  ...prior.map(
+                    (m, i) =>
+                      `--- #${i + 1} [${m.kind}] ${m.sentAt} | předmět: ${m.subject}\n${m.body.slice(0, 800)}`,
+                  ),
+                ].join("\n")
+              : "",
+          ];
+
   const userPrompt = [
     `Doména / web klienta (pouze kontext pro tělo a analýzu, do předmětů ji nekopíruj): ${clientSiteLabel}`,
     "",
@@ -914,21 +1092,26 @@ async function runSniperEmailGeneration(
     "",
     buildLanguageToneSegmentBlock(params),
     ...pdfBlock,
+    ...outreachBlock,
     "",
     "Vygeneruj čistý JSON s následující strukturou (NEPŘIDÁVEJ ŽÁDNÝ MARKDOWN, POUZE JSON přes schéma):",
     "{",
     '  "contact_email": "nalezeny_email (pokud není, vrať null)",',
     '  "contact_phone": "nalezeny_telefon (pokud není, vrať null)",',
     '  "osloveni": "Vhodné oslovení (např. Dobrý den, pane Nováku, nebo jen Dobrý den,).",',
-    '  "analyza_klienta": "Jednou větou interní shrnutí pro CRM: Co firma dělá a na co se zaměřuje?",',
+    '  "analyza_klienta": "2 až 4 věty interní shrnutí z webu: 1) o jakou firmu/ordinaci jde, 2) co nabízí, 3) co by se dalo zlepšit (web/prezentace/proces), 4) jak jim naše služba pomůže. Žádné obecné SaaS fráze.",',
     `  "vygenerovane_predmety": ["varianta 1", "varianta 2", "varianta 3", "varianta 4"],`,
-    '  "vygenerovany_email": "Tělo e-mailu BEZ pozdravu (pozdrav je v osloveni). Striktně 4 až 5 krátkých odstavců (ledoborec s konkrétním detailem z webu, přínos v čase/výsledku, praxe, CTA, rozloučení s podpisem). Mezi každým odstavcem prázdný řádek (\\n\\n). Neprodávej funkce — prodávej úsporu času a reálný dopad. Drž striktní zákazy ze system promptu (žádné domény, pomlčky, synergie, namontujeme, prázdné ledoborce).",',
-    `  "detekovany_segment": "segment klienta podle analýzy webu, JEDEN z: ${SNIPER_DETECTED_SEGMENTS.join(", ")} (jinak null)",`,
-    `  "detekovany_ton": "nejvhodnější tón pro tohoto klienta, JEDEN z: ${SNIPER_DETECTED_TONES.join(", ")} (jinak null)",`,
-    `  "detekovany_jazyk": "jazyk webu klienta, JEDEN z: ${SNIPER_DETECTED_LANGUAGES.join(", ")} (jinak null)"`,
+    kind === "BREAKUP"
+      ? '  "vygenerovany_email": "Tělo BEZ pozdravu. Max 2 krátké odstavce + podpis. Breakup — krátké uzavření, prostor se ozvat později.",'
+      : kind === "FOLLOW_UP"
+        ? '  "vygenerovany_email": "Tělo BEZ pozdravu. 2 až 3 krátké odstavce. Follow-up navazující na historii, jedno CTA + podpis.",'
+        : '  "vygenerovany_email": "Tělo BEZ pozdravu. 3 až 4 krátké odstavce. Konkrétní detail z webu, jedna nabídka, CTA+podpis. Elegantní a věcné — žádná AI vata, žádné domény, žádné pomlčky.",',
+    `  "detekovany_segment": "segment z webu, JEDEN z: ${SNIPER_DETECTED_SEGMENTS.join(", ")} (jinak null)",`,
+    `  "detekovany_ton": "nejvhodnější tón, JEDEN z: ${SNIPER_DETECTED_TONES.join(", ")} (jinak null)",`,
+    `  "detekovany_jazyk": "jazyk webu, JEDEN z: ${SNIPER_DETECTED_LANGUAGES.join(", ")} (jinak null)"`,
     "}",
     "",
-    "K detekci parametrů: detekovany_segment, detekovany_ton a detekovany_jazyk urči z reálné analýzy webu klienta. Vrať vždy přesně jednu z povolených hodnot (přesné klíče výše), nebo null, pokud to z webu nejde spolehlivě určit. Tyto hodnoty neovlivňují jazyk tohoto e-mailu (ten řídí parametry výše), slouží k doporučení nastavení.",
+    "detekovany_segment urči jen z webu (ordinace → healthcare). E-mail piš podle faktů z webu, ne podle šablony SaaS.",
     "",
     "Důležité k vygenerovane_predmety:",
     `- Pole musí obsahovat ${SNIPER_SUBJECT_VARIANTS_MIN} až ${SNIPER_SUBJECT_VARIANTS_MAX} různých předmětů.`,
@@ -964,7 +1147,13 @@ async function runSniperEmailGeneration(
       last
         ? finalizeSniperEmailOutput(last, offerForPrompts, author.fullName)
         : minimalFallbackSniperEmail(clientSiteLabel, offerForPrompts, author.fullName),
-  });
+  }).then((object) => ({
+    ...object,
+    detekovany_segment: resolveDetectedSegment(
+      clientWebsiteData,
+      object.detekovany_segment,
+    ),
+  }));
 }
 
 export async function generateEmailContent(params: GenerateEmailParams) {
@@ -1041,12 +1230,19 @@ export type GeneratedLeadEmail =
   | { error: string };
 
 /**
- * Vygeneruje Sniper e-mail pro lead bez odeslání (Autopilot fronta).
+ * Vygeneruje Sniper e-mail pro lead bez odeslání (Autopilot fronta / follow-up / breakup).
+ * `workspaceId` umožní běh z cronu bez session.
  */
-export async function generateEmailForLead(leadId: string): Promise<GeneratedLeadEmail> {
+export async function generateEmailForLead(
+  leadId: string,
+  options?: {
+    workspaceId?: string;
+    kind?: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
+  },
+): Promise<GeneratedLeadEmail> {
   try {
-    const session = await getSessionUser();
-    const workspaceId = session.user?.workspaceId;
+    const session = options?.workspaceId ? null : await getSessionUser();
+    const workspaceId = options?.workspaceId?.trim() || session?.user?.workspaceId;
     if (!workspaceId) {
       return { error: "Nejste přihlášen." };
     }
@@ -1059,8 +1255,17 @@ export async function generateEmailForLead(leadId: string): Promise<GeneratedLea
       return { error: "Chybí ID leadu." };
     }
 
+    const kind = options?.kind ?? "INITIAL";
+
+    const workspaceCredits = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { creditsTotal: true, creditsUsed: true, emailSignature: true },
+    });
+    if (!workspaceCredits) {
+      return { error: "Workspace nenalezen." };
+    }
     const creditsLeft =
-      (session.workspace?.creditsTotal ?? 0) - (session.workspace?.creditsUsed ?? 0);
+      (workspaceCredits.creditsTotal ?? 0) - (workspaceCredits.creditsUsed ?? 0);
     if (creditsLeft <= 0) {
       return { error: "Nedostatek kreditů." };
     }
@@ -1090,24 +1295,52 @@ export async function generateEmailForLead(leadId: string): Promise<GeneratedLea
     }
     const targetUrl = /^https?:\/\//i.test(website) ? website : `https://${website}`;
 
+    const priorRows = await prisma.emailQueue.findMany({
+      where: { leadId: lead.id, status: "SENT" },
+      orderBy: [{ sentAt: "asc" }, { createdAt: "asc" }],
+      take: 6,
+      select: {
+        kind: true,
+        subject: true,
+        htmlBody: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+    const { stripHtmlToText } = await import("@/lib/outreach");
+    const priorEmails = priorRows.map((row) => ({
+      kind: row.kind,
+      subject: row.subject,
+      body: stripHtmlToText(row.htmlBody).slice(0, 1500),
+      sentAt: (row.sentAt ?? row.createdAt).toISOString().slice(0, 10),
+    }));
+
+    const author = session
+      ? getAuthorFromSession(session)
+      : await getAuthorForWorkspace(workspaceId);
+
     const object = await runSniperEmailGeneration({
       session,
+      author,
       workspaceId,
       targetUrl,
       selectedOfferedService: SNIPER_AUTODETECT_VALUE,
       language: "cs",
       tone: "friendly",
-      segment: "b2b_saas",
+      segment: "auto",
+      outreachKind: kind,
+      priorEmails,
     });
 
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { emailSignature: true },
-    });
-    const savedSignature = (workspace?.emailSignature ?? "").trim();
+    const savedSignature = (workspaceCredits.emailSignature ?? "").trim();
 
     const subject =
-      object.vygenerovane_predmety[0]?.trim() || `Nápad pro ${lead.companyName}`;
+      object.vygenerovane_predmety[0]?.trim() ||
+      (kind === "BREAKUP"
+        ? `Poslední zpráva — ${lead.companyName}`
+        : kind === "FOLLOW_UP"
+          ? `Ještě jedna myšlenka — ${lead.companyName}`
+          : `Nápad pro ${lead.companyName}`);
     const generatedBody = `${object.osloveni}\n\n${object.vygenerovany_email}`;
     const body = appendEmailSignatureIfMissing(generatedBody, savedSignature);
 

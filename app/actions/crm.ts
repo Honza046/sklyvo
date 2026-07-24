@@ -1,6 +1,8 @@
 "use server";
 
 import { getSessionUser } from "@/app/actions/auth";
+import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
+import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -9,7 +11,14 @@ type CrmLead = {
   company: string;
   url: string;
   status: "new" | "contacted" | "follow_up" | "meeting";
-  leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+  leadStatus:
+    | "NEW"
+    | "CONTACTED"
+    | "REPLIED"
+    | "MEETING_SET"
+    | "CLOSED_WON"
+    | "CLOSED_LOST"
+    | "BREAK_UP";
   date: string;
   createdAt: string;
   value: number;
@@ -17,12 +26,24 @@ type CrmLead = {
   placeId: string | null;
   email: string;
   phone: string;
+  author: string;
+  lastContactedAt: string | null;
+  nextOutreachAt: string | null;
+  nextOutreachKind: "INITIAL" | "FOLLOW_UP" | "BREAKUP" | null;
+  outreachDue: boolean;
 };
 
 function mapLeadStatus(status: string): CrmLead["status"] {
   if (status === "CONTACTED") return "contacted";
   if (status === "REPLIED") return "follow_up";
-  if (status === "MEETING_SET" || status === "CLOSED_WON" || status === "CLOSED_LOST") return "meeting";
+  if (
+    status === "MEETING_SET" ||
+    status === "CLOSED_WON" ||
+    status === "CLOSED_LOST" ||
+    status === "BREAK_UP"
+  ) {
+    return "meeting";
+  }
   return "new";
 }
 
@@ -65,25 +86,43 @@ export async function getLeads() {
       contactEmail: true,
       contactPhone: true,
       status: true,
+      author: true,
       createdAt: true,
       value: true,
+      lastContactedAt: true,
+      nextOutreachAt: true,
+      nextOutreachKind: true,
     },
   });
 
-  const leads: CrmLead[] = leadsRaw.map((lead) => ({
-    id: lead.id,
-    company: lead.companyName,
-    url: lead.domain ?? "",
-    status: mapLeadStatus(lead.status),
-    leadStatus: lead.status,
-    date: lead.createdAt.toLocaleDateString("cs-CZ"),
-    createdAt: lead.createdAt.toISOString(),
-    value: lead.value ?? 0,
-    avatar: getInitials(lead.companyName),
-    placeId: lead.placeId ?? null,
-    email: (lead.contactEmail ?? lead.email ?? "").trim(),
-    phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
-  }));
+  const now = Date.now();
+  const leads: CrmLead[] = leadsRaw.map((lead) => {
+    const nextAt = lead.nextOutreachAt?.getTime() ?? null;
+    const outreachDue = Boolean(
+      nextAt != null &&
+        nextAt <= now &&
+        (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
+    );
+    return {
+      id: lead.id,
+      company: lead.companyName,
+      url: lead.domain ?? "",
+      status: mapLeadStatus(lead.status),
+      leadStatus: lead.status,
+      date: lead.createdAt.toLocaleDateString("cs-CZ"),
+      createdAt: lead.createdAt.toISOString(),
+      value: lead.value ?? 0,
+      avatar: getInitials(lead.companyName),
+      placeId: lead.placeId ?? null,
+      email: (lead.contactEmail ?? lead.email ?? "").trim(),
+      phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
+      author: (lead.author ?? "").trim(),
+      lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
+      nextOutreachAt: lead.nextOutreachAt?.toISOString() ?? null,
+      nextOutreachKind: lead.nextOutreachKind,
+      outreachDue,
+    };
+  });
 
   return { leads };
 }
@@ -121,6 +160,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
       contactEmail: email,
       contactPhone,
       status: "NEW",
+      source: "RADAR",
       workspaceId: session.workspace.id,
       industry: null,
     } as any,
@@ -132,6 +172,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
   revalidatePath("/crm");
   revalidatePath("/radar");
   revalidatePath("/");
+  scheduleCrmSheetsSync(session.workspace.id);
 
   return { success: true as const, leadId: lead.id };
 }
@@ -176,6 +217,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
       contactPhone: cp,
       value,
       status: "NEW",
+      source: "MANUAL",
       workspaceId: session.workspace.id,
       industry: null,
     } as any,
@@ -184,6 +226,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
 
   revalidatePath("/crm");
   revalidatePath("/");
+  scheduleCrmSheetsSync(session.workspace.id);
 
   return { success: true as const, leadId: lead.id };
 }
@@ -255,6 +298,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     phone: string | null;
     contactPhone: string | null;
     status: "NEW";
+    source: "RADAR";
     workspaceId: string;
     industry: null;
     contactEmail: string | null;
@@ -281,6 +325,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       contactPhone: lead.contactPhone,
       contactEmail: lead.email,
       status: "NEW",
+      source: "RADAR" as const,
       workspaceId,
       industry: null,
     });
@@ -296,6 +341,9 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
   revalidatePath("/crm");
   revalidatePath("/radar");
   revalidatePath("/");
+  if (toCreate.length > 0) {
+    scheduleCrmSheetsSync(workspaceId);
+  }
 
   const inCrmPlaceIds = Array.from(
     new Set(
@@ -313,7 +361,14 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
   };
 }
 
-type LeadStatusInput = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+type LeadStatusInput =
+  | "NEW"
+  | "CONTACTED"
+  | "REPLIED"
+  | "MEETING_SET"
+  | "CLOSED_WON"
+  | "CLOSED_LOST"
+  | "BREAK_UP";
 
 export async function bulkUpdateLeads(
   ids: string[],
@@ -343,6 +398,9 @@ export async function bulkUpdateLeads(
   });
 
   revalidatePath("/crm");
+  if (result.count > 0) {
+    scheduleCrmSheetsSync(session.workspace.id);
+  }
   return { updatedCount: result.count };
 }
 
@@ -362,6 +420,9 @@ export async function bulkDeleteLeads(ids: string[]) {
   });
 
   revalidatePath("/crm");
+  if (result.count > 0) {
+    scheduleCrmSheetsSync(session.workspace.id);
+  }
   return { deletedCount: result.count };
 }
 
@@ -414,6 +475,9 @@ export async function updateLeadDetails(
 
   revalidatePath("/crm");
   revalidatePath("/");
+  if (result.count > 0) {
+    scheduleCrmSheetsSync(session.workspace.id);
+  }
   return { success: true as const, updatedCount: result.count };
 }
 
@@ -433,5 +497,113 @@ export async function updateSingleLeadStatus(id: string, status: LeadStatusInput
   });
 
   revalidatePath("/crm");
+  if (result.count > 0) {
+    scheduleCrmSheetsSync(session.workspace.id);
+  }
   return { success: true as const, updatedCount: result.count };
+}
+
+function hasContactValue(raw: string | null | undefined) {
+  const v = (raw ?? "").trim();
+  return Boolean(v) && v !== "-";
+}
+
+/**
+ * Deep scrape webů vybraných leadů — doplní chybějící e-mail / telefon.
+ * Běží s omezenou paralelitou (4), aby servery webů nepadaly.
+ */
+export async function bulkScrapeLeadContacts(ids: string[]) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const uniqueIds = Array.from(new Set((ids ?? []).filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return {
+      scanned: 0,
+      updated: 0,
+      emailsFound: 0,
+      phonesFound: 0,
+      skippedNoWeb: 0,
+      failed: 0,
+    };
+  }
+
+  const leads = await prisma.lead.findMany({
+    where: { workspaceId: session.workspace.id, id: { in: uniqueIds } },
+    select: {
+      id: true,
+      domain: true,
+      email: true,
+      contactEmail: true,
+      phone: true,
+      contactPhone: true,
+    },
+  });
+
+  let updated = 0;
+  let emailsFound = 0;
+  let phonesFound = 0;
+  let skippedNoWeb = 0;
+  let failed = 0;
+
+  await mapPool(leads, 4, async (lead) => {
+    const web = (lead.domain ?? "").trim();
+    if (!web) {
+      skippedNoWeb += 1;
+      return;
+    }
+
+    try {
+      const scraped = await scrapeWebsiteContacts(web);
+      const needEmail =
+        !hasContactValue(lead.contactEmail) && !hasContactValue(lead.email);
+      const needPhone =
+        !hasContactValue(lead.contactPhone) && !hasContactValue(lead.phone);
+
+      const data: {
+        email?: string;
+        contactEmail?: string;
+        phone?: string;
+        contactPhone?: string;
+      } = {};
+
+      if (needEmail && scraped.email) {
+        data.email = scraped.email;
+        data.contactEmail = scraped.email;
+        emailsFound += 1;
+      }
+      if (needPhone && scraped.phone) {
+        data.phone = scraped.phone;
+        data.contactPhone = scraped.phone;
+        phonesFound += 1;
+      }
+
+      if (Object.keys(data).length === 0) return;
+
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data,
+      });
+      updated += 1;
+    } catch {
+      failed += 1;
+    }
+  });
+
+  revalidatePath("/crm");
+  revalidatePath("/");
+  if (updated > 0) {
+    scheduleCrmSheetsSync(session.workspace.id);
+  }
+
+  return {
+    scanned: leads.length,
+    updated,
+    emailsFound,
+    phonesFound,
+    skippedNoWeb,
+    failed,
+  };
 }

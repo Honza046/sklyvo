@@ -50,6 +50,17 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
     appPassword: "",
   });
 
+  const applySeznamPreset = () => {
+    setSmtpProvider("CUSTOM_SMTP");
+    setForm((prev) => ({
+      ...prev,
+      senderEmail: prev.senderEmail.trim() || "jan@venegard.com",
+      senderName: prev.senderName.trim() || "Jan Sedlář",
+      smtpHost: "smtp.seznam.cz",
+      smtpPort: "465",
+    }));
+  };
+
   useEffect(() => {
     setState(initialState);
     setForm((prev) => ({
@@ -64,6 +75,21 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
   useEffect(() => {
     const connected = searchParams.get("emailConnected");
     const error = searchParams.get("emailError");
+    const smtpMode = searchParams.get("smtpMode");
+    const smtpHost = searchParams.get("smtpHost");
+    const smtpPort = searchParams.get("smtpPort");
+
+    if (smtpMode === "OUTLOOK_SMTP" || smtpMode === "CUSTOM_SMTP") {
+      setSmtpProvider(smtpMode);
+    }
+    if (smtpHost || smtpPort) {
+      setForm((prev) => ({
+        ...prev,
+        ...(smtpHost ? { smtpHost } : {}),
+        ...(smtpPort ? { smtpPort } : {}),
+      }));
+    }
+
     if (connected === "google") {
       toast.success(t("settings.emailIntegration.connectedGoogle"));
       router.replace(`/settings#${EMAIL_SETUP_SETTINGS_HASH}`, { scroll: false });
@@ -76,11 +102,24 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.location.hash !== `#${EMAIL_SETUP_SETTINGS_HASH}`) return;
-    document.getElementById("email-integration-trigger")?.click();
-    const target = document.getElementById(EMAIL_SETUP_SETTINGS_HASH);
-    window.setTimeout(() => {
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
+    // #region agent log
+    fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "dc49be",
+      },
+      body: JSON.stringify({
+        sessionId: "dc49be",
+        runId: "post-fix",
+        hypothesisId: "E",
+        location: "email-integration-panel.tsx:hash-effect",
+        message: "Email panel saw deep-link hash (open owned by SettingsAccordion)",
+        data: { hash: window.location.hash },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
   }, []);
 
   const handleGoogleConnect = () => {
@@ -124,7 +163,7 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
     : "border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/20";
 
   return (
-    <div id={EMAIL_SETUP_SETTINGS_HASH} className="space-y-5 scroll-mt-24">
+    <div className="space-y-5">
       <p className="text-sm text-muted-foreground">{t("settings.emailIntegration.description")}</p>
 
       <div className={cn("rounded-2xl border p-4", statusCardClass)}>
@@ -204,7 +243,7 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
             </div>
           </div>
 
-          <div className="mb-4 flex gap-2">
+          <div className="mb-4 flex flex-wrap gap-2">
             <button
               type="button"
               className={smtpModeToggleClass(smtpProvider === "OUTLOOK_SMTP")}
@@ -221,12 +260,31 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
             </button>
             <button
               type="button"
-              className={smtpModeToggleClass(smtpProvider === "CUSTOM_SMTP")}
+              className={smtpModeToggleClass(
+                smtpProvider === "CUSTOM_SMTP" && form.smtpHost.includes("seznam"),
+              )}
+              onClick={applySeznamPreset}
+            >
+              Seznam
+            </button>
+            <button
+              type="button"
+              className={smtpModeToggleClass(
+                smtpProvider === "CUSTOM_SMTP" && !form.smtpHost.includes("seznam"),
+              )}
               onClick={() => setSmtpProvider("CUSTOM_SMTP")}
             >
               {t("settings.emailIntegration.customSmtp")}
             </button>
           </div>
+
+          {form.smtpHost.includes("seznam") && (
+            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+              Seznam: heslo k{" "}
+              <strong>jan@venegard.com</strong> (nebo heslo aplikace ze Seznam účtu). Host{" "}
+              <code className="font-mono">smtp.seznam.cz</code>, port <code className="font-mono">465</code>.
+            </p>
+          )}
 
           <div className="space-y-3">
             <div className="space-y-1.5">

@@ -29,8 +29,8 @@ import { SNIPER_AUTODETECT_VALUE, SNIPER_OFFER_OPTIONS } from "@/lib/constants";
 type OptionMeta = { label: string; emoji: string };
 
 const toneMap: Record<string, OptionMeta> = {
-  friendly: { label: "Přátelský a uvolněný", emoji: "🤝" },
-  professional: { label: "Přísně profesionální", emoji: "💼" },
+  friendly: { label: "Elegantní a lidský", emoji: "🤝" },
+  professional: { label: "Věcný a profesionální", emoji: "💼" },
   assertive: { label: "Asertivní", emoji: "⚡" },
   nobullshit: { label: "Stručný a úderný", emoji: "🎯" },
   educational: { label: "Hodnotový", emoji: "💡" },
@@ -78,11 +78,11 @@ S pozdravem`;
 const SNIPER_HELP_SECTIONS = [
   {
     title: "Ikona nastavení (vlevo dole)",
-    description: "Otevře filtry pro volbu tónu, jazyka a persony e-mailu.",
+    description: "Otevře filtry pro volbu tónu a jazyka e-mailu. Segment se určí automaticky z webu.",
   },
   {
     title: "Cílová URL adresa",
-    description: "Web klienta, který AI přečte a zanalyzuje.",
+    description: "Web klienta, který AI projde — zjistí obor, nabídku a na co navázat.",
   },
   {
     title: "Přidat PDF kontext",
@@ -110,6 +110,7 @@ function parseSniperEmailPayload(data: unknown): {
   vygenerovany_email: string;
   vygenerovane_predmety: string[];
   contact_email: string | null;
+  analyza_klienta: string | null;
   detected_segment: string | null;
   detected_tone: string | null;
   detected_language: string | null;
@@ -143,6 +144,7 @@ function parseSniperEmailPayload(data: unknown): {
     vygenerovany_email,
     vygenerovane_predmety,
     contact_email: optStr(["contact_email", "contactEmail"]),
+    analyza_klienta: optStr(["analyza_klienta", "analyzaKlienta", "client_analysis"]),
     detected_segment: optStr(["detekovany_segment", "detected_segment", "detectedSegment"]),
     detected_tone: optStr(["detekovany_ton", "detected_tone", "detectedTone"]),
     detected_language: optStr(["detekovany_jazyk", "detected_language", "detectedLanguage"]),
@@ -188,16 +190,16 @@ function SniperContent() {
 
   const [language, setLanguage] = useState("cs");
   const [tone, setTone] = useState("friendly");
-  const [segment, setSegment] = useState("b2b_saas");
 
   /**
    * Parametry skutečně použité u právě zobrazeného e-mailu (zmrazené při generování).
-   * Odznáčky čtou z tohoto stavu, ne z živých selectů — uživatel může selecty volně překlikávat.
+   * Segment vždy z detekce webu — už se nevybírá ručně.
    */
   const [generatedParams, setGeneratedParams] = useState<{
-    segment: string;
+    segment: string | null;
     tone: string;
     language: string;
+    analysis: string | null;
   } | null>(null);
 
   /** Typ nabídky — statický katalog. Výchozí je chytrá autodetekce AI. */
@@ -289,7 +291,7 @@ function SniperContent() {
         selectedOfferedService: selectedOffer,
         language,
         tone,
-        segment,
+        segment: "auto",
         pdfData,
       });
 
@@ -315,21 +317,21 @@ function SniperContent() {
         const bodyCombined = `${d.osloveni}\n\n${d.vygenerovany_email}`;
         setEditableBody(bodyCombined);
 
-        // Parametry skutečně použité u tohoto e-mailu: detekce z webu (pokud je validní),
-        // jinak hodnoty zvolené v selectech při generování.
         const finalSegment =
-          d.detected_segment && segmentMap[d.detected_segment] ? d.detected_segment : segment;
+          d.detected_segment && segmentMap[d.detected_segment] ? d.detected_segment : null;
         const finalTone = d.detected_tone && toneMap[d.detected_tone] ? d.detected_tone : tone;
         const finalLanguage =
           d.detected_language && languageFlagMap[d.detected_language] ? d.detected_language : language;
 
-        // Živé selecty srovnáme na použité hodnoty; uživatel je pak může volně překlikávat.
-        setSegment(finalSegment);
         setTone(finalTone);
         setLanguage(finalLanguage);
 
-        // Zmrazený stav pro odznáčky — mění se jen společně s textem při (pře)generování.
-        setGeneratedParams({ segment: finalSegment, tone: finalTone, language: finalLanguage });
+        setGeneratedParams({
+          segment: finalSegment,
+          tone: finalTone,
+          language: finalLanguage,
+          analysis: d.analyza_klienta,
+        });
         setEmailTarget((prev) => {
           const trimmed = prev.trim();
           if (trimmed) return prev;
@@ -374,7 +376,7 @@ function SniperContent() {
         selectedOfferedService: selectedOffer,
         language,
         tone,
-        segment,
+        segment: "auto",
       });
 
       if ("error" in result && result.error) {
@@ -595,21 +597,9 @@ function SniperContent() {
                         </Select>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Cílový segment</label>
-                        <Select value={segment} onValueChange={setSegment}>
-                          <SelectTrigger className="h-9 rounded-lg text-xs bg-background">
-                            <SelectValue placeholder="Vyberte segment" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-card shadow-lg border-border/60">
-                            {Object.entries(segmentMap).map(([value, { label, emoji }]) => (
-                              <SelectItem key={value} value={value}>
-                                {emoji} {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+                        Segment (obor klienta) se určí automaticky z webu — už se nevybírá ručně, ať e-mail sedí na reálnou firmu.
+                      </p>
                     </div>
                   </div>
                 </PopoverContent>
@@ -688,8 +678,9 @@ function SniperContent() {
                 
                 <div className="flex flex-wrap gap-2">
                   <span className="px-2.5 py-1 rounded-md bg-blue-50 border border-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400">
-                    {segmentMap[generatedParams?.segment ?? ""]?.emoji}{" "}
-                    {segmentMap[generatedParams?.segment ?? ""]?.label}
+                    {generatedParams?.segment && segmentMap[generatedParams.segment]
+                      ? `${segmentMap[generatedParams.segment].emoji} ${segmentMap[generatedParams.segment].label}`
+                      : "🔍 Z webu"}
                   </span>
                   <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
                     {toneMap[generatedParams?.tone ?? ""]?.emoji}{" "}
@@ -701,6 +692,17 @@ function SniperContent() {
                   </span>
                 </div>
               </div>
+
+              {generatedParams?.analysis && (
+                <div className="mb-6 rounded-xl border border-emerald-200/80 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800 dark:text-emerald-300">
+                    Analýza webu
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-emerald-950/90 dark:text-emerald-100/90">
+                    {generatedParams.analysis}
+                  </p>
+                </div>
+              )}
               
               <div className="space-y-6">
                 <div className="space-y-2">

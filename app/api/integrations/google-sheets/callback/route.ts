@@ -1,37 +1,40 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getGoogleSheetsOAuthConfig } from "@/lib/google-sheets-oauth";
+import {
+  createCrmSpreadsheet,
+  writeVenegardCrmWorkbook,
+} from "@/lib/google-sheets-sync";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const { appUrl, clientId, clientSecret, redirectUri } = getGoogleSheetsOAuthConfig();
   const settingsUrl = new URL("/settings", appUrl);
-  settingsUrl.hash = "email-integration";
+  settingsUrl.hash = "integrations";
 
   const code = request.nextUrl.searchParams.get("code");
   const workspaceId = request.nextUrl.searchParams.get("state");
   const oauthError = request.nextUrl.searchParams.get("error");
 
   if (oauthError) {
-    settingsUrl.searchParams.set("emailError", encodeURIComponent("Google připojení bylo zrušeno."));
+    settingsUrl.searchParams.set(
+      "sheetsError",
+      encodeURIComponent("Google Sheets připojení bylo zrušeno."),
+    );
     return NextResponse.redirect(settingsUrl);
   }
 
   if (!code || !workspaceId) {
     settingsUrl.searchParams.set(
-      "emailError",
+      "sheetsError",
       encodeURIComponent("Chybí autorizační kód od Google."),
     );
     return NextResponse.redirect(settingsUrl);
   }
 
-  const clientId = process.env.GOOGLE_EMAIL_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_EMAIL_CLIENT_SECRET?.trim();
-  const redirectUri =
-    process.env.GOOGLE_EMAIL_REDIRECT_URI?.trim() || `${appUrl}/api/email/google/callback`;
-
   if (!clientId || !clientSecret) {
     settingsUrl.searchParams.set(
-      "emailError",
-      encodeURIComponent("Google OAuth není na serveru nakonfigurován."),
+      "sheetsError",
+      encodeURIComponent("Google Sheets OAuth není na serveru nakonfigurován."),
     );
     return NextResponse.redirect(settingsUrl);
   }
@@ -58,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok || !tokenJson.access_token) {
       settingsUrl.searchParams.set(
-        "emailError",
+        "sheetsError",
         encodeURIComponent(tokenJson.error_description ?? "Google token exchange selhal."),
       );
       return NextResponse.redirect(settingsUrl);
@@ -67,63 +70,85 @@ export async function GET(request: NextRequest) {
     const profileResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokenJson.access_token}` },
     });
-    const profile = (await profileResponse.json()) as { email?: string; name?: string };
+    const profile = (await profileResponse.json()) as { email?: string };
+
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+
+    const title = `Venegard CRM – ${workspace?.name?.trim() || "workspace"}`;
+    const sheetName = "Vše";
+    const created = await createCrmSpreadsheet(tokenJson.access_token, title);
+
+    await writeVenegardCrmWorkbook({
+      accessToken: tokenJson.access_token,
+      spreadsheetId: created.spreadsheetId,
+      workspaceId,
+    });
 
     const expiresAt =
       typeof tokenJson.expires_in === "number"
         ? new Date(Date.now() + tokenJson.expires_in * 1000)
         : null;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'D',location:'google/callback/route.ts:tokens',message:'Google OAuth tokens received',data:{hasAccessToken:Boolean(tokenJson.access_token),hasRefreshToken:Boolean(tokenJson.refresh_token),willPreserveExistingRefresh:!tokenJson.refresh_token},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-
-    const existing = await prisma.workspaceEmailConnection.findUnique({
+    const existing = await prisma.workspaceGoogleSheetsConnection.findUnique({
       where: { workspaceId },
       select: { googleRefreshToken: true },
     });
     const refreshToken =
       tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
 
-    await prisma.workspaceEmailConnection.upsert({
+    await prisma.workspaceGoogleSheetsConnection.upsert({
       where: { workspaceId },
       create: {
         workspaceId,
-        provider: "GOOGLE",
         status: "CONNECTED",
-        senderName: profile.name?.trim() || null,
-        senderEmail: profile.email?.trim() || null,
         googleAccessToken: tokenJson.access_token,
         googleRefreshToken: refreshToken,
         googleTokenExpiresAt: expiresAt,
-        connectedAt: new Date(),
+        googleAccountEmail: profile.email?.trim() || null,
+        spreadsheetId: created.spreadsheetId,
+        spreadsheetUrl: created.spreadsheetUrl,
+        spreadsheetTitle: title,
+        sheetName,
+        syncEnabled: true,
+        lastSyncedAt: new Date(),
         lastError: null,
+        connectedAt: new Date(),
       },
       update: {
-        provider: "GOOGLE",
         status: "CONNECTED",
-        senderName: profile.name?.trim() || null,
-        senderEmail: profile.email?.trim() || null,
-        smtpHost: null,
-        smtpPort: null,
-        smtpSecret: null,
         googleAccessToken: tokenJson.access_token,
         ...(tokenJson.refresh_token
           ? { googleRefreshToken: tokenJson.refresh_token }
-          : {}),
+          : refreshToken
+            ? { googleRefreshToken: refreshToken }
+            : {}),
         googleTokenExpiresAt: expiresAt,
-        connectedAt: new Date(),
+        googleAccountEmail: profile.email?.trim() || null,
+        spreadsheetId: created.spreadsheetId,
+        spreadsheetUrl: created.spreadsheetUrl,
+        spreadsheetTitle: title,
+        sheetName,
+        syncEnabled: true,
+        lastSyncedAt: new Date(),
         lastError: null,
+        connectedAt: new Date(),
       },
     });
 
-    settingsUrl.searchParams.set("emailConnected", "google");
+    settingsUrl.searchParams.set("sheetsConnected", "1");
     return NextResponse.redirect(settingsUrl);
   } catch (error) {
-    console.error("Google email OAuth callback:", error);
+    console.error("Google Sheets OAuth callback:", error);
     settingsUrl.searchParams.set(
-      "emailError",
-      encodeURIComponent("Nepodařilo se dokončit Google propojení."),
+      "sheetsError",
+      encodeURIComponent(
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se dokončit Google Sheets propojení.",
+      ),
     );
     return NextResponse.redirect(settingsUrl);
   }

@@ -21,12 +21,26 @@ enum LeadStatus {
   MEETING_SET
   CLOSED_WON
   CLOSED_LOST
+  /** Breakup — poslední mail / ukončení outreach. */
+  BREAK_UP
+}
+
+enum LeadSource {
+  RADAR
+  SNIPER
+  MANUAL
 }
 
 enum EmailQueueStatus {
   PENDING
   SENT
   FAILED
+}
+
+enum OutreachKind {
+  INITIAL
+  FOLLOW_UP
+  BREAKUP
 }
 
 enum EmailConnectionProvider {
@@ -111,6 +125,7 @@ model Workspace {
   activityLogs  ActivityLog[]
   radarSettings RadarSettings?
   emailConnection WorkspaceEmailConnection?
+  googleSheetsConnection WorkspaceGoogleSheetsConnection?
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -133,6 +148,8 @@ model RadarSettings {
   scheduleTime      String    @default("03:00")
   resultsPerQuery   Int       @default(8)
   maxCompaniesPerRun Int      @default(50)
+  /** Poslední úspěšný běh naplánovaného Radaru (cron). */
+  lastScheduledRunAt DateTime?
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -175,7 +192,17 @@ model Lead {
   contactEmail  String?
   contactPhone  String?
   industry      String?
+  /** Kdo lead zapsal (např. Jan Sedlář / Matěj Pazdera / Filip Retzl). */
+  author        String?
   status        LeadStatus @default(NEW)
+  /** Odkud lead přišel — řídí list v Google Sheets (Radar / Sniper). */
+  source        LeadSource @default(MANUAL)
+
+  /** Poslední odeslaný outreach e-mail. */
+  lastContactedAt   DateTime?
+  /** Kdy je další follow-up / breakup splatný. */
+  nextOutreachAt    DateTime?
+  nextOutreachKind  OutreachKind?
   
   workspaceId   String
   workspace     Workspace  @relation(fields: [workspaceId], references: [id])
@@ -187,6 +214,8 @@ model Lead {
 
   @@unique([workspaceId, placeId])
   @@index([workspaceId, domain])
+  @@index([workspaceId, source])
+  @@index([workspaceId, nextOutreachAt])
 }
 
 model EmailQueue {
@@ -197,6 +226,8 @@ model EmailQueue {
   htmlBody     String           @db.Text
   scheduledAt  DateTime
   status       EmailQueueStatus @default(PENDING)
+  kind         OutreachKind     @default(INITIAL)
+  sentAt       DateTime?
   errorMessage String?
   createdAt    DateTime         @default(now())
 
@@ -228,6 +259,40 @@ model WorkspaceEmailConnection {
 
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
+}
+
+/** Live mirror of CRM leads into a Google Spreadsheet (App → Sheets). */
+model WorkspaceGoogleSheetsConnection {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status EmailConnectionStatus @default(DISCONNECTED)
+
+  googleAccessToken      String?   @db.Text
+  googleRefreshToken     String?   @db.Text
+  googleTokenExpiresAt   DateTime?
+  googleAccountEmail     String?
+
+  spreadsheetId    String?
+  spreadsheetUrl   String?
+  spreadsheetTitle String?
+  sheetName        String  @default("CRM")
+  /** Pokud true, sync píše do listů Radar + Sniper (historická outreach DB). */
+  splitBySource    Boolean @default(false)
+  /**
+   * Historická outreach tabulka (Master / Radar / Sniper) — Radar podle ní vylučuje
+   * firmy, i když už nejsou v app CRM. Sync live CRM sheetu ji nepřepisuje.
+   */
+  archiveSpreadsheetId  String?
+  archiveSpreadsheetUrl String?
+  syncEnabled      Boolean @default(true)
+  lastSyncedAt     DateTime?
+  lastError        String?
+  connectedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // TABULKA: ŠABLONY

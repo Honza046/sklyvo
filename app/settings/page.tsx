@@ -8,7 +8,6 @@ import {
   Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase, Mail
 } from "lucide-react";
 import {
-  Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
@@ -25,7 +24,9 @@ import { SettingsSaveButton } from "@/app/settings/settings-save-button";
 import { SubscriptionBillingButton } from "@/app/settings/subscription-billing-button";
 import { TeamAccessPanel } from "@/app/settings/team-access-panel";
 import { EmailIntegrationPanel } from "@/app/settings/email-integration-panel";
+import { SettingsAccordion } from "@/app/settings/settings-accordion";
 import { parseStoredAiBehaviorSettings } from "@/lib/ai-behavior-settings";
+import { EMAIL_SETUP_SETTINGS_HASH } from "@/lib/copilot/setup-knowledge";
 
 export const dynamic = "force-dynamic";
 
@@ -161,7 +162,8 @@ export default async function SettingsPage() {
           )}
         </div>
 
-        <Accordion type="single" collapsible defaultValue="company-profile" className="w-full space-y-4">
+        <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+        <SettingsAccordion>
 
           {/* PROFIL FIRMY PRO AI */}
           <AccordionItem
@@ -300,8 +302,9 @@ export default async function SettingsPage() {
 
           {/* PROPOJENÍ FIREMNÍHO E-MAILU */}
           <AccordionItem
+            id={EMAIL_SETUP_SETTINGS_HASH}
             value="email-integration"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger id="email-integration-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -327,8 +330,9 @@ export default async function SettingsPage() {
 
           {/* PŮVODNÍ SEKCE: INTEGRACE */}
           <AccordionItem
+            id="integrations"
             value="integrations"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger id="integrations-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -339,7 +343,9 @@ export default async function SettingsPage() {
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2">
-              <IntegrationsPanel />
+              <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted/40" />}>
+                <IntegrationsPanel />
+              </Suspense>
             </AccordionContent>
           </AccordionItem>
 
@@ -390,7 +396,8 @@ export default async function SettingsPage() {
               <TeamAccessPanel />
             </AccordionContent>
           </AccordionItem>
-        </Accordion>
+        </SettingsAccordion>
+        </Suspense>
 
         <div className="flex justify-end pt-2">
           <SettingsSaveButton />

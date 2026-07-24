@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import { searchRadarLeads } from "@/app/actions/radar";
 import { addLeadFromRadar, importMultipleLeads } from "@/app/actions/crm";
 import { toast } from "sonner";
 import { useLanguage } from "@/context/LanguageContext";
+import { messages } from "@/lib/i18n/messages";
 
 type RadarResult = {
   id: string;
@@ -50,20 +51,36 @@ const RADAR_HELP_SECTIONS = [
   },
 ] as const;
 
+/** Denní rotace tipů — stejný den = stejné 3 tipy, další den jiné. */
+function pickDailyInspirations(pool: readonly string[], count = 3): string[] {
+  if (pool.length <= count) return [...pool];
+  const daySeed = Math.floor(Date.now() / 86_400_000);
+  const picked: string[] = [];
+  const used = new Set<number>();
+  let seed = daySeed * 2654435761;
+  while (picked.length < count) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const idx = seed % pool.length;
+    if (used.has(idx)) continue;
+    used.add(idx);
+    picked.push(pool[idx]!);
+  }
+  return picked;
+}
+
 export default function RadarPage() {
-  const { t } = useLanguage();
-  const searchInspirations = [
-    t("radar.inspiration1"),
-    t("radar.inspiration2"),
-    t("radar.inspiration3"),
-  ];
+  const { t, language } = useLanguage();
+  const searchInspirations = useMemo(() => {
+    const pool = messages[language].radar.inspirations;
+    return pickDailyInspirations(pool, 3);
+  }, [language]);
   const [query, setQuery] = useState("");
   const [count, setCount] = useState("5");
   const [isSearching, setIsSearching] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   
   const [deepScan, setDeepScan] = useState(false);
-  const [excludeCrm, setExcludeCrm] = useState(false);
+  const [excludeCrm, setExcludeCrm] = useState(true);
   const [onlyEmail, setOnlyEmail] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   
@@ -153,9 +170,24 @@ export default function RadarPage() {
     setAddedLeadIds((prev) =>
       Array.from(new Set([...prev, ...(result.inCrmPlaceIds ?? [])])),
     );
-    toast.success(
-      `Úspěšně importováno ${result.createdCount} firem. ${result.skippedCount} duplicit bylo přeskočeno.`,
-    );
+
+    const created = result.createdCount ?? 0;
+    const skipped = result.skippedCount ?? 0;
+    if (created > 0 && skipped > 0) {
+      toast.success(
+        `Do CRM přidáno ${created} firem. ${skipped} už v CRM bylo (přeskočeno).`,
+      );
+    } else if (created > 0) {
+      toast.success(
+        `Do CRM přidáno ${created} ${created === 1 ? "firma" : created < 5 ? "firmy" : "firem"}.`,
+      );
+    } else if (skipped > 0) {
+      toast.message(
+        `Nic nového — všech ${skipped} už je v CRM.`,
+      );
+    } else {
+      toast.message("Nebylo co importovat.");
+    }
   };
 
   return (
@@ -252,7 +284,7 @@ export default function RadarPage() {
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
                 <Label htmlFor="exclude-crm" className="text-sm font-semibold cursor-pointer">
-                  Vyloučit firmy v CRM
+                  Vyloučit firmy v CRM / Sheets archivu
                 </Label>
               </div>
 

@@ -89,6 +89,7 @@ export async function getSessionUser() {
       name: true,
       email: true,
       avatarUrl: true,
+      role: true,
       workspaceId: true,
       onboardingTourCompleted: true,
     },
@@ -141,6 +142,7 @@ export async function getSessionUser() {
       email: user.email,
       image: user.avatarUrl ?? null,
       avatarUrl: user.avatarUrl ?? null,
+      role: user.role,
       workspaceId: user.workspaceId,
       onboardingTourCompleted: user.onboardingTourCompleted,
     },
@@ -415,6 +417,7 @@ export async function verifyEmailChange(
  */
 export async function requestPasswordReset(
   email: string,
+  appOrigin?: string,
 ): Promise<{ success: true } | { error: string }> {
   const normalized = email?.trim().toLowerCase();
   if (!normalized || !EMAIL_REGEX.test(normalized)) {
@@ -442,11 +445,20 @@ export async function requestPasswordReset(
     },
   });
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+  const envBase = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "");
+  const originBase = (appOrigin || "").replace(/\/+$/, "");
+  const baseUrl = originBase || envBase || "http://localhost:3001";
   const resetLink = `${baseUrl}/obnova-hesla?token=${token}`;
+
+  // #region agent log
+  fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'A',location:'auth.ts:requestPasswordReset',message:'Prisma password reset email requested',data:{authSystem:'prisma',hasBaseUrl:Boolean(baseUrl),linkHost:baseUrl},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   const sent = await sendPasswordResetEmail(user.email, resetLink);
   if (!sent.success) {
+    // #region agent log
+    fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'A',location:'auth.ts:requestPasswordReset:send-fail',message:'Password reset email failed',data:{error:sent.error},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     return { error: sent.error };
   }
 

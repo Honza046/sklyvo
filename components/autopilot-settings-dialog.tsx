@@ -40,8 +40,7 @@ const SECTION_META: Record<
 > = {
   radar: {
     title: "Nastavení Radaru",
-    description:
-      "Plánovač a pravidla pro automatické vyhledávání firem. Projeví se při příštím běhu Radaru.",
+    description: "Kdy a koho má Radar hledat. Změny platí od příštího automatického běhu.",
     icon: Radio,
     iconClass: "text-emerald-600",
   },
@@ -89,15 +88,33 @@ export function AutopilotSettingsDialog({
     onChange({ ...settings, ...partial });
   };
 
+  const sortRadarDays = (days: number[]) =>
+    [...days].sort((a, b) => {
+      const order = [1, 2, 3, 4, 5, 6, 0];
+      return order.indexOf(a) - order.indexOf(b);
+    });
+
   const toggleRadarDay = (day: number) => {
     const next = settings.radarDays.includes(day)
       ? settings.radarDays.filter((value) => value !== day)
-      : [...settings.radarDays, day].sort((a, b) => {
-          const order = [1, 2, 3, 4, 5, 6, 0];
-          return order.indexOf(a) - order.indexOf(b);
-        });
+      : sortRadarDays([...settings.radarDays, day]);
     patch({ radarDays: next });
   };
+
+  const WEEKDAY_VALUES = [1, 2, 3, 4, 5];
+  const ALL_DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
+  const isWeekdaysOnly =
+    settings.radarDays.length === 5 &&
+    WEEKDAY_VALUES.every((day) => settings.radarDays.includes(day));
+  const isAllWeek =
+    settings.radarDays.length === 7 &&
+    ALL_DAY_VALUES.every((day) => settings.radarDays.includes(day));
+
+  const radarDayLabels = RADAR_WEEKDAYS.filter((day) =>
+    settings.radarDays.includes(day.value),
+  )
+    .map((day) => day.label)
+    .join(", ");
 
   const disabled = isLoading || isSaving;
   const saveButtonClass = {
@@ -111,7 +128,7 @@ export function AutopilotSettingsDialog({
       <DialogContent
         className={cn(
           "flex max-h-[min(90vh,720px)] w-full flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl",
-          section === "radar" ? "max-w-3xl" : "max-w-xl",
+          section === "radar" ? "max-w-lg" : "max-w-xl",
         )}
       >
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-4 pt-10">
@@ -124,71 +141,196 @@ export function AutopilotSettingsDialog({
           </DialogHeader>
 
         {section === "radar" && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Dny v týdnu</Label>
-                <div className="flex flex-wrap gap-1.5">
-                  {RADAR_WEEKDAYS.map(({ value, label }) => {
-                    const active = settings.radarDays.includes(value);
-                    return (
+          <div className="space-y-5">
+            <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
+              <div className="border-b border-border/50 px-4 py-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  1 · Kdy hledat
+                </p>
+              </div>
+              <div className="space-y-4 p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-sm">Dny</Label>
+                    <div className="flex gap-1">
                       <button
-                        key={value}
                         type="button"
-                        onClick={() => toggleRadarDay(value)}
                         disabled={disabled}
+                        onClick={() => patch({ radarDays: [...WEEKDAY_VALUES] })}
                         className={cn(
-                          "h-8 min-w-8 rounded-md border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50",
-                          active
-                            ? "border-emerald-600 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                            : "border-border/60 bg-muted/30 text-muted-foreground hover:bg-muted",
+                          "rounded-md px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
+                          isWeekdaysOnly
+                            ? "bg-emerald-600 text-white"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80",
                         )}
                       >
-                        {label}
+                        Po–Pá
                       </button>
-                    );
-                  })}
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => patch({ radarDays: [...ALL_DAY_VALUES] })}
+                        className={cn(
+                          "rounded-md px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50",
+                          isAllWeek
+                            ? "bg-emerald-600 text-white"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80",
+                        )}
+                      >
+                        Celý týden
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex rounded-lg bg-muted/60 p-1">
+                    {RADAR_WEEKDAYS.map(({ value, label }) => {
+                      const active = settings.radarDays.includes(value);
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => toggleRadarDay(value)}
+                          disabled={disabled}
+                          aria-pressed={active}
+                          className={cn(
+                            "h-9 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
+                            active
+                              ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="radar-run-time" className="text-sm">
+                      Čas
+                    </Label>
+                    <Input
+                      id="radar-run-time"
+                      type="time"
+                      value={settings.radarRunTime}
+                      onChange={(e) => patch({ radarRunTime: e.target.value })}
+                      disabled={disabled}
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="radar-max-companies" className="text-sm">
+                      Max. firem / běh
+                    </Label>
+                    <Input
+                      id="radar-max-companies"
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={settings.maxCompaniesPerRun}
+                      onChange={(e) =>
+                        patch({
+                          maxCompaniesPerRun: Math.max(1, Number(e.target.value) || 1),
+                        })
+                      }
+                      disabled={disabled}
+                      className="h-10"
+                    />
+                  </div>
+                </div>
+
+                {settings.radarDays.length > 0 ? (
+                  <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                    Radar poběží v {radarDayLabels} kolem {settings.radarRunTime} — až{" "}
+                    {settings.maxCompaniesPerRun} firem.
+                  </p>
+                ) : (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                    Vyber alespoň jeden den, jinak se automatický sběr nespustí.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
+              <div className="border-b border-border/50 px-4 py-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  2 · Koho hledat
+                </p>
+              </div>
+              <div className="space-y-4 p-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="radar-industries" className="text-sm">
+                    Obory
+                  </Label>
+                  <Textarea
+                    id="radar-industries"
+                    rows={2}
+                    placeholder="marketingová agentura, webové studio…"
+                    value={settings.targetIndustries}
+                    onChange={(e) => patch({ targetIndustries: e.target.value })}
+                    disabled={disabled}
+                    className="min-h-[64px] resize-none text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Více hodnot odděl čárkou.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="radar-locations" className="text-sm">
+                    Města / regiony
+                  </Label>
+                  <Textarea
+                    id="radar-locations"
+                    rows={2}
+                    placeholder="Praha, Brno, Ostrava…"
+                    value={settings.locations}
+                    onChange={(e) => patch({ locations: e.target.value })}
+                    disabled={disabled}
+                    className="min-h-[64px] resize-none text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Více hodnot odděl čárkou.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Velikost firmy</Label>
+                  <Select
+                    value={settings.companySize}
+                    onValueChange={(value) => patch({ companySize: value as RadarCompanySize })}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Vyberte velikost" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-950">
+                      {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
+            </section>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="radar-run-time" className="text-xs">
-                  Preferovaný čas spuštění
-                </Label>
-                <Input
-                  id="radar-run-time"
-                  type="time"
-                  value={settings.radarRunTime}
-                  onChange={(e) => patch({ radarRunTime: e.target.value })}
-                  disabled={disabled}
-                  className="h-9"
-                />
+            <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
+              <div className="border-b border-border/50 px-4 py-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  3 · Po nalezení
+                </p>
               </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="radar-max-companies" className="text-xs">
-                  Maximální počet firem na jeden běh
-                </Label>
-                <Input
-                  id="radar-max-companies"
-                  type="number"
-                  min={1}
-                  value={settings.maxCompaniesPerRun}
-                  onChange={(e) =>
-                    patch({ maxCompaniesPerRun: Math.max(1, Number(e.target.value) || 1) })
-                  }
-                  disabled={disabled}
-                  className="h-9"
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0 space-y-0.5">
                   <Label htmlFor="auto-start-outreach" className="text-sm text-foreground">
-                    Automaticky zahájit oslovení
+                    Rovnou do Sniperu
                   </Label>
                   <p className="text-[11px] leading-snug text-muted-foreground">
-                    Po nalezení nových firem je rovnou zařadí do fronty Sniperu.
+                    Nové firmy se hned zařadí do fronty na oslovení. Jinak zůstanou jen v CRM.
                   </p>
                 </div>
                 <Switch
@@ -196,64 +338,10 @@ export function AutopilotSettingsDialog({
                   checked={settings.autoStartOutreach}
                   onCheckedChange={(checked) => patch({ autoStartOutreach: checked })}
                   disabled={disabled}
-                  className="data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-input"
+                  className="shrink-0 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-input"
                 />
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="radar-industries" className="text-xs">
-                  Cílové obory
-                </Label>
-                <Textarea
-                  id="radar-industries"
-                  rows={3}
-                  placeholder="např. marketingová agentura, webové studio, účetní firma"
-                  value={settings.targetIndustries}
-                  onChange={(e) => patch({ targetIndustries: e.target.value })}
-                  disabled={disabled}
-                  className="min-h-[72px] resize-none text-sm"
-                />
-                <p className="text-[11px] text-muted-foreground">Odděluje se čárkou.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="radar-locations" className="text-xs">
-                  Lokality
-                </Label>
-                <Textarea
-                  id="radar-locations"
-                  rows={3}
-                  placeholder="např. Praha, Brno, Ostrava"
-                  value={settings.locations}
-                  onChange={(e) => patch({ locations: e.target.value })}
-                  disabled={disabled}
-                  className="min-h-[72px] resize-none text-sm"
-                />
-                <p className="text-[11px] text-muted-foreground">Odděluje se čárkou.</p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Velikost firmy</Label>
-                <Select
-                  value={settings.companySize}
-                  onValueChange={(value) => patch({ companySize: value as RadarCompanySize })}
-                  disabled={disabled}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Vyberte velikost" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-zinc-950">
-                    {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            </section>
           </div>
         )}
 

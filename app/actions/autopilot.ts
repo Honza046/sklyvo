@@ -11,6 +11,7 @@ import {
 } from "@/lib/email-scheduling";
 import { prisma } from "@/lib/prisma";
 import { plainTextToHtml } from "@/lib/email-format";
+import { nextOutreachAfterSend, type OutreachKindValue } from "@/lib/outreach";
 
 export type AutopilotScheduleWindow = ScheduleTimeWindow;
 
@@ -144,10 +145,12 @@ export async function getFullAutoProcessHistory(): Promise<
 }
 
 export async function queueAutopilotLead(
-  input: QueueAutopilotLeadInput,
+  input: QueueAutopilotLeadInput & { workspaceId?: string },
 ): Promise<QueueAutopilotLeadResult> {
-  const session = await getSessionUser();
-  const workspaceId = session.user?.workspaceId;
+  const sessionWorkspaceId = input.workspaceId
+    ? null
+    : (await getSessionUser()).user?.workspaceId;
+  const workspaceId = input.workspaceId?.trim() || sessionWorkspaceId;
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
   }
@@ -178,7 +181,7 @@ export async function queueAutopilotLead(
     return { error: "Lead nebyl nalezen." };
   }
 
-  const generated = await generateEmailForLead(leadId);
+  const generated = await generateEmailForLead(leadId, { workspaceId });
   if ("error" in generated) {
     return { error: generated.error };
   }
@@ -190,6 +193,7 @@ export async function queueAutopilotLead(
       htmlBody: generated.htmlBody,
       scheduledAt,
       status: "PENDING",
+      kind: "INITIAL",
     },
   });
 
@@ -331,11 +335,20 @@ export async function processEmailQueue(
     await prisma.$transaction([
       prisma.emailQueue.update({
         where: { id: item.id },
-        data: { status: "SENT", errorMessage: null },
+        data: { status: "SENT", errorMessage: null, sentAt: now },
       }),
       prisma.lead.update({
         where: { id: item.lead.id },
-        data: { status: "CONTACTED" },
+        data: (() => {
+          const kind = (item.kind ?? "INITIAL") as OutreachKindValue;
+          const next = nextOutreachAfterSend(kind, now);
+          return {
+            status: next.leadStatus as "CONTACTED" | "BREAK_UP",
+            lastContactedAt: now,
+            nextOutreachAt: next.nextOutreachAt,
+            nextOutreachKind: next.nextOutreachKind,
+          };
+        })(),
       }),
       prisma.activityLog.create({
         data: {

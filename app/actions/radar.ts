@@ -11,6 +11,8 @@ import { DEFAULT_AUTOPILOT_SETTINGS } from "@/lib/autopilot-settings";
 import { buildRadarSearchQueries } from "@/lib/radar-settings-meta";
 import { loadRadarSettingsPayloadForWorkspace } from "@/app/actions/radar-settings";
 import { queueAutopilotLead } from "@/app/actions/autopilot";
+import { loadSheetsArchiveExclusionKeys, scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
+import { scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 
 type RadarSearchInput = {
@@ -45,181 +47,6 @@ type GoogleTextSearchV2Response = {
   nextPageToken?: string;
   error?: { message?: string };
 };
-
-const FETCH_TIMEOUT_MS = 4500;
-
-const BROWSER_UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-function parseWebsiteUrl(websiteUri: string): URL | null {
-  const raw = websiteUri.trim();
-  if (!raw) return null;
-  try {
-    return new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-  } catch {
-    return null;
-  }
-}
-
-async function fetchPageHtml(url: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const response = await fetch(url, {
-      signal: controller.signal,
-      cache: "no-store",
-      redirect: "follow",
-      headers: {
-        "User-Agent": BROWSER_UA,
-        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
-      },
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) return null;
-    const ct = response.headers.get("content-type") ?? "";
-    if (ct && !ct.includes("text/html") && !ct.includes("application/xhtml")) {
-      return null;
-    }
-    return await response.text();
-  } catch {
-    return null;
-  }
-}
-
-const CONTACT_EMAIL_LOCAL_PARTS = [
-  "info",
-  "kontakt",
-  "contact",
-  "office",
-  "hello",
-  "ahoj",
-  "recepce",
-  "support",
-  "sales",
-  "obchod",
-  "mail",
-];
-
-function isValidScrapedEmail(email: string): boolean {
-  const lower = email.toLowerCase();
-  return (
-    !lower.endsWith(".png") &&
-    !lower.endsWith(".jpg") &&
-    !lower.includes("sentry") &&
-    !lower.includes("example.com") &&
-    !lower.includes("wixpress.com") &&
-    !lower.includes("schema.org") &&
-    !lower.includes("email.com") &&
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  );
-}
-
-function pickBestContactEmail(emails: string[]): string | null {
-  const valid = emails.map((e) => e.trim()).filter(isValidScrapedEmail);
-  if (valid.length === 0) return null;
-
-  const preferred = valid.find((email) => {
-    const local = email.split("@")[0]?.toLowerCase() ?? "";
-    return CONTACT_EMAIL_LOCAL_PARTS.some(
-      (part) => local === part || local.startsWith(`${part}.`) || local.startsWith(`${part}-`),
-    );
-  });
-
-  return preferred ?? valid[0];
-}
-
-function extractMailtoEmails(html: string): string[] {
-  const found: string[] = [];
-  const re = /href\s*=\s*["']mailto:([^"'?#]+)/gi;
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(html)) !== null) {
-    const raw = decodeURIComponent(match[1].trim()).split("?")[0]?.trim() ?? "";
-    if (raw.includes("@")) found.push(raw);
-  }
-  return found;
-}
-
-function extractEmailFromHtml(html: string): string | null {
-  const mailtoEmails = extractMailtoEmails(html);
-  if (mailtoEmails.length > 0) {
-    return pickBestContactEmail(mailtoEmails);
-  }
-
-  const emails = html.match(/[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10}/g);
-  if (!emails || emails.length === 0) return null;
-  return pickBestContactEmail(emails);
-}
-
-function extractPhoneFromHtml(html: string): string | null {
-  const re = /href\s*=\s*["']tel:\s*([^"']+)["']/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html)) !== null) {
-    let v = decodeURIComponent(m[1].trim());
-    v = v.replace(/^tel:/i, "").trim();
-    v = v.split(";")[0]?.trim() ?? v;
-    if (v.length < 7) continue;
-    if (/^(javascript|void|#)/i.test(v)) continue;
-    return v.replace(/\s+/g, " ").trim();
-  }
-  return null;
-}
-
-function normalizeFetchKey(url: string): string {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/\/$/, "") || "";
-    return `${u.origin}${path}`.toLowerCase();
-  } catch {
-    return url.replace(/#.*$/, "").replace(/\/$/, "").toLowerCase();
-  }
-}
-
-async function fetchPageHtmlOnce(url: string, seen: Set<string>): Promise<string | null> {
-  const key = normalizeFetchKey(url);
-  if (seen.has(key)) return null;
-  seen.add(key);
-  return fetchPageHtml(url);
-}
-
-/** Stáhne homepage a při chybějícím e-mailu nebo telefonu zkusí /kontakt a /contact na stejné doméně. */
-async function scrapeWebsiteContacts(
-  websiteUri: string,
-): Promise<{ email: string | null; phoneFromSite: string | null }> {
-  const parsed = parseWebsiteUrl(websiteUri);
-  if (!parsed) {
-    return { email: null, phoneFromSite: null };
-  }
-
-  const homepage = parsed.href.split("#")[0];
-  const origin = parsed.origin;
-
-  let email: string | null = null;
-  let phoneFromSite: string | null = null;
-
-  const seen = new Set<string>();
-  const homeHtml = await fetchPageHtmlOnce(homepage, seen);
-  if (homeHtml) {
-    email = extractEmailFromHtml(homeHtml);
-    phoneFromSite = extractPhoneFromHtml(homeHtml);
-  }
-
-  if (email && phoneFromSite) {
-    return { email, phoneFromSite };
-  }
-
-  const extraPaths = ["/kontakt", "/contact"];
-  for (const path of extraPaths) {
-    const pageUrl = `${origin}${path}`;
-    const html = await fetchPageHtmlOnce(pageUrl, seen);
-    if (!html) continue;
-    if (!email) email = extractEmailFromHtml(html);
-    if (!phoneFromSite) phoneFromSite = extractPhoneFromHtml(html);
-    if (email && phoneFromSite) break;
-  }
-
-  return { email, phoneFromSite };
-}
 
 function normalizeCompanyName(name: string | null | undefined): string {
   return (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -264,6 +91,15 @@ async function loadCrmExclusionKeys(workspaceId: string): Promise<CrmExclusionKe
 
     const nk = normalizeCompanyName(lead.companyName);
     if (nk) names.add(nk);
+  }
+
+  // Historická Google Sheets DB — vylučuj i firmy, které už nejsou v app CRM.
+  try {
+    const archive = await loadSheetsArchiveExclusionKeys(workspaceId);
+    for (const d of archive.domains) domains.add(d);
+    for (const n of archive.names) names.add(n);
+  } catch (err) {
+    console.warn("[radar] archive exclusion failed:", err);
   }
 
   return { placeIds, domains, names };
@@ -395,7 +231,7 @@ async function mapGooglePlaceToRadarLead(
   if (scrapeWebsites && url) {
     const scraped = await scrapeWebsiteContacts(url);
     email = scraped.email;
-    if (!phone && scraped.phoneFromSite) phone = scraped.phoneFromSite;
+    if (!phone && scraped.phone) phone = scraped.phone;
   }
 
   return {
@@ -447,6 +283,7 @@ async function persistAutomatedRadarLeads(
     contactPhone: string | null;
     contactEmail: string | null;
     status: "NEW";
+    source: "RADAR";
     workspaceId: string;
     industry: null;
   }> = [];
@@ -497,6 +334,7 @@ async function persistAutomatedRadarLeads(
       contactPhone,
       contactEmail: email,
       status: "NEW",
+      source: "RADAR",
       workspaceId,
       industry: null,
     });
@@ -505,6 +343,7 @@ async function persistAutomatedRadarLeads(
   if (toCreate.length > 0) {
     await prisma.lead.createMany({ data: toCreate });
     created = toCreate.length;
+    scheduleCrmSheetsSync(workspaceId);
 
     const placeIds = toCreate
       .map((row) => row.placeId)
@@ -559,6 +398,7 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
     const result = await queueAutopilotLead({
       leadId: leadIds[index],
       scheduledAt: scheduledTimes[index].toISOString(),
+      workspaceId,
     });
     if ("success" in result && result.success) {
       queued += 1;
@@ -568,20 +408,14 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
   return queued;
 }
 
-export async function runAutomatedRadar(): Promise<
+export async function runAutomatedRadarForWorkspace(workspaceId: string): Promise<
   (AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }
 > {
-  const session = await getSessionUser();
-  if (!session.workspace?.id) {
-    return { error: "Nejste přihlášen." };
-  }
-
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return { error: "Chybí GOOGLE_PLACES_API_KEY." };
   }
 
-  const workspaceId = session.workspace.id;
   const radarSettings = await loadRadarSettingsPayloadForWorkspace(workspaceId);
   const searches = buildRadarSearchQueries(radarSettings);
   const maxPerRun = Math.max(1, radarSettings.maxCompaniesPerRun ?? 50);
@@ -656,6 +490,121 @@ export async function runAutomatedRadar(): Promise<
     errors,
     outreachQueued,
   };
+}
+
+/** Prague wall-clock helpers for schedule matching (cron). */
+function getPragueParts(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Prague",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  const weekdayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  const weekday = weekdayMap[get("weekday")] ?? now.getDay();
+  const hour = Number(get("hour"));
+  const minute = Number(get("minute"));
+  const y = get("year");
+  const m = get("month");
+  const d = get("day");
+  return {
+    weekday,
+    minutesOfDay: hour * 60 + minute,
+    dateKey: `${y}-${m}-${d}`,
+  };
+}
+
+function parseScheduleTimeToMinutes(raw: string): number | null {
+  const m = raw.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/**
+ * Spustí naplánovaný Radar pro workspace, jejichž den + čas (Europe/Prague)
+ * padne do aktuálního 10min okna cronu. Max 1× denně (lastScheduledRunAt).
+ */
+export async function processScheduledRadarRuns(): Promise<{
+  ok: true;
+  checked: number;
+  ran: number;
+  results: Array<{ workspaceId: string; createdCount?: number; error?: string }>;
+}> {
+  const { weekday, minutesOfDay, dateKey } = getPragueParts();
+  const settings = await prisma.radarSettings.findMany({
+    select: {
+      workspaceId: true,
+      scheduleDays: true,
+      scheduleTime: true,
+      lastScheduledRunAt: true,
+    },
+  });
+
+  const results: Array<{ workspaceId: string; createdCount?: number; error?: string }> = [];
+  let ran = 0;
+
+  for (const row of settings) {
+    const days = row.scheduleDays?.length ? row.scheduleDays : [1, 4];
+    if (!days.includes(weekday)) continue;
+
+    const target = parseScheduleTimeToMinutes(row.scheduleTime || "03:00");
+    if (target == null) continue;
+
+    // 10min cron window: [target, target+10)
+    if (minutesOfDay < target || minutesOfDay >= target + 10) continue;
+
+    if (row.lastScheduledRunAt) {
+      const last = getPragueParts(row.lastScheduledRunAt);
+      if (last.dateKey === dateKey) continue;
+    }
+
+    const run = await runAutomatedRadarForWorkspace(row.workspaceId);
+    if ("error" in run) {
+      results.push({ workspaceId: row.workspaceId, error: run.error });
+      continue;
+    }
+
+    await prisma.radarSettings.update({
+      where: { workspaceId: row.workspaceId },
+      data: { lastScheduledRunAt: new Date() },
+    });
+
+    ran += 1;
+    results.push({
+      workspaceId: row.workspaceId,
+      createdCount: run.createdCount,
+    });
+  }
+
+  return { ok: true, checked: settings.length, ran, results };
+}
+
+export async function runAutomatedRadar(): Promise<
+  (AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }
+> {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  return runAutomatedRadarForWorkspace(session.workspace.id);
 }
 
 export async function searchRadarLeads(input: RadarSearchInput) {

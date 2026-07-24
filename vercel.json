@@ -5,6 +5,10 @@
     {
       "path": "/api/cron/send-emails",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/radar",
+      "schedule": "*/10 * * * *"
     }
   ],
   "functions": {
@@ -13,6 +17,9 @@
     },
     "app/api/cron/send-emails/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/radar/route.ts": {
+      "maxDuration": 300
     }
   }
 }

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { processEmailQueue } from "@/app/actions/autopilot";
+import { processScheduledRadarRuns } from "@/app/actions/radar";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function GET(req: Request) {
   if (!isAuthorizedCronRequest(req)) {
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const result = await processEmailQueue();
+    const result = await processScheduledRadarRuns();
     return NextResponse.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Neznámá chyba";

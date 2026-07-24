@@ -1,74 +1,103 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Lock, Plus, X } from "lucide-react";
+import { Lock, Plus, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import {
+  getTeamAccessState,
+  inviteTeamMember,
+  removeTeamMember,
+  type TeamMemberDto,
+} from "@/app/actions/team";
 
-type TeamMemberStatus = "AKTIVNÍ" | "ČEKÁ NA PŘIJETÍ";
-
-type TeamMember = {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  status: TeamMemberStatus;
-};
-
-function roleLabel(role: string) {
+function roleLabel(role: TeamMemberDto["role"]) {
   switch (role) {
-    case "VLASTNÍK":
+    case "OWNER":
       return "Vlastník";
     case "ADMIN":
       return "Admin";
-    case "ČLEN":
+    case "MEMBER":
       return "Člen";
     default:
       return role;
   }
 }
 
-function StatusBadge({ status }: { status: TeamMemberStatus }) {
-  const isActive = status === "AKTIVNÍ";
+function StatusBadge() {
   return (
-    <span
-      className={cn(
-        "inline-flex rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
-        isActive
-          ? "bg-emerald-500/15 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-          : "bg-amber-500/12 text-amber-800 dark:bg-amber-500/18 dark:text-amber-400",
-      )}
-    >
-      {isActive ? "Aktivní" : "Čeká na přijetí"}
+    <span className="inline-flex rounded-md bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+      Aktivní
     </span>
   );
 }
 
 export function TeamAccessPanel() {
-  // OPRAVA: Přidán typ 'string', aby TypeScript nepanikařil při porovnávání níže
-  const currentPlan: string = "STARTER";
-
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { id: 1, name: "Jan Sedlář", email: "jansedlar@post.cz", role: "VLASTNÍK", status: "AKTIVNÍ" },
-  ]);
+  const [isPending, startTransition] = useTransition();
+  const [loaded, setLoaded] = useState(false);
+  const [isAgency, setIsAgency] = useState(false);
+  const [planTier, setPlanTier] = useState("NONE");
+  const [maxMembers, setMaxMembers] = useState(5);
+  const [sharedCredits, setSharedCredits] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>("MEMBER");
+  const [teamMembers, setTeamMembers] = useState<TeamMemberDto[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<"ADMIN" | "ČLEN">("ČLEN");
+  const [inviteRole, setInviteRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
   const [capacityWarning, setCapacityWarning] = useState(false);
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
 
-  if (currentPlan !== "AGENCY") {
+  const refresh = () => {
+    startTransition(async () => {
+      const state = await getTeamAccessState();
+      if ("error" in state && state.error) {
+        toast.error(state.error);
+        setLoaded(true);
+        return;
+      }
+      if (!("success" in state)) return;
+      setIsAgency(state.isAgency);
+      setPlanTier(state.planTier);
+      setMaxMembers(state.maxMembers);
+      setSharedCredits(state.sharedCredits);
+      setCurrentUserId(state.currentUserId);
+      setCurrentUserRole(state.currentUserRole);
+      setTeamMembers(state.members);
+      setLoaded(true);
+    });
+  };
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!loaded) {
+    return (
+      <p className="py-6 text-center text-sm text-muted-foreground">Načítám tým…</p>
+    );
+  }
+
+  if (!isAgency) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/35 dark:text-blue-400">
           <Lock className="h-7 w-7" aria-hidden />
         </div>
-        <h3 className="text-lg font-bold text-foreground">Týmová spolupráce je dostupná od tarifu Agency</h3>
+        <h3 className="text-lg font-bold text-foreground">
+          Týmová spolupráce je dostupná od tarifu Agency
+        </h3>
         <p className="mt-2 mb-6 max-w-md text-sm text-gray-500 dark:text-muted-foreground">
-          Pozvěte kolegy do svého pracovního prostoru, sdílejte společně balíček kreditů a spravujte kampaně jako
-          jeden tým.
+          Pozvěte kolegy do svého pracovního prostoru, sdílejte společně CRM, Google Sheets a kredity.
+          Aktuální tarif: <span className="font-medium text-foreground">{planTier}</span>
         </p>
         <Button
           className="h-11 rounded-xl bg-blue-600 px-8 font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -80,17 +109,13 @@ export function TeamAccessPanel() {
     );
   }
 
-  const workspace: { plan: string; maxMembers: number; sharedCredits: number } = {
-    plan: "AGENCY",
-    maxMembers: 3,
-    sharedCredits: 5000,
-  };
-
   const seatsUsed = teamMembers.length;
+  const canManage = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   const handlePozvatClick = () => {
     setCapacityWarning(false);
-    if (teamMembers.length >= workspace.maxMembers) {
+    setTempPasswordInfo(null);
+    if (teamMembers.length >= maxMembers) {
       setCapacityWarning(true);
       return;
     }
@@ -100,53 +125,70 @@ export function TeamAccessPanel() {
   const handleSendInvite = () => {
     const email = inviteEmail.trim();
     if (!email) return;
+    startTransition(async () => {
+      const result = await inviteTeamMember({ email, role: inviteRole });
+      if ("error" in result && result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.temporaryPassword) {
+        setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+        toast.success(
+          `${result.name} přidán. Pošli mu dočasné heslo (zobrazí se níže).`,
+        );
+      } else {
+        toast.success(`${result.name} je teď ve vašem workspace.`);
+      }
+      setInviteEmail("");
+      setInviteRole("MEMBER");
+      setInviteOpen(false);
+      refresh();
+    });
+  };
 
-    const local = email.split("@")[0] ?? "";
-    const displayName = local ? local.charAt(0).toUpperCase() + local.slice(1) : "Kolega";
-
-    setTeamMembers((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: displayName,
-        email,
-        role: inviteRole,
-        status: "ČEKÁ NA PŘIJETÍ",
-      },
-    ]);
-    setInviteEmail("");
-    setInviteRole("ČLEN");
-    setInviteOpen(false);
+  const handleRemove = (member: TeamMemberDto) => {
+    if (!confirm(`Odebrat ${member.email} z workspace?`)) return;
+    startTransition(async () => {
+      const result = await removeTeamMember(member.id);
+      if ("error" in result && result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Člen odebrán.");
+      refresh();
+    });
   };
 
   return (
     <div className="space-y-5 pb-2 pt-2">
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/30 p-4 dark:bg-muted/10">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">Workspace</p>
+          <p className="text-sm font-semibold text-foreground">Agency workspace</p>
           <p className="text-sm text-muted-foreground">
             Členové:{" "}
             <span className="font-semibold tabular-nums text-foreground">
-              {seatsUsed} / {workspace.maxMembers}
+              {seatsUsed} / {maxMembers}
             </span>
           </p>
           <p className="text-sm text-muted-foreground">
-            Sdílené kredity Workspace:{" "}
-            <span className="font-semibold tabular-nums text-foreground">{workspace.sharedCredits}</span>
+            Sdílené kredity:{" "}
+            <span className="font-semibold tabular-nums text-foreground">{sharedCredits}</span>
           </p>
           <p className="text-xs text-muted-foreground">
-            Tarif (demo UI):{" "}
-            <span className="font-medium text-foreground">{workspace.plan}</span>
+            Všichni vidí stejné CRM, stavy a Google Sheets.
           </p>
         </div>
-        <Button
-          type="button"
-          className="h-11 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white shadow-sm hover:bg-blue-700"
-          onClick={handlePozvatClick}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Pozvat člena
-        </Button>
+        {canManage && (
+          <Button
+            type="button"
+            className="h-11 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white shadow-sm hover:bg-blue-700"
+            disabled={isPending}
+            onClick={handlePozvatClick}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Pozvat člena
+          </Button>
+        )}
       </div>
 
       {capacityWarning && (
@@ -154,8 +196,20 @@ export function TeamAccessPanel() {
           role="alert"
           className="rounded-xl border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-100"
         >
-          Dosáhli jste maximální kapacity týmu pro váš tarif ({workspace.maxMembers} místa). Chcete-li rozšířit
-          Workspace, změňte tarif na vyšší plán Agency s většími limity nebo kontaktujte podporu.
+          Dosáhli jste maximální kapacity týmu ({maxMembers} míst).
+        </div>
+      )}
+
+      {tempPasswordInfo && (
+        <div
+          role="status"
+          className="rounded-xl border border-blue-300/80 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 dark:border-blue-700 dark:bg-blue-950/25 dark:text-blue-100"
+        >
+          <p className="font-semibold">Dočasné heslo pro {tempPasswordInfo.email}</p>
+          <p className="mt-1 font-mono text-base tracking-wide">{tempPasswordInfo.password}</p>
+          <p className="mt-1 text-xs opacity-80">
+            Pošli ho kolegovi (Slack / e-mail). Po přihlášení ať si heslo změní v účtu.
+          </p>
         </div>
       )}
 
@@ -167,6 +221,7 @@ export function TeamAccessPanel() {
               <th className="px-4 py-3 font-semibold">E-mail</th>
               <th className="px-4 py-3 font-semibold">Role</th>
               <th className="px-4 py-3 font-semibold">Stav</th>
+              <th className="px-4 py-3 font-semibold" />
             </tr>
           </thead>
           <tbody>
@@ -176,7 +231,23 @@ export function TeamAccessPanel() {
                 <td className="px-4 py-3 text-muted-foreground">{m.email}</td>
                 <td className="px-4 py-3">{roleLabel(m.role)}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={m.status} />
+                  <StatusBadge />
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {canManage &&
+                    currentUserRole === "OWNER" &&
+                    m.id !== currentUserId &&
+                    m.role !== "OWNER" && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
+                        disabled={isPending}
+                        onClick={() => handleRemove(m)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Odebrat
+                      </button>
+                    )}
                 </td>
               </tr>
             ))}
@@ -198,51 +269,48 @@ export function TeamAccessPanel() {
           >
             <button
               type="button"
-              className="absolute right-4 top-4 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="absolute right-4 top-4 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => setInviteOpen(false)}
-              aria-label="Zavřít"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </button>
-            <h2 className="text-lg font-bold text-foreground">Pozvat kolegu</h2>
-            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Kolegovi přijde e-mail s odkazem. Po registraci se připojí do tohoto Workspace a bude sdílet vaše kredity.
+            <h3 className="mb-1 text-lg font-bold text-foreground">Pozvat do workspace</h3>
+            <p className="mb-5 text-sm text-muted-foreground">
+              Kolega uvidí stejné CRM, stavy a Google Sheets jako ty.
             </p>
-            <div className="mt-6 space-y-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="invite-email">E-mail</Label>
                 <Input
                   id="invite-email"
                   type="email"
-                  placeholder="E-mail"
+                  placeholder="kolega@venegard.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="h-12 rounded-xl"
+                  className="h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="invite-role">Role</Label>
                 <select
                   id="invite-role"
+                  className={cn(
+                    "flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm",
+                  )}
                   value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as "ADMIN" | "ČLEN")}
-                  className="flex h-12 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                  onChange={(e) => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
                 >
+                  <option value="MEMBER">Člen</option>
                   <option value="ADMIN">Admin</option>
-                  <option value="ČLEN">Člen</option>
                 </select>
               </div>
-            </div>
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" className="rounded-xl" onClick={() => setInviteOpen(false)}>
-                Zrušit
-              </Button>
               <Button
                 type="button"
-                className="rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                className="h-11 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                disabled={isPending || !inviteEmail.trim()}
                 onClick={handleSendInvite}
               >
-                Odeslat pozvánku
+                Přidat do týmu
               </Button>
             </div>
           </div>

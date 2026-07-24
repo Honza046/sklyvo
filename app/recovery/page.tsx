@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowRight } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { checkIfUserExists } from "@/app/actions/auth";
+import { checkIfUserExists, requestPasswordReset } from "@/app/actions/auth";
 
 export default function RecoveryPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -37,21 +36,70 @@ export default function RecoveryPage() {
     }
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { error: supabaseError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
-      });
-      if (supabaseError) {
-        console.error("resetPasswordForEmail:", supabaseError);
-        setError("Při odesílání e-mailu nastala chyba. Zkuste to prosím znovu.");
+      // #region agent log
+      fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "dc49be",
+        },
+        body: JSON.stringify({
+          sessionId: "dc49be",
+          runId: "post-fix",
+          hypothesisId: "A",
+          location: "recovery/page.tsx:reset",
+          message: "Recovery using Prisma path",
+          data: { authSystem: "prisma", hasUser: userCheck.exists },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+
+      const result = await requestPasswordReset(email, window.location.origin);
+      if ("error" in result) {
+        // #region agent log
+        fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "dc49be",
+          },
+          body: JSON.stringify({
+            sessionId: "dc49be",
+            runId: "post-fix",
+            hypothesisId: "A",
+            location: "recovery/page.tsx:prisma-error",
+            message: "Prisma reset failed",
+            data: { error: result.error },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        setError(result.error);
       } else {
         setMessage("Odkaz pro obnovu hesla byl úspěšně odeslán na váš e-mail.");
       }
     } catch (err) {
       console.error(err);
-      setError(
-        "Konfigurace Supabase není k dispozici nebo došlo k chybě. Zkuste to později.",
-      );
+      // #region agent log
+      fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Debug-Session-Id": "dc49be",
+        },
+        body: JSON.stringify({
+          sessionId: "dc49be",
+          runId: "post-fix",
+          hypothesisId: "A",
+          location: "recovery/page.tsx:catch",
+          message: "Recovery threw",
+          data: { error: err instanceof Error ? err.message : "unknown" },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      setError("Při odesílání e-mailu nastala chyba. Zkuste to později.");
     } finally {
       setIsLoading(false);
     }
@@ -80,58 +128,52 @@ export default function RecoveryPage() {
             </p>
           </div>
 
-          <form onSubmit={(ev) => void handleResetPassword(ev)} className="space-y-5">
+          <form onSubmit={handleResetPassword} className="flex flex-col gap-5">
             <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Pracovní email
+              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                E-mail
               </Label>
               <div className="relative">
-                <Mail className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  type="email"
+                  id="email"
                   name="email"
-                  placeholder="name@company.com"
-                  className="h-12 rounded-xl border-border/50 bg-background pl-10 text-base focus-visible:ring-blue-600"
+                  type="email"
                   required
-                  autoComplete="email"
-                  disabled={isLoading}
+                  placeholder="jan@firma.cz"
+                  className="h-11 rounded-xl border-border/60 bg-background pl-10"
                 />
               </div>
             </div>
 
-            {error && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-500">
+            {error ? (
+              <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
                 {error}
-              </div>
-            )}
-            {message && (
-              <div className="rounded-md border border-green-200 bg-green-50 p-3 text-center text-sm text-green-600 dark:bg-green-950/30 dark:text-green-400">
+              </p>
+            ) : null}
+            {message ? (
+              <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
                 {message}
-              </div>
-            )}
+              </p>
+            ) : null}
 
             <Button
               type="submit"
               disabled={isLoading}
-              className="group mt-2 h-12 w-full rounded-xl bg-blue-600 font-bold text-white shadow-md hover:bg-blue-700"
+              className="h-11 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
             >
               {isLoading ? "Odesílám…" : "Odeslat odkaz"}
-              {!isLoading && (
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              )}
+              {!isLoading ? <ArrowRight className="ml-2 h-4 w-4" /> : null}
             </Button>
           </form>
-        </div>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Vzpomněli jste si na heslo?{" "}
-          <Link
-            href="/login"
-            className="font-bold text-blue-600 hover:underline dark:text-blue-400"
-          >
-            Zpět na přihlášení
-          </Link>
-        </p>
+          <p className="text-center text-sm text-muted-foreground">
+            Vzpomněli jste si?{" "}
+            <Link href="/login" className="font-semibold text-blue-600 hover:underline">
+              Přihlásit se
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

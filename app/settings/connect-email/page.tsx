@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Cloud, Mail, Server, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { EMAIL_SETUP_SETTINGS_HASH } from "@/lib/copilot/setup-knowledge";
 import { cn } from "@/lib/utils";
 
 type EmailProviderId =
@@ -83,9 +85,8 @@ const PROVIDERS: {
   },
   {
     id: "custom-smtp",
-    name: "Vlastní SMTP / IMAP",
-    description:
-      "Univerzální ruční konfigurace serveru pro libovolné vlastní domény, hostingy (Wedos, Forpsi) nebo warmup nástroje.",
+    name: "Vlastní SMTP",
+    description: "Ruční nastavení SMTP pro libovolného poskytovatele e-mailu.",
     icon: <Settings className="h-5 w-5" />,
     iconWrapClassName:
       "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -94,24 +95,73 @@ const PROVIDERS: {
   },
 ];
 
-const PROVIDER_BY_ID = Object.fromEntries(PROVIDERS.map((p) => [p.id, p])) as Record<
-  EmailProviderId,
-  (typeof PROVIDERS)[number]
->;
+const SMTP_PRESETS: Partial<
+  Record<EmailProviderId, { mode: "OUTLOOK_SMTP" | "CUSTOM_SMTP"; host?: string; port?: string }>
+> = {
+  outlook: { mode: "OUTLOOK_SMTP", host: "smtp.office365.com", port: "587" },
+  seznam: { mode: "CUSTOM_SMTP", host: "smtp.seznam.cz", port: "465" },
+  zoho: { mode: "CUSTOM_SMTP", host: "smtp.zoho.eu", port: "465" },
+  icloud: { mode: "CUSTOM_SMTP", host: "smtp.mail.me.com", port: "587" },
+  "custom-smtp": { mode: "CUSTOM_SMTP" },
+};
 
 export default function ConnectEmailPage() {
-  const [showSmtpForm, setShowSmtpForm] = useState(false);
+  const router = useRouter();
 
-  function handleProviderClick(providerKey: string) {
-    if (providerKey === "custom-smtp") {
-      console.log("[connect-email] Opening custom SMTP / IMAP setup");
-      setShowSmtpForm(true);
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "dc49be",
+      },
+      body: JSON.stringify({
+        sessionId: "dc49be",
+        runId: "post-fix",
+        hypothesisId: "C",
+        location: "connect-email/page.tsx:mount",
+        message: "Connect-email page mounted (wired)",
+        data: { wired: true },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, []);
+
+  function handleProviderClick(providerKey: EmailProviderId) {
+    // #region agent log
+    fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "dc49be",
+      },
+      body: JSON.stringify({
+        sessionId: "dc49be",
+        runId: "post-fix",
+        hypothesisId: "C",
+        location: "connect-email/page.tsx:click",
+        message: "Connect-email provider clicked",
+        data: { providerKey, isStub: false },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (providerKey === "google") {
+      window.location.href = "/api/email/google/authorize";
       return;
     }
 
-    const provider = PROVIDER_BY_ID[providerKey as EmailProviderId];
-    const providerName = provider?.name ?? providerKey;
-    toast.info(`Integrace pro ${providerName} se připravuje.`);
+    const preset = SMTP_PRESETS[providerKey];
+    const params = new URLSearchParams();
+    if (preset?.mode) params.set("smtpMode", preset.mode);
+    if (preset?.host) params.set("smtpHost", preset.host);
+    if (preset?.port) params.set("smtpPort", preset.port);
+    const qs = params.toString();
+    toast.success("Otevíráme nastavení e-mailové integrace…");
+    router.push(`/settings${qs ? `?${qs}` : ""}#${EMAIL_SETUP_SETTINGS_HASH}`);
   }
 
   return (
@@ -138,7 +188,8 @@ export default function ConnectEmailPage() {
             Připojit novou e-mailovou schránku
           </h1>
           <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-            Vyberte poskytovatele e-mailu, kterého chcete integrovat se Sniperem pro odesílání kampaní.
+            Vyberte poskytovatele. Google použije OAuth, ostatní otevřou SMTP nastavení v Pracovním
+            prostoru.
           </p>
         </div>
 
@@ -172,36 +223,6 @@ export default function ConnectEmailPage() {
             </button>
           ))}
         </div>
-
-        {showSmtpForm && (
-          <div className="mt-8 rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  <Settings className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold">Vlastní SMTP / IMAP</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Formulář pro ruční zadání přihlašovacích údajů bude doplněn v další verzi.
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="shrink-0 rounded-xl"
-                onClick={() => setShowSmtpForm(false)}
-              >
-                Zavřít
-              </Button>
-            </div>
-            <p className="rounded-xl border border-dashed border-border/60 bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-              SMTP host, port, uživatelské jméno a heslo — připravujeme.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
