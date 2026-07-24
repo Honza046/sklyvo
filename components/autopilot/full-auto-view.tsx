@@ -9,6 +9,7 @@ import {
   getFullAutoProcessHistory,
   type FullAutoProcessHistoryRow,
 } from "@/app/actions/autopilot";
+import { setFullAutoEnabled } from "@/app/actions/radar-settings";
 import { toast } from "sonner";
 import {
   AutopilotControlPanel,
@@ -38,9 +39,13 @@ export function AutopilotFullAutoView() {
     isSavingSettings,
     automationSettings,
     setAutomationSettings,
+    fullAutoEnabled,
+    setFullAutoEnabledState,
     openSettings,
     handleSaveAutomationSettings,
   } = useAutopilotSettings("full-auto");
+
+  const [isTogglingFullAuto, setIsTogglingFullAuto] = useState(false);
 
   const loadFullAutoHistory = async () => {
     setIsFullAutoHistoryLoading(true);
@@ -82,8 +87,24 @@ export function AutopilotFullAutoView() {
   const fullAutoShownTo =
     fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + paginatedFullAutoRows.length;
 
-  const handleActivateFullAuto = () => {
-    toast.info("Full Auto bude brzy dostupný. Nastavení si můžete uložit předem.");
+  const handleActivateFullAuto = async () => {
+    setIsTogglingFullAuto(true);
+    try {
+      const next = !fullAutoEnabled;
+      const result = await setFullAutoEnabled(next);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      setFullAutoEnabledState(result.enabled);
+      toast.success(
+        result.enabled
+          ? "Full Auto zapnuté — cron kolem 8:00 najde firmy a rovnou pošle maily."
+          : "Full Auto vypnuté.",
+      );
+    } finally {
+      setIsTogglingFullAuto(false);
+    }
   };
 
   return (
@@ -103,15 +124,28 @@ export function AutopilotFullAutoView() {
         icon={<Sparkles className="h-5 w-5" />}
         iconWrapClassName="bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
         title="Plná automatizace (Full Auto)"
-        description="Radar vyhledává nové firmy a Sniper jim okamžitě posílá personalizované e-maily."
+        description={
+          fullAutoEnabled
+            ? "Aktivní — Radar najde firmy a e-maily se odešlou přes cron Full Auto (~8:00 Praha)."
+            : "Radar vyhledá nové firmy a Sniper jim rovnou pošle personalizované e-maily."
+        }
         actions={
           <>
             <Button
-              onClick={handleActivateFullAuto}
-              className="shrink-0 bg-violet-600 px-6 font-semibold text-white hover:bg-violet-700"
+              onClick={() => void handleActivateFullAuto()}
+              disabled={isTogglingFullAuto}
+              className={
+                fullAutoEnabled
+                  ? "shrink-0 border border-violet-300 bg-white px-6 font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:bg-zinc-950 dark:text-violet-300"
+                  : "shrink-0 bg-violet-600 px-6 font-semibold text-white hover:bg-violet-700"
+              }
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              Aktivovat Full Auto
+              {isTogglingFullAuto
+                ? "Ukládám…"
+                : fullAutoEnabled
+                  ? "Vypnout Full Auto"
+                  : "Aktivovat Full Auto"}
             </Button>
             <AutopilotSettingsIconButton
               label="Nastavení Full Auto"

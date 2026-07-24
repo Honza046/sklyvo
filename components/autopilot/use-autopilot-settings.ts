@@ -7,7 +7,7 @@ import {
   DEFAULT_AUTOPILOT_SETTINGS,
   type AutopilotAutomationSettings,
 } from "@/lib/autopilot-settings";
-import { getRadarSettings, saveRadarSettings } from "@/app/actions/radar-settings";
+import { getRadarSettings, saveRadarSettings, getFullAutoSettings, saveFullAutoSettings } from "@/app/actions/radar-settings";
 import {
   FULL_AUTO_SETTINGS_STORAGE_KEY,
   SNIPER_SETTINGS_STORAGE_KEY,
@@ -17,6 +17,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [fullAutoEnabled, setFullAutoEnabledState] = useState(false);
   const [automationSettings, setAutomationSettings] =
     useState<AutopilotAutomationSettings>(DEFAULT_AUTOPILOT_SETTINGS);
 
@@ -24,19 +25,14 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
     if (typeof window === "undefined") return;
     try {
       const sniperRaw = window.localStorage.getItem(SNIPER_SETTINGS_STORAGE_KEY);
-      const fullAutoRaw = window.localStorage.getItem(FULL_AUTO_SETTINGS_STORAGE_KEY);
       const sniperParsed = sniperRaw
         ? (JSON.parse(sniperRaw) as Partial<AutopilotAutomationSettings>)
-        : {};
-      const fullAutoParsed = fullAutoRaw
-        ? (JSON.parse(fullAutoRaw) as Partial<AutopilotAutomationSettings>)
         : {};
 
       setAutomationSettings((prev) => ({
         ...DEFAULT_AUTOPILOT_SETTINGS,
         ...prev,
         ...sniperParsed,
-        ...fullAutoParsed,
         sendingStrategy:
           sniperParsed.sendingStrategy ??
           prev.sendingStrategy ??
@@ -48,23 +44,36 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   }, []);
 
   useEffect(() => {
-    if (!settingsOpen || section !== "radar") return;
+    if (section !== "radar" && section !== "full-auto") return;
+    if (section === "radar" && !settingsOpen) return;
 
     let cancelled = false;
     void (async () => {
-      setSettingsLoading(true);
-      const result = await getRadarSettings();
-      if (!cancelled && "settings" in result) {
-        setAutomationSettings((prev) => ({
-          ...prev,
-          targetIndustries: result.settings.targetIndustries,
-          locations: result.settings.locations,
-          companySize: result.settings.companySize,
-          autoStartOutreach: result.settings.autoStartOutreach,
-          radarDays: result.settings.radarDays,
-          radarRunTime: result.settings.radarRunTime,
-          maxCompaniesPerRun: result.settings.maxCompaniesPerRun,
-        }));
+      if (settingsOpen || section === "full-auto") setSettingsLoading(true);
+      if (section === "radar") {
+        const result = await getRadarSettings();
+        if (!cancelled && "settings" in result) {
+          setAutomationSettings((prev) => ({
+            ...prev,
+            targetIndustries: result.settings.targetIndustries,
+            locations: result.settings.locations,
+            companySize: result.settings.companySize,
+            autoStartOutreach: result.settings.autoStartOutreach,
+            radarDays: result.settings.radarDays,
+            radarRunTime: result.settings.radarRunTime,
+            maxCompaniesPerRun: result.settings.maxCompaniesPerRun,
+          }));
+        }
+      } else {
+        const result = await getFullAutoSettings();
+        if (!cancelled && "settings" in result) {
+          setFullAutoEnabledState(result.settings.enabled);
+          setAutomationSettings((prev) => ({
+            ...prev,
+            fullAutoFrequency: result.settings.fullAutoFrequency,
+            fullAutoRunTime: result.settings.fullAutoRunTime,
+          }));
+        }
       }
       if (!cancelled) setSettingsLoading(false);
     })();
@@ -115,12 +124,31 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
         return;
       }
 
-      const payload = {
+      const result = await saveFullAutoSettings({
+        enabled: fullAutoEnabled,
         fullAutoFrequency: automationSettings.fullAutoFrequency,
         fullAutoRunTime: automationSettings.fullAutoRunTime,
-      };
-      window.localStorage.setItem(FULL_AUTO_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
-      toast.success("Nastavení Full Auto je uloženo pro budoucí spuštění.");
+      });
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      try {
+        window.localStorage.setItem(
+          FULL_AUTO_SETTINGS_STORAGE_KEY,
+          JSON.stringify({
+            fullAutoFrequency: automationSettings.fullAutoFrequency,
+            fullAutoRunTime: automationSettings.fullAutoRunTime,
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
+      toast.success(
+        fullAutoEnabled
+          ? "Full Auto je aktivní — cron najde firmy a odešle maily."
+          : "Nastavení Full Auto je uloženo (zatím vypnuté).",
+      );
       setSettingsOpen(false);
     } finally {
       setIsSavingSettings(false);
@@ -134,6 +162,8 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
     isSavingSettings,
     automationSettings,
     setAutomationSettings,
+    fullAutoEnabled,
+    setFullAutoEnabledState,
     openSettings: () => setSettingsOpen(true),
     handleSaveAutomationSettings,
   };

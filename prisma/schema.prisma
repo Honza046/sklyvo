@@ -151,6 +151,13 @@ model RadarSettings {
   /** Poslední úspěšný běh naplánovaného Radaru (cron). */
   lastScheduledRunAt DateTime?
 
+  /** Full Auto — kompletní smyčka Radar → fronta → odeslání. */
+  fullAutoEnabled    Boolean  @default(false)
+  /** once_weekly | twice_weekly | daily */
+  fullAutoFrequency  String   @default("twice_weekly")
+  fullAutoRunTime    String   @default("08:00")
+  lastFullAutoRunAt  DateTime?
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

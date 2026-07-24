@@ -390,9 +390,10 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
   return queued;
 }
 
-export async function runAutomatedRadarForWorkspace(workspaceId: string): Promise<
-  (AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }
-> {
+export async function runAutomatedRadarForWorkspace(
+  workspaceId: string,
+  options?: { forceAutoStartOutreach?: boolean },
+): Promise<(AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return { error: "Chybí GOOGLE_PLACES_API_KEY." };
@@ -401,6 +402,8 @@ export async function runAutomatedRadarForWorkspace(workspaceId: string): Promis
   const radarSettings = await loadRadarSettingsPayloadForWorkspace(workspaceId);
   const searches = buildRadarSearchQueries(radarSettings);
   const maxPerRun = Math.max(1, radarSettings.maxCompaniesPerRun ?? 50);
+  const shouldAutoQueue =
+    options?.forceAutoStartOutreach === true || radarSettings.autoStartOutreach;
 
   const crmKeys = await loadCrmExclusionKeys(workspaceId);
   const crmEmails = await loadCrmEmailKeys(workspaceId);
@@ -454,7 +457,7 @@ export async function runAutomatedRadarForWorkspace(workspaceId: string): Promis
   }
 
   let outreachQueued = 0;
-  if (radarSettings.autoStartOutreach && newLeadIds.length > 0) {
+  if (shouldAutoQueue && newLeadIds.length > 0) {
     outreachQueued = await autoQueueOutreachForLeads(workspaceId, newLeadIds);
   }
 
@@ -560,6 +563,88 @@ export async function processScheduledRadarRuns(): Promise<{
     results.push({
       workspaceId: row.workspaceId,
       createdCount: run.createdCount,
+    });
+  }
+
+  return { ok: true, checked: settings.length, ran, results };
+}
+
+const FULL_AUTO_DAYS: Record<string, number[]> = {
+  once_weekly: [1],
+  twice_weekly: [1, 4],
+  daily: [1, 2, 3, 4, 5],
+};
+
+/**
+ * Full Auto cron: Radar (včetně fronty) + okamžité odeslání splatných e-mailů.
+ * Frekvence once_weekly / twice_weekly / daily podle DB; max 1× denně.
+ */
+export async function processScheduledFullAutoRuns(): Promise<{
+  ok: true;
+  checked: number;
+  ran: number;
+  results: Array<{
+    workspaceId: string;
+    createdCount?: number;
+    outreachQueued?: number;
+    emailsSent?: number;
+    error?: string;
+  }>;
+}> {
+  const { weekday, dateKey } = getPragueParts();
+  const settings = await prisma.radarSettings.findMany({
+    where: { fullAutoEnabled: true },
+    select: {
+      workspaceId: true,
+      fullAutoFrequency: true,
+      lastFullAutoRunAt: true,
+    },
+  });
+
+  const results: Array<{
+    workspaceId: string;
+    createdCount?: number;
+    outreachQueued?: number;
+    emailsSent?: number;
+    error?: string;
+  }> = [];
+  let ran = 0;
+
+  for (const row of settings) {
+    const freq = row.fullAutoFrequency || "twice_weekly";
+    const days = FULL_AUTO_DAYS[freq] ?? FULL_AUTO_DAYS.twice_weekly;
+    if (!days.includes(weekday)) continue;
+
+    if (row.lastFullAutoRunAt) {
+      const last = getPragueParts(row.lastFullAutoRunAt);
+      if (last.dateKey === dateKey) continue;
+    }
+
+    const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
+      forceAutoStartOutreach: true,
+    });
+    if ("error" in run) {
+      results.push({ workspaceId: row.workspaceId, error: run.error });
+      continue;
+    }
+
+    const { processEmailQueue } = await import("@/app/actions/autopilot");
+    const send = await processEmailQueue(50, {
+      workspaceId: row.workspaceId,
+      ignoreSchedule: true,
+    });
+
+    await prisma.radarSettings.update({
+      where: { workspaceId: row.workspaceId },
+      data: { lastFullAutoRunAt: new Date() },
+    });
+
+    ran += 1;
+    results.push({
+      workspaceId: row.workspaceId,
+      createdCount: run.createdCount,
+      outreachQueued: run.outreachQueued,
+      emailsSent: send.sent,
     });
   }
 
