@@ -2,12 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/app/actions/auth";
-import {
-  AUTOMATED_RADAR_CONFIG,
-  type AutomatedRadarRunResult,
-} from "@/lib/automated-radar-config";
-import { computeScheduledTimes } from "@/lib/email-scheduling";
-import { DEFAULT_AUTOPILOT_SETTINGS } from "@/lib/autopilot-settings";
+import { AUTOMATED_RADAR_CONFIG, type AutomatedRadarRunResult } from "@/lib/automated-radar-config";
 import { buildRadarSearchQueries } from "@/lib/radar-settings-meta";
 import { loadRadarSettingsPayloadForWorkspace } from "@/app/actions/radar-settings";
 import { queueAutopilotLead } from "@/app/actions/autopilot";
@@ -375,29 +370,16 @@ async function persistAutomatedRadarLeads(
 async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[]): Promise<number> {
   if (leadIds.length === 0) return 0;
 
-  const windows = [
-    { start: DEFAULT_AUTOPILOT_SETTINGS.window1Start, end: DEFAULT_AUTOPILOT_SETTINGS.window1End },
-    { start: DEFAULT_AUTOPILOT_SETTINGS.window2Start, end: DEFAULT_AUTOPILOT_SETTINGS.window2End },
-  ].filter((window) => window.start.trim() && window.end.trim());
-
-  if (windows.length === 0) return 0;
-
-  let scheduledTimes: Date[];
-  try {
-    scheduledTimes = computeScheduledTimes(
-      leadIds.length,
-      windows,
-      DEFAULT_AUTOPILOT_SETTINGS.maxEmailsPerBatch,
-    );
-  } catch {
-    return 0;
-  }
+  // Po automatickém Radaru řadíme ihned (scheduledAt = teď + drobný rozestup),
+  // aby je cron /api/cron/send-emails odeslal při nejbližším běhu.
+  const base = Date.now();
+  const STAGGER_MS = 45_000;
 
   let queued = 0;
   for (let index = 0; index < leadIds.length; index += 1) {
     const result = await queueAutopilotLead({
       leadId: leadIds[index],
-      scheduledAt: scheduledTimes[index].toISOString(),
+      scheduledAt: new Date(base + index * STAGGER_MS).toISOString(),
       workspaceId,
     });
     if ("success" in result && result.success) {
