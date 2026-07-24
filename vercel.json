@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
   "crons": [
     {
       "path": "/api/cron/radar",
@@ -14,16 +13,5 @@
       "path": "/api/cron/send-emails",
       "schedule": "0 12 * * *"
     }
-  ],
-  "functions": {
-    "api/sniper.py": {
-      "maxDuration": 60
-    },
-    "app/api/cron/send-emails/route.ts": {
-      "maxDuration": 60
-    },
-    "app/api/cron/radar/route.ts": {
-      "maxDuration": 300
-    }
-  }
+  ]
 }
