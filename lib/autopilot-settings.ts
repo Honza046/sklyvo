@@ -38,7 +38,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   targetIndustries: "",
   locations: "",
   companySize: "any",
-  autoStartOutreach: true,
+  autoStartOutreach: false,
   maxCompaniesPerRun: 50,
   window1Start: "09:00",
   window1End: "11:30",

@@ -332,10 +332,10 @@ export function AutopilotSettingsDialog({
                 <div className="flex items-center justify-between gap-3 px-3 py-2.5">
                   <div className="min-w-0">
                     <Label htmlFor="auto-start-outreach" className="text-sm text-foreground">
-                      3 · Najít a rovnou poslat
+                      3 · Rovnou odesílat
                     </Label>
                     <p className="text-[11px] leading-snug text-muted-foreground">
-                      Nové firmy se vygenerují do fronty a cron je odešle (potřebuješ připojený e-mail).
+                      Vypnuto = jen uloží do CRM. Zapni, až budeš chtít rovnou generovat a posílat.
                     </p>
                   </div>
                   <Switch
