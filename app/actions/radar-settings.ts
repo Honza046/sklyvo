@@ -243,12 +243,86 @@ export async function setFullAutoEnabled(
       fullAutoEnabled: enabled,
       fullAutoFrequency: "twice_weekly",
       fullAutoRunTime: "08:00",
-      autoStartOutreach: enabled ? true : false,
+      autoStartOutreach: enabled,
+      emailSendCronEnabled: enabled,
     },
     update: {
       fullAutoEnabled: enabled,
-      ...(enabled ? { autoStartOutreach: true } : {}),
+      ...(enabled
+        ? { autoStartOutreach: true, emailSendCronEnabled: true }
+        : {}),
     },
+  });
+
+  revalidatePath("/autopilot");
+  return { ok: true, enabled };
+}
+
+export type AutopilotPowerFlags = {
+  radarCronEnabled: boolean;
+  emailSendCronEnabled: boolean;
+  fullAutoEnabled: boolean;
+};
+
+export async function getAutopilotPowerFlags(): Promise<
+  { flags: AutopilotPowerFlags } | { error: string }
+> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const record = await prisma.radarSettings.findUnique({
+    where: { workspaceId },
+    select: {
+      radarCronEnabled: true,
+      emailSendCronEnabled: true,
+      fullAutoEnabled: true,
+    },
+  });
+
+  return {
+    flags: {
+      radarCronEnabled: record?.radarCronEnabled ?? true,
+      emailSendCronEnabled: record?.emailSendCronEnabled ?? false,
+      fullAutoEnabled: record?.fullAutoEnabled ?? false,
+    },
+  };
+}
+
+export async function setRadarCronEnabled(
+  enabled: boolean,
+): Promise<{ ok: true; enabled: boolean } | { error: string }> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  await prisma.radarSettings.upsert({
+    where: { workspaceId },
+    create: { workspaceId, radarCronEnabled: enabled },
+    update: { radarCronEnabled: enabled },
+  });
+
+  revalidatePath("/autopilot");
+  return { ok: true, enabled };
+}
+
+export async function setEmailSendCronEnabled(
+  enabled: boolean,
+): Promise<{ ok: true; enabled: boolean } | { error: string }> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  await prisma.radarSettings.upsert({
+    where: { workspaceId },
+    create: { workspaceId, emailSendCronEnabled: enabled },
+    update: { emailSendCronEnabled: enabled },
   });
 
   revalidatePath("/autopilot");

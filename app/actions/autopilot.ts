@@ -272,11 +272,29 @@ export async function processEmailQueue(
 ): Promise<ProcessEmailQueueResult> {
   const now = new Date();
 
+  const enabledWorkspaceIds = options?.workspaceId
+    ? null
+    : (
+        await prisma.radarSettings.findMany({
+          where: { emailSendCronEnabled: true },
+          select: { workspaceId: true },
+        })
+      ).map((row) => row.workspaceId);
+
+  // Globální cron: bez zapnutého odesílání nic neposílat.
+  if (!options?.workspaceId && enabledWorkspaceIds && enabledWorkspaceIds.length === 0) {
+    return { ok: true, processed: 0, sent: 0, failed: 0, errors: [] };
+  }
+
   const pending = await prisma.emailQueue.findMany({
     where: {
       status: "PENDING",
       ...(options?.ignoreSchedule ? {} : { scheduledAt: { lte: now } }),
-      ...(options?.workspaceId ? { lead: { workspaceId: options.workspaceId } } : {}),
+      ...(options?.workspaceId
+        ? { lead: { workspaceId: options.workspaceId } }
+        : enabledWorkspaceIds
+          ? { lead: { workspaceId: { in: enabledWorkspaceIds } } }
+          : {}),
     },
     orderBy: { scheduledAt: "asc" },
     take: limit,

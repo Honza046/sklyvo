@@ -181,6 +181,57 @@ export function useAutopilotLabels() {
   return { leadStatusLabel: localizedLeadStatusLabel, dateLocale };
 }
 
+export function AutopilotPowerBadge({ enabled }: { enabled: boolean }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+        enabled
+          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+          : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+      )}
+    >
+      {enabled ? "Zapnuto" : "Vypnuto"}
+    </span>
+  );
+}
+
+export function AutopilotPowerButton({
+  enabled,
+  onClick,
+  disabled,
+  accent = "emerald",
+}: {
+  enabled: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+  accent?: "emerald" | "blue" | "violet";
+}) {
+  const onClass = {
+    emerald: "bg-emerald-600 text-white hover:bg-emerald-700",
+    blue: "bg-blue-600 text-white hover:bg-blue-700",
+    violet: "bg-violet-600 text-white hover:bg-violet-700",
+  }[accent];
+  const offClass = {
+    emerald:
+      "border border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-zinc-950 dark:text-emerald-300",
+    blue: "border border-blue-300 bg-white text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
+    violet:
+      "border border-violet-300 bg-white text-violet-800 hover:bg-violet-50 dark:border-violet-700 dark:bg-zinc-950 dark:text-violet-300",
+  }[accent];
+
+  return (
+    <Button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn("shrink-0 px-5 font-semibold", enabled ? offClass : onClass)}
+    >
+      {disabled ? "Ukládám…" : enabled ? "Vypnout" : "Zapnout"}
+    </Button>
+  );
+}
+
 export function AutopilotControlPanel({
   icon,
   iconWrapClassName,
@@ -188,6 +239,7 @@ export function AutopilotControlPanel({
   description,
   extra,
   actions,
+  powerEnabled,
 }: {
   icon: React.ReactNode;
   iconWrapClassName: string;
@@ -195,6 +247,8 @@ export function AutopilotControlPanel({
   description: string;
   extra?: React.ReactNode;
   actions: React.ReactNode;
+  /** Pokud je předáno, zobrazí badge Zapnuto/Vypnout u názvu. */
+  powerEnabled?: boolean;
 }) {
   return (
     <div className="relative shrink-0 rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
@@ -202,7 +256,10 @@ export function AutopilotControlPanel({
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className={cn("shrink-0 rounded-xl p-2", iconWrapClassName)}>{icon}</div>
           <div className="min-w-0 text-left">
-            <h2 className="text-base font-semibold text-foreground">{title}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-foreground">{title}</h2>
+              {powerEnabled != null ? <AutopilotPowerBadge enabled={powerEnabled} /> : null}
+            </div>
             <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
             {extra}
           </div>

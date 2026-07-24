@@ -10,6 +10,7 @@ import { runAutomatedRadar } from "@/app/actions/radar";
 import { toast } from "sonner";
 import {
   AutopilotControlPanel,
+  AutopilotPowerButton,
   AutopilotSettingsIconButton,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
@@ -41,10 +42,14 @@ export function AutopilotRadarView() {
     setSettingsOpen,
     settingsLoading,
     isSavingSettings,
+    isTogglingPower,
     automationSettings,
     setAutomationSettings,
+    featureEnabled,
+    setFeatureEnabledLocal,
     openSettings,
     handleSaveAutomationSettings,
+    toggleFeaturePower,
   } = useAutopilotSettings("radar");
 
   const loadLeads = async () => {
@@ -141,13 +146,20 @@ export function AutopilotRadarView() {
         onSave={handleSaveAutomationSettings}
         isLoading={settingsLoading}
         isSaving={isSavingSettings}
+        featureEnabled={featureEnabled}
+        onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
       <AutopilotControlPanel
         icon={<Radio className="h-5 w-5" />}
         iconWrapClassName="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
         title={t("autopilot.radarTitle")}
-        description={t("autopilot.radarDescription")}
+        powerEnabled={featureEnabled}
+        description={
+          featureEnabled
+            ? "Automatický sběr zapnutý — cron hledá firmy podle nastavení (~3:00 Praha)."
+            : "Automatický sběr vypnutý — cron firmy nehledá. Ruční sběr funguje dál."
+        }
         extra={
           radarSummary ? (
             <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
@@ -157,6 +169,12 @@ export function AutopilotRadarView() {
         }
         actions={
           <>
+            <AutopilotPowerButton
+              enabled={featureEnabled}
+              disabled={isTogglingPower}
+              accent="emerald"
+              onClick={() => void toggleFeaturePower()}
+            />
             <Button
               onClick={() => void handleAutomaticRadarCollect()}
               disabled={isCollecting}

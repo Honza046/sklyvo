@@ -67,6 +67,9 @@ type AutopilotSettingsDialogProps = {
   onSave?: () => void | Promise<void>;
   isLoading?: boolean;
   isSaving?: boolean;
+  /** Zapnutí/vypnutí cronu pro danou funkci. */
+  featureEnabled?: boolean;
+  onFeatureEnabledChange?: (enabled: boolean) => void;
 };
 
 export function AutopilotSettingsDialog({
@@ -78,6 +81,8 @@ export function AutopilotSettingsDialog({
   onSave,
   isLoading = false,
   isSaving = false,
+  featureEnabled,
+  onFeatureEnabledChange,
 }: AutopilotSettingsDialogProps) {
   const meta = SECTION_META[section];
   const SectionIcon = meta.icon;
@@ -146,6 +151,44 @@ export function AutopilotSettingsDialog({
             </DialogTitle>
             <DialogDescription className="text-xs">{meta.description}</DialogDescription>
           </DialogHeader>
+
+          {featureEnabled != null && onFeatureEnabledChange ? (
+            <div
+              className={cn(
+                "flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5",
+                featureEnabled
+                  ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900 dark:bg-emerald-950/30"
+                  : "border-border/60 bg-muted/20",
+              )}
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">
+                  {featureEnabled ? "Automatika zapnutá" : "Automatika vypnutá"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {section === "radar"
+                    ? "Vypnuto = noční cron firmy nehledá (ruční sběr funguje dál)."
+                    : section === "sniper"
+                      ? "Vypnuto = cron maily neposílá, i když jsou ve frontě."
+                      : "Vypnuto = Full Auto cron neběží."}
+                </p>
+              </div>
+              <Switch
+                checked={featureEnabled}
+                onCheckedChange={onFeatureEnabledChange}
+                disabled={disabled}
+                className={cn(
+                  "shrink-0",
+                  section === "radar" &&
+                    "data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-input",
+                  section === "sniper" &&
+                    "data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-input",
+                  section === "full-auto" &&
+                    "data-[state=checked]:bg-violet-600 data-[state=unchecked]:bg-input",
+                )}
+              />
+            </div>
+          ) : null}
 
         {section === "radar" && (
           <div className="grid gap-3 md:grid-cols-2">

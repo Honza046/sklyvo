@@ -528,6 +528,7 @@ export async function processScheduledRadarRuns(): Promise<{
 }> {
   const { weekday, dateKey } = getPragueParts();
   const settings = await prisma.radarSettings.findMany({
+    where: { radarCronEnabled: true },
     select: {
       workspaceId: true,
       scheduleDays: true,

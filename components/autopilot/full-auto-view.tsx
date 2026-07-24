@@ -3,16 +3,14 @@
 import { useEffect, useState } from "react";
 import { Globe, Mail, Sparkles } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   getFullAutoProcessHistory,
   type FullAutoProcessHistoryRow,
 } from "@/app/actions/autopilot";
-import { setFullAutoEnabled } from "@/app/actions/radar-settings";
-import { toast } from "sonner";
 import {
   AutopilotControlPanel,
+  AutopilotPowerButton,
   AutopilotSettingsIconButton,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
@@ -37,15 +35,15 @@ export function AutopilotFullAutoView() {
     setSettingsOpen,
     settingsLoading,
     isSavingSettings,
+    isTogglingPower,
     automationSettings,
     setAutomationSettings,
-    fullAutoEnabled,
-    setFullAutoEnabledState,
+    featureEnabled,
+    setFeatureEnabledLocal,
     openSettings,
     handleSaveAutomationSettings,
+    toggleFeaturePower,
   } = useAutopilotSettings("full-auto");
-
-  const [isTogglingFullAuto, setIsTogglingFullAuto] = useState(false);
 
   const loadFullAutoHistory = async () => {
     setIsFullAutoHistoryLoading(true);
@@ -87,26 +85,6 @@ export function AutopilotFullAutoView() {
   const fullAutoShownTo =
     fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + paginatedFullAutoRows.length;
 
-  const handleActivateFullAuto = async () => {
-    setIsTogglingFullAuto(true);
-    try {
-      const next = !fullAutoEnabled;
-      const result = await setFullAutoEnabled(next);
-      if ("error" in result) {
-        toast.error(result.error);
-        return;
-      }
-      setFullAutoEnabledState(result.enabled);
-      toast.success(
-        result.enabled
-          ? "Full Auto zapnuté — cron kolem 8:00 najde firmy a rovnou pošle maily."
-          : "Full Auto vypnuté.",
-      );
-    } finally {
-      setIsTogglingFullAuto(false);
-    }
-  };
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col">
       <AutopilotSettingsDialog
@@ -118,35 +96,28 @@ export function AutopilotFullAutoView() {
         onSave={handleSaveAutomationSettings}
         isLoading={settingsLoading}
         isSaving={isSavingSettings}
+        featureEnabled={featureEnabled}
+        onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
       <AutopilotControlPanel
         icon={<Sparkles className="h-5 w-5" />}
         iconWrapClassName="bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
         title="Plná automatizace (Full Auto)"
+        powerEnabled={featureEnabled}
         description={
-          fullAutoEnabled
-            ? "Aktivní — Radar najde firmy a e-maily se odešlou přes cron Full Auto (~8:00 Praha)."
-            : "Radar vyhledá nové firmy a Sniper jim rovnou pošle personalizované e-maily."
+          featureEnabled
+            ? "Zapnuto — cron kolem 8:00 najde firmy a rovnou pošle maily."
+            : "Vypnuto — Full Auto cron neběží. Zapni, až budeš chtít celou smyčku."
         }
         actions={
           <>
-            <Button
-              onClick={() => void handleActivateFullAuto()}
-              disabled={isTogglingFullAuto}
-              className={
-                fullAutoEnabled
-                  ? "shrink-0 border border-violet-300 bg-white px-6 font-semibold text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:bg-zinc-950 dark:text-violet-300"
-                  : "shrink-0 bg-violet-600 px-6 font-semibold text-white hover:bg-violet-700"
-              }
-            >
-              <Sparkles className="mr-2 h-4 w-4" />
-              {isTogglingFullAuto
-                ? "Ukládám…"
-                : fullAutoEnabled
-                  ? "Vypnout Full Auto"
-                  : "Aktivovat Full Auto"}
-            </Button>
+            <AutopilotPowerButton
+              enabled={featureEnabled}
+              disabled={isTogglingPower}
+              accent="violet"
+              onClick={() => void toggleFeaturePower()}
+            />
             <AutopilotSettingsIconButton
               label="Nastavení Full Auto"
               onClick={openSettings}
@@ -164,61 +135,24 @@ export function AutopilotFullAutoView() {
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
                   Firma
                 </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[24%]")}>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
                   Kontakt
                 </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[22%]")}>
-                  Čas zpracování
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
+                  Zpracování
                 </th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[18%]")}>
                   Stav automatizace
                 </th>
               </tr>
             </thead>
-            <tbody>
-              {paginatedFullAutoRows.map((row) => {
-                const web = leadFullWebsiteUrl(row.url);
-                return (
-                  <tr
-                    key={row.id}
-                    className="border-b border-border/40 transition-colors hover:bg-muted/40"
-                  >
-                    <td className="px-3 py-3">
-                      <p className="break-words font-semibold text-foreground">{row.company}</p>
-                      <span className="flex items-center break-words text-xs text-muted-foreground">
-                        <Globe className="mr-1 h-3 w-3 shrink-0" />
-                        {row.url || web || "–"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          "flex break-words text-sm",
-                          row.email ? "text-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                        {row.email || "Bez e-mailu"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-sm text-foreground">
-                      {formatProcessedDateTime(row.processedAt)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <FullAutoStatusBadge status={row.automationStatus} />
-                    </td>
-                  </tr>
-                );
-              })}
-              {paginatedFullAutoRows.length === 0 && (
+            <tbody className="divide-y divide-border/40">
+              {isFullAutoHistoryLoading ? (
+                <AutopilotTableEmptyState colSpan={4}>Načítám historii…</AutopilotTableEmptyState>
+              ) : (
                 <>
-                  {isFullAutoHistoryLoading && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      Načítám historii automatizace…
-                    </AutopilotTableEmptyState>
-                  )}
                   {!isFullAutoHistoryLoading && fullAutoHistoryError && (
-                    <AutopilotTableEmptyState colSpan={4} className="text-rose-600 dark:text-rose-400">
+                    <AutopilotTableEmptyState colSpan={4}>
                       {fullAutoHistoryError}
                     </AutopilotTableEmptyState>
                   )}
@@ -226,16 +160,50 @@ export function AutopilotFullAutoView() {
                     !fullAutoHistoryError &&
                     fullAutoRows.length === 0 && (
                       <AutopilotTableEmptyState colSpan={4}>
-                        Zatím žádná aktivita Full Auto. Po spuštění smyčky se zde zobrazí průběh
-                        zpracování firem.
+                        Zatím žádná historie Full Auto.
                       </AutopilotTableEmptyState>
                     )}
+                  {paginatedFullAutoRows.map((row) => (
+                    <tr key={row.id} className="hover:bg-muted/20">
+                      <td className="px-6 py-3.5">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-foreground">{row.company}</p>
+                          {row.url ? (
+                            <a
+                              href={leadFullWebsiteUrl(row.url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              <Globe className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{row.url}</span>
+                            </a>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        {row.email ? (
+                          <span className="inline-flex max-w-full items-center gap-1.5 truncate text-xs text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{row.email}</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-3.5 text-xs text-muted-foreground">
+                        {formatProcessedDateTime(row.processedAt)}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <FullAutoStatusBadge status={row.automationStatus} />
+                      </td>
+                    </tr>
+                  ))}
                 </>
               )}
             </tbody>
           </table>
         </div>
-
         <AutopilotTablePagination
           shownFrom={fullAutoShownFrom}
           shownTo={fullAutoShownTo}

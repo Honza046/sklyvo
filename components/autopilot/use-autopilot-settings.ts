@@ -7,7 +7,16 @@ import {
   DEFAULT_AUTOPILOT_SETTINGS,
   type AutopilotAutomationSettings,
 } from "@/lib/autopilot-settings";
-import { getRadarSettings, saveRadarSettings, getFullAutoSettings, saveFullAutoSettings } from "@/app/actions/radar-settings";
+import {
+  getRadarSettings,
+  saveRadarSettings,
+  getFullAutoSettings,
+  saveFullAutoSettings,
+  getAutopilotPowerFlags,
+  setRadarCronEnabled,
+  setEmailSendCronEnabled,
+  setFullAutoEnabled,
+} from "@/app/actions/radar-settings";
 import {
   FULL_AUTO_SETTINGS_STORAGE_KEY,
   SNIPER_SETTINGS_STORAGE_KEY,
@@ -17,6 +26,9 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isTogglingPower, setIsTogglingPower] = useState(false);
+  const [radarCronEnabled, setRadarCronEnabledState] = useState(true);
+  const [emailSendCronEnabled, setEmailSendCronEnabledState] = useState(false);
   const [fullAutoEnabled, setFullAutoEnabledState] = useState(false);
   const [automationSettings, setAutomationSettings] =
     useState<AutopilotAutomationSettings>(DEFAULT_AUTOPILOT_SETTINGS);
@@ -44,12 +56,25 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   }, []);
 
   useEffect(() => {
-    if (section !== "radar" && section !== "full-auto") return;
-    if (section === "radar" && !settingsOpen) return;
+    let cancelled = false;
+    void (async () => {
+      const flags = await getAutopilotPowerFlags();
+      if (cancelled || !("flags" in flags)) return;
+      setRadarCronEnabledState(flags.flags.radarCronEnabled);
+      setEmailSendCronEnabledState(flags.flags.emailSendCronEnabled);
+      setFullAutoEnabledState(flags.flags.fullAutoEnabled);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
 
     let cancelled = false;
     void (async () => {
-      if (settingsOpen || section === "full-auto") setSettingsLoading(true);
+      setSettingsLoading(true);
       if (section === "radar") {
         const result = await getRadarSettings();
         if (!cancelled && "settings" in result) {
@@ -64,7 +89,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             maxCompaniesPerRun: result.settings.maxCompaniesPerRun,
           }));
         }
-      } else {
+      } else if (section === "full-auto") {
         const result = await getFullAutoSettings();
         if (!cancelled && "settings" in result) {
           setFullAutoEnabledState(result.settings.enabled);
@@ -83,27 +108,82 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
     };
   }, [settingsOpen, section]);
 
+  const featureEnabled =
+    section === "radar"
+      ? radarCronEnabled
+      : section === "sniper"
+        ? emailSendCronEnabled
+        : fullAutoEnabled;
+
+  const setFeatureEnabledLocal = (enabled: boolean) => {
+    if (section === "radar") setRadarCronEnabledState(enabled);
+    else if (section === "sniper") setEmailSendCronEnabledState(enabled);
+    else setFullAutoEnabledState(enabled);
+  };
+
+  const toggleFeaturePower = async (next?: boolean) => {
+    const enabled = next ?? !featureEnabled;
+    setIsTogglingPower(true);
+    try {
+      const result =
+        section === "radar"
+          ? await setRadarCronEnabled(enabled)
+          : section === "sniper"
+            ? await setEmailSendCronEnabled(enabled)
+            : await setFullAutoEnabled(enabled);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      setFeatureEnabledLocal(result.enabled);
+      toast.success(
+        result.enabled
+          ? section === "radar"
+            ? "Automatický sběr Radaru zapnutý."
+            : section === "sniper"
+              ? "Automatické odesílání zapnuté."
+              : "Full Auto zapnuté."
+          : section === "radar"
+            ? "Automatický sběr Radaru vypnutý."
+            : section === "sniper"
+              ? "Automatické odesílání vypnuté."
+              : "Full Auto vypnuté.",
+      );
+    } finally {
+      setIsTogglingPower(false);
+    }
+  };
+
   const handleSaveAutomationSettings = async () => {
     setIsSavingSettings(true);
     try {
       if (section === "radar") {
-        const result = await saveRadarSettings({
-          targetIndustries: automationSettings.targetIndustries,
-          locations: automationSettings.locations,
-          companySize: automationSettings.companySize,
-          autoStartOutreach: automationSettings.autoStartOutreach,
-          radarDays: automationSettings.radarDays,
-          radarRunTime: automationSettings.radarRunTime,
-          maxCompaniesPerRun: automationSettings.maxCompaniesPerRun,
-        });
+        const [settingsResult, powerResult] = await Promise.all([
+          saveRadarSettings({
+            targetIndustries: automationSettings.targetIndustries,
+            locations: automationSettings.locations,
+            companySize: automationSettings.companySize,
+            autoStartOutreach: automationSettings.autoStartOutreach,
+            radarDays: automationSettings.radarDays,
+            radarRunTime: automationSettings.radarRunTime,
+            maxCompaniesPerRun: automationSettings.maxCompaniesPerRun,
+          }),
+          setRadarCronEnabled(radarCronEnabled),
+        ]);
 
-        if ("error" in result) {
-          toast.error(result.error);
+        if ("error" in settingsResult) {
+          toast.error(settingsResult.error);
+          return;
+        }
+        if ("error" in powerResult) {
+          toast.error(powerResult.error);
           return;
         }
 
         toast.success(
-          "Pravidla Radaru jsou aktivní. Projeví se při příštím automatickém sběru.",
+          radarCronEnabled
+            ? "Nastavení Radaru uloženo — automatický sběr je zapnutý."
+            : "Nastavení Radaru uloženo — automatický sběr je vypnutý.",
         );
         setSettingsOpen(false);
         return;
@@ -119,7 +199,16 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           sendingStrategy: automationSettings.sendingStrategy,
         };
         window.localStorage.setItem(SNIPER_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
-        toast.success("Nastavení odesílání je aktivní pro další kampaň.");
+        const powerResult = await setEmailSendCronEnabled(emailSendCronEnabled);
+        if ("error" in powerResult) {
+          toast.error(powerResult.error);
+          return;
+        }
+        toast.success(
+          emailSendCronEnabled
+            ? "Odesílání uloženo — automatický cron je zapnutý."
+            : "Odesílání uloženo — automatický cron je vypnutý.",
+        );
         setSettingsOpen(false);
         return;
       }
@@ -146,8 +235,8 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
       }
       toast.success(
         fullAutoEnabled
-          ? "Full Auto je aktivní — cron najde firmy a odešle maily."
-          : "Nastavení Full Auto je uloženo (zatím vypnuté).",
+          ? "Full Auto uloženo a zapnuté."
+          : "Full Auto uloženo — zůstává vypnuté.",
       );
       setSettingsOpen(false);
     } finally {
@@ -160,10 +249,16 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
     setSettingsOpen,
     settingsLoading,
     isSavingSettings,
+    isTogglingPower,
     automationSettings,
     setAutomationSettings,
+    featureEnabled,
+    setFeatureEnabledLocal,
+    radarCronEnabled,
+    emailSendCronEnabled,
     fullAutoEnabled,
     setFullAutoEnabledState,
+    toggleFeaturePower,
     openSettings: () => setSettingsOpen(true),
     handleSaveAutomationSettings,
   };

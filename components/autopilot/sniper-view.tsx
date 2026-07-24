@@ -49,6 +49,7 @@ import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
 import {
   AutopilotControlPanel,
+  AutopilotPowerButton,
   AutopilotSettingsIconButton,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
@@ -98,10 +99,14 @@ export function AutopilotSniperView() {
     setSettingsOpen,
     settingsLoading,
     isSavingSettings,
+    isTogglingPower,
     automationSettings,
     setAutomationSettings,
+    featureEnabled,
+    setFeatureEnabledLocal,
     openSettings,
     handleSaveAutomationSettings,
+    toggleFeaturePower,
   } = useAutopilotSettings("sniper");
 
   const applyQueueFromRows = useCallback((rows: AutopilotEmailQueueRow[]) => {
@@ -548,15 +553,28 @@ export function AutopilotSniperView() {
         onSave={handleSaveAutomationSettings}
         isLoading={settingsLoading}
         isSaving={isSavingSettings}
+        featureEnabled={featureEnabled}
+        onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
       <AutopilotControlPanel
         icon={<Send className="h-5 w-5" />}
         iconWrapClassName="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
         title="Automatické odesílání e-mailů"
-        description="Systém automaticky generuje a odesílá personalizované  e-maily vybraným firmám z fronty."
+        powerEnabled={featureEnabled}
+        description={
+          featureEnabled
+            ? "Automatické odesílání zapnuté — cron posílá splatné maily z fronty."
+            : "Automatické odesílání vypnuté — cron nic neposílá. Ruční odeslání funguje dál."
+        }
         actions={
           <>
+            <AutopilotPowerButton
+              enabled={featureEnabled}
+              disabled={isTogglingPower}
+              accent="blue"
+              onClick={() => void toggleFeaturePower()}
+            />
             <button
               type="button"
               onClick={() => void handleForceSendQueue()}

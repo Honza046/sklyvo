@@ -151,6 +151,11 @@ model RadarSettings {
   /** Poslední úspěšný běh naplánovaného Radaru (cron). */
   lastScheduledRunAt DateTime?
 
+  /** Automatický noční/denní sběr Radaru (cron /api/cron/radar). */
+  radarCronEnabled   Boolean  @default(true)
+  /** Automatické odesílání fronty (cron /api/cron/send-emails). */
+  emailSendCronEnabled Boolean @default(false)
+
   /** Full Auto — kompletní smyčka Radar → fronta → odeslání. */
   fullAutoEnabled    Boolean  @default(false)
   /** once_weekly | twice_weekly | daily */
