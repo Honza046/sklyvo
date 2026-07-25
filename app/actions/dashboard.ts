@@ -57,7 +57,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     prisma.lead.findMany({
       where: { workspaceId },
       orderBy: { updatedAt: "desc" },
-      take: 5,
+      take: 6,
       select: {
         id: true,
         companyName: true,

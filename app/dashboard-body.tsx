@@ -167,7 +167,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                 </p>
               </div>
             ) : (
-              <ul className="custom-scrollbar mb-4 max-h-[min(280px,40vh)] flex-1 divide-y divide-border/50 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
+              <ul className="custom-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
                 {recentActivity.map((item) => (
                   <li key={item.id} className="px-4 py-3">
                     <p className="text-sm font-medium leading-snug text-foreground">
@@ -184,15 +184,6 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                 ))}
               </ul>
             )}
-
-            <div className="mt-1 shrink-0 w-full text-center">
-              <Link
-                href="/crm"
-                className="text-sm text-blue-600 transition-colors hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                Zobrazit celou historii v CRM →
-              </Link>
-            </div>
           </div>
           {/* ZDE KONČÍ BLOK NEDÁVNÉ AKTIVITY */}
         </div> {/* <--- TADY JE TEN CHYBĚJÍCÍ DIV PRO LEVÝ SLOUPEC! */}
