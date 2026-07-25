@@ -16,13 +16,13 @@ export const PREDEFINED_SERVICE_GROUPS = [
     id: "digital",
     label: "Digitální služby a IT",
     services: [
-      "Vývoj webů a aplikací",
-      "AI systémy a chatboti",
-      "Automatizace procesů",
+      "Redesign a tvorba webů",
+      "E-shopy (Shopify) a redesign e-shopů",
       "UI/UX Design",
-      "SEO a online marketing",
-      "Správa sociálních sítí",
-      "IT podpora a bezpečnost",
+      "SEO a rychlost webu",
+      "AI systémy a chatboti",
+      "Aplikace a interní systémy na míru",
+      "Automatizace procesů",
     ],
   },
   {
@@ -82,8 +82,10 @@ export const SNIPER_AUTODETECT_LABEL = "Chytrá autodetekce AI";
 /** Statické možnosti výběru „Typ nabídky“ ve Sniperu (nezávislé na databázi). */
 export const SNIPER_OFFER_OPTIONS = [
   { value: SNIPER_AUTODETECT_VALUE, label: SNIPER_AUTODETECT_LABEL },
-  { value: "Vývoj webů a aplikací", label: "Vývoj webů a aplikací" },
+  { value: "Redesign a tvorba webů", label: "Redesign a tvorba webů" },
+  { value: "E-shopy (Shopify) a redesign e-shopů", label: "E-shopy (Shopify) a redesign e-shopů" },
   { value: "AI systémy a chatboti", label: "AI systémy a chatboti" },
+  { value: "Aplikace a interní systémy na míru", label: "Aplikace a interní systémy na míru" },
   { value: "Automatizace procesů", label: "Automatizace procesů" },
   { value: "UI/UX Design", label: "UI/UX Design" },
 ] as const;

@@ -64,9 +64,9 @@ const languageFlagMap: Record<string, string> = {
 };
 
 const MOCK_SUBJECTS = [
-  "Doporučení pro váš klientský portál",
-  "Napadla mě jedna věc ohledně vašeho webu",
-  "Rychlý dotaz k AI integraci"
+  "rychlá myšlenka k vašemu webu",
+  "napadla mě jedna věc k redesignu",
+  "dotaz k mobilní verzi e shopu",
 ];
 
 const INITIAL_EMAIL_BODY = `Dobrý den,

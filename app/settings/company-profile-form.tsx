@@ -57,7 +57,7 @@ export function CompanyProfileForm({ initialContext }: CompanyProfileFormProps) 
           value={companyContext}
           onChange={(e) => setCompanyContext(e.target.value)}
           disabled={isSaving}
-          placeholder="Např. Jsme digitální agentura zaměřená na weby pro řemeslníky. Nabízíme rychlé dodání do 14 dnů, SEO optimalizaci a průběžnou správu. Naši klienti oceňují osobní přístup a jasné ceny bez skrytých poplatků."
+          placeholder="Např. Jsme Venegard — digitální agentura. Primárně děláme redesign a tvorbu webů a e-shopů (včetně Shopify). Při zájmu i AI, automatizace a interní aplikace. Fixní nabídka, projekty na míru bez šablon."
           className="min-h-[180px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">

@@ -849,17 +849,25 @@ function buildSniperSystemPrompt(
   const taskBlock = isAutodetect
     ? [
         "TVŮJ ÚKOL (REŽIM AUTODETEKCE SLUŽBY):",
-        "Nejdřív z webu pochop, čím se klient živí. Z naší znalostní báze vyber 1 službu (max. 2), která dává smysl právě jim.",
-        "E-mail postav na konkrétním postřehu z webu + jedné jasné nabídce pomoci. Žádné obecné AI/SaaS řeči.",
+        "Nejdřív z webu pochop, čím se klient živí a jak vypadá jejich digitální prezentace (web / e-shop).",
+        "PRIORITA NABÍDKY (povinná hierarchie — dodržuj, pokud z webu neplyne jasná výjimka):",
+        "1) PRIMÁRNĚ: redesign stávajícího webu / e-shopu, nový web, landing pages, Shopify e-shop na míru, migrace e-shopu, UX/UI webu, rychlost a konverze webu.",
+        "2) SEKUNDÁRNĚ (jen když web/e-shop už působí solidně NEBO klient výslovně řeší procesy/data/podporu): AI chatboti/voiceboti, automatizace, interní aplikace, dashboardy, platformy.",
+        "Výchozí volba pro většinu firem s klasickým prezentačním webem nebo e-shopem = redesign / nový web / e-shop. Neotvírej hned AI ani „SaaS aplikaci“, pokud to web sám nevyžaduje.",
+        "E-mail postav na konkrétním postřehu z webu + jedné jasné nabídce pomoci. Žádné obecné AI/SaaS řeči. Jedna služba (max. 2 jen pokud spolu úzce souvisí, např. redesign + rychlost).",
       ]
     : [
         "TVŮJ ÚKOL:",
         "Z textu webu napiš krátký cold e-mail. Čtenář musí poznat, že jsi web opravdu prošel. Jedna myšlenka, žádná vata.",
+        "Nabídku drž u zvolené služby. Pokud je to web/e-shop redesign, mluv o vzhledu, použitelnosti, rychlosti, konverzích — ne o AI.",
       ];
   return [
     `Píšeš obchodní e-mail jménem uživatele. Informace o jeho firmě, nabízených službách a hodnotách, které musíš v e-mailu přirozeně použít, najdeš zde:`,
     ctx.companyContext,
     ...knowledgeBase,
+    "",
+    "POZICE AGENTURY (kontext nabídky):",
+    "Jsme Venegard — digitální agentura. Lidem nejčastěji pomáháme s redesignem a tvorbou webů a e-shopů (včetně Shopify na míru). AI, automatizace a interní aplikace nabízíme až jako další krok, když to dává smysl.",
     "",
     personaIntro,
     "",
@@ -883,7 +891,7 @@ function buildSniperSystemPrompt(
     "STRUKTURA TĚLA (vygenerovany_email) — přesně v tomto pořadí:",
     "1) Ledoborec: jedna konkrétní věc z webu (specializace, služba, typ klientů). Bez chvály a bez SaaS frází.",
     isAutodetect
-      ? "2) Nabídka: jedna věc, kterou bychom jim mohli zlepšit / ušetřit — navázaná na jejich obor a 1 vybranou službu. Bez výčtu funkcí."
+      ? "2) Nabídka: jedna konkrétní věc ke zlepšení jejich webu/e-shopu (primárně redesign, nový web, konverze, rychlost, Shopify) — nebo sekundárně AI/aplikace, jen když to z webu dává jasný smysl. Bez výčtu funkcí."
       : `2) Nabídka: jedna věc ke zlepšení z jejich webu v návaznosti na „${nab}“. Bez výčtu funkcí a bez obecného marketingového pitchování.`,
     "3) CTA: jen krátká otázka (např. jestli mají příští týden 10 minut). BEZ podpisu v tomto odstavci.",
     "4) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek). Přesný formát:",
@@ -933,7 +941,7 @@ function buildLanguageToneSegmentBlock(params: GenerateEmailParams): string {
     "STYL: elegantní, věcný, krátký. Žádná AI vata („digitální doba“, „vizitka“, výčet SEO/marketing).",
     "ZÁKLAD: 1) co firma dělá, 2) jedna konkrétní příležitost, 3) jak pomůžeme, 4) měkké CTA.",
     isAutodetect
-      ? "Službu vyber sám: 1 (max. 2) z naší znalostní báze podle webu."
+      ? "Službu vyber sám podle PRIORITY: 1) redesign/nový web/e-shop, 2) teprve pak AI/automatizace/interní apps — jen když to web jasně žádá."
       : `Služba, kterou v tomto e-mailu primárně nabízíš: ${params.selectedOfferedService}`,
   ].join("\n");
 }
@@ -1117,7 +1125,7 @@ async function runSniperEmailGeneration(
     `- Pole musí obsahovat ${SNIPER_SUBJECT_VARIANTS_MIN} až ${SNIPER_SUBJECT_VARIANTS_MAX} různých předmětů.`,
     `Každý předmět: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov, začátek malým písmenem, tón zvědavého člověka co web opravdu četl (ne suchá klíčová slova).`,
     isAutodetect
-      ? "Službu, kterou v e-mailu nabízíš, si vyber sám podle analýzy webu (1 až 2 z naší znalostní báze). Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.)."
+      ? "Službu, kterou v e-mailu nabízíš, si vyber sám: primárně redesign/nový web/e-shop; AI/apps jen když to web jasně žádá. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.)."
       : `Tvoje nabízená služba v tomto e-mailu (propojení světů): „${offerForPrompts}“. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.).`,
     "Čtyři varianty předmětu dodrž psychologické vzorce ze system promptu (1 osobní postřeh + web, 2 konkrétní dotaz na jejich službu z webu, 3 propojení jejich světa s naší nabídkou, 4 neformální přímý dotaz).",
   ].join("\n");
@@ -1484,7 +1492,7 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
       "1. Konkrétní postřeh k obsahu webu (ne obecné „k vašemu webu“).",
       "2. Konkrétní dotaz na jejich službu nebo způsob práce z textu webu.",
       isAutodetect
-        ? "3. Propojení jejich světa s tou naší službou, kterou vybereš podle analýzy webu, nebo neformální přímý dotaz k tématu z webu."
+        ? "3. Propojení jejich světa s redesignem / novým webem / e-shopem (nebo AI/apps jen když to dává jasný smysl), případně neformální přímý dotaz k webu."
         : `3. Propojení jejich světa s nabídkou „${offerForPrompts}“ nebo neformální přímý dotaz k tématu z webu.`,
       "",
       `ABSOLUTNÍ ZÁKAZ SLOV: „synergie“, „namontujeme“. Další zakázaná slova: ${FORBIDDEN_SUBSTRINGS.filter((w) => w !== "synergie" && w !== "namontujeme").join(", ")}.`,
@@ -1496,7 +1504,7 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
     const prompt = [
       `Doména klienta (interní orientace z URL; do předmětů ji nepiš): ${clientSiteLabel}`,
       isAutodetect
-        ? "Službu, které se předměty týkají, vyber sám podle analýzy webu klienta (z naší znalostní báze)."
+        ? "Službu, které se předměty týkají, vyber sám: primárně redesign/web/e-shop; sekundárně AI/automatizace/apps."
         : `Služba, kterou v tomto e-mailu nabízíš (nase_nabizena_sluzba): ${offerForPrompts}`,
       "",
       "Data z webu klienta:",
