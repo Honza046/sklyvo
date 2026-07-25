@@ -10,6 +10,47 @@ import { cn } from "@/lib/utils";
 
 const ACTION_SLOT = /__ACTION_(\d+)__/g;
 
+/** Inline markdown → React (bold / italic / code). */
+function renderInlineMarkdown(text: string, keyPrefix: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`)/g;
+  let last = 0;
+  let match: RegExpExecArray | null;
+  let i = 0;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > last) {
+      nodes.push(text.slice(last, match.index));
+    }
+    if (match[2] != null) {
+      nodes.push(
+        <strong key={`${keyPrefix}-b-${i++}`} className="font-semibold">
+          {match[2]}
+        </strong>,
+      );
+    } else if (match[3] != null) {
+      nodes.push(
+        <em key={`${keyPrefix}-i-${i++}`} className="italic">
+          {match[3]}
+        </em>,
+      );
+    } else if (match[4] != null) {
+      nodes.push(
+        <code
+          key={`${keyPrefix}-c-${i++}`}
+          className="rounded bg-muted/80 px-1 py-0.5 font-mono text-[10px]"
+        >
+          {match[4]}
+        </code>,
+      );
+    }
+    last = match.index + match[0].length;
+  }
+
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 type CopilotMessageProps = {
   content: string;
   actions?: CopilotAction[];
@@ -41,6 +82,22 @@ export function CopilotMessage({
     }
   };
 
+  const renderTextChunk = (text: string, key: string) => {
+    if (!text) return null;
+    if (isUser) {
+      return (
+        <span key={key} className="whitespace-pre-wrap">
+          {text}
+        </span>
+      );
+    }
+    return (
+      <span key={key} className="whitespace-pre-wrap">
+        {renderInlineMarkdown(text, key)}
+      </span>
+    );
+  };
+
   const renderContent = () => {
     const parts: ReactNode[] = [];
     let lastIndex = 0;
@@ -49,7 +106,8 @@ export function CopilotMessage({
     ACTION_SLOT.lastIndex = 0;
     while ((match = ACTION_SLOT.exec(content)) !== null) {
       const before = content.slice(lastIndex, match.index);
-      if (before) parts.push(<span key={`t-${lastIndex}`}>{before}</span>);
+      const chunk = renderTextChunk(before, `t-${lastIndex}`);
+      if (chunk) parts.push(chunk);
 
       const actionIndex = Number(match[1]);
       const action = actions[actionIndex];
@@ -69,11 +127,17 @@ export function CopilotMessage({
       lastIndex = match.index + match[0].length;
     }
 
-    const tail = content.slice(lastIndex);
-    if (tail) parts.push(<span key={`t-tail`}>{tail}</span>);
+    const tailChunk = renderTextChunk(content.slice(lastIndex), "t-tail");
+    if (tailChunk) parts.push(tailChunk);
 
-    if (parts.length === 0) return <p>{content}</p>;
-    return <div className="space-y-1 whitespace-pre-wrap">{parts}</div>;
+    if (parts.length === 0) {
+      return (
+        <p className="whitespace-pre-wrap">
+          {isUser ? content : renderInlineMarkdown(content, "all")}
+        </p>
+      );
+    }
+    return <div className="space-y-1">{parts}</div>;
   };
 
   return (

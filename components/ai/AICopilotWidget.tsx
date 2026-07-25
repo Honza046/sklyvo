@@ -10,8 +10,8 @@ import { CopilotSlashMenu, filterSlashCommands } from "@/components/ai/copilot-s
 import { AiMaskIcon } from "@/components/brand-marks";
 import { useCopilot } from "@/context/CopilotContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { askCopilot } from "@/app/actions/copilot";
 import {
-  buildSystemContextMessage,
   getContextualPrompts,
   getSlashCommands,
   resolveCopilotResponse,
@@ -45,7 +45,6 @@ export function AICopilotWidget() {
   const [slashActiveIndex, setSlashActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const desktopScrollRef = useRef<HTMLDivElement>(null);
-  const systemContextRef = useRef("");
 
   const quickPrompts = useMemo(() => getContextualPrompts(pathname, t), [pathname, t]);
   const slashCommands = useMemo(() => getSlashCommands(t), [t]);
@@ -56,32 +55,74 @@ export function AICopilotWidget() {
   );
   const slashMenuOpen = open && slashQuery.length > 0 && filteredSlashCommands.length > 0;
 
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   const respondToUser = useCallback(
     async (question: string) => {
       const trimmed = question.trim();
       if (!trimmed) return;
+
+      const history = messagesRef.current
+        .filter((m) => m.content.trim().length > 0)
+        .slice(-10)
+        .map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        }));
 
       setMessages((prev) => [...prev, { id: createId(), role: "user", content: trimmed }]);
       setInput("");
       setSlashActiveIndex(0);
       setIsThinking(true);
 
-      await new Promise((resolve) => setTimeout(resolve, 650));
+      try {
+        const reply = await askCopilot({
+          question: trimmed,
+          pathname,
+          language,
+          history,
+        });
 
-      systemContextRef.current = buildSystemContextMessage(pathname, language);
-      const reply = resolveCopilotResponse(trimmed, pathname, language, t);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: createId(),
-          role: "assistant",
-          content: reply.content,
-          guide: reply.guide,
-          actions: reply.actions,
-        },
-      ]);
-
-      setIsThinking(false);
+        if (reply.content.trim()) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: createId(),
+              role: "assistant",
+              content: reply.content,
+              guide: reply.guide,
+              actions: reply.actions,
+            },
+          ]);
+        } else {
+          const fallback = resolveCopilotResponse(trimmed, pathname, language, t);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: createId(),
+              role: "assistant",
+              content: fallback.content,
+              guide: fallback.guide,
+              actions: fallback.actions,
+            },
+          ]);
+        }
+      } catch {
+        const fallback = resolveCopilotResponse(trimmed, pathname, language, t);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createId(),
+            role: "assistant",
+            content: fallback.content,
+            guide: fallback.guide,
+            actions: fallback.actions,
+          },
+        ]);
+      } finally {
+        setIsThinking(false);
+      }
     },
     [language, pathname, t],
   );
@@ -192,7 +233,7 @@ export function AICopilotWidget() {
 
       <div
         ref={variant === "mobile" ? scrollRef : desktopScrollRef}
-        className="min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-t-xl bg-card px-3 py-3 pb-16 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="min-h-0 flex-1 space-y-2.5 overflow-y-auto bg-card px-3 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {messages.length === 0 && !isThinking && (
           <div className="flex flex-col gap-3">
@@ -234,7 +275,7 @@ export function AICopilotWidget() {
         )}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 border-t-0 bg-transparent px-4 pb-4 pt-2">
+      <div className="relative z-10 shrink-0 border-t border-border/50 bg-background px-3 pb-3 pt-2 shadow-[0_-8px_16px_-8px_rgba(0,0,0,0.08)]">
         {slashMenuOpen && (
           <CopilotSlashMenu
             commands={filteredSlashCommands}
@@ -284,7 +325,7 @@ export function AICopilotWidget() {
         aria-label={t("copilot.title")}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-x-3 z-[51] mx-auto flex h-[min(78dvh,520px)] w-auto max-w-lg flex-col overflow-hidden rounded-2xl bg-blue-600 shadow-xl transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:hidden",
+          "fixed inset-x-3 z-[51] mx-auto flex h-[min(78dvh,520px)] w-auto max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:hidden",
           "bottom-[calc(3.75rem+env(safe-area-inset-bottom))]",
           open ? "pointer-events-auto translate-y-0" : "pointer-events-none translate-y-[110%]",
         )}
@@ -300,7 +341,7 @@ export function AICopilotWidget() {
           aria-label={t("copilot.title")}
           aria-hidden={!open}
           className={cn(
-            "absolute bottom-full right-0 mb-3 flex w-[360px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-xl bg-blue-600 shadow-xl transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] will-change-transform",
+            "absolute bottom-full right-0 mb-3 flex w-[360px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-xl bg-card shadow-xl transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] will-change-transform",
             open
               ? "pointer-events-auto h-[452px] translate-y-0 opacity-100"
               : "pointer-events-none h-[452px] translate-y-16 opacity-0",

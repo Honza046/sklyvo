@@ -324,7 +324,7 @@ export const cz = {
     online: "Online",
     open: "Otevřít AI asistenta",
     send: "Odeslat dotaz",
-    welcome: "Zeptejte se na cokoliv ohledně Venegard — jsme tu, abychom vám pomohli.",
+    welcome: "Zeptej se na cokoliv ve Venegardu — Sniper, Radar, Autopilot, kredity, e-mail…",
     placeholder: "Zeptej se na cokoliv...",
     analyzing: "AI Asistent analyzuje váš dotaz...",
     prompt1: "Jak správně propojit firemní e-mail pro Autopilota?",
