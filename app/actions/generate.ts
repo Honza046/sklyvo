@@ -96,8 +96,8 @@ const BANNED_GENERIC_ICEBREAKERS = [
 ] as const;
 
 /** Min./max. počet odstavců v těle e-mailu (včetně rozloučení s podpisem). */
-const SNIPER_EMAIL_PARAGRAPHS_MIN = 3;
-const SNIPER_EMAIL_PARAGRAPHS_MAX = 4;
+const SNIPER_EMAIL_PARAGRAPHS_MIN = 4;
+const SNIPER_EMAIL_PARAGRAPHS_MAX = 5;
 
 const DASH_REGEX = /[-‐‑‒–—―]/;
 
@@ -505,7 +505,8 @@ function minimalFallbackSniperEmail(
     ),
     vygenerovany_email: [
       "Na webu jasně ukazujete, komu pomáháte a jak u vás péče vypadá, a právě to mě přimělo napsat.",
-      `U podobných praxí často pomáháme s tím, aby web líp přivedl relevantní zájemce k ${nab}, bez zbytečné vaty a dlouhých úprav.`,
+      "U podobných firem často vidíme, že web nebo e-shop nepřevádí zájem do poptávek tak, jak by mohl, hlavně na mobilu.",
+      `U nás stavíme weby a e-shopy na míru (včetně Shopify) a pomáháme právě s ${nab}, bez zbytečné vaty.`,
       "Měli byste příští týden deset minut na krátký hovor? Stačí napsat, co vám sedí.",
       `S pozdravem,\n${sign}`,
     ].join("\n\n"),
@@ -797,7 +798,7 @@ function buildSniperSystemPrompt(
     "STYL PSANÍ (povinné):",
     "• Profesionální a elegantní, lehce neformální — jako zpráva od člověka, ne od marketingu.",
     "• Max. 2 věty na odstavec. Žádné výčty benefitů (SEO, marketing, důvěryhodnost…) v řadě.",
-    "• Jedna konkrétní myšlenka z webu + jedna nabídka + měkké CTA. Nic navíc.",
+    "• Konkrétní postřeh z webu + proč to řešit + co nabízíme + měkké CTA. Bez marketingové vaty.",
     "• Zakázaná vata: „v digitální době“, „online vizitka“, „silná digitální přítomnost“, „zvýšit důvěryhodnost“, obecné chválení webu.",
     "• Nepoužívej oslovení typu „týme [doména]“. Piš „Dobrý den,“ nebo konkrétní jméno, pokud je na webu.",
     "",
@@ -810,15 +811,20 @@ function buildSniperSystemPrompt(
     `• vygenerovany_email: tělo BEZ pozdravu. Striktně ${SNIPER_EMAIL_PARAGRAPHS_MIN} až ${SNIPER_EMAIL_PARAGRAPHS_MAX} krátkých odstavců. Mezi každým odstavcem prázdný řádek (\\n\\n). Každý odstavec max. 2 věty.`,
     "",
     "STRUKTURA TĚLA (vygenerovany_email) — přesně v tomto pořadí:",
-    "1) Ledoborec: jedna konkrétní věc z webu (specializace, služba, typ klientů). Bez chvály a bez SaaS frází.",
+    "1) Ledoborec: 1 až 2 věty. Konkrétní věc z webu (sortiment, specializace, kamenné prodejny, typ služeb). Bez prázdné chvály.",
+    "2) Proč to řešit: 1 až 2 věty. Jedna konkrétní příležitost navázaná na to, co jsi viděl (např. Shoptet → limity šablon/rychlost/mobil; zastaralý web → první dojem a poptávky; široký katalog → přehlednost a konverze). Řekni PROČ by je to mělo zajímat, ne obecný pitch.",
     isAutodetect
-      ? "2) Nabídka: jedna konkrétní věc ke zlepšení jejich webu/e-shopu (primárně redesign, nový web, konverze, rychlost, Shopify) — nebo sekundárně AI/aplikace, jen když to z webu dává jasný smysl. Bez výčtu funkcí."
-      : `2) Nabídka: jedna věc ke zlepšení z jejich webu v návaznosti na „${nab}“. Bez výčtu funkcí a bez obecného marketingového pitchování.`,
-    "3) CTA: jen krátká otázka (např. jestli mají příští týden 10 minut). BEZ podpisu v tomto odstavci.",
-    "4) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek). Přesný formát:",
+      ? "3) Nabídka: 1 až 2 věty. Co konkrétně umíme (redesign / Shopify na míru / migrace) a jak to sedí na bod 2. Bez výčtu funkcí a bez „moderní a konverzní“ frází bez obsahu."
+      : `3) Nabídka: 1 až 2 věty. Co umíme v návaznosti na „${nab}“ a bod 2. Bez výčtu funkcí a bez obecného marketingového pitchování.`,
+    "4) CTA: jen krátká otázka (např. jestli mají příští týden 10 minut). BEZ podpisu v tomto odstavci.",
+    "5) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek). Přesný formát:",
     "   S pozdravem,",
     `   ${author.fullName} … (nebo uložený podpis níže; jméno vždy na novém řádku pod „S pozdravem,“)`,
     `   ${signatureInstruction}`,
+    "",
+    "Příklad úrovně konkrétnosti (NEKOPÍRUJ, jen tón):",
+    "Špatně: „pomáháme s přechodem na moderní a konverzní e-shopy na Shopify“.",
+    "Lépe: „u širokého katalogu a kamenných prodejen dává smysl e-shop, který na mobilu hezky vede k nákupu a který nemusíte ohýbat přes šablonu Shoptetu“.",
     "",
     "STRIKTNÍ ZÁKAZY (porušení = neplatný výstup):",
     "• DOMÉNY A URL: NIKDY v těle e-mailu, oslovení ani předmětech nepiš syrovou doménu, hostitele ani tvar slovo.tld. Zakázáno např. „macek.legal“, „gynekologietereza.cz“. Místo toho „vaše ordinace“, „váš web“, „vaše firma“.",
@@ -860,9 +866,9 @@ function buildLanguageToneSegmentBlock(params: GenerateEmailParams): string {
     `Tón: ${params.tone} (${toneHint})`,
     "SEGMENT KLIENTA: Vždy odvoď VÝHRADNĚ z textu webu (např. gynekologická ordinace → healthcare). Nikdy nevnucuj B2B SaaS.",
     "STYL: elegantní, věcný, krátký. Žádná AI vata („digitální doba“, „vizitka“, výčet SEO/marketing).",
-    "ZÁKLAD: 1) co firma dělá, 2) jedna konkrétní příležitost, 3) jak pomůžeme, 4) měkké CTA.",
+    "ZÁKLAD: 1) co firma dělá, 2) proč řešit web/e-shop právě teď, 3) jak pomůžeme, 4) měkké CTA.",
     isAutodetect
-      ? "Službu vyber sám podle PRIORITY: 1) redesign/nový web/e-shop, 2) teprve pak AI/automatizace/interní apps — jen když to web jasně žádá."
+      ? `Služba z heuristiky (drž se jí): ${params.selectedOfferedService}`
       : `Služba, kterou v tomto e-mailu primárně nabízíš: ${params.selectedOfferedService}`,
   ].join("\n");
 }
@@ -1051,7 +1057,7 @@ async function runSniperEmailGeneration(
       ? '  "vygenerovany_email": "Tělo BEZ pozdravu. Max 2 krátké odstavce + podpis. Breakup — krátké uzavření, prostor se ozvat později.",'
       : kind === "FOLLOW_UP"
         ? '  "vygenerovany_email": "Tělo BEZ pozdravu. 2 až 3 krátké odstavce. Follow-up navazující na historii, jedno CTA + podpis.",'
-        : '  "vygenerovany_email": "Tělo BEZ pozdravu. 3 až 4 krátké odstavce. Konkrétní detail z webu, jedna nabídka, CTA+podpis. Elegantní a věcné — žádná AI vata, žádné domény, žádné pomlčky.",',
+        : '  "vygenerovany_email": "Tělo BEZ pozdravu. 4 až 5 krátkých odstavců: postřeh z webu, proč to řešit, co nabízíme, CTA, podpis. Konkrétní a věcné — žádná AI vata, žádné domény, žádné pomlčky.",',
     `  "detekovany_segment": "segment z webu, JEDEN z: ${SNIPER_DETECTED_SEGMENTS.join(", ")} (jinak null)",`,
     `  "detekovany_ton": "nejvhodnější tón, JEDEN z: ${SNIPER_DETECTED_TONES.join(", ")} (jinak null)",`,
     `  "detekovany_jazyk": "jazyk webu, JEDEN z: ${SNIPER_DETECTED_LANGUAGES.join(", ")} (jinak null)"`,
