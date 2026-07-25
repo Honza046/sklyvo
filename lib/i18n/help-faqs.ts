@@ -10,7 +10,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Jak se počítá spotřeba kreditů?",
       answer:
-        "Kredity se odečítají za každou úspěšnou AI operaci. Vygenerování jednoho e-mailu přes Sniper stojí typicky 1 kredit. Deep Scan v Radaru stojí 2 kredity za firmu. Nevyužité kredity se do dalšího měsíce nepřevádějí.",
+        "Kredity se odečítají za úspěšné AI/Radar operace. Vygenerování jednoho e-mailu přes Sniper stojí 1 kredit. Ruční vyhledávání v Radaru stojí 1 kredit za hledání. Noční / Autopilot sběr stojí 1 kredit za každou nově uloženou firmu (včetně dohledání kontaktů z webu). Nevyužité kredity se do dalšího měsíce nepřevádějí.",
     },
     {
       question: "Mohu používat vlastní klíč k OpenAI (BYOK)?",
@@ -57,7 +57,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "How are credits consumed?",
       answer:
-        "Credits are deducted for each successful AI operation. One Sniper email typically costs 1 credit. Radar Deep Scan costs 2 credits per company. Unused credits do not roll over.",
+        "Credits are deducted for successful AI/Radar operations. One Sniper email costs 1 credit. A manual Radar search costs 1 credit. Overnight / Autopilot collection costs 1 credit per newly saved company (including contact scraping). Unused credits do not roll over.",
     },
     {
       question: "Can I use my own OpenAI key (BYOK)?",

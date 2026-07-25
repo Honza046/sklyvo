@@ -399,9 +399,31 @@ export async function runAutomatedRadarForWorkspace(
     return { error: "Chybí GOOGLE_PLACES_API_KEY." };
   }
 
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { creditsUsed: true, creditsTotal: true },
+  });
+  if (!workspace) {
+    return { error: "Workspace nenalezen." };
+  }
+
+  const creditsLeft = Math.max(
+    0,
+    (workspace.creditsTotal ?? 0) - (workspace.creditsUsed ?? 0),
+  );
+  const creditsPerLead = Math.max(1, AUTOMATED_RADAR_CONFIG.creditsPerNewLead);
+  const maxAffordableLeads = Math.floor(creditsLeft / creditsPerLead);
+
+  if (maxAffordableLeads <= 0) {
+    return { error: "Nedostatek kreditů pro noční sběr Radaru." };
+  }
+
   const radarSettings = await loadRadarSettingsPayloadForWorkspace(workspaceId);
   const searches = buildRadarSearchQueries(radarSettings);
-  const maxPerRun = Math.max(1, radarSettings.maxCompaniesPerRun ?? 50);
+  const maxPerRun = Math.min(
+    Math.max(1, radarSettings.maxCompaniesPerRun ?? 50),
+    maxAffordableLeads,
+  );
   const minPerRun = Math.max(1, Math.min(radarSettings.minCompaniesPerRun ?? 1, maxPerRun));
   const shouldAutoQueue =
     options?.forceAutoStartOutreach === true || radarSettings.autoStartOutreach;
@@ -457,6 +479,14 @@ export async function runAutomatedRadarForWorkspace(
     }
   }
 
+  const creditsCharged = createdCount * creditsPerLead;
+  if (creditsCharged > 0) {
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { creditsUsed: { increment: creditsCharged } },
+    });
+  }
+
   let outreachQueued = 0;
   if (shouldAutoQueue && newLeadIds.length > 0) {
     outreachQueued = await autoQueueOutreachForLeads(workspaceId, newLeadIds);
@@ -469,7 +499,7 @@ export async function runAutomatedRadarForWorkspace(
 
   if (createdCount < minPerRun) {
     console.warn(
-      `[radar] workspace ${workspaceId}: pouze ${createdCount} nových firem (cíl ${minPerRun}–${maxPerRun}), queries=${queriesRun}`,
+      `[radar] workspace ${workspaceId}: pouze ${createdCount} nových firem (cíl ${minPerRun}–${maxPerRun}), queries=${queriesRun}, credits=${creditsCharged}`,
     );
   }
 
@@ -479,6 +509,7 @@ export async function runAutomatedRadarForWorkspace(
     queriesRun,
     createdCount,
     skippedCount,
+    creditsCharged,
     errors,
     outreachQueued,
   };
@@ -531,7 +562,7 @@ export async function processScheduledRadarRuns(): Promise<{
   ok: true;
   checked: number;
   ran: number;
-  results: Array<{ workspaceId: string; createdCount?: number; error?: string }>;
+  results: Array<{ workspaceId: string; createdCount?: number; creditsCharged?: number; error?: string }>;
 }> {
   const { weekday, dateKey } = getPragueParts();
   const settings = await prisma.radarSettings.findMany({
@@ -544,7 +575,12 @@ export async function processScheduledRadarRuns(): Promise<{
     },
   });
 
-  const results: Array<{ workspaceId: string; createdCount?: number; error?: string }> = [];
+  const results: Array<{
+    workspaceId: string;
+    createdCount?: number;
+    creditsCharged?: number;
+    error?: string;
+  }> = [];
   let ran = 0;
 
   for (const row of settings) {
@@ -571,6 +607,7 @@ export async function processScheduledRadarRuns(): Promise<{
     results.push({
       workspaceId: row.workspaceId,
       createdCount: run.createdCount,
+      creditsCharged: run.creditsCharged,
     });
   }
 
