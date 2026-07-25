@@ -3,7 +3,7 @@
 import { Suspense, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Wand2, Loader2, Mail, Globe, FileText, Send, Copy, Settings2, RefreshCw, Target, Info, X } from "lucide-react";
+import { Wand2, Loader2, Mail, Globe, FileText, Send, Copy, Settings2, RefreshCw, Target, Info, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { generateEmailContent, generateEmailSubjects } from "@/app/actions/generate";
 import { getWorkspaceAccessState } from "@/app/actions/auth";
+import { getEmailConnectionState } from "@/app/actions/email-connection";
+import { sendSniperEmailNow } from "@/app/actions/sniper-send";
 import { SNIPER_AUTODETECT_VALUE, SNIPER_OFFER_OPTIONS } from "@/lib/constants";
+import { EMAIL_SETUP_SETTINGS_PATH } from "@/lib/copilot/setup-knowledge";
 
 // Pomocné mapování pro hezké zobrazení v menu i na štítcích (label + unikátní emoji)
 type OptionMeta = { label: string; emoji: string };
@@ -207,6 +210,8 @@ function SniperContent() {
 
   const [isRefreshingSubjects, setIsRefreshingSubjects] = useState(false);
   const [creditsLeft, setCreditsLeft] = useState<number | null>(null);
+  const [emailConnected, setEmailConnected] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // Stavy pro interaktivní výstup
   const [subjects, setSubjects] = useState<string[]>(MOCK_SUBJECTS);
@@ -237,11 +242,15 @@ function SniperContent() {
 
   useEffect(() => {
     void (async () => {
-      const state = await getWorkspaceAccessState();
+      const [state, emailState] = await Promise.all([
+        getWorkspaceAccessState(),
+        getEmailConnectionState(),
+      ]);
       if (state.workspace) {
         const left = Math.max(0, state.workspace.creditsTotal - state.workspace.creditsUsed);
         setCreditsLeft(left);
       }
+      setEmailConnected(emailState.connected);
     })();
   }, []);
 
@@ -358,9 +367,67 @@ function SniperContent() {
   };
 
   const handleOpenEmail = () => {
-    const target = emailTarget || "info@domain.com";
+    const target = emailTarget.trim();
+    if (!target) {
+      toast.error("Zadejte kontaktní e-mail příjemce.");
+      return;
+    }
     const mailtoLink = `mailto:${target}?subject=${encodeURIComponent(selectedSubject)}&body=${encodeURIComponent(editableBody)}`;
     window.location.href = mailtoLink;
+  };
+
+  const handleSendNow = async () => {
+    if (!emailConnected) {
+      toast.error("Nejdřív napojte firemní e-mail.", {
+        action: {
+          label: "Nastavení",
+          onClick: () => {
+            window.location.href = EMAIL_SETUP_SETTINGS_PATH;
+          },
+        },
+      });
+      return;
+    }
+    const to = emailTarget.trim();
+    if (!to) {
+      toast.error("Zadejte kontaktní e-mail příjemce.");
+      return;
+    }
+    if (!selectedSubject.trim() || !editableBody.trim()) {
+      toast.error("Chybí předmět nebo text e-mailu.");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      const result = await sendSniperEmailNow({
+        to,
+        subject: selectedSubject,
+        body: editableBody,
+        targetUrl,
+      });
+      if ("error" in result) {
+        if (result.needsEmailSetup) {
+          toast.error(result.error, {
+            action: {
+              label: "Nastavení",
+              onClick: () => {
+                window.location.href = EMAIL_SETUP_SETTINGS_PATH;
+              },
+            },
+          });
+        } else {
+          toast.error(result.error);
+        }
+        return;
+      }
+      toast.success("E-mail byl odeslán.");
+    } catch (e) {
+      console.error("SNIPER SEND:", e);
+      toast.error("Odeslání selhalo.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleRefreshSubjects = async () => {
@@ -765,16 +832,50 @@ function SniperContent() {
                 </div>
               </div>
               
-              <div className="mt-6 flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={handleCopy} className="rounded-xl border-border/60 hover:bg-muted font-semibold">
+              <div className="mt-6 flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={handleCopy}
+                  className="rounded-xl border-border/60 hover:bg-muted font-semibold"
+                >
                   <Copy className="mr-2 h-4 w-4" />
                   Zkopírovat
                 </Button>
-                <Button onClick={handleOpenEmail} className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold">
-                  <Send className="mr-2 h-4 w-4" />
-                  Otevřít v e-mailu
+                <Button
+                  variant="outline"
+                  onClick={handleOpenEmail}
+                  className="rounded-xl border-border/60 hover:bg-muted font-semibold"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Otevřít v klientu
+                </Button>
+                <Button
+                  onClick={() => void handleSendNow()}
+                  disabled={isSending}
+                  className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
+                  title={
+                    emailConnected
+                      ? "Odeslat přes napojený firemní e-mail"
+                      : "Nejdřív napojte firemní e-mail v nastavení"
+                  }
+                >
+                  {isSending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  {isSending ? "Odesílám…" : "Poslat"}
                 </Button>
               </div>
+              {!emailConnected && (
+                <p className="mt-2 text-right text-xs text-muted-foreground">
+                  Pro přímé odeslání{" "}
+                  <Link href={EMAIL_SETUP_SETTINGS_PATH} className="font-semibold text-blue-600 hover:underline">
+                    napojte firemní e-mail
+                  </Link>
+                  .
+                </p>
+              )}
               
               <div ref={bottomRef} className="h-1" />
             </div>
