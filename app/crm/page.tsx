@@ -525,36 +525,56 @@ function CrmPageContent() {
   };
 
   return (
-      <div className="flex h-[calc(100dvh-8.5rem)] w-full flex-col items-center overflow-hidden md:h-[calc(100dvh-3rem)]">
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col items-stretch overflow-hidden md:items-center">
         
-        <div className="mb-2 shrink-0 space-y-1 px-1 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+        {/* Mobile header */}
+        <div className="mb-3 flex shrink-0 items-center justify-between gap-2 md:hidden">
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-semibold tracking-tight text-foreground">CRM</h1>
+            <p className="mt-0.5 text-[12px] text-muted-foreground">
+              {totalItems} {totalItems === 1 ? "firma" : "firem"} v pipeline
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="h-9 shrink-0 rounded-full bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700"
+            onClick={() => setIsNewDealOpen(true)}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Nový
+          </Button>
+        </div>
+
+        {/* Desktop header */}
+        <div className="mb-2 hidden shrink-0 space-y-1 px-1 text-center md:mb-2 md:block">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             CRM
           </h1>
-          <p className="mx-auto max-w-lg text-xs text-muted-foreground sm:text-sm">
+          <p className="mx-auto max-w-lg text-sm text-muted-foreground">
             Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
           </p>
         </div>
 
-        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-3 overflow-hidden px-0 sm:gap-4 md:px-8">
+        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4 md:px-8">
           {dueOutreachLeads.length > 0 && (
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-              <div className="flex items-start gap-2">
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+              <div className="flex min-w-0 items-start gap-2">
                 <Bell className="mt-0.5 h-4 w-4 shrink-0" />
-                <div>
-                  <p className="font-semibold">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold sm:text-sm">
                     {dueOutreachLeads.length} leadů čeká na follow-up / breakup
                   </p>
-                  <p className="text-xs opacity-80">
+                  <p className="hidden text-xs opacity-80 sm:block">
                     Po 14 dnech follow-up, dalších 14 breakup. Pošli je přímo z CRM.
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-amber-300 bg-white font-semibold dark:bg-transparent"
+                  className="h-8 border-amber-300 bg-white px-2 text-[11px] font-semibold dark:bg-transparent sm:h-9 sm:px-3 sm:text-sm"
                   disabled={isBulkRunning}
                   onClick={() => {
                     const ids = dueOutreachLeads
@@ -568,11 +588,11 @@ function CrmPageContent() {
                     void handleBulkOutreach("FOLLOW_UP");
                   }}
                 >
-                  Poslat splatné follow-upy
+                  Follow-upy
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-orange-700 font-semibold text-white hover:bg-orange-800"
+                  className="h-8 bg-orange-700 px-2 text-[11px] font-semibold text-white hover:bg-orange-800 sm:h-9 sm:px-3 sm:text-sm"
                   disabled={isBulkRunning}
                   onClick={() => {
                     const ids = dueOutreachLeads
@@ -586,13 +606,13 @@ function CrmPageContent() {
                     void handleBulkOutreach("BREAKUP");
                   }}
                 >
-                  Poslat splatné breakupy
+                  Breakupy
                 </Button>
               </div>
             </div>
           )}
           
-          <div className="flex shrink-0 items-center rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all min-h-[76px]">
+          <div className="flex min-h-0 shrink-0 items-center rounded-2xl bg-muted/50 p-1.5 dark:bg-muted/20 md:min-h-[76px] md:rounded-2xl md:border md:border-border/60 md:bg-card md:p-4 md:shadow-sm">
             {selectedLeads.length > 0 ? (
               <div className="flex w-full flex-col gap-2 rounded-md bg-blue-50 p-2 dark:bg-blue-900/20">
                 <div className="flex w-full flex-wrap items-center justify-between gap-2">
@@ -692,26 +712,30 @@ function CrmPageContent() {
                 )}
               </div>
             ) : (
-              <div className="flex w-full flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                <div className="flex w-full flex-col gap-2 sm:max-w-xl sm:flex-row sm:items-center">
-                  <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Hledat firmu v CRM..." 
-                      className="pl-9 rounded-xl border-border/50 bg-background h-11"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+              <div className="flex w-full items-center gap-1.5 md:flex-row md:justify-between md:gap-4">
+                <div className="relative min-w-0 flex-1 md:max-w-xs">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:h-4 md:w-4" />
+                  <Input 
+                    placeholder="Hledat firmu…" 
+                    className="h-9 border-0 bg-transparent pl-9 text-[15px] shadow-none focus-visible:ring-0 md:h-11 md:rounded-xl md:border md:border-border/50 md:bg-background md:pl-9 md:text-sm md:shadow-sm"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
 
+                <div className="flex shrink-0 items-center gap-1 md:gap-3">
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="h-11 rounded-xl">
-                        <SlidersHorizontal className="mr-2 h-4 w-4" />
-                        Filtry
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 rounded-full p-0 text-muted-foreground hover:bg-background/80 hover:text-foreground md:h-11 md:w-auto md:rounded-xl md:border md:border-border/60 md:bg-background md:px-4 md:text-sm"
+                      >
+                        <SlidersHorizontal className="h-4 w-4 md:mr-2" />
+                        <span className="hidden md:inline">Filtry</span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 z-50 border bg-white shadow-md dark:bg-zinc-950" align="end">
+                    <PopoverContent className="z-50 w-80 border bg-white shadow-md dark:bg-zinc-950" align="end">
                       <div className="flex flex-col gap-4">
                         <div className="space-y-1.5">
                           <Label>Status</Label>
@@ -764,37 +788,35 @@ function CrmPageContent() {
                       </div>
                     </PopoverContent>
                   </Popover>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center rounded-xl border border-border/50 bg-background p-1">
+                  <div className="flex items-center rounded-full bg-background/70 p-0.5 md:rounded-xl md:border md:border-border/50 md:bg-background md:p-1">
                     <button
                       type="button"
                       title="Seznam firem"
                       onClick={() => setView("list")}
                       className={cn(
-                        "flex items-center justify-center rounded-lg h-9 w-10 transition-all",
-                        view === "list" ? "bg-card text-blue-600 dark:text-blue-400 shadow-sm border border-border/40" : "text-muted-foreground hover:text-foreground"
+                        "flex h-8 w-8 items-center justify-center rounded-full transition-all md:h-9 md:w-10 md:rounded-lg",
+                        view === "list" ? "bg-card text-blue-600 shadow-sm dark:text-blue-400" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <List className="h-4 w-4" />
+                      <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </button>
                     <button
                       type="button"
                       title="Kanban board"
                       onClick={() => setView("board")}
                       className={cn(
-                        "flex items-center justify-center rounded-lg h-9 w-10 transition-all",
-                        view === "board" ? "bg-card text-blue-600 dark:text-blue-400 shadow-sm border border-border/40" : "text-muted-foreground hover:text-foreground"
+                        "flex h-8 w-8 items-center justify-center rounded-full transition-all md:h-9 md:w-10 md:rounded-lg",
+                        view === "board" ? "bg-card text-blue-600 shadow-sm dark:text-blue-400" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <LayoutGrid className="h-4 w-4" />
+                      <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
                     </button>
                   </div>
 
                   <Button
                     type="button"
-                    className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 shadow-sm"
+                    className="hidden h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 md:inline-flex"
                     onClick={() => setIsNewDealOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -989,116 +1011,109 @@ function CrmPageContent() {
           )}
 
           {view === "list" && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-muted/40 shadow-none animate-in fade-in zoom-in-95 duration-300 dark:bg-muted/15 md:border md:border-border/60 md:bg-card md:shadow-sm">
 
-              {/* Mobile cards */}
-              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 md:hidden">
+              {/* Mobile native list */}
+              <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto md:hidden">
                 {paginatedLeads.map((lead) => {
                   const companyWeb = leadFullWebsiteUrl(lead.url);
                   const emailTrim = (lead.email ?? "").trim();
-                  const phoneTrim = (lead.phone ?? "").trim();
                   return (
                     <div
                       key={lead.id}
-                      className="rounded-xl border border-border/50 bg-background p-3"
+                      className="flex items-center gap-2.5 border-b border-border/40 px-3 py-2.5 last:border-b-0 active:bg-muted/40"
                     >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedLeads.includes(lead.id)}
-                          onCheckedChange={() => toggleRowSelection(lead.id)}
-                          className="mt-1"
-                        />
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[10px] font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                          {lead.avatar}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-foreground break-words">{lead.company}</p>
-                          {lead.author ? (
-                            <p className="text-xs text-muted-foreground">{lead.author}</p>
-                          ) : null}
-                          <p className="mt-0.5 text-xs text-muted-foreground">{lead.date}</p>
-                          <p className="mt-1 break-words text-sm">
-                            {emailTrim || "Bez emailu"}
+                      <Checkbox
+                        checked={selectedLeads.includes(lead.id)}
+                        onCheckedChange={() => toggleRowSelection(lead.id)}
+                        className="shrink-0"
+                      />
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                        {lead.avatar}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-[14px] font-semibold leading-tight text-foreground">
+                            {lead.company}
                           </p>
-                          {phoneTrim ? (
-                            <p className="break-words text-xs text-muted-foreground">{phoneTrim}</p>
-                          ) : null}
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-semibold">{formatCurrency(lead.value)}</span>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    "inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
-                                    statusColorMap[lead.status],
-                                  )}
-                                >
-                                  {statusLabelMap[lead.status]}
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "BREAK_UP")}>BREAKUP</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="sm"
-                              className="h-9 flex-1 rounded-lg border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
-                            >
-                              <Link href={buildSniperLeadHref(lead)}>
-                                <Send className="mr-2 h-4 w-4" />
-                                Sniper
-                              </Link>
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-9 w-9 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-zinc-950 z-50 border shadow-md">
-                                <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Upravit deal
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
-                                  <Mail className="mr-2 h-4 w-4" />
-                                  Poslat follow-up
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
-                                  <Mail className="mr-2 h-4 w-4" />
-                                  Poslat breakup
-                                </DropdownMenuItem>
-                                {companyWeb ? (
-                                  <DropdownMenuItem asChild>
-                                    <a href={companyWeb} target="_blank" rel="noreferrer">
-                                      <Globe className="mr-2 h-4 w-4" />
-                                      Web
-                                    </a>
-                                  </DropdownMenuItem>
-                                ) : null}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteSingleLead(lead.id)}
-                                  className="text-red-600 focus:text-red-700"
-                                >
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Smazat
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className={cn(
+                                  "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide",
+                                  statusColorMap[lead.status],
+                                )}
+                              >
+                                {statusLabelMap[lead.status]}
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "BREAK_UP")}>BREAKUP</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          {emailTrim || "Bez e-mailu"}
+                          <span className="mx-1 text-border">·</span>
+                          {lead.date}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 rounded-full p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50"
+                          title="Sniper"
+                        >
+                          <Link href={buildSniperLeadHref(lead)}>
+                            <Send className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0 text-muted-foreground">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="z-50 w-52 border bg-white shadow-md dark:bg-zinc-950">
+                            <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Upravit deal
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Poslat follow-up
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
+                              <Mail className="mr-2 h-4 w-4" />
+                              Poslat breakup
+                            </DropdownMenuItem>
+                            {companyWeb ? (
+                              <DropdownMenuItem asChild>
+                                <a href={companyWeb} target="_blank" rel="noreferrer">
+                                  <Globe className="mr-2 h-4 w-4" />
+                                  Web
+                                </a>
+                              </DropdownMenuItem>
+                            ) : null}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteSingleLead(lead.id)}
+                              className="text-red-600 focus:text-red-700"
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Smazat
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
@@ -1307,29 +1322,34 @@ function CrmPageContent() {
                 </table>
               </div>
 
-              <div className="mt-0 flex shrink-0 flex-col gap-3 border-t border-border/60 bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                <p className="text-xs text-muted-foreground">
-                  Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+              <div className="mt-0 flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 md:gap-3 md:border-border/60 md:bg-muted/30 md:px-6 md:py-4">
+                <p className="text-[11px] text-muted-foreground md:text-xs">
+                  <span className="md:hidden">{shownFrom}–{shownTo} / {totalItems}</span>
+                  <span className="hidden md:inline">
+                    Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+                  </span>
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 md:gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="h-8 px-2 text-[11px] md:h-9 md:px-3 md:text-sm"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={safePage <= 1}
                   >
-                    Předchozí
+                    ←
                   </Button>
-                  <span className="text-xs text-muted-foreground">
-                    Strana {safePage} / {totalPages}
+                  <span className="text-[11px] text-muted-foreground md:text-xs">
+                    {safePage}/{totalPages}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
+                    className="h-8 px-2 text-[11px] md:h-9 md:px-3 md:text-sm"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage >= totalPages}
                   >
-                    Následující
+                    →
                   </Button>
                 </div>
               </div>

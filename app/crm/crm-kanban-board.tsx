@@ -292,8 +292,7 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
 
             <div
               className={cn(
-                "min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
-                "[scrollbar-width:thin]",
+                "scrollbar-hide min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
               )}
             >
               {selectedLeads.map((lead) => (

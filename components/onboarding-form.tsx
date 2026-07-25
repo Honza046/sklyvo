@@ -22,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VenegardWordmark } from "@/components/brand-marks";
 
 const TONES = [
   { id: "friendly", label: "Přátelský a uvolněný", desc: "Působí lidsky, tyká nebo slušně vyká." },
@@ -91,11 +92,8 @@ export function OnboardingForm({ embedded = false, onCompleted }: OnboardingForm
 
   const content = (
     <>
-      <div className="flex justify-between items-center px-2">
-        <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.5)]" />
-          <span className="text-sm font-bold tracking-[0.2em] text-foreground">VENEGARD</span>
-        </div>
+      <div className="flex items-center justify-between px-2">
+        <VenegardWordmark markSize={24} />
         <div className="flex gap-1.5">
           {[1, 2, 3, 4].map((i) => (
             <div

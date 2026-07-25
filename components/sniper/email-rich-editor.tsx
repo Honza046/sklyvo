@@ -83,7 +83,7 @@ export function EmailRichEditor({ value, onChange, className }: EmailRichEditorP
         aria-multiline
         aria-label="Text e-mailu"
         suppressContentEditableWarning
-        className="min-h-[220px] px-4 py-4 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
+        className="min-h-[140px] max-h-[min(36dvh,240px)] overflow-y-auto px-3 py-3 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 sm:min-h-[220px] sm:max-h-none sm:overflow-visible sm:px-4 sm:py-4 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
         onInput={emitChange}
         onBlur={emitChange}
       />

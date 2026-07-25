@@ -18,6 +18,8 @@ export type AutopilotAutomationSettings = {
   window2Start: string;
   window2End: string;
   maxEmailsPerBatch: number;
+  /** Dny v týdnu pro odesílání (0=Ne … 6=So), jako `Date.getDay()` / Prague. */
+  sendDays: number[];
   sendingStrategy: SendingStrategy;
   fullAutoFrequency: FullAutoFrequency;
   fullAutoRunTime: string;
@@ -33,6 +35,11 @@ export const RADAR_WEEKDAYS = [
   { value: 0, label: "Ne" },
 ] as const;
 
+/** Pracovní dny pro odesílání e-mailů (bez víkendu). */
+export const SEND_WEEKDAYS = RADAR_WEEKDAYS.filter(
+  (day) => day.value >= 1 && day.value <= 5,
+);
+
 export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   radarDays: [1, 4],
   radarRunTime: "03:00",
@@ -47,6 +54,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   window2Start: "14:00",
   window2End: "16:00",
   maxEmailsPerBatch: 20,
+  sendDays: [1, 2, 3, 4, 5],
   sendingStrategy: "batch",
   fullAutoFrequency: "twice_weekly",
   fullAutoRunTime: "08:00",

@@ -44,10 +44,14 @@ export type RunState = {
 export const ITEMS_PER_PAGE = 10;
 
 export const AUTOPILOT_TABLE_CARD_CLASS =
-  "mt-4 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm sm:mt-8 sm:overflow-x-hidden";
+  "mt-2 flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-8 sm:rounded-2xl sm:overflow-x-hidden";
 
 export const AUTOPILOT_TABLE_SCROLL_CLASS =
-  "max-h-[min(50dvh,350px)] min-h-[220px] overflow-x-auto overflow-y-auto sm:h-[350px] sm:min-h-[350px] sm:max-h-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+  "max-h-[min(42dvh,280px)] min-h-[160px] overflow-x-auto overflow-y-auto sm:h-[350px] sm:min-h-[350px] sm:max-h-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+
+/** Desktop tabulka — bez min-width na mobilu (mobil používá seznam). */
+export const AUTOPILOT_DESKTOP_TABLE_CLASS =
+  "hidden w-full table-fixed text-sm md:table";
 
 export const AUTOPILOT_HIDDEN_SCROLLBAR_CLASS =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
@@ -225,7 +229,7 @@ export function AutopilotPowerButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={cn("shrink-0 px-5 font-semibold", enabled ? offClass : onClass)}
+      className={cn("h-8 shrink-0 px-3 text-xs font-semibold sm:h-9 sm:px-5 sm:text-sm", enabled ? offClass : onClass)}
     >
       {disabled ? "Ukládám…" : enabled ? "Vypnout" : "Zapnout"}
     </Button>
@@ -252,13 +256,13 @@ export function AutopilotControlPanel({
 }) {
   return (
     <>
-      <div className="relative flex min-h-16 shrink-0 items-center rounded-2xl border border-border/60 bg-card px-3 py-2.5 shadow-sm sm:h-[4.25rem] sm:px-5 sm:py-0">
-        <div className="flex w-full flex-row items-center justify-between gap-2 sm:gap-4">
-          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-            <div className={cn("shrink-0 rounded-xl p-2", iconWrapClassName)}>{icon}</div>
+      <div className="relative flex min-h-12 shrink-0 items-center rounded-xl border border-border/60 bg-card px-2.5 py-2 shadow-sm sm:h-[4.25rem] sm:min-h-16 sm:rounded-2xl sm:px-5 sm:py-0">
+        <div className="flex w-full flex-row items-center justify-between gap-1.5 sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+            <div className={cn("shrink-0 rounded-lg p-1.5 sm:rounded-xl sm:p-2", iconWrapClassName)}>{icon}</div>
             <div className="min-w-0 text-left">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="truncate text-sm font-semibold leading-none text-foreground sm:text-base">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <h2 className="truncate text-xs font-semibold leading-none text-foreground sm:text-base">
                   {title}
                 </h2>
                 {powerEnabled != null ? (
@@ -267,12 +271,12 @@ export function AutopilotControlPanel({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:mt-1.5 sm:truncate sm:text-xs sm:leading-none">
+              <p className="mt-1 line-clamp-1 text-[10px] leading-snug text-muted-foreground sm:mt-1.5 sm:line-clamp-2 sm:truncate sm:text-xs sm:leading-none">
                 {description}
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">{actions}</div>
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">{actions}</div>
         </div>
       </div>
       {extra}
@@ -304,35 +308,53 @@ export function AutopilotTablePagination({
   return (
     <div
       className={cn(
-        "flex shrink-0 flex-col gap-3 border-t border-border/60 bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6",
+        "flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 sm:gap-3 sm:border-border/60 sm:bg-muted/30 sm:px-6 sm:py-4",
         className,
       )}
     >
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-        <p className="text-xs text-muted-foreground">
-          Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+      <div className="min-w-0">
+        <p className="text-[11px] text-muted-foreground sm:text-xs">
+          <span className="sm:hidden">
+            {shownFrom}–{shownTo} / {totalItems}
+          </span>
+          <span className="hidden sm:inline">
+            Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+          </span>
         </p>
         {selectedCount != null && selectedCount > 0 && (
-          <p className="text-xs text-gray-400 dark:text-muted-foreground">
-            Vybráno: {selectedCount} firem
-          </p>
+          <p className="text-[10px] text-muted-foreground sm:text-xs">Vybráno: {selectedCount}</p>
         )}
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onPrevious} disabled={safePage <= 1}>
-          Předchozí
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-sm"
+          onClick={onPrevious}
+          disabled={safePage <= 1}
+        >
+          <span className="sm:hidden">←</span>
+          <span className="hidden sm:inline">Předchozí</span>
         </Button>
-        <span className="text-xs text-muted-foreground">
-          Strana {safePage} / {totalPages}
+        <span className="text-[11px] text-muted-foreground sm:text-xs">
+          {safePage}/{totalPages}
         </span>
-        <Button variant="outline" size="sm" onClick={onNext} disabled={safePage >= totalPages}>
-          Následující
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-sm"
+          onClick={onNext}
+          disabled={safePage >= totalPages}
+        >
+          <span className="sm:hidden">→</span>
+          <span className="hidden sm:inline">Následující</span>
         </Button>
       </div>
     </div>
   );
 }
 
+/** Prázdný / loading stav uvnitř široké tabulky — sticky left, ať je na mobilu uprostřed viewportu. */
 export function AutopilotTableEmptyState({
   colSpan,
   children,
@@ -347,7 +369,7 @@ export function AutopilotTableEmptyState({
       <td colSpan={colSpan} className="p-0 align-middle">
         <div
           className={cn(
-            "flex h-[300px] w-full flex-col items-center justify-center text-center text-sm text-gray-400 dark:text-muted-foreground",
+            "sticky left-0 flex h-[min(42dvh,240px)] w-[min(100vw-1.5rem,100%)] flex-col items-center justify-center px-4 text-center text-sm text-muted-foreground",
             className,
           )}
         >
@@ -355,6 +377,26 @@ export function AutopilotTableEmptyState({
         </div>
       </td>
     </tr>
+  );
+}
+
+/** Prázdný / loading stav pro mobilní seznam (mimo tabulku). */
+export function AutopilotListEmptyState({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-[180px] flex-col items-center justify-center px-4 py-10 text-center text-sm text-muted-foreground",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -375,7 +417,7 @@ export function AutopilotSettingsIconButton({
       onClick={onClick}
       aria-label={label}
       className={cn(
-        "h-9 w-9 shrink-0 p-0 text-gray-400 hover:bg-transparent hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
+        "h-8 w-8 shrink-0 p-0 text-gray-400 hover:bg-transparent hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 sm:h-9 sm:w-9",
         className,
       )}
     >

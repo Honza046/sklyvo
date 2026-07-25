@@ -73,7 +73,7 @@ export async function getDashboardData(): Promise<DashboardData> {
     prisma.lead.findMany({
       where: { workspaceId, status: "REPLIED" },
       orderBy: { updatedAt: "desc" },
-      take: 3,
+      take: 8,
       select: {
         id: true,
         companyName: true,
@@ -82,13 +82,15 @@ export async function getDashboardData(): Promise<DashboardData> {
     }),
   ]);
 
+  const ATTENTION_TASK_LIMIT = 8;
+
   let attentionTasks: DashboardAttentionLead[] = repliedLeadsRaw.map((item) => ({
     id: item.id,
     companyName: item.companyName,
     status: item.status as LeadStatus,
   }));
 
-  const fillCount = Math.max(0, 3 - attentionTasks.length);
+  const fillCount = Math.max(0, ATTENTION_TASK_LIMIT - attentionTasks.length);
   if (fillCount > 0) {
     const freshLeads = await prisma.lead.findMany({
       where: { workspaceId, status: "NEW" },

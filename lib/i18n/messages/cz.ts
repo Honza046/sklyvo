@@ -320,7 +320,7 @@ export const cz = {
     userFallback: "Uživatel",
   },
   copilot: {
-    title: "Venegard AI Copilot",
+    title: "venesis",
     online: "Online",
     open: "Otevřít AI asistenta",
     send: "Odeslat dotaz",

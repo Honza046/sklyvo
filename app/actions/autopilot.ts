@@ -36,6 +36,8 @@ export type QueueAutopilotCampaignInput = {
   leadIds: string[];
   windows: AutopilotScheduleWindow[];
   maxEmailsPerBatch: number;
+  /** 0=Ne … 6=So; neuvedené = každý den */
+  sendDays?: number[];
 };
 
 export type QueueAutopilotCampaignResult =
@@ -230,6 +232,8 @@ export async function queueAutopilotCampaign(
       leadIds.length,
       input.windows,
       input.maxEmailsPerBatch,
+      new Date(),
+      input.sendDays,
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Neplatná nastavení plánování.";

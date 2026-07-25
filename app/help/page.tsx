@@ -42,40 +42,40 @@ export default function HelpCenterPage() {
   const showEmptySearch = trimmedSearch !== "" && filteredFAQs.length === 0;
 
   return (
-      <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-12">
+      <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0 md:pb-12">
         
         {/* HLAVIČKA A VYHLEDÁVÁNÍ */}
-        <div className="mb-8 text-center space-y-6 w-full max-w-2xl mx-auto">
-          <div className="space-y-2">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-2xl shadow-sm border border-blue-100 dark:border-blue-800/50">
-                <LifeBuoy className="h-8 w-8" />
+        <div className="mx-auto mb-4 w-full max-w-2xl space-y-3 text-center md:mb-8 md:space-y-6">
+          <div className="space-y-1 md:space-y-2">
+            <div className="mb-1 flex items-center justify-center gap-2 md:mb-2 md:gap-3">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-blue-600 shadow-sm dark:border-blue-800/50 dark:bg-blue-900/30 dark:text-blue-400 md:rounded-2xl md:p-3">
+                <LifeBuoy className="h-5 w-5 md:h-8 md:w-8" />
               </div>
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
               {t("help.title")}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="px-2 text-xs text-muted-foreground md:text-sm">
               {t("help.subtitle")}
             </p>
           </div>
 
           <div className="relative w-full shadow-sm">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/70" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70 sm:left-4 sm:h-5 sm:w-5" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t("help.searchPlaceholder")}
-              className="h-14 rounded-2xl border-border/60 bg-card pl-12 text-base focus-visible:ring-blue-500"
+              className="h-10 rounded-xl border-border/60 bg-card pl-10 text-sm focus-visible:ring-blue-500 sm:h-14 sm:rounded-2xl sm:pl-12 sm:text-base"
             />
           </div>
         </div>
 
-        <div className="flex w-full max-w-4xl flex-col gap-8 px-4">
+        <div className="flex w-full max-w-4xl flex-col gap-4 px-0 md:gap-8 md:px-4">
           {searchQuery.trim() === "" && (
             <>
               {/* RYCHLÍ PRŮVODCI (KARTY) */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
                 <div
                   role="button"
                   tabIndex={0}
@@ -86,15 +86,15 @@ export default function HelpCenterPage() {
                       setActiveModal("sniper");
                     }
                   }}
-                  className="group cursor-pointer rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700"
+                  className="group cursor-pointer rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700 sm:rounded-2xl sm:p-6"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                    <Crosshair className="h-5 w-5" />
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl">
+                    <Crosshair className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                  <h3 className="mb-0.5 text-sm font-bold transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400 sm:mb-1 sm:text-base">
                     {t("help.guideSniper")}
                   </h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  <p className="text-[10px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
                     {t("help.guideSniperDesc")}
                   </p>
                 </div>
@@ -109,15 +109,15 @@ export default function HelpCenterPage() {
                       setActiveModal("radar");
                     }
                   }}
-                  className="group cursor-pointer rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700"
+                  className="group cursor-pointer rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700 sm:rounded-2xl sm:p-6"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                    <Radio className="h-5 w-5" />
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl">
+                    <Radio className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                  <h3 className="mb-0.5 text-sm font-bold transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400 sm:mb-1 sm:text-base">
                     {t("help.guideRadar")}
                   </h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  <p className="text-[10px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
                     {t("help.guideRadarDesc")}
                   </p>
                 </div>
@@ -132,15 +132,15 @@ export default function HelpCenterPage() {
                       setActiveModal("crm");
                     }
                   }}
-                  className="group cursor-pointer rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700"
+                  className="group cursor-pointer rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-700 sm:rounded-2xl sm:p-6"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                    <Users className="h-5 w-5" />
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-400 sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl">
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                  <h3 className="mb-0.5 text-sm font-bold transition-colors group-hover:text-amber-600 dark:group-hover:text-amber-400 sm:mb-1 sm:text-base">
                     {t("help.guideCrm")}
                   </h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  <p className="text-[10px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
                     {t("help.guideCrmDesc")}
                   </p>
                 </div>
@@ -155,31 +155,31 @@ export default function HelpCenterPage() {
                       setActiveModal("autopilot");
                     }
                   }}
-                  className="group cursor-pointer rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700"
+                  className="group cursor-pointer rounded-xl border border-border/60 bg-card p-3 shadow-sm transition-all hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 sm:rounded-2xl sm:p-6"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400">
-                    <Rocket className="h-5 w-5" />
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-violet-100 bg-violet-50 text-violet-600 dark:border-violet-800 dark:bg-violet-900/30 dark:text-violet-400 sm:mb-4 sm:h-10 sm:w-10 sm:rounded-xl">
+                    <Rocket className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <h3 className="mb-1 text-base font-bold transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400">
+                  <h3 className="mb-0.5 text-sm font-bold transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400 sm:mb-1 sm:text-base">
                     {t("help.guideAutopilot")}
                   </h3>
-                  <p className="text-xs leading-relaxed text-muted-foreground">
+                  <p className="text-[10px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
                     {t("help.guideAutopilotDesc")}
                   </p>
                 </div>
               </div>
 
-              <div className="my-2 h-px w-full bg-border/40" />
+              <div className="my-1 h-px w-full bg-border/40 md:my-2" />
             </>
           )}
 
           {/* NEJČASTĚJŠÍ DOTAZY (FAQ) */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                <BookOpen className="h-5 w-5" />
+            <div className="mb-3 flex items-center gap-2 sm:mb-6 sm:gap-3">
+              <div className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 sm:p-2">
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <h2 className="text-xl font-bold">{t("help.faqTitle")}</h2>
+              <h2 className="text-base font-bold sm:text-xl">{t("help.faqTitle")}</h2>
             </div>
 
             {showEmptySearch ? (
@@ -187,17 +187,17 @@ export default function HelpCenterPage() {
                 {t("help.faqEmpty")}
               </p>
             ) : (
-              <Accordion type="single" collapsible className="w-full space-y-3">
+              <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
                 {displayedFAQs.map((faq) => (
                   <AccordionItem
                     key={faq.question}
                     value={`faq-${allFAQs.findIndex((f) => f.question === faq.question)}`}
-                    className="rounded-2xl border border-border/60 bg-card px-6 py-2 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+                    className="rounded-xl border border-border/60 bg-card px-3 py-1 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 sm:rounded-2xl sm:px-6 sm:py-2"
                   >
-                    <AccordionTrigger className="text-left font-semibold hover:no-underline">
+                    <AccordionTrigger className="py-3 text-left text-sm font-semibold hover:no-underline sm:py-4">
                       {faq.question}
                     </AccordionTrigger>
-                    <AccordionContent className="pb-4 text-sm leading-relaxed text-muted-foreground">
+                    <AccordionContent className="pb-3 text-xs leading-relaxed text-muted-foreground sm:pb-4 sm:text-sm">
                       {faq.answer}
                     </AccordionContent>
                   </AccordionItem>
@@ -207,21 +207,21 @@ export default function HelpCenterPage() {
           </div>
 
           {/* KONTAKT NA PODPORU */}
-          <div className="mt-8 rounded-2xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/50 dark:bg-blue-900/10 p-8 text-center flex flex-col items-center justify-center">
-            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4">
-              <MessageCircle className="h-6 w-6" />
+          <div className="mt-4 flex flex-col items-center justify-center rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-center dark:border-blue-800/60 dark:bg-blue-900/10 sm:mt-8 sm:rounded-2xl sm:p-8">
+            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-800/50 dark:text-blue-400 sm:mb-4 sm:h-12 sm:w-12">
+              <MessageCircle className="h-4 w-4 sm:h-6 sm:w-6" />
             </div>
-            <h3 className="text-lg font-bold mb-2">{t("help.contactTitle")}</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+            <h3 className="mb-1 text-base font-bold sm:mb-2 sm:text-lg">{t("help.contactTitle")}</h3>
+            <p className="mx-auto mb-3 max-w-md text-xs text-muted-foreground sm:mb-6 sm:text-sm">
               {t("help.contactDesc")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button asChild className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-6 font-semibold shadow-sm cursor-pointer">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
+              <Button asChild className="h-9 rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:h-11 sm:rounded-xl sm:px-6">
                 <a href="mailto:podpora@venegard.com?subject=Dotaz z aplikace">
                   <Mail className="mr-2 h-4 w-4" /> {t("help.contactEmail")}
                 </a>
               </Button>
-              <Button asChild variant="outline" className="h-11 rounded-xl border-border/60 px-6 font-semibold bg-background hover:bg-muted cursor-pointer">
+              <Button asChild variant="outline" className="h-9 rounded-lg border-border/60 bg-background px-4 text-sm font-semibold hover:bg-muted sm:h-11 sm:rounded-xl sm:px-6">
                 <a href="https://youtube.com" target="_blank" rel="noreferrer">
                   <ExternalLink className="mr-2 h-4 w-4" /> {t("help.contactVideos")}
                 </a>

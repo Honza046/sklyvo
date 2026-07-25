@@ -191,36 +191,147 @@ export default function RadarPage() {
   };
 
   return (
-      <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-8">
-        
-        <div className="mb-2 text-center space-y-1">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-2xl">
+      <div
+        className={cn(
+          "flex h-full w-full flex-col items-center pt-0 md:pb-8",
+          hasResults
+            ? "scrollbar-hide overflow-y-auto pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:overflow-y-auto"
+            : "overflow-hidden pb-0 md:overflow-y-auto md:scrollbar-hide",
+        )}
+      >
+        {/* Desktop hero */}
+        <div className="mb-2 hidden text-center md:block">
+          <div className="mb-2 flex items-center justify-center gap-3">
+            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
               <Radar className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             {t("radar.title")}
           </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-            {t("radar.subtitle")}
-          </p>
+          <p className="mx-auto max-w-lg text-sm text-muted-foreground">{t("radar.subtitle")}</p>
         </div>
 
-        <div className="w-full max-w-6xl px-4 md:px-8 flex flex-col gap-6">
-          
-          <div className="relative flex flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all md:p-8">
+        {/* Mobile chrome */}
+        <div className="mb-4 flex w-full max-w-6xl items-start justify-between gap-3 md:hidden">
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-semibold tracking-tight text-foreground">{t("radar.title")}</h1>
+            <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground">{t("radar.subtitle")}</p>
+          </div>
+        </div>
+
+        <div className="flex w-full max-w-6xl flex-col gap-3 md:gap-6 md:px-8">
+          {/* Native mobile form */}
+          <div className="overflow-hidden rounded-2xl bg-muted/50 dark:bg-muted/20 md:hidden">
+            <div className="border-b border-border/40 px-4 py-3">
+              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                Cílový profil
+              </label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                <Input
+                  className="h-10 border-0 bg-transparent pl-7 text-[15px] shadow-none focus-visible:ring-0"
+                  placeholder="např. Architektonická studia v Brně"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {searchInspirations.map((text) => (
+                  <button
+                    key={text}
+                    type="button"
+                    onClick={() => setQuery(text)}
+                    className="rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium text-foreground/80"
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-b border-border/40 px-4 py-3">
+              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                Počet firem
+              </label>
+              <Select value={count} onValueChange={setCount}>
+                <SelectTrigger className="h-10 w-full border-0 bg-transparent px-0 text-[15px] shadow-none focus:ring-0 focus:ring-offset-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
+                  <SelectItem value="5">5 výsledků</SelectItem>
+                  <SelectItem value="10">10 výsledků</SelectItem>
+                  <SelectItem value="15">15 výsledků</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="divide-y divide-border/40">
+              <label htmlFor="deep-scan-m" className="flex cursor-pointer items-center justify-between px-4 py-3">
+                <span className="flex items-center gap-2 text-[13px] font-medium">
+                  <Zap className={cn("h-3.5 w-3.5", deepScan ? "fill-amber-500 text-amber-500" : "text-muted-foreground")} />
+                  Deep Scan
+                </span>
+                <Switch
+                  id="deep-scan-m"
+                  checked={deepScan}
+                  onCheckedChange={setDeepScan}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </label>
+              <label htmlFor="exclude-crm-m" className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3">
+                <span className="text-[13px] font-medium leading-snug">Vyloučit firmy v CRM</span>
+                <Switch
+                  id="exclude-crm-m"
+                  checked={excludeCrm}
+                  onCheckedChange={setExcludeCrm}
+                  className="shrink-0 data-[state=checked]:bg-blue-600"
+                />
+              </label>
+              <label htmlFor="only-email-m" className="flex cursor-pointer items-center justify-between px-4 py-3">
+                <span className="text-[13px] font-medium">Pouze s e-mailem</span>
+                <Switch
+                  id="only-email-m"
+                  checked={onlyEmail}
+                  onCheckedChange={setOnlyEmail}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </label>
+            </div>
+          </div>
+
+          {searchError && <p className="text-sm font-medium text-red-600 md:hidden dark:text-red-400">{searchError}</p>}
+
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 p-3 md:hidden">
+            <Button
+              onClick={handleSearch}
+              disabled={isSearching || !query.trim()}
+              className="pointer-events-auto h-12 w-full rounded-2xl bg-blue-600 text-[15px] font-semibold text-white shadow-lg shadow-blue-600/25 hover:bg-blue-700 disabled:bg-blue-400"
+            >
+              {isSearching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("radar.searching")}
+                </>
+              ) : (
+                <>
+                  <Search className="mr-2 h-4 w-4" /> {t("radar.runSearch")}
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Desktop form */}
+          <div className="relative hidden flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all md:flex md:p-8">
             
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-[2fr_1fr]">
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Target className="h-3.5 w-3.5" />
                   Cílový profil / Segment
                 </Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground/70" />
                   <Input 
-                    className="pl-10 h-12 rounded-xl bg-background border-border/50 text-base" 
+                    className="h-12 rounded-xl border-border/50 bg-background pl-10 text-base" 
                     placeholder="např. Architektonická studia v Brně" 
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
@@ -245,7 +356,7 @@ export default function RadarPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <ListOrdered className="h-3.5 w-3.5" />
                   Počet firem
                 </Label>
@@ -253,7 +364,7 @@ export default function RadarPage() {
                   <SelectTrigger className="h-12 rounded-xl border-border/50 bg-background text-base">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-card rounded-xl shadow-lg border-border/60">
+                  <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
                     <SelectItem value="5">5 výsledků</SelectItem>
                     <SelectItem value="10">10 výsledků</SelectItem>
                     <SelectItem value="15">15 výsledků</SelectItem>
@@ -262,7 +373,7 @@ export default function RadarPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-10 gap-y-4 pt-4 border-t border-border/40">
+            <div className="flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-border/40 pt-4">
               <div className="flex items-center space-x-3">
                 <Switch 
                   id="deep-scan" 
@@ -270,7 +381,7 @@ export default function RadarPage() {
                   onCheckedChange={setDeepScan} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="deep-scan" className="text-sm font-semibold flex cursor-pointer items-center gap-1.5">
+                <Label htmlFor="deep-scan" className="flex cursor-pointer items-center gap-1.5 text-sm font-semibold">
                   <Zap className={cn("h-3.5 w-3.5", deepScan ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
                   Deep Scan (Kontakty)
                 </Label>
@@ -283,7 +394,7 @@ export default function RadarPage() {
                   onCheckedChange={setExcludeCrm} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="exclude-crm" className="text-sm font-semibold cursor-pointer">
+                <Label htmlFor="exclude-crm" className="cursor-pointer text-sm font-semibold">
                   Vyloučit firmy v CRM / Sheets archivu
                 </Label>
               </div>
@@ -295,7 +406,7 @@ export default function RadarPage() {
                   onCheckedChange={setOnlyEmail} 
                   className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
                 />
-                <Label htmlFor="only-email" className="text-sm font-semibold cursor-pointer">
+                <Label htmlFor="only-email" className="cursor-pointer text-sm font-semibold">
                   Pouze s e-mailem
                 </Label>
               </div>
@@ -304,7 +415,7 @@ export default function RadarPage() {
             <Button 
               onClick={handleSearch}
               disabled={isSearching || !query.trim()}
-              className="w-full md:w-auto md:self-start h-14 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-10 text-base font-bold shadow-md transition-all active:scale-95 disabled:bg-blue-400"
+              className="h-14 w-full rounded-xl bg-blue-600 px-10 text-base font-bold text-white shadow-md transition-all hover:bg-blue-700 active:scale-95 disabled:bg-blue-400 md:w-auto md:self-start"
             >
               {isSearching ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> {t("radar.searching")}</> : <><Search className="mr-2 h-5 w-5" /> {t("radar.runSearch")}</>}
             </Button>
@@ -315,7 +426,7 @@ export default function RadarPage() {
             <div className="absolute bottom-4 right-4 z-40">
               <div
                 tabIndex={0}
-                className="group relative inline-flex outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 rounded-md"
+                className="group relative inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2"
               >
                 <div
                   id="radar-switch-help-tooltip"
@@ -381,48 +492,47 @@ export default function RadarPage() {
                 )}
               </div>
               
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-2.5 sm:gap-4">
                 {results.map((result) => (
                   <div 
                     key={result.id} 
                     className={cn(
-                      "group relative flex items-start gap-5 rounded-2xl border bg-card p-6 transition-all shadow-sm",
+                      "group relative flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm transition-all sm:gap-5 sm:rounded-2xl sm:p-6",
                       selectedLeads.includes(result.id) ? "border-blue-400 bg-blue-50/20 dark:bg-blue-900/20 dark:border-blue-700" : "border-border/60 hover:border-blue-200 dark:hover:border-blue-800 hover:shadow-md"
                     )}
                   >
-                    <div className="pt-1.5">
+                    <div className="pt-0.5 sm:pt-1.5">
                       <Checkbox 
                         checked={selectedLeads.includes(result.id)} 
                         onCheckedChange={() => toggleLead(result.id)}
-                        className="rounded-md h-5 w-5 border-border/80 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                        className="h-4 w-4 rounded-md border-border/80 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 sm:h-5 sm:w-5"
                       />
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
-                        <h4 className="text-lg font-bold text-foreground truncate">{result.name}</h4>
-                        <div className="flex gap-2 shrink-0">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-col gap-1.5 sm:mb-2 sm:flex-row sm:items-center sm:gap-3">
+                        <h4 className="truncate text-sm font-bold text-foreground sm:text-lg">{result.name}</h4>
+                        <div className="flex shrink-0 flex-wrap gap-1.5 sm:gap-2">
                           {addedLeadIds.includes(result.id) && (
-                            <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-tighter dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400">
+                            <span className="flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 sm:px-2.5 sm:text-[10px]">
                               V CRM
                             </span>
                           )}
-                          {/* OPRAVENO: Modrý URL štítek */}
-                          <span className="flex items-center text-[10px] text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-tighter dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-400">
-                            <Globe className="h-3 w-3 mr-1" /> Google profil
+                          <span className="flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400 sm:px-2.5 sm:text-[10px]">
+                            <Globe className="mr-1 h-3 w-3" /> Google profil
                           </span>
                           {result.rating !== null && (
-                            <span className="flex items-center text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-tighter dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-400">
+                            <span className="flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-emerald-600 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 sm:px-2.5 sm:text-[10px]">
                               Hodnocení {result.rating.toFixed(1)}
                             </span>
                           )}
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground/80 leading-relaxed max-w-3xl">
+                      <p className="max-w-3xl text-xs leading-snug text-muted-foreground/80 sm:text-sm sm:leading-relaxed">
                         {result.address}
                       </p>
                       {(result.phone || result.url) && (
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] sm:mt-2 sm:gap-3 sm:text-xs">
                           {result.phone && (
                             <span className="text-muted-foreground">
                               Tel: <span className="font-semibold text-foreground">{result.phone}</span>
@@ -441,19 +551,42 @@ export default function RadarPage() {
                         </div>
                       )}
                       {result.email && (
-                        <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground sm:mt-2 sm:text-xs">
                           <Mail className="h-3.5 w-3.5" />
                           <span className="font-semibold text-foreground">{result.email}</span>
                         </div>
                       )}
+                      <div className="mt-2 flex items-center gap-2 sm:hidden">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleAddLead(result)}
+                          disabled={addedLeadIds.includes(result.id) || addingLeadIds.includes(result.id)}
+                          className="h-8 flex-1 rounded-lg text-xs"
+                        >
+                          {addingLeadIds.includes(result.id) ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          ) : addedLeadIds.includes(result.id) ? (
+                            <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <Plus className="mr-1.5 h-3.5 w-3.5" />
+                          )}
+                          {addedLeadIds.includes(result.id) ? "V CRM" : "Do CRM"}
+                        </Button>
+                        <Button asChild size="sm" className="h-8 rounded-lg bg-foreground px-3 text-[10px] font-bold uppercase tracking-widest text-background hover:bg-foreground/90">
+                          <Link href={`/sniper?company=${encodeURIComponent(result.name)}&url=${encodeURIComponent(result.url || "")}&email=${encodeURIComponent(result.email || "")}`}>
+                            <Crosshair className="mr-1.5 h-3.5 w-3.5" /> Sniper
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
+                    <div className="hidden items-center gap-2 opacity-0 transition-all duration-200 translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 sm:flex">
                       <Button
                         variant="ghost"
                         onClick={() => void handleAddLead(result)}
                         disabled={addedLeadIds.includes(result.id) || addingLeadIds.includes(result.id)}
-                        className="flex items-center justify-center p-0 h-10 w-10 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-100"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl p-0 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-100"
                       >
                         {addingLeadIds.includes(result.id) ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
@@ -463,7 +596,7 @@ export default function RadarPage() {
                           <Plus className="h-5 w-5" />
                         )}
                       </Button>
-                      <Button asChild className="h-10 rounded-xl bg-foreground text-background hover:bg-foreground/90 px-5 font-bold text-[10px] uppercase tracking-widest shadow-sm">
+                      <Button asChild className="h-10 rounded-xl bg-foreground px-5 text-[10px] font-bold uppercase tracking-widest text-background shadow-sm hover:bg-foreground/90">
                         <Link href={`/sniper?company=${encodeURIComponent(result.name)}&url=${encodeURIComponent(result.url || "")}&email=${encodeURIComponent(result.email || "")}`}>
                         <Crosshair className="mr-2 h-4 w-4" /> Sniper
                         </Link>

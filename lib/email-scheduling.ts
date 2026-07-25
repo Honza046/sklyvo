@@ -78,6 +78,25 @@ function addPragueDays(base: { year: number; month: number; day: number }, days:
   return startOfPragueDay(new Date(utc));
 }
 
+/** Weekday v Europe/Prague: 0=Ne … 6=So (jako `Date.getDay()`). */
+export function pragueWeekday(day: { year: number; month: number; day: number }): number {
+  const probe = pragueDateTime(day.year, day.month, day.day, 12, 0);
+  const label = new Intl.DateTimeFormat("en-US", {
+    timeZone: PRAGUE_TZ,
+    weekday: "short",
+  }).format(probe);
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return map[label] ?? probe.getUTCDay();
+}
+
 function randomMinuteInWindow(
   day: { year: number; month: number; day: number },
   start: string,
@@ -104,12 +123,14 @@ function randomMinuteInWindow(
 /**
  * Rozdělí `count` e-mailů do časových oken s limitem `maxEmailsPerBatch` na dávku.
  * Časy jsou náhodně rozprostřené uvnitř každého okna.
+ * `allowedWeekdays` — 0=Ne … 6=So; prázdné / neuvedené = každý den.
  */
 export function computeScheduledTimes(
   count: number,
   windows: ScheduleTimeWindow[],
   maxEmailsPerBatch: number,
   now: Date = new Date(),
+  allowedWeekdays?: number[],
 ): Date[] {
   if (count <= 0) return [];
 
@@ -123,14 +144,33 @@ export function computeScheduledTimes(
     throw new Error("Neplatná časová okna pro plánování.");
   }
 
+  const dayFilter =
+    allowedWeekdays && allowedWeekdays.length > 0
+      ? new Set(allowedWeekdays)
+      : null;
+
   const batchSize = Math.max(1, Math.min(maxEmailsPerBatch, 500));
   const results: Date[] = [];
   let dayOffset = 0;
   let windowIndex = 0;
   let batchCount = 0;
+  let guard = 0;
 
   while (results.length < count) {
+    guard += 1;
+    if (guard > count * 400) {
+      throw new Error("Nepodařilo se naplánovat odeslání — zkontrolujte dny a časová okna.");
+    }
+
     const day = addPragueDays(startOfPragueDay(now), dayOffset);
+
+    if (dayFilter && !dayFilter.has(pragueWeekday(day))) {
+      dayOffset += 1;
+      windowIndex = 0;
+      batchCount = 0;
+      continue;
+    }
+
     const window = validWindows[windowIndex % validWindows.length];
     const scheduled = randomMinuteInWindow(day, window.start, window.end);
 
@@ -139,6 +179,7 @@ export function computeScheduledTimes(
       if (windowIndex >= validWindows.length) {
         windowIndex = 0;
         dayOffset += 1;
+        batchCount = 0;
       }
       continue;
     }
@@ -148,6 +189,7 @@ export function computeScheduledTimes(
       if (windowIndex >= validWindows.length) {
         windowIndex = 0;
         dayOffset += 1;
+        batchCount = 0;
       }
       continue;
     }

@@ -5,11 +5,11 @@ import { Globe, Mail, Phone, Radio } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { cn } from "@/lib/utils";
 import { getLeads } from "@/app/actions/crm";
-import { toast } from "sonner";
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
   AutopilotSettingsIconButton,
+  AutopilotListEmptyState,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
   AUTOPILOT_TABLE_CARD_CLASS,
@@ -94,6 +94,22 @@ export function AutopilotRadarView() {
   const radarShownTo =
     radarTotalItems === 0 ? 0 : radarPageStart + paginatedRadarLeads.length;
 
+  const emptyStates = (
+    <>
+      {isLoading && <AutopilotListEmptyState>Načítám historii sběru…</AutopilotListEmptyState>}
+      {!isLoading && loadError && (
+        <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
+          {loadError}
+        </AutopilotListEmptyState>
+      )}
+      {!isLoading && !loadError && workspaceLeads.length === 0 && (
+        <AutopilotListEmptyState>
+          Zatím žádné nalezené firmy. Spusťte automatický sběr nebo přidejte leady v Radaru.
+        </AutopilotListEmptyState>
+      )}
+    </>
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col">
       <AutopilotSettingsDialog
@@ -137,22 +153,45 @@ export function AutopilotRadarView() {
       />
 
       <div className={AUTOPILOT_TABLE_CARD_CLASS}>
-        <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-          <table className="w-full min-w-[560px] table-fixed text-sm">
+        {/* Mobile list */}
+        <div className="scrollbar-hide max-h-[min(42dvh,280px)] min-h-[160px] overflow-y-auto md:hidden">
+          {paginatedRadarLeads.map((lead) => (
+            <div
+              key={lead.id}
+              className="flex items-start gap-3 border-b border-border/40 px-3 py-2.5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                  {lead.email || t("common.noEmail")}
+                  {lead.phone ? ` · ${lead.phone}` : ""}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {formatFoundDate(lead.createdAt, dateLocale)}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 pt-0.5 text-[11px] font-semibold",
+                  leadStatusClassName(lead.leadStatus),
+                )}
+              >
+                {leadStatusLabel(lead.leadStatus)}
+              </span>
+            </div>
+          ))}
+          {paginatedRadarLeads.length === 0 && emptyStates}
+        </div>
+
+        {/* Desktop table */}
+        <div className={cn(AUTOPILOT_TABLE_SCROLL_CLASS, "hidden md:block")}>
+          <table className="w-full table-fixed text-sm">
             <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
               <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
-                  Firma
-                </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
-                  Kontakt
-                </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
-                  Datum nalezení
-                </th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>
-                  Status
-                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Datum nalezení</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Status</th>
               </tr>
             </thead>
             <tbody>

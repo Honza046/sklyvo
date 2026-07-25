@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { VenegardOnboardingTour } from "@/components/venegard-onboarding-tour";
 import { AICopilotWidget } from "@/components/ai/AICopilotWidget";
+import { VenegardWordmark } from "@/components/brand-marks";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
 import {
@@ -69,7 +70,12 @@ export function DashboardShell({
 
   const isAutopilotActive = pathname.startsWith("/autopilot");
   const isWorkspaceSettingsActive = isWorkspaceSettingsRoute(pathname);
-  const lockMainScroll = pathname.startsWith("/autopilot/sniper") || pathname === "/";
+  const lockMainScroll =
+    pathname.startsWith("/autopilot") ||
+    pathname === "/" ||
+    pathname === "/sniper" ||
+    pathname === "/radar" ||
+    pathname === "/crm";
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -277,15 +283,12 @@ export function DashboardShell({
       {/* BOČNÍ PANEL */}
       <aside
         data-tour="onboarding-sidebar"
-        className="hidden w-64 flex-shrink-0 h-full overflow-y-auto border-r bg-background md:flex md:flex-col"
+        className="scrollbar-hide hidden h-full w-64 flex-shrink-0 overflow-y-auto border-r bg-background md:flex md:flex-col"
       >
         
         {/* LOGO */}
-        <div className="flex h-16 shrink-0 items-center gap-3 px-6">
-          <div className="h-2.5 w-2.5 rounded-full bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.4)]" />
-          <span className="text-sm font-bold tracking-[0.2em] text-foreground">
-            VENEGARD
-          </span>
+        <div className="flex h-16 shrink-0 items-center px-6">
+          <VenegardWordmark markSize={30} />
         </div>
         
         {/* HLAVNÍ NAVIGACE */}
@@ -559,7 +562,7 @@ export function DashboardShell({
           "relative flex min-w-0 flex-1 flex-col",
           lockMainScroll
             ? "h-dvh max-h-dvh overflow-hidden"
-            : "h-full overflow-y-auto",
+            : "scrollbar-hide h-full overflow-y-auto",
         )}
       >
         <MobileTopBar

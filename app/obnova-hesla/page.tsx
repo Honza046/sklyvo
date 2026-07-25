@@ -8,6 +8,7 @@ import { resetPassword } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { VenegardWordmark } from "@/components/brand-marks";
 
 function ObnovaHeslaForm() {
   const router = useRouter();
@@ -168,9 +169,8 @@ export default function ObnovaHeslaPage() {
       <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
 
       <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
-        <div className="flex items-center justify-center gap-3">
-          <div className="h-4 w-4 rounded-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]" />
-          <span className="text-xl font-bold tracking-[0.2em] text-foreground">VENEGARD</span>
+        <div className="flex justify-center">
+          <VenegardWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
         </div>
         <Suspense
           fallback={

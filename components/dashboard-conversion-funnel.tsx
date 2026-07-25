@@ -35,12 +35,12 @@ export function DashboardConversionFunnel({ initialCounts }: DashboardConversion
   };
 
   return (
-    <div className="flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-bold text-foreground">Konverzní trychtýř</h2>
+    <div className="flex shrink-0 flex-col rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:rounded-2xl sm:p-3">
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 sm:mb-2 sm:gap-2">
+        <h2 className="text-sm font-bold text-foreground sm:text-base">Konverzní trychtýř</h2>
         <Select value={days} onValueChange={refresh} disabled={isPending}>
           <SelectTrigger
-            className="h-8 w-[148px] shrink-0 rounded-md border-border/60 bg-muted/50 text-[11px] font-medium text-muted-foreground shadow-none focus:ring-1 focus:ring-blue-500/30 md:w-[168px]"
+            className="h-7 w-[130px] shrink-0 rounded-md border-border/60 bg-muted/50 text-[10px] font-medium text-muted-foreground shadow-none focus:ring-1 focus:ring-blue-500/30 sm:h-8 sm:w-[148px] sm:text-[11px] md:w-[168px]"
             aria-label="Časové okno trychtýře"
           >
             <SelectValue placeholder="Období" />
@@ -65,20 +65,20 @@ export function DashboardConversionFunnel({ initialCounts }: DashboardConversion
         </Select>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col justify-center gap-2.5">
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-1.5 sm:gap-2.5">
         {FUNNEL_STATUS_META.map((row) => {
           const count = counts[row.key];
           const width = getFunnelWidth(count);
           return (
-            <div key={row.key} className="space-y-1.5">
-              <div className="flex justify-between text-xs font-semibold">
+            <div key={row.key} className="space-y-1">
+              <div className="flex justify-between text-[11px] font-semibold sm:text-xs">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`} />
                   <span className="truncate">{row.label}</span>
                 </span>
                 <span className="shrink-0 tabular-nums">{count}</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-1 w-full overflow-hidden rounded-full bg-muted sm:h-1.5">
                 <div className={`h-full ${row.rowBgClass} rounded-full`} style={{ width: `${width}%` }} />
               </div>
             </div>

@@ -9,6 +9,7 @@ import {
   Mail,
   Send,
   Trash2,
+  Wand2,
 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import {
@@ -49,11 +50,12 @@ import {
   AutopilotControlPanel,
   AutopilotPowerButton,
   AutopilotSettingsIconButton,
+  AutopilotListEmptyState,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
   AUTOPILOT_TABLE_CARD_CLASS,
   AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-  AUTOPILOT_TABLE_SCROLL_CLASS,
+  AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
   ITEMS_PER_PAGE,
   STATUS_META,
   leadFullWebsiteUrl,
@@ -394,10 +396,22 @@ export function AutopilotSniperView() {
         return;
       }
 
+      if (!automationSettings.sendDays?.length) {
+        toast.error("Vyberte alespoň jeden den odesílání v nastavení.");
+        openSettings();
+        return;
+      }
+
       const batchSize = Math.max(1, Math.min(automationSettings.maxEmailsPerBatch, 500));
 
       try {
-        scheduledTimes = computeScheduledTimes(selectedIds.length, windows, batchSize);
+        scheduledTimes = computeScheduledTimes(
+          selectedIds.length,
+          windows,
+          batchSize,
+          new Date(),
+          automationSettings.sendDays,
+        );
       } catch (e) {
         const message = e instanceof Error ? e.message : "Neplatná nastavení plánování.";
         toast.error(message);
@@ -562,8 +576,8 @@ export function AutopilotSniperView() {
         powerEnabled={featureEnabled}
         description={
           featureEnabled
-            ? "Cron posílá splatné maily z fronty."
-            : "Cron vypnutý — ruční oslovení je v sekci Sniper."
+            ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
+            : "Cron vypnutý — maily z fronty se neodešlou, dokud nezapneš."
         }
         actions={
           <>
@@ -582,32 +596,32 @@ export function AutopilotSniperView() {
         }
       />
 
-      <div className="mt-6 flex shrink-0 items-center gap-5 border-b border-border/60">
+      <div className="mt-3 flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 pb-0 sm:mt-6 sm:gap-5">
         <button
           type="button"
           onClick={() => setActiveSubTab("selection")}
           className={cn(
-            "-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors",
+            "-mb-px shrink-0 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:pb-2.5 sm:text-sm",
             activeSubTab === "selection"
               ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
               : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
-          Výběr firem k oslovení
+          Výběr firem
         </button>
         <button
           type="button"
           onClick={() => setActiveSubTab("queue")}
           className={cn(
-            "-mb-px flex items-center gap-2 border-b-2 pb-2.5 text-sm font-medium transition-colors",
+            "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:gap-2 sm:px-0 sm:pb-2.5 sm:text-sm",
             activeSubTab === "queue"
               ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
               : "border-transparent text-muted-foreground hover:text-foreground",
           )}
         >
-          Naplánovaná fronta a logy
+          Fronta
           {queuedCount > 0 && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
               {queuedCount}
             </span>
           )}
@@ -616,22 +630,118 @@ export function AutopilotSniperView() {
 
       {activeSubTab === "selection" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="mt-3 flex shrink-0 flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                {selectedIds.length > 0
+                  ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
+                  : "Označ firmy k oslovení"}
+              </p>
+              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                Odešlou se jen vybrané. Nejdřív se vygenerují e-maily, odeslání pak podle dnů a
+                oken v nastavení{featureEnabled ? "" : " (zapni cron Zapnout)"}
+                .
+              </p>
+            </div>
+            <Button
+              type="button"
+              disabled={selectedIds.length === 0 || isRunning}
+              onClick={() => void handleStart()}
+              className="h-10 w-full shrink-0 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generuji…
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  {selectedIds.length > 0
+                    ? `Vygenerovat a naplánovat (${selectedIds.length})`
+                    : "Vygenerovat a naplánovat"}
+                </>
+              )}
+            </Button>
+          </div>
+
           {showSelectAllBanner && (
-            <div className="mt-4 shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+            <div className="mt-3 shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 sm:mt-4 sm:px-4 sm:py-3 sm:text-sm">
               Jsou vybrány všechny firmy na této stránce ({paginatedLeads.length}).{" "}
               <button
                 type="button"
                 onClick={selectAllInDatabase}
                 className="font-semibold underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-200"
               >
-                Vybrat úplně všechny neoslovené firmy v databázi ({totalItems})
+                Vybrat všechny neoslovené ({totalItems})
               </button>
             </div>
           )}
 
-          <div className={cn(AUTOPILOT_TABLE_CARD_CLASS, "relative z-0 mt-4 shrink-0")}>
-            <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-              <table className="w-full min-w-[520px] table-fixed text-sm">
+          <div
+            className={cn(
+              AUTOPILOT_TABLE_CARD_CLASS,
+              "relative z-0 mt-3 min-h-0 flex-1 sm:mt-4",
+            )}
+          >
+            {/* Mobile list */}
+            <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto md:hidden">
+              {paginatedLeads.map((lead) => {
+                const checked = selectedIds.includes(lead.id);
+                return (
+                  <div
+                    key={lead.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => toggleOne(lead.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleOne(lead.id);
+                      }
+                    }}
+                    className="flex w-full cursor-pointer items-center gap-3 border-b border-border/40 px-3 py-2.5 text-left active:bg-muted/50"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleOne(lead.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        {lead.email || "Bez e-mailu"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {paginatedLeads.length === 0 && (
+                <>
+                  {isLoading && <AutopilotListEmptyState>Načítám firmy…</AutopilotListEmptyState>}
+                  {!isLoading && loadError && (
+                    <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
+                      {loadError}
+                    </AutopilotListEmptyState>
+                  )}
+                  {!isLoading && !loadError && leads.length === 0 && (
+                    <AutopilotListEmptyState>
+                      Žádné neoslovené firmy. Přidejte leady v Radaru nebo CRM.
+                    </AutopilotListEmptyState>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Desktop table */}
+            <div
+              className={cn(
+                AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
+                "hidden min-h-0 flex-1 overflow-x-auto overflow-y-auto md:block",
+              )}
+            >
+              <table className="w-full table-fixed text-sm">
                 <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
                   <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     <th
@@ -743,91 +853,92 @@ export function AutopilotSniperView() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {isQueueLoading && campaignLeads.length === 0 ? (
-            <div className="mt-6 shrink-0 rounded-2xl border border-border/60 bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
-              Načítám naplánovanou frontu…
+            <div className="mt-3 shrink-0 rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6 sm:rounded-2xl">
+              <AutopilotListEmptyState>Načítám naplánovanou frontu…</AutopilotListEmptyState>
             </div>
           ) : campaignLeads.length === 0 ? (
-            <div className="mt-6 shrink-0 rounded-2xl border border-border/60 bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
-              Zatím nemáte naplánovanou frontu. Vyberte firmy a spusťte Autopilota.
+            <div className="mt-3 shrink-0 rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6 sm:rounded-2xl">
+              <AutopilotListEmptyState>
+                Zatím nemáte naplánovanou frontu. Označ firmy a klikni na „Vygenerovat a
+                naplánovat“.
+              </AutopilotListEmptyState>
             </div>
           ) : (
             <>
-              <div className="mt-6 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
-                <div className="flex w-full items-center justify-between gap-3 px-4 py-2.5">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex shrink-0 items-center gap-2 text-sm font-semibold leading-none text-foreground">
+              <div className="mt-3 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6">
+                <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="flex shrink-0 items-center gap-2 text-xs font-semibold leading-none text-foreground sm:text-sm">
                       {isRunning ? (
                         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                       ) : (
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                       )}
-                      {isRunning ? "Generuji a řadím do fronty…" : "Fronta připravena"}
+                      {isRunning ? "Generuji…" : "Fronta připravena"}
                     </span>
-                    <span className="shrink-0 text-xs font-medium leading-none text-emerald-600">
-                      ✓ Ve frontě: {queuedCount}
+                    <span className="shrink-0 text-[11px] font-medium leading-none text-emerald-600 sm:text-xs">
+                      ✓ {queuedCount}
                     </span>
-                    <span className="shrink-0 text-xs font-medium leading-none text-rose-600">
-                      ✕ Chyby: {errorCount}
+                    <span className="shrink-0 text-[11px] font-medium leading-none text-rose-600 sm:text-xs">
+                      ✕ {errorCount}
+                    </span>
+                    <span className="text-[11px] leading-none text-muted-foreground sm:text-xs">
+                      {processedCount}/{total}
                     </span>
                   </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-xs leading-none text-muted-foreground">
-                      Zpracováno {processedCount} / {total}
-                    </span>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={isRunning || isClearingQueue}
-                          className="inline-flex h-7 shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={isRunning || isClearingQueue}
+                        className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                      >
+                        {isClearingQueue ? (
+                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="mr-1 h-3 w-3" />
+                        )}
+                        Vyčistit
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="border bg-white shadow-md dark:bg-zinc-950">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Tato akce nenávratně smaže všechny naplánované e-maily čekající na odeslání a
+                          vymaže historii logů.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => void handleClearQueue()}
+                          className="bg-red-600 text-white hover:bg-red-700"
                         >
-                          {isClearingQueue ? (
-                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="mr-1 h-3 w-3" />
-                          )}
-                          Vyčistit frontu
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="border bg-white shadow-md dark:bg-zinc-950">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tato akce nenávratně smaže všechny naplánované e-maily čekající na odeslání a
-                            vymaže historii logů.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => void handleClearQueue()}
-                            className="bg-red-600 text-white hover:bg-red-700"
-                          >
-                            Smazat frontu
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                          Smazat frontu
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 <Progress value={progressValue} className="h-1 rounded-none" />
               </div>
 
-              <div className="mt-4 shrink-0 overflow-hidden rounded-xl border border-border/60 border-b border-gray-200 bg-card shadow-sm dark:border-b-border/60">
-                <div className="px-4 pt-4 pb-3">
-                  <p className="mb-3 text-sm font-semibold text-foreground">
-                    Fronta připravena k odeslání
+              <div className="mt-3 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-4">
+                <div className="px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3">
+                  <p className="mb-2 text-xs font-semibold text-foreground sm:mb-3 sm:text-sm">
+                    Fronta k odeslání
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-4 border-b border-border/60">
+                  <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:flex-wrap sm:items-center sm:gap-4">
                     {queueFilterTabs.map(({ id, label, count }) => (
                       <button
                         key={id}
                         type="button"
                         onClick={() => setQueueStatusFilter(id)}
                         className={cn(
-                          "-mb-px flex items-center gap-1.5 border-b-2 pb-2 text-xs font-medium transition-colors sm:text-sm",
+                          "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
                           queueStatusFilter === id
                             ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
                             : "border-transparent text-muted-foreground hover:text-foreground",
@@ -842,8 +953,65 @@ export function AutopilotSniperView() {
                   </div>
                 </div>
 
-                <div className="h-[190px] min-h-[190px] max-h-[190px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <table className="w-full min-w-[520px] table-fixed text-sm">
+                {/* Mobile list */}
+                <div className="scrollbar-hide max-h-[min(35dvh,190px)] min-h-[140px] overflow-y-auto md:hidden">
+                  {paginatedQueueLeads.map((lead) => {
+                    const state = states[lead.id] ?? { status: "pending" as RunStatus };
+                    const meta = STATUS_META[state.status];
+                    const canPreview =
+                      state.status === "queued" && Boolean(state.subject && state.queueId);
+
+                    return (
+                      <div
+                        key={lead.id}
+                        className="flex items-center gap-3 border-b border-border/40 px-3 py-2.5"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[14px] font-semibold text-foreground">
+                            {lead.company}
+                          </p>
+                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                            {lead.email || "Bez e-mailu"}
+                          </p>
+                          <p className={cn("mt-0.5 text-[11px] font-semibold", meta.className)}>
+                            {meta.label}
+                          </p>
+                        </div>
+                        {canPreview ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openEmailPreview({
+                                leadId: lead.id,
+                                queueId: state.queueId!,
+                                companyName: lead.company,
+                                subject: state.subject!,
+                                htmlBody: state.htmlBody ?? "",
+                              })
+                            }
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Náhled
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                  {paginatedQueueLeads.length === 0 && (
+                    <AutopilotListEmptyState className="min-h-[140px] py-6 text-xs">
+                      {queueStatusFilter === "all"
+                        ? "Fronta je prázdná."
+                        : queueStatusFilter === "queued"
+                          ? "Zatím žádné potvrzené e-maily ve frontě."
+                          : "Zatím žádné chyby."}
+                    </AutopilotListEmptyState>
+                  )}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden h-[190px] min-h-[190px] max-h-[190px] overflow-y-auto md:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <table className="w-full table-fixed text-sm">
                     <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
                       <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                         <th className="sticky top-0 z-10 h-10 w-[34%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">

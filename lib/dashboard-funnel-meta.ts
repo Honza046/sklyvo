@@ -16,11 +16,11 @@ export const FUNNEL_STATUS_META: Array<{
   {
     key: "NEW",
     label: "Nový lead",
-    // Sky — výraznější než slate (slate-500 se navíc dřív nevyrenderoval z lib/ mimo Tailwind content).
-    dotClass: "bg-sky-500",
-    rowBgClass: "bg-sky-500 dark:bg-sky-400",
+    // Slate — záměrně jiná než blue u Kontaktováno (sky působilo skoro stejně).
+    dotClass: "bg-slate-500",
+    rowBgClass: "bg-slate-500 dark:bg-slate-400",
     badgeClass:
-      "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300",
+      "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
   },
   {
     key: "CONTACTED",

@@ -55,14 +55,14 @@ function attentionTaskSubtitle(status: LeadStatus): string {
 function AttentionTaskIcon({ status }: { status: LeadStatus }) {
   if (status === "NEW") {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-        <Clock className="h-4 w-4" />
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 sm:h-8 sm:w-8">
+        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
       </div>
     );
   }
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-      <MessageCircleWarning className="h-4 w-4" />
+    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 sm:h-8 sm:w-8">
+      <MessageCircleWarning className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
     </div>
   );
 }
@@ -88,71 +88,73 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
   const attentionRows = dashboardData.attentionTasks;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
-      <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Target className="h-4 w-4" />
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-2 md:gap-3">
+      <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
+              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Nové leady</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
+              Nové leady
+            </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums text-foreground">{leadsCount}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{leadsCount}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-              <Mail className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 sm:rounded-lg sm:p-2">
+              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               Odeslané e-maily
             </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums text-foreground">{emailsSent}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{emailsSent}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-              <Users className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-amber-50 p-1.5 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 sm:rounded-lg sm:p-2">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               Aktivní Dealy
             </h3>
           </div>
           <div className="flex items-end justify-between gap-2">
-            <p className="text-xl font-bold tabular-nums text-foreground">{activeDeals}</p>
-            <p className="mb-0.5 shrink-0 text-right text-[10px] font-medium leading-tight text-muted-foreground">
+            <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{activeDeals}</p>
+            <p className="mb-0.5 shrink-0 text-right text-[9px] font-medium leading-tight text-muted-foreground sm:text-[10px]">
               V CRM
             </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-purple-50 p-2 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
-              <Activity className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 sm:rounded-lg sm:p-2">
+              <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               Hodnota Pipeline
             </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums leading-tight text-foreground">
+          <p className="text-base font-bold tabular-nums leading-tight text-foreground sm:text-xl">
             {formatCurrency(pipelineValue)}
           </p>
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-4">
-        <div className="flex h-full min-h-0 flex-col gap-4 lg:col-span-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 lg:grid-cols-3 lg:gap-4">
+        <div className="flex h-full min-h-0 flex-col gap-2.5 lg:col-span-2 lg:gap-4">
           <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
 
           {/* ZDE ZAČÍNÁ BLOK NEDÁVNÉ AKTIVITY */}
-          <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border/60 bg-card p-6 shadow-sm">
-            <div className="mb-4 flex shrink-0 items-center justify-between">
-              <h3 className="m-0 text-lg font-bold text-foreground">Nedávná aktivita</h3>
-              <span className="text-xs text-muted-foreground">
+          <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border/60 bg-card p-3 shadow-sm sm:p-6">
+            <div className="mb-2 flex shrink-0 items-center justify-between sm:mb-4">
+              <h3 className="m-0 text-sm font-bold text-foreground sm:text-lg">Nedávná aktivita</h3>
+              <span className="text-[10px] text-muted-foreground sm:text-xs">
                 {recentActivity.length > 0
                   ? `${recentActivity.length} nejnovějších`
                   : "Za poslední dobu"}
@@ -188,60 +190,60 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
           {/* ZDE KONČÍ BLOK NEDÁVNÉ AKTIVITY */}
         </div> {/* <--- TADY JE TEN CHYBĚJÍCÍ DIV PRO LEVÝ SLOUPEC! */}
         
-        <div className="flex h-full min-h-0 flex-col gap-4">
-          <div className="flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm md:p-4">
-            <h2 className="mb-2 shrink-0 text-base font-bold">Rychlé akce</h2>
+        <div className="flex h-full min-h-0 flex-col gap-2.5 lg:gap-4">
+          <div className="flex shrink-0 flex-col rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:rounded-2xl md:p-4">
+            <h2 className="mb-1.5 shrink-0 text-sm font-bold sm:mb-2 sm:text-base">Rychlé akce</h2>
 
-            <div className="flex shrink-0 flex-col gap-2">
+            <div className="flex shrink-0 flex-col gap-1.5 sm:gap-2">
               <Link
                 href="/radar"
-                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800"
+                className="group flex items-center justify-between rounded-lg border border-border/60 bg-background p-2 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800 sm:rounded-xl sm:p-2.5"
               >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-50 p-2 text-blue-600 transition-transform group-hover:scale-110 dark:bg-blue-900/30 dark:text-blue-400">
-                    <Zap className="h-4 w-4" />
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 transition-transform group-hover:scale-110 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
+                    <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold">Spustit Auto Prospector</p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <p className="text-xs font-semibold sm:text-sm">Spustit Auto Prospector</p>
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground sm:text-[10px]">
                       Hledat nové firmy
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 translate-x-0 text-muted-foreground transition-colors group-hover:translate-x-1 group-hover:text-blue-600" />
+                <ArrowRight className="h-3.5 w-3.5 translate-x-0 text-muted-foreground transition-colors group-hover:translate-x-1 group-hover:text-blue-600 sm:h-4 sm:w-4" />
               </Link>
 
               <Link
                 href="/sniper"
-                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800"
+                className="group flex items-center justify-between rounded-lg border border-border/60 bg-background p-2 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800 sm:rounded-xl sm:p-2.5"
               >
-                <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 transition-transform group-hover:scale-110 dark:bg-emerald-900/30 dark:text-emerald-400">
-                    <Mail className="h-4 w-4" />
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="rounded-md bg-emerald-50 p-1.5 text-emerald-600 transition-transform group-hover:scale-110 dark:bg-emerald-900/30 dark:text-emerald-400 sm:rounded-lg sm:p-2">
+                    <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold">Napsat Cold E-mail</p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <p className="text-xs font-semibold sm:text-sm">Napsat Cold E-mail</p>
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground sm:text-[10px]">
                       Direct Outreach
                     </p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 translate-x-0 text-muted-foreground transition-colors group-hover:translate-x-1 group-hover:text-emerald-600" />
+                <ArrowRight className="h-3.5 w-3.5 translate-x-0 text-muted-foreground transition-colors group-hover:translate-x-1 group-hover:text-emerald-600 sm:h-4 sm:w-4" />
               </Link>
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-            <h3 className="shrink-0 font-semibold text-foreground">K řešení</h3>
-            <div className="custom-scrollbar flex-1 overflow-y-auto pr-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:gap-4 sm:rounded-2xl sm:p-4">
+            <h3 className="shrink-0 text-sm font-semibold text-foreground sm:text-base">K řešení</h3>
+            <div className="custom-scrollbar flex-1 overflow-y-auto pr-1 sm:pr-2">
               {attentionRows.length === 0 ? (
-                <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center">
-                  <div className="rounded-full bg-muted p-4 text-muted-foreground">
-                    <ClipboardList className="h-8 w-8" />
+                <div className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-6 text-center sm:min-h-[200px] sm:gap-3 sm:px-4 sm:py-10">
+                  <div className="rounded-full bg-muted p-3 text-muted-foreground sm:p-4">
+                    <ClipboardList className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">Zatím žádné úkoly k řešení</p>
-                    <p className="max-w-[260px] text-xs text-muted-foreground">
+                    <p className="text-xs font-semibold text-foreground sm:text-sm">Zatím žádné úkoly k řešení</p>
+                    <p className="max-w-[260px] text-[10px] text-muted-foreground sm:text-xs">
                       Jakmile se objeví nové firmy, uvidíte je zde.
                     </p>
                   </div>
@@ -251,18 +253,18 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                   {attentionRows.map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-center justify-between border-b border-border/40 p-3 transition-colors last:border-0 hover:bg-muted/50"
+                      className="flex items-center justify-between border-b border-border/40 p-2 transition-colors last:border-0 hover:bg-muted/50 sm:p-3"
                     >
-                      <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         <AttentionTaskIcon status={task.status} />
                         <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate text-sm font-medium">{task.companyName}</span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="truncate text-xs font-medium sm:text-sm">{task.companyName}</span>
+                          <span className="text-[9px] text-muted-foreground sm:text-[10px]">
                             {attentionTaskSubtitle(task.status)}
                           </span>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px] sm:text-xs" asChild>
                         <Link href="/crm">Vyřešit</Link>
                       </Button>
                     </div>

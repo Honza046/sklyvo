@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import {
   FULL_AUTO_FREQUENCY_LABELS,
   RADAR_WEEKDAYS,
+  SEND_WEEKDAYS,
   type AutopilotAutomationSettings,
   type FullAutoFrequency,
   type RadarCompanySize,
@@ -46,7 +47,7 @@ const SECTION_META: Record<
   },
   sniper: {
     title: "Nastavení odesílání",
-    description: "Kdy se maily odesílají a kolik najednou. Generování běží hned — odeslání podle těchto pravidel.",
+    description: "Generování hned · odeslání podle dnů, oken a limitu dávky.",
     icon: Rocket,
     iconClass: "text-blue-600",
   },
@@ -104,6 +105,15 @@ export function AutopilotSettingsDialog({
     patch({ radarDays: next });
   };
 
+  const toggleSendDay = (day: number) => {
+    if (day < 1 || day > 5) return;
+    const current = (settings.sendDays ?? []).filter((d) => d >= 1 && d <= 5);
+    const next = current.includes(day)
+      ? current.filter((value) => value !== day)
+      : sortRadarDays([...current, day]);
+    patch({ sendDays: next });
+  };
+
   const WEEKDAY_VALUES = [1, 2, 3, 4, 5];
   const ALL_DAY_VALUES = [1, 2, 3, 4, 5, 6, 0];
   const isWeekdaysOnly =
@@ -112,6 +122,13 @@ export function AutopilotSettingsDialog({
   const isAllWeek =
     settings.radarDays.length === 7 &&
     ALL_DAY_VALUES.every((day) => settings.radarDays.includes(day));
+  const sendDays = (settings.sendDays ?? []).filter((d) => d >= 1 && d <= 5);
+  const isSendWeekdaysOnly =
+    sendDays.length === 5 && WEEKDAY_VALUES.every((day) => sendDays.includes(day));
+
+  const sendDayLabels = SEND_WEEKDAYS.filter((day) => sendDays.includes(day.value))
+    .map((day) => day.label)
+    .join(", ");
 
   const radarDayLabels = RADAR_WEEKDAYS.filter((day) =>
     settings.radarDays.includes(day.value),
@@ -139,14 +156,14 @@ export function AutopilotSettingsDialog({
           section === "radar"
             ? "sm:max-h-[min(92vh,640px)] sm:max-w-4xl"
             : section === "sniper"
-              ? "sm:max-h-[min(92vh,560px)] sm:max-w-3xl"
+              ? "sm:max-h-[min(94vh,720px)] sm:max-w-4xl"
               : "sm:max-h-[min(92vh,480px)] sm:max-w-xl",
         )}
       >
         <div
           className={cn(
-            "min-h-0 flex-1 space-y-3 px-6 pb-3 pt-9",
-            "overflow-hidden",
+            "min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 pb-2 pt-8 sm:overflow-visible sm:px-6 sm:pb-3 sm:pt-9",
+            section === "sniper" && "sm:space-y-2",
           )}
         >
           <DialogHeader className="space-y-1 text-left">
@@ -423,25 +440,25 @@ export function AutopilotSettingsDialog({
         )}
 
         {section === "sniper" && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              <div className="border-b border-border/50 px-3 py-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                   1 · Jak odesílat
                 </p>
               </div>
-              <div className="grid gap-2 p-3 sm:grid-cols-2">
+              <div className="grid gap-1.5 p-2 sm:grid-cols-2">
                 {(
                   [
                     {
                       id: "batch" as const,
                       title: "V časových oknech",
-                      hint: "Odesílá jen v nastavených hodinách — bezpečnější tempo.",
+                      hint: "Jen ve vybraných dnech a hodinách.",
                     },
                     {
                       id: "immediate" as const,
                       title: "Hned po vygenerování",
-                      hint: "Zařadí do fronty ihned, bez čekání na okna.",
+                      hint: "Bez čekání na okna.",
                     },
                   ] satisfies { id: SendingStrategy; title: string; hint: string }[]
                 ).map((option) => {
@@ -453,7 +470,7 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       onClick={() => patch({ sendingStrategy: option.id })}
                       className={cn(
-                        "rounded-lg border px-3 py-2.5 text-left transition-all disabled:opacity-50",
+                        "rounded-lg border px-2.5 py-2 text-left transition-all disabled:opacity-50",
                         active
                           ? "border-blue-500 bg-blue-50 shadow-sm dark:border-blue-600 dark:bg-blue-950/40"
                           : "border-border/60 bg-background hover:bg-muted/40",
@@ -461,13 +478,13 @@ export function AutopilotSettingsDialog({
                     >
                       <p
                         className={cn(
-                          "text-sm font-semibold",
+                          "text-[13px] font-semibold",
                           active ? "text-blue-700 dark:text-blue-300" : "text-foreground",
                         )}
                       >
                         {option.title}
                       </p>
-                      <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                      <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
                         {option.hint}
                       </p>
                     </button>
@@ -477,76 +494,122 @@ export function AutopilotSettingsDialog({
             </section>
 
             {settings.sendingStrategy === "batch" ? (
-              <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+              <div className="grid gap-2">
                 <section className="rounded-xl border border-border/60 bg-muted/15">
-                  <div className="border-b border-border/50 px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      2 · Časová okna
+                  <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      2 · Dny (pracovní)
+                    </p>
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => patch({ sendDays: [...WEEKDAY_VALUES] })}
+                      className={cn(
+                        "rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50",
+                        isSendWeekdaysOnly
+                          ? "bg-blue-600 text-white"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80",
+                      )}
+                    >
+                      Po–Pá
+                    </button>
+                  </div>
+                  <div className="p-2">
+                    <div className="flex max-w-md rounded-lg bg-muted/60 p-0.5">
+                      {SEND_WEEKDAYS.map(({ value, label }) => {
+                        const active = sendDays.includes(value);
+                        return (
+                          <button
+                            key={value}
+                            type="button"
+                            onClick={() => toggleSendDay(value)}
+                            disabled={disabled}
+                            aria-pressed={active}
+                            className={cn(
+                              "h-8 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
+                              active
+                                ? "bg-background text-blue-700 shadow-sm dark:text-blue-300"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                <section className="min-w-0 rounded-xl border border-border/60 bg-muted/15">
+                  <div className="border-b border-border/50 px-3 py-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      3 · Časová okna
                     </p>
                   </div>
-                  <div className="grid gap-2 p-3 sm:grid-cols-2">
+                  <div className="grid gap-2 p-2.5 sm:grid-cols-2">
                     <div className="rounded-lg border border-border/40 bg-background/80 p-2.5">
-                      <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-                        Ráno / dopoledne
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="modal-window1-start" className="text-xs">
+                      <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">Ráno</p>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="modal-window1-start" className="text-[10px]">
                             Od
                           </Label>
                           <Input
                             id="modal-window1-start"
                             type="time"
+                            step={60}
                             value={settings.window1Start}
                             onChange={(e) => patch({ window1Start: e.target.value })}
                             disabled={disabled}
-                            className="h-9"
+                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="modal-window1-end" className="text-xs">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="modal-window1-end" className="text-[10px]">
                             Do
                           </Label>
                           <Input
                             id="modal-window1-end"
                             type="time"
+                            step={60}
                             value={settings.window1End}
                             onChange={(e) => patch({ window1End: e.target.value })}
                             disabled={disabled}
-                            className="h-9"
+                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
                           />
                         </div>
                       </div>
                     </div>
                     <div className="rounded-lg border border-border/40 bg-background/80 p-2.5">
-                      <p className="mb-2 text-[11px] font-semibold text-muted-foreground">
-                        Odpoledne (volitelné)
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="modal-window2-start" className="text-xs">
+                      <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">Odpoledne</p>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="modal-window2-start" className="text-[10px]">
                             Od
                           </Label>
                           <Input
                             id="modal-window2-start"
                             type="time"
+                            step={60}
                             value={settings.window2Start}
                             onChange={(e) => patch({ window2Start: e.target.value })}
                             disabled={disabled}
-                            className="h-9"
+                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="modal-window2-end" className="text-xs">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="modal-window2-end" className="text-[10px]">
                             Do
                           </Label>
                           <Input
                             id="modal-window2-end"
                             type="time"
+                            step={60}
                             value={settings.window2End}
                             onChange={(e) => patch({ window2End: e.target.value })}
                             disabled={disabled}
-                            className="h-9"
+                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
                           />
                         </div>
                       </div>
@@ -554,15 +617,15 @@ export function AutopilotSettingsDialog({
                   </div>
                 </section>
 
-                <section className="flex min-w-[180px] flex-col rounded-xl border border-border/60 bg-muted/15">
-                  <div className="border-b border-border/50 px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      3 · Tempo
+                <section className="rounded-xl border border-border/60 bg-muted/15 sm:w-44">
+                  <div className="border-b border-border/50 px-3 py-1.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      4 · Tempo
                     </p>
                   </div>
-                  <div className="flex flex-1 flex-col gap-2 p-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="modal-max-batch" className="text-sm">
+                  <div className="flex flex-col gap-1.5 p-2">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="modal-max-batch" className="text-[10px]">
                         Max. na dávku
                       </Label>
                       <Input
@@ -577,22 +640,23 @@ export function AutopilotSettingsDialog({
                           })
                         }
                         disabled={disabled}
-                        className="h-9"
+                        className="h-9 text-sm"
                       />
                     </div>
-                    <p className="mt-auto rounded-lg bg-blue-50 px-2.5 py-2 text-[11px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
-                      {settings.window1Start}–{settings.window1End}
+                    <p className="rounded-lg bg-blue-50 px-2 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+                      {sendDayLabels || "žádný den"} · {settings.window1Start}–{settings.window1End}
                       {settings.window2Start && settings.window2End
                         ? ` · ${settings.window2Start}–${settings.window2End}`
                         : ""}{" "}
-                      · až {settings.maxEmailsPerBatch} e-mailů
+                      · ≤{settings.maxEmailsPerBatch}
                     </p>
                   </div>
                 </section>
+                </div>
               </div>
             ) : (
-              <p className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs leading-relaxed text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
-                E-maily se odešlou hned po vygenerování. Časová okna a limity dávky se teď
+              <p className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
+                E-maily se odešlou hned po vygenerování. Dny, okna a limity dávky se teď
                 nepoužívají.
               </p>
             )}

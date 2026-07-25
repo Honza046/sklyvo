@@ -114,25 +114,25 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0">
-      <div className="mb-4 space-y-2 px-1 text-center sm:mb-6">
-        <div className="mb-2 flex items-center justify-center gap-3">
-          <div className="rounded-2xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:p-3">
-            <Settings className="h-6 w-6 sm:h-8 sm:w-8" />
+      <div className="mb-2 space-y-1 px-1 text-center sm:mb-6 sm:space-y-2">
+        <div className="mb-1 flex items-center justify-center gap-2 sm:mb-2 sm:gap-3">
+          <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-2xl sm:p-3">
+            <Settings className="h-5 w-5 sm:h-8 sm:w-8" />
           </div>
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
           Pracovní prostor
         </h1>
-        <p className="mx-auto max-w-lg text-xs text-muted-foreground sm:text-sm">
+        <p className="mx-auto max-w-lg px-2 text-[11px] text-muted-foreground sm:text-sm">
           Spravujte nastavení projektu, integrace s vaším CRM a čerpání AI kreditů.
         </p>
       </div>
 
       <SettingsSaveProvider>
-      <div className="flex w-full max-w-3xl flex-col gap-4 px-0 sm:gap-6 sm:px-4">
+      <div className="flex w-full max-w-3xl flex-col gap-2.5 px-0 sm:gap-6 sm:px-4">
         
         {/* PŮVODNÍ HLAVIČKA S PŘEDPLATNÝM */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-2xl sm:p-5">
           {isWorkspaceReady ? (
             <>
               <div className="min-w-0">
@@ -168,14 +168,14 @@ export default async function SettingsPage() {
           {/* PROFIL FIRMY PRO AI */}
           <AccordionItem
             value="company-profile"
-            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                   <Bot className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Profil vaší firmy</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Profil vaší firmy</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-5 pb-6 pt-2">
@@ -197,14 +197,14 @@ export default async function SettingsPage() {
           {/* NABÍZENÉ SLUŽBY FIRMY */}
           <AccordionItem
             value="offered-services"
-            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                   <Briefcase className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Nabízené služby</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Nabízené služby</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-5 pb-6 pt-2">
@@ -229,14 +229,14 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: KREDITY */}
           <AccordionItem
             value="credits"
-            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger id="credits-trigger" className="py-6 hover:no-underline">
+            <AccordionTrigger id="credits-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
                   <Coins className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Spotřeba a Kredity</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Spotřeba a Kredity</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-6 pb-6 pt-2">
@@ -304,14 +304,14 @@ export default async function SettingsPage() {
           <AccordionItem
             id={EMAIL_SETUP_SETTINGS_HASH}
             value="email-integration"
-            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger id="email-integration-trigger" className="py-6 hover:no-underline">
+            <AccordionTrigger id="email-integration-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <Mail className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Propojení firemního e-mailu</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Propojení firemního e-mailu</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2">
@@ -332,14 +332,14 @@ export default async function SettingsPage() {
           <AccordionItem
             id="integrations"
             value="integrations"
-            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger id="integrations-trigger" className="py-6 hover:no-underline">
+            <AccordionTrigger id="integrations-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                   <LinkIcon className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Integrace a Webhooky</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Integrace a Webhooky</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2">
@@ -352,14 +352,14 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: AI CHOVÁNÍ */}
           <AccordionItem
             value="ai"
-            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                   <Bot className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Chování AI a Šablony</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Chování AI a Šablony</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-5 pb-6 pt-2">
@@ -382,14 +382,14 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: TÝM */}
           <AccordionItem
             value="team"
-            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
-            <AccordionTrigger className="py-6 hover:no-underline">
+            <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                   <Users className="h-5 w-5" />
                 </div>
-                <h2 className="text-lg font-bold">Tým a přístupy</h2>
+                <h2 className="text-sm font-bold sm:text-lg">Tým a přístupy</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pb-6 pt-2">

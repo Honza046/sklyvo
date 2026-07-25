@@ -49,6 +49,14 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           sniperParsed.sendingStrategy ??
           prev.sendingStrategy ??
           DEFAULT_AUTOPILOT_SETTINGS.sendingStrategy,
+        sendDays: (() => {
+          const raw =
+            Array.isArray(sniperParsed.sendDays) && sniperParsed.sendDays.length > 0
+              ? sniperParsed.sendDays
+              : (prev.sendDays ?? DEFAULT_AUTOPILOT_SETTINGS.sendDays);
+          const weekdays = raw.filter((d) => d >= 1 && d <= 5);
+          return weekdays.length > 0 ? weekdays : DEFAULT_AUTOPILOT_SETTINGS.sendDays;
+        })(),
       }));
     } catch {
       /* ignore corrupt local storage */
@@ -199,6 +207,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           window2End: automationSettings.window2End,
           maxEmailsPerBatch: automationSettings.maxEmailsPerBatch,
           sendingStrategy: automationSettings.sendingStrategy,
+          sendDays: (automationSettings.sendDays ?? []).filter((d) => d >= 1 && d <= 5),
         };
         window.localStorage.setItem(SNIPER_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
         const powerResult = await setEmailSendCronEnabled(emailSendCronEnabled);

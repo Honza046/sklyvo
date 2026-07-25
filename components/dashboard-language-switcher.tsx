@@ -17,23 +17,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-export function DashboardLanguageSwitcher() {
+export function DashboardLanguageSwitcher({
+  variant = "expand",
+}: {
+  variant?: "expand" | "compact";
+}) {
   const { language, setLanguage, t } = useLanguage();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const isCompact = variant === "compact";
 
   return (
-    <div className="relative h-9 w-[38px] shrink-0">
+    <div className={cn("relative shrink-0", isCompact ? "h-8 w-8" : "h-9 w-[38px]")}>
       <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
             className={cn(
-              "group absolute right-0 top-0 flex h-9 w-[38px] shrink-0 items-center justify-center",
-              "cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-background",
-              "transition-[width] duration-300 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
-              isDropdownOpen
-                ? "z-20 w-[125px] bg-muted"
-                : "z-10 hover:z-20 hover:w-[125px] hover:bg-muted",
+              "group flex shrink-0 items-center justify-center",
+              "cursor-pointer overflow-hidden border border-border/60 bg-background",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30",
+              isCompact
+                ? cn(
+                    "h-8 w-8 rounded-full bg-muted/60",
+                    isDropdownOpen && "bg-muted",
+                  )
+                : cn(
+                    "absolute right-0 top-0 h-9 w-[38px] rounded-xl",
+                    "transition-[width] duration-300 ease-in-out",
+                    isDropdownOpen
+                      ? "z-20 w-[125px] bg-muted"
+                      : "z-10 hover:z-20 hover:w-[125px] hover:bg-muted",
+                  ),
             )}
             aria-label={t("common.languageAria", { label: LANGUAGE_LABELS[language] })}
             aria-expanded={isDropdownOpen}
@@ -41,23 +55,25 @@ export function DashboardLanguageSwitcher() {
             <span
               className={cn(
                 "flex items-center justify-center",
-                isDropdownOpen ? "gap-2" : "gap-0 group-hover:gap-2",
+                !isCompact && (isDropdownOpen ? "gap-2" : "gap-0 group-hover:gap-2"),
               )}
             >
               <span className="flex h-3.5 w-5 shrink-0 items-center justify-center text-sm leading-none select-none">
                 {LANGUAGE_FLAGS[language]}
               </span>
-              <span
-                className={cn(
-                  "overflow-hidden whitespace-nowrap text-sm font-semibold text-foreground will-change-opacity",
-                  "transition-opacity duration-200",
-                  isDropdownOpen
-                    ? "max-w-[84px] opacity-100"
-                    : "max-w-0 opacity-0 group-hover:max-w-[84px] group-hover:opacity-100 group-hover:delay-100",
-                )}
-              >
-                {LANGUAGE_LABELS[language]}
-              </span>
+              {!isCompact && (
+                <span
+                  className={cn(
+                    "overflow-hidden whitespace-nowrap text-sm font-semibold text-foreground will-change-opacity",
+                    "transition-opacity duration-200",
+                    isDropdownOpen
+                      ? "max-w-[84px] opacity-100"
+                      : "max-w-0 opacity-0 group-hover:max-w-[84px] group-hover:opacity-100 group-hover:delay-100",
+                  )}
+                >
+                  {LANGUAGE_LABELS[language]}
+                </span>
+              )}
             </span>
           </button>
         </DropdownMenuTrigger>

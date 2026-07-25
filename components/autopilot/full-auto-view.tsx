@@ -12,6 +12,7 @@ import {
   AutopilotControlPanel,
   AutopilotPowerButton,
   AutopilotSettingsIconButton,
+  AutopilotListEmptyState,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
   AUTOPILOT_TABLE_CARD_CLASS,
@@ -85,6 +86,22 @@ export function AutopilotFullAutoView() {
   const fullAutoShownTo =
     fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + paginatedFullAutoRows.length;
 
+  const mobileEmpty = (
+    <>
+      {isFullAutoHistoryLoading && (
+        <AutopilotListEmptyState>Načítám historii…</AutopilotListEmptyState>
+      )}
+      {!isFullAutoHistoryLoading && fullAutoHistoryError && (
+        <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
+          {fullAutoHistoryError}
+        </AutopilotListEmptyState>
+      )}
+      {!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0 && (
+        <AutopilotListEmptyState>Zatím žádná historie Full Auto.</AutopilotListEmptyState>
+      )}
+    </>
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col">
       <AutopilotSettingsDialog
@@ -128,19 +145,41 @@ export function AutopilotFullAutoView() {
       />
 
       <div className={AUTOPILOT_TABLE_CARD_CLASS}>
-        <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-          <table className="w-full min-w-[560px] table-fixed text-sm">
+        {/* Mobile list */}
+        <div className="scrollbar-hide max-h-[min(42dvh,280px)] min-h-[160px] overflow-y-auto md:hidden">
+          {!isFullAutoHistoryLoading &&
+            !fullAutoHistoryError &&
+            paginatedFullAutoRows.map((row) => (
+              <div
+                key={row.id}
+                className="flex items-start gap-3 border-b border-border/40 px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-semibold text-foreground">{row.company}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    {row.email || "—"}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    {formatProcessedDateTime(row.processedAt)}
+                  </p>
+                </div>
+                <FullAutoStatusBadge status={row.automationStatus} />
+              </div>
+            ))}
+          {(isFullAutoHistoryLoading ||
+            fullAutoHistoryError ||
+            (!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0)) &&
+            mobileEmpty}
+        </div>
+
+        {/* Desktop table */}
+        <div className={cn(AUTOPILOT_TABLE_SCROLL_CLASS, "hidden md:block")}>
+          <table className="w-full table-fixed text-sm">
             <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
               <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
-                  Firma
-                </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
-                  Kontakt
-                </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
-                  Zpracování
-                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Zpracování</th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[18%]")}>
                   Stav automatizace
                 </th>
@@ -151,18 +190,16 @@ export function AutopilotFullAutoView() {
                 <AutopilotTableEmptyState colSpan={4}>Načítám historii…</AutopilotTableEmptyState>
               ) : (
                 <>
-                  {!isFullAutoHistoryLoading && fullAutoHistoryError && (
+                  {fullAutoHistoryError && (
                     <AutopilotTableEmptyState colSpan={4}>
                       {fullAutoHistoryError}
                     </AutopilotTableEmptyState>
                   )}
-                  {!isFullAutoHistoryLoading &&
-                    !fullAutoHistoryError &&
-                    fullAutoRows.length === 0 && (
-                      <AutopilotTableEmptyState colSpan={4}>
-                        Zatím žádná historie Full Auto.
-                      </AutopilotTableEmptyState>
-                    )}
+                  {!fullAutoHistoryError && fullAutoRows.length === 0 && (
+                    <AutopilotTableEmptyState colSpan={4}>
+                      Zatím žádná historie Full Auto.
+                    </AutopilotTableEmptyState>
+                  )}
                   {paginatedFullAutoRows.map((row) => (
                     <tr key={row.id} className="hover:bg-muted/20">
                       <td className="px-6 py-3.5">

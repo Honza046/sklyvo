@@ -36,7 +36,7 @@ const DASHBOARD_PANEL_CARD =
   "flex h-[340px] flex-col gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm";
 
 const DASHBOARD_PANEL_LIST_SCROLL =
-  "min-h-0 flex-1 overflow-y-auto pb-8 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
+  "min-h-0 flex-1 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
 export type DashboardBodyViewProps = {
   emailsSent: number;
@@ -115,58 +115,58 @@ export function DashboardBodyView({
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden">
-      <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Target className="h-4 w-4" />
+      <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
+              <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               {t("dashboard.statsNewLeads")}
             </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums text-foreground">{leadsCount}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{leadsCount}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-              <Mail className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 sm:rounded-lg sm:p-2">
+              <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               {t("dashboard.statsEmailsSent")}
             </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums text-foreground">{emailsSent}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{emailsSent}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-              <Users className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-amber-50 p-1.5 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 sm:rounded-lg sm:p-2">
+              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               {t("dashboard.statsActiveDeals")}
             </h3>
           </div>
           <div className="flex items-end justify-between gap-2">
-            <p className="text-xl font-bold tabular-nums text-foreground">{activeDeals}</p>
-            <p className="mb-0.5 shrink-0 text-right text-[10px] font-medium leading-tight text-muted-foreground">
+            <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{activeDeals}</p>
+            <p className="mb-0.5 shrink-0 text-right text-[9px] font-medium leading-tight text-muted-foreground sm:text-[10px]">
               {t("dashboard.statsInCrm")}
             </p>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="rounded-lg bg-purple-50 p-2 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
-              <Activity className="h-4 w-4" />
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+          <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
+            <div className="rounded-md bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 sm:rounded-lg sm:p-2">
+              <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
               {t("dashboard.statsPipelineValue")}
             </h3>
           </div>
-          <p className="text-xl font-bold tabular-nums leading-tight text-foreground">
+          <p className="text-base font-bold tabular-nums leading-tight text-foreground sm:text-xl">
             {formatCurrency(pipelineValue)}
           </p>
         </div>

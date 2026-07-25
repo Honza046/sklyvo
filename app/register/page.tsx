@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Mail, Lock, User, ArrowRight, ArrowLeft } from "lucide-react";
 import { registerUser } from "@/app/actions/auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { VenegardWordmark } from "@/components/brand-marks";
 
 export default function RegisterPage() {
   const [errorMessage, setErrorMessage] = useState("");
@@ -58,11 +59,8 @@ export default function RegisterPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-emerald-500/10 dark:bg-emerald-500/10 rounded-full blur-[100px]" />
 
       <div className="w-full max-w-[400px] flex flex-col gap-8 relative z-10">
-        <div className="flex justify-center items-center gap-3">
-          <div className="h-4 w-4 rounded-full bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.5)]" />
-          <span className="text-xl font-bold tracking-[0.2em] text-foreground">
-            VENEGARD
-          </span>
+        <div className="flex justify-center">
+          <VenegardWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
         </div>
 
         <div className="rounded-3xl border border-border/60 bg-card p-8 shadow-xl flex flex-col gap-8">

@@ -20,18 +20,18 @@ export default async function DashboardPage() {
 
   return (
     <DashboardOnboardingGate needsOnboarding={needsOnboarding}>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-3 overflow-hidden p-4 md:p-6">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 overflow-y-auto p-0 md:gap-3 md:overflow-hidden md:p-6">
         <DashboardPageHeader firstName={firstName} />
 
         <Suspense
           fallback={
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-3">
               <DashboardLoadingSubtitle />
               <DashboardBodySkeleton />
             </div>
           }
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-3">
             <DashboardSubtitle />
             <DashboardBody emailsSent={emailsSent} />
           </div>

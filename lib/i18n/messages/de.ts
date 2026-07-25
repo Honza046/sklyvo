@@ -319,7 +319,7 @@ export const de: MessageTree = {
     userFallback: "Benutzer",
   },
   copilot: {
-    title: "Venegard AI Copilot",
+    title: "venesis",
     online: "Online",
     open: "KI-Assistent öffnen",
     send: "Frage senden",

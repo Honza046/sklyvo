@@ -245,36 +245,36 @@ export default function AccountPage() {
   }
 
   return (
-      <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-12">
+      <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0 md:pb-12">
         
         {/* HLAVIČKA */}
-        <div className="mb-6 text-center space-y-2">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="p-3 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-2xl">
-              <User className="h-8 w-8" />
+        <div className="mb-3 space-y-1 text-center md:mb-6 md:space-y-2">
+          <div className="mb-1 flex items-center justify-center gap-2 md:mb-2 md:gap-3">
+            <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 md:rounded-2xl md:p-3">
+              <User className="h-5 w-5 md:h-8 md:w-8" />
             </div>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             Můj profil
           </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+          <p className="mx-auto max-w-lg px-2 text-xs text-muted-foreground md:text-sm">
             Spravujte své osobní údaje, zabezpečení, fakturaci a integrace.
           </p>
         </div>
 
-        <div className="w-full max-w-3xl px-4 flex flex-col gap-6">
+        <div className="flex w-full max-w-3xl flex-col gap-3 px-0 sm:gap-6 sm:px-4">
           
           {/* ACCORDION OBAL */}
-          <Accordion type="single" collapsible defaultValue="personal" className="w-full space-y-4">
+          <Accordion type="single" collapsible defaultValue="personal" className="w-full space-y-2 sm:space-y-4">
             
             {/* 1. OSOBNÍ ÚDAJE */}
-            <AccordionItem value="personal" className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
-              <AccordionTrigger className="hover:no-underline py-6">
+            <AccordionItem value="personal" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
+              <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                     <User className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold">Osobní údaje</h2>
+                  <h2 className="text-sm font-bold sm:text-lg">Osobní údaje</h2>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2">
@@ -354,13 +354,13 @@ export default function AccountPage() {
             </AccordionItem>
 
             {/* 2. ZABEZPEČENÍ */}
-            <AccordionItem value="security" className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
-              <AccordionTrigger className="hover:no-underline py-6">
+            <AccordionItem value="security" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
+              <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
                     <Shield className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold">Zabezpečení účtu</h2>
+                  <h2 className="text-sm font-bold sm:text-lg">Zabezpečení účtu</h2>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2 space-y-5">
@@ -422,13 +422,13 @@ export default function AccountPage() {
             </AccordionItem>
 
             {/* 3. PROPOJENÉ ÚČTY (Integrace e-mailů pro Snipera) */}
-            <AccordionItem value="integrations" className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
-              <AccordionTrigger className="hover:no-underline py-6">
+            <AccordionItem value="integrations" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
+              <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
                     <LinkIcon className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold">Propojené e-mailové účty</h2>
+                  <h2 className="text-sm font-bold sm:text-lg">Propojené e-mailové účty</h2>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2 space-y-4">
@@ -461,13 +461,13 @@ export default function AccountPage() {
             </AccordionItem>
 
             {/* 4. FAKTURACE A PŘEDPLATNÉ */}
-            <AccordionItem value="billing" className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
-              <AccordionTrigger className="hover:no-underline py-6">
+            <AccordionItem value="billing" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
+              <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400">
                     <CreditCard className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold">Fakturace a předplatné</h2>
+                  <h2 className="text-sm font-bold sm:text-lg">Fakturace a předplatné</h2>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2 space-y-6">
@@ -536,13 +536,13 @@ export default function AccountPage() {
             </AccordionItem>
 
             {/* 5. NOTIFIKACE */}
-            <AccordionItem value="notifications" className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
-              <AccordionTrigger className="hover:no-underline py-6">
+            <AccordionItem value="notifications" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
+              <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
                     <Bell className="h-5 w-5" />
                   </div>
-                  <h2 className="text-lg font-bold">Upozornění a notifikace</h2>
+                  <h2 className="text-sm font-bold sm:text-lg">Upozornění a notifikace</h2>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2">
