@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/app/actions/auth";
 import { SNIPER_AUTODETECT_VALUE } from "@/lib/constants";
+import { probeClientWebsite } from "@/lib/sniper-website-probe";
 import {
   DEFAULT_SNIPER_SYSTEM_PROMPT,
   parseForbiddenWordsFromStoredSystemPrompt,
@@ -26,14 +27,6 @@ const google = createGoogleGenerativeAI({
  */
 const SNIPER_GEMINI_MODEL =
   process.env.SNIPER_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
-
-/** Max. délka textu z webu do promptu (horní část stránky). */
-const SNIPER_WEB_TEXT_MAX = 3600;
-
-/** Stažené HTML před parsováním — menší = rychlejší čtení odpovědi. */
-const SNIPER_FETCH_BODY_MAX = 50_000;
-
-const SNIPER_FETCH_TIMEOUT_MS = 8000;
 
 /** Maximální velikost dekódovaného PDF pro Sniper (ochrana API a server action). */
 const SNIPER_PDF_MAX_BYTES = 5 * 1024 * 1024;
@@ -555,75 +548,6 @@ function finalizeEmailSubjectsOutput(o: z.infer<typeof emailSubjectsSchema>): z.
   };
 }
 
-function isBlockedHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local")) return true;
-  if (h === "0.0.0.0" || h === "[::1]" || h === "::1") return true;
-  if (/^127\.\d+\.\d+\.\d+$/.test(h)) return true;
-  if (/^10\.\d+\.\d+\.\d+$/.test(h)) return true;
-  if (/^192\.168\.\d+\.\d+$/.test(h)) return true;
-  const m = /^172\.(\d+)\.\d+\.\d+$/.exec(h);
-  if (m) {
-    const n = Number(m[1]);
-    if (n >= 16 && n <= 31) return true;
-  }
-  if (h.startsWith("169.254.")) return true;
-  return false;
-}
-
-/**
- * Odlehčené stažení stránky: pouze fetch + odstranění tagů (žádný Puppeteer).
- * Výstup oříznutý na SNIPER_WEB_TEXT_MAX znaků před odesláním do LLM.
- */
-async function fetchClientWebsiteSnippet(urlRaw: string): Promise<string> {
-  const raw = urlRaw.trim();
-  if (!raw) {
-    return "(URL nebyla zadána.)";
-  }
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  let u: URL;
-  try {
-    u = new URL(withProtocol);
-  } catch {
-    return "(Neplatná URL — nelze načíst obsah.)";
-  }
-  if (!["http:", "https:"].includes(u.protocol)) {
-    return "(Nepovolený protokol.)";
-  }
-  if (isBlockedHostname(u.hostname)) {
-    return "(Interní nebo nepovolená adresa — obsah nestahujeme.)";
-  }
-
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), SNIPER_FETCH_TIMEOUT_MS);
-  try {
-    const res = await fetch(u.toString(), {
-      signal: controller.signal,
-      redirect: "follow",
-      headers: {
-        "User-Agent": "VenegardSniper/2.0 (contact: support)",
-        Accept: "text/html,text/plain;q=0.9,*/*;q=0.1",
-      },
-    });
-    if (!res.ok) {
-      return `(Stažení stránky selhalo: HTTP ${res.status}.)`;
-    }
-    const buf = (await res.text()).slice(0, SNIPER_FETCH_BODY_MAX);
-    const text = buf
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, SNIPER_WEB_TEXT_MAX);
-    return text.length > 0 ? text : "(Stránka neobsahovala čitelný text.)";
-  } catch {
-    return "(Obsah stránky se nepodařilo načíst — pracuj jen s informacemi z URL a názvu domény. NEVYMÝŠLEJ SaaS ani jiný obor, pokud z URL jasně neplyne.)";
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWorkspaceContext> {
   const [workspace, services] = await Promise.all([
     prisma.workspace.findUnique({
@@ -849,12 +773,9 @@ function buildSniperSystemPrompt(
   const taskBlock = isAutodetect
     ? [
         "TVŮJ ÚKOL (REŽIM AUTODETEKCE SLUŽBY):",
-        "Nejdřív z webu pochop, čím se klient živí a jak vypadá jejich digitální prezentace (web / e-shop).",
-        "PRIORITA NABÍDKY (povinná hierarchie — dodržuj, pokud z webu neplyne jasná výjimka):",
-        "1) PRIMÁRNĚ: redesign stávajícího webu / e-shopu, nový web, landing pages, Shopify e-shop na míru, migrace e-shopu, UX/UI webu, rychlost a konverze webu.",
-        "2) SEKUNDÁRNĚ (jen když web/e-shop už působí solidně NEBO klient výslovně řeší procesy/data/podporu): AI chatboti/voiceboti, automatizace, interní aplikace, dashboardy, platformy.",
-        "Výchozí volba pro většinu firem s klasickým prezentačním webem nebo e-shopem = redesign / nový web / e-shop. Neotvírej hned AI ani „SaaS aplikaci“, pokud to web sám nevyžaduje.",
-        "E-mail postav na konkrétním postřehu z webu + jedné jasné nabídce pomoci. Žádné obecné AI/SaaS řeči. Jedna služba (max. 2 jen pokud spolu úzce souvisí, např. redesign + rychlost).",
+        "V user promptu dostaneš blok AUTODETECT HEURISTIKA (platforma, e-shop signály, doporučená služba). Tu službu použij jako primární nabídku.",
+        "Odchýlení jen když text webu jasně říká něco jiného. Default u většiny firem = redesign / nový web / e-shop — ne AI.",
+        "E-mail postav na konkrétním postřehu z webu + jedné jasné nabídce. Žádné obecné AI/SaaS řeči.",
       ]
     : [
         "TVŮJ ÚKOL:",
@@ -1035,12 +956,20 @@ async function runSniperEmailGeneration(
     input.author ??
     (input.session ? getAuthorFromSession(input.session) : { fullName: "Kolega", firstName: "Kolega" });
   const clientSiteLabel = clientSiteLabelFromUrl(targetUrl);
-  const clientWebsiteData = await fetchClientWebsiteSnippet(targetUrl);
+  const websiteProbe = await probeClientWebsite(targetUrl);
+  const clientWebsiteData = websiteProbe.textForModel;
+  const autodectOffer =
+    isAutodetect ? websiteProbe.recommendedOffer : offerForPrompts;
 
-  const system = buildSniperSystemPrompt(ctx, author, offerForPrompts, isAutodetect);
+  const system = buildSniperSystemPrompt(
+    ctx,
+    author,
+    isAutodetect ? autodectOffer : offerForPrompts,
+    isAutodetect,
+  );
   const params: GenerateEmailParams = {
     targetUrl,
-    selectedOfferedService,
+    selectedOfferedService: isAutodetect ? autodectOffer : selectedOfferedService,
     language,
     tone,
     segment,
@@ -1095,10 +1024,19 @@ async function runSniperEmailGeneration(
   const userPrompt = [
     `Doména / web klienta (pouze kontext pro tělo a analýzu, do předmětů ji nekopíruj): ${clientSiteLabel}`,
     "",
+    isAutodetect ? websiteProbe.autodectHintBlock : null,
+    isAutodetect ? "" : null,
     "Zde jsou data z webu potenciálního klienta:",
     clientWebsiteData,
     "",
-    buildLanguageToneSegmentBlock(params),
+    buildLanguageToneSegmentBlock({
+      ...params,
+      // V autodetekci už máme doporučenou službu z heuristiky — model ji má držet.
+      selectedOfferedService: isAutodetect ? autodectOffer : selectedOfferedService,
+    }),
+    isAutodetect
+      ? `V tomto e-mailu primárně nabízej: „${autodectOffer}“ (z heuristiky). Odchýl se jen pokud text webu jasně říká něco jiného.`
+      : null,
     ...pdfBlock,
     ...outreachBlock,
     "",
@@ -1125,10 +1063,12 @@ async function runSniperEmailGeneration(
     `- Pole musí obsahovat ${SNIPER_SUBJECT_VARIANTS_MIN} až ${SNIPER_SUBJECT_VARIANTS_MAX} různých předmětů.`,
     `Každý předmět: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov, začátek malým písmenem, tón zvědavého člověka co web opravdu četl (ne suchá klíčová slova).`,
     isAutodetect
-      ? "Službu, kterou v e-mailu nabízíš, si vyber sám: primárně redesign/nový web/e-shop; AI/apps jen když to web jasně žádá. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.)."
+      ? `Službu v e-mailu drž u doporučení z heuristiky: „${autodectOffer}“. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.).`
       : `Tvoje nabízená služba v tomto e-mailu (propojení světů): „${offerForPrompts}“. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.).`,
     "Čtyři varianty předmětu dodrž psychologické vzorce ze system promptu (1 osobní postřeh + web, 2 konkrétní dotaz na jejich službu z webu, 3 propojení jejich světa s naší nabídkou, 4 neformální přímý dotaz).",
-  ].join("\n");
+  ]
+    .filter((line): line is string => line != null)
+    .join("\n");
 
   const userInput: SniperUserModelInput = pdfBase64
     ? {
@@ -1455,13 +1395,16 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
     }
 
     const isAutodetect = choice === SNIPER_AUTODETECT_VALUE;
-    const offerForPrompts = isAutodetect ? "" : choice.slice(0, 80);
+    const websiteProbe = await probeClientWebsite(targetUrl);
+    const offerForPrompts = isAutodetect
+      ? websiteProbe.recommendedOffer
+      : choice.slice(0, 80);
 
     const workspaceId = session.user.workspaceId;
     const ctx = await loadSniperWorkspaceContext(workspaceId);
     const author = getAuthorFromSession(session);
     const clientSiteLabel = clientSiteLabelFromUrl(targetUrl);
-    const clientWebsiteData = await fetchClientWebsiteSnippet(targetUrl);
+    const clientWebsiteData = websiteProbe.textForModel;
 
     const knowledgeBase = ctx.companyServices
       ? [
@@ -1476,6 +1419,7 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
       ctx.companyContext,
       ...knowledgeBase,
       "",
+      isAutodetect ? websiteProbe.autodectHintBlock : "",
       `Jsi zkušený B2B obchodník. Píšeš jako ${author.fullName} (křestní jméno: ${author.firstName} — správný rod v češtině podle něj). Předměty musí působit, že je píše člověk z praxe, ne robot.`,
       "ÚKOL: Navrhni přesně 3 různé předměty cold e-mailu (pole subjects).",
       "",
@@ -1491,9 +1435,7 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
       "Každý z těchto 3 řádků ať vychází z jiného psychologického vzorce (vyber 3 ze čtyř):",
       "1. Konkrétní postřeh k obsahu webu (ne obecné „k vašemu webu“).",
       "2. Konkrétní dotaz na jejich službu nebo způsob práce z textu webu.",
-      isAutodetect
-        ? "3. Propojení jejich světa s redesignem / novým webem / e-shopem (nebo AI/apps jen když to dává jasný smysl), případně neformální přímý dotaz k webu."
-        : `3. Propojení jejich světa s nabídkou „${offerForPrompts}“ nebo neformální přímý dotaz k tématu z webu.`,
+      `3. Propojení jejich světa s nabídkou „${offerForPrompts}“ nebo neformální přímý dotaz k tématu z webu.`,
       "",
       `ABSOLUTNÍ ZÁKAZ SLOV: „synergie“, „namontujeme“. Další zakázaná slova: ${FORBIDDEN_SUBSTRINGS.filter((w) => w !== "synergie" && w !== "namontujeme").join(", ")}.`,
       `Nikdy nepoužívej fráze jako: ${BANNED_CHEESY_PHRASES.slice(0, 3).map((p) => `„${p}“`).join(", ")}.`,
@@ -1503,14 +1445,15 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
 
     const prompt = [
       `Doména klienta (interní orientace z URL; do předmětů ji nepiš): ${clientSiteLabel}`,
-      isAutodetect
-        ? "Službu, které se předměty týkají, vyber sám: primárně redesign/web/e-shop; sekundárně AI/automatizace/apps."
-        : `Služba, kterou v tomto e-mailu nabízíš (nase_nabizena_sluzba): ${offerForPrompts}`,
+      `Služba, které se předměty týkají: ${offerForPrompts}`,
       "",
       "Data z webu klienta:",
       clientWebsiteData,
       "",
-      buildLanguageToneSegmentBlock(params),
+      buildLanguageToneSegmentBlock({
+        ...params,
+        selectedOfferedService: offerForPrompts,
+      }),
       "",
       "Vrať JSON se třemi různými předměty (subjects). Každý má 3–7 slov, malé začáteční písmeno, zvědavost podle vzorců v system promptu. Žádná syrová doména ani URL v předmětech.",
     ].join("\n");
