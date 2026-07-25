@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/app/actions/auth";
 import { sendEmail } from "@/app/actions/email";
 import { getEmailConnectionState } from "@/app/actions/email-connection";
-import { plainTextToHtml, plainTextToMimeText } from "@/lib/email-format";
+import {
+  htmlToPlainText,
+  plainTextToHtml,
+  plainTextToMimeText,
+  richHtmlToEmailHtml,
+  sanitizeEmailRichHtml,
+} from "@/lib/email-format";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { prisma } from "@/lib/prisma";
 
@@ -42,6 +48,11 @@ export async function sendSniperEmailNow(input: {
     return { error: "Chybí text e-mailu." };
   }
 
+  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(body);
+  if (looksLikeHtml && !htmlToPlainText(body).trim()) {
+    return { error: "Chybí text e-mailu." };
+  }
+
   const connection = await getEmailConnectionState();
   if (!connection.connected) {
     return {
@@ -50,8 +61,12 @@ export async function sendSniperEmailNow(input: {
     };
   }
 
-  const html = plainTextToHtml(body);
-  const text = plainTextToMimeText(body);
+  const html = looksLikeHtml
+    ? richHtmlToEmailHtml(sanitizeEmailRichHtml(body))
+    : plainTextToHtml(body);
+  const text = looksLikeHtml
+    ? plainTextToMimeText(htmlToPlainText(body))
+    : plainTextToMimeText(body);
 
   const sendResult = await sendEmail({
     to,

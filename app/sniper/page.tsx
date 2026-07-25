@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmailRichEditor } from "@/components/sniper/email-rich-editor";
 import { cn } from "@/lib/utils";
+import { htmlToPlainText, plainTextToEditorHtml } from "@/lib/email-format";
 import { toast } from "sonner";
 import { generateEmailContent, generateEmailSubjects } from "@/app/actions/generate";
 import { getWorkspaceAccessState } from "@/app/actions/auth";
@@ -217,26 +219,16 @@ function SniperContent() {
   const [subjects, setSubjects] = useState<string[]>(MOCK_SUBJECTS);
   const [selectedSubject, setSelectedSubject] = useState(MOCK_SUBJECTS[0]);
   const [editableBody, setEditableBody] = useState(INITIAL_EMAIL_BODY);
+  const [editorKey, setEditorKey] = useState(0);
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
-  const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  };
-
   useEffect(() => {
-    if (isGenerated) {
-      adjustTextareaHeight();
-      if (bottomRef.current) {
-        bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+    if (isGenerated && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [isGenerated, editableBody]);
 
@@ -324,7 +316,8 @@ function SniperContent() {
         setSubjects(d.vygenerovane_predmety);
         setSelectedSubject(d.vygenerovane_predmety[0] ?? "");
         const bodyCombined = `${d.osloveni}\n\n${d.vygenerovany_email}`;
-        setEditableBody(bodyCombined);
+        setEditableBody(plainTextToEditorHtml(bodyCombined));
+        setEditorKey((k) => k + 1);
 
         const finalSegment =
           d.detected_segment && segmentMap[d.detected_segment] ? d.detected_segment : null;
@@ -361,9 +354,24 @@ function SniperContent() {
     }
   };
 
-  const handleCopy = () => {
-    void navigator.clipboard.writeText(editableBody);
-    toast.success("Zkopírováno do schránky.");
+  const handleCopy = async () => {
+    const plain = htmlToPlainText(editableBody);
+    try {
+      if (typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([editableBody], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(plain);
+      }
+      toast.success("Zkopírováno do schránky.");
+    } catch {
+      await navigator.clipboard.writeText(plain);
+      toast.success("Zkopírováno do schránky.");
+    }
   };
 
   const handleOpenEmail = () => {
@@ -372,7 +380,8 @@ function SniperContent() {
       toast.error("Zadejte kontaktní e-mail příjemce.");
       return;
     }
-    const mailtoLink = `mailto:${target}?subject=${encodeURIComponent(selectedSubject)}&body=${encodeURIComponent(editableBody)}`;
+    const plain = htmlToPlainText(editableBody);
+    const mailtoLink = `mailto:${target}?subject=${encodeURIComponent(selectedSubject)}&body=${encodeURIComponent(plain)}`;
     window.location.href = mailtoLink;
   };
 
@@ -393,7 +402,7 @@ function SniperContent() {
       toast.error("Zadejte kontaktní e-mail příjemce.");
       return;
     }
-    if (!selectedSubject.trim() || !editableBody.trim()) {
+    if (!selectedSubject.trim() || !htmlToPlainText(editableBody).trim()) {
       toast.error("Chybí předmět nebo text e-mailu.");
       return;
     }
@@ -823,11 +832,10 @@ function SniperContent() {
 
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Text e-mailu (Můžete upravit)</Label>
-                  <textarea
-                    ref={textareaRef}
-                    className="flex w-full rounded-xl border border-border/50 bg-background px-4 py-4 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 leading-relaxed overflow-hidden resize-none transition-all duration-200"
+                  <EmailRichEditor
+                    key={editorKey}
                     value={editableBody}
-                    onChange={(e) => setEditableBody(e.target.value)}
+                    onChange={setEditableBody}
                   />
                 </div>
               </div>

@@ -168,3 +168,55 @@ export function htmlBodyToEditablePlainText(html: string): string {
 export function htmlToPlainText(html: string): string {
   return htmlBodyToEditablePlainText(html);
 }
+
+/** Prostý text z generátoru → HTML fragment pro rich editor. */
+export function plainTextToEditorHtml(text: string): string {
+  const normalized = normalizeEmailPlainText(text).trim();
+  if (!normalized) return "";
+  return escapeHtml(normalized).replace(/\n/g, "<br>");
+}
+
+const ALLOWED_RICH_TAGS = new Set([
+  "b",
+  "strong",
+  "i",
+  "em",
+  "u",
+  "br",
+  "p",
+  "div",
+  "span",
+  "ul",
+  "ol",
+  "li",
+]);
+
+/** Odstraní nebezpečné tagy/atributy z HTML z editoru před odesláním. */
+export function sanitizeEmailRichHtml(html: string): string {
+  let out = html
+    .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<\/?(script|style|iframe|object|embed)\b[^>]*>/gi, "");
+
+  out = out.replace(/<\/?([a-z0-9]+)(\s[^>]*)?>/gi, (match, rawTag: string) => {
+    const tag = rawTag.toLowerCase();
+    const isClosing = match.startsWith("</");
+    if (!ALLOWED_RICH_TAGS.has(tag)) {
+      return "";
+    }
+    if (tag === "br") {
+      return isClosing ? "" : "<br>";
+    }
+    return isClosing ? `</${tag}>` : `<${tag}>`;
+  });
+
+  return out;
+}
+
+/** HTML z editoru zabalí do e-mailové šablony (multipart HTML část). */
+export function richHtmlToEmailHtml(html: string): string {
+  const clean = sanitizeEmailRichHtml(html).trim();
+  if (!clean) {
+    return plainTextToHtml("");
+  }
+  return `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #1f2937;">${clean}</div>`;
+}
