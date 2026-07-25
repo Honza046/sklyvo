@@ -146,7 +146,9 @@ model RadarSettings {
 
   scheduleDays      Int[]     @default([1, 4])
   scheduleTime      String    @default("03:00")
-  resultsPerQuery   Int       @default(8)
+  resultsPerQuery   Int       @default(20)
+  /** Soft dolní cíl firem na běh (snaží se dostat aspoň sem). */
+  minCompaniesPerRun Int      @default(20)
   maxCompaniesPerRun Int      @default(50)
   /** Poslední úspěšný běh naplánovaného Radaru (cron). */
   lastScheduledRunAt DateTime?

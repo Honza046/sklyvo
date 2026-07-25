@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Globe, Loader2, Mail, Phone, Radio } from "lucide-react";
+import { Globe, Mail, Phone, Radio } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getLeads } from "@/app/actions/crm";
-import { runAutomatedRadar } from "@/app/actions/radar";
 import { toast } from "sonner";
 import {
   AutopilotControlPanel,
@@ -34,8 +32,6 @@ export function AutopilotRadarView() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [radarPage, setRadarPage] = useState(1);
-  const [isCollecting, setIsCollecting] = useState(false);
-  const [radarSummary, setRadarSummary] = useState<string | null>(null);
 
   const {
     settingsOpen,
@@ -98,43 +94,6 @@ export function AutopilotRadarView() {
   const radarShownTo =
     radarTotalItems === 0 ? 0 : radarPageStart + paginatedRadarLeads.length;
 
-  const handleAutomaticRadarCollect = async () => {
-    if (isCollecting) return;
-
-    setIsCollecting(true);
-    setRadarSummary(null);
-
-    try {
-      const result = await runAutomatedRadar();
-
-      if ("error" in result) {
-        toast.error(result.error);
-        setRadarSummary(result.error);
-        return;
-      }
-
-      const summary = `Přidáno ${result.createdCount} nových firem, přeskočeno ${result.skippedCount} duplicit.${
-        result.outreachQueued && result.outreachQueued > 0
-          ? ` ${result.outreachQueued} firem zařazeno do fronty Sniperu.`
-          : ""
-      }`;
-      setRadarSummary(summary);
-      toast.success(summary);
-
-      if (result.errors.length > 0) {
-        toast.warning(`${result.errors.length} dotazů skončilo s chybou.`);
-      }
-
-      await loadLeads();
-    } catch (e) {
-      const message = e instanceof Error ? e.message : t("autopilot.startCollectError");
-      toast.error(message);
-      setRadarSummary(message);
-    } finally {
-      setIsCollecting(false);
-    }
-  };
-
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col">
       <AutopilotSettingsDialog
@@ -157,15 +116,8 @@ export function AutopilotRadarView() {
         powerEnabled={featureEnabled}
         description={
           featureEnabled
-            ? "Automatický sběr zapnutý — cron hledá firmy podle nastavení (~3:00 Praha)."
-            : "Automatický sběr vypnutý — cron firmy nehledá. Ruční sběr funguje dál."
-        }
-        extra={
-          radarSummary ? (
-            <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-              {radarSummary}
-            </p>
-          ) : null
+            ? "Cron hledá firmy podle nastavení (~3:00 Praha)."
+            : "Cron vypnutý — ruční hledání je v sekci Radar."
         }
         actions={
           <>
@@ -175,23 +127,6 @@ export function AutopilotRadarView() {
               accent="emerald"
               onClick={() => void toggleFeaturePower()}
             />
-            <Button
-              onClick={() => void handleAutomaticRadarCollect()}
-              disabled={isCollecting}
-              className="shrink-0 bg-emerald-600 px-6 font-semibold text-white hover:bg-emerald-700"
-            >
-              {isCollecting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("autopilot.collecting")}
-                </>
-              ) : (
-                <>
-                  <Radio className="mr-2 h-4 w-4" />
-                  {t("autopilot.startCollect")}
-                </>
-              )}
-            </Button>
             <AutopilotSettingsIconButton
               label={t("autopilot.radarSettings")}
               onClick={openSettings}
@@ -203,7 +138,7 @@ export function AutopilotRadarView() {
 
       <div className={AUTOPILOT_TABLE_CARD_CLASS}>
         <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full min-w-[560px] table-fixed text-sm">
             <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
               <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>

@@ -44,10 +44,10 @@ export type RunState = {
 export const ITEMS_PER_PAGE = 10;
 
 export const AUTOPILOT_TABLE_CARD_CLASS =
-  "mt-8 flex flex-col overflow-x-hidden rounded-2xl border border-border/60 bg-card shadow-sm";
+  "mt-4 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm sm:mt-8 sm:overflow-x-hidden";
 
 export const AUTOPILOT_TABLE_SCROLL_CLASS =
-  "h-[350px] min-h-[350px] max-h-[350px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+  "max-h-[min(50dvh,350px)] min-h-[220px] overflow-x-auto overflow-y-auto sm:h-[350px] sm:min-h-[350px] sm:max-h-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 export const AUTOPILOT_HIDDEN_SCROLLBAR_CLASS =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
@@ -55,7 +55,7 @@ export const AUTOPILOT_HIDDEN_SCROLLBAR_CLASS =
 export const SNIPER_SELECTION_TABLE_SCROLL_CLASS = AUTOPILOT_TABLE_SCROLL_CLASS;
 
 export const SNIPER_QUEUE_TABLE_SCROLL_CLASS =
-  "h-[190px] min-h-[190px] max-h-[190px] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+  "max-h-[min(35dvh,190px)] min-h-[140px] overflow-x-auto overflow-y-auto sm:h-[190px] sm:min-h-[190px] sm:max-h-[190px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 export const AUTOPILOT_TABLE_HEAD_CELL_CLASS =
   "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950";
@@ -247,26 +247,36 @@ export function AutopilotControlPanel({
   description: string;
   extra?: React.ReactNode;
   actions: React.ReactNode;
-  /** Pokud je předáno, zobrazí badge Zapnuto/Vypnout u názvu. */
+  /** Pokud je předáno, zobrazí badge Zapnuto/Vypnuto u názvu. */
   powerEnabled?: boolean;
 }) {
   return (
-    <div className="relative shrink-0 rounded-2xl border border-border/60 bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className={cn("shrink-0 rounded-xl p-2", iconWrapClassName)}>{icon}</div>
-          <div className="min-w-0 text-left">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground">{title}</h2>
-              {powerEnabled != null ? <AutopilotPowerBadge enabled={powerEnabled} /> : null}
+    <>
+      <div className="relative flex min-h-16 shrink-0 items-center rounded-2xl border border-border/60 bg-card px-3 py-2.5 shadow-sm sm:h-[4.25rem] sm:px-5 sm:py-0">
+        <div className="flex w-full flex-row items-center justify-between gap-2 sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+            <div className={cn("shrink-0 rounded-xl p-2", iconWrapClassName)}>{icon}</div>
+            <div className="min-w-0 text-left">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="truncate text-sm font-semibold leading-none text-foreground sm:text-base">
+                  {title}
+                </h2>
+                {powerEnabled != null ? (
+                  <span className="shrink-0">
+                    <AutopilotPowerBadge enabled={powerEnabled} />
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground sm:mt-1.5 sm:truncate sm:text-xs sm:leading-none">
+                {description}
+              </p>
             </div>
-            <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
-            {extra}
           </div>
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">{actions}</div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">{actions}</div>
       </div>
-    </div>
+      {extra}
+    </>
   );
 }
 

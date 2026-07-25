@@ -130,12 +130,17 @@ export function AutopilotSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex w-full flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl",
+          "flex w-full flex-col gap-0 overflow-hidden p-0",
+          // Mobile: nearly full-screen sheet
+          "left-0 top-0 h-[100dvh] max-h-[100dvh] max-w-none translate-x-0 translate-y-0 rounded-none",
+          "data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-bottom-2",
+          // Desktop: centered dialog
+          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
           section === "radar"
-            ? "max-h-[min(92vh,640px)] max-w-4xl"
+            ? "sm:max-h-[min(92vh,640px)] sm:max-w-4xl"
             : section === "sniper"
-              ? "max-h-[min(92vh,560px)] max-w-3xl"
-              : "max-h-[min(92vh,480px)] max-w-xl",
+              ? "sm:max-h-[min(92vh,560px)] sm:max-w-3xl"
+              : "sm:max-h-[min(92vh,480px)] sm:max-w-xl",
         )}
       >
         <div
@@ -255,7 +260,7 @@ export function AutopilotSettingsDialog({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <Label htmlFor="radar-run-time" className="text-sm">
                       Čas
@@ -270,8 +275,29 @@ export function AutopilotSettingsDialog({
                     />
                   </div>
                   <div className="space-y-1">
+                    <Label htmlFor="radar-min-companies" className="text-sm">
+                      Od firem
+                    </Label>
+                    <Input
+                      id="radar-min-companies"
+                      type="number"
+                      min={1}
+                      max={200}
+                      value={settings.minCompaniesPerRun}
+                      onChange={(e) => {
+                        const min = Math.max(1, Number(e.target.value) || 1);
+                        patch({
+                          minCompaniesPerRun: min,
+                          maxCompaniesPerRun: Math.max(min, settings.maxCompaniesPerRun),
+                        });
+                      }}
+                      disabled={disabled}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label htmlFor="radar-max-companies" className="text-sm">
-                      Max. firem / běh
+                      Do firem
                     </Label>
                     <Input
                       id="radar-max-companies"
@@ -279,11 +305,13 @@ export function AutopilotSettingsDialog({
                       min={1}
                       max={200}
                       value={settings.maxCompaniesPerRun}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const max = Math.max(1, Number(e.target.value) || 1);
                         patch({
-                          maxCompaniesPerRun: Math.max(1, Number(e.target.value) || 1),
-                        })
-                      }
+                          maxCompaniesPerRun: max,
+                          minCompaniesPerRun: Math.min(settings.minCompaniesPerRun, max),
+                        });
+                      }}
                       disabled={disabled}
                       className="h-9"
                     />
@@ -292,8 +320,8 @@ export function AutopilotSettingsDialog({
 
                 {settings.radarDays.length > 0 ? (
                   <p className="mt-auto rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                    {radarDayLabels} · na Vercelu kolem 03:00 · až {settings.maxCompaniesPerRun}{" "}
-                    firem / den
+                    {radarDayLabels} · na Vercelu kolem 03:00 · cíl{" "}
+                    {settings.minCompaniesPerRun}–{settings.maxCompaniesPerRun} firem / den
                   </p>
                 ) : (
                   <p className="mt-auto rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">

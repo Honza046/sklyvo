@@ -86,6 +86,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             autoStartOutreach: result.settings.autoStartOutreach,
             radarDays: result.settings.radarDays,
             radarRunTime: result.settings.radarRunTime,
+            minCompaniesPerRun: result.settings.minCompaniesPerRun,
             maxCompaniesPerRun: result.settings.maxCompaniesPerRun,
           }));
         }
@@ -166,6 +167,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             autoStartOutreach: automationSettings.autoStartOutreach,
             radarDays: automationSettings.radarDays,
             radarRunTime: automationSettings.radarRunTime,
+            minCompaniesPerRun: automationSettings.minCompaniesPerRun,
             maxCompaniesPerRun: automationSettings.maxCompaniesPerRun,
           }),
           setRadarCronEnabled(radarCronEnabled),

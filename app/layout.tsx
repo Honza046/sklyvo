@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProviders } from "@/components/app-providers";
@@ -15,9 +15,50 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-geist-mono",
 });
 
+const APP_NAME = "Venegard";
+const APP_DEFAULT_TITLE = "Venegard";
+const APP_TITLE_TEMPLATE = "%s · Venegard";
+const APP_DESCRIPTION = "Digitální agentura — Sniper, Radar, CRM a Autopilot";
+
 export const metadata: Metadata = {
-  title: "Outreach Agent",
-  description: "Digitální agentura — Sniper, Radar, CRM",
+  applicationName: APP_NAME,
+  title: {
+    default: APP_DEFAULT_TITLE,
+    template: APP_TITLE_TEMPLATE,
+  },
+  description: APP_DESCRIPTION,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_DEFAULT_TITLE,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: {
+      default: APP_DEFAULT_TITLE,
+      template: APP_TITLE_TEMPLATE,
+    },
+    description: APP_DESCRIPTION,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563EB" },
+    { media: "(prefers-color-scheme: dark)", color: "#1e3a8a" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -26,18 +67,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // ODSTRANĚNO: className="dark" z tagu html
     <html lang="cs" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrains.variable} min-h-screen font-sans`}
+        className={`${inter.variable} ${jetbrains.variable} min-h-dvh font-sans`}
       >
-        {/* PŘIDÁNO: ThemeProvider obalující celou aplikaci */}
         <AppProviders>
           <AppShell>{children}</AppShell>
         </AppProviders>
-        
-        {/* Tímto aktivujeme vyskakovací notifikace v celé appce */}
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="bottom-center" richColors />
       </body>
     </html>
   );

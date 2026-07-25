@@ -107,8 +107,8 @@ export function AutopilotFullAutoView() {
         powerEnabled={featureEnabled}
         description={
           featureEnabled
-            ? "Zapnuto — cron kolem 8:00 najde firmy a rovnou pošle maily."
-            : "Vypnuto — Full Auto cron neběží. Zapni, až budeš chtít celou smyčku."
+            ? "Cron kolem 8:00 najde firmy a pošle maily."
+            : "Cron neběží — zapni, až budeš chtít celou smyčku."
         }
         actions={
           <>
@@ -129,7 +129,7 @@ export function AutopilotFullAutoView() {
 
       <div className={AUTOPILOT_TABLE_CARD_CLASS}>
         <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full min-w-[560px] table-fixed text-sm">
             <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
               <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>

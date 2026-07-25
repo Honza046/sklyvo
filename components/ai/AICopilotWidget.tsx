@@ -139,7 +139,7 @@ export function AICopilotWidget() {
         aria-hidden={!open}
       />
 
-      <div className="fixed bottom-6 right-6 z-[51]">
+      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-[51] md:bottom-6 md:right-6">
         <div
           role="dialog"
           aria-modal={open}

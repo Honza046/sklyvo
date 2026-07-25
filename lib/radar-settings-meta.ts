@@ -24,6 +24,11 @@ const COMPANY_SIZE_QUERY_HINT: Record<RadarCompanySize, string> = {
   large: "velká firma",
 };
 
+/** Max Google Places results we ask per single text query. */
+const MAX_RESULTS_PER_QUERY = 20;
+/** Soft cap on queries per cron run (rotation covers the rest across days). */
+const MAX_QUERIES_PER_RUN = 48;
+
 export function parseCommaSeparatedInput(value: string): string[] {
   return value
     .split(",")
@@ -60,10 +65,38 @@ export type RadarSettingsPayload = {
   scheduleDays: number[];
   scheduleTime: string;
   resultsPerQuery: number;
+  /** Soft lower target — keep searching until reached when possible. */
+  minCompaniesPerRun: number;
   maxCompaniesPerRun: number;
 };
 
-export function buildRadarSearchQueries(settings: RadarSettingsPayload): RadarSearchQuery[] {
+function pragueDayOfYear(now = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  const y = get("year");
+  const m = get("month");
+  const d = get("day");
+  const utc = Date.UTC(y, m - 1, d);
+  const start = Date.UTC(y, 0, 0);
+  return Math.floor((utc - start) / 86_400_000);
+}
+
+function rotateArray<T>(items: T[], offset: number): T[] {
+  if (items.length === 0) return items;
+  const shift = ((offset % items.length) + items.length) % items.length;
+  if (shift === 0) return items;
+  return [...items.slice(shift), ...items.slice(0, shift)];
+}
+
+export function buildRadarSearchQueries(
+  settings: RadarSettingsPayload,
+  now = new Date(),
+): RadarSearchQuery[] {
   const industries =
     settings.targetIndustries.length > 0 ? settings.targetIndustries : DEFAULT_RADAR_INDUSTRIES;
 
@@ -77,18 +110,35 @@ export function buildRadarSearchQueries(settings: RadarSettingsPayload): RadarSe
   const locations = locationLines.length > 0 ? locationLines : DEFAULT_RADAR_LOCATIONS;
 
   const sizeHint = COMPANY_SIZE_QUERY_HINT[settings.companySize] ?? "";
-  const limit = Math.max(1, Math.min(settings.resultsPerQuery, 20));
+  const maxPerRun = Math.max(1, settings.maxCompaniesPerRun || 50);
+  const minPerRun = Math.max(1, Math.min(settings.minCompaniesPerRun || 1, maxPerRun));
 
-  const queries: RadarSearchQuery[] = [];
-
+  const allCombos: string[] = [];
   for (const industry of industries) {
     for (const location of locations) {
       const parts = [industry, location, sizeHint].filter(Boolean);
-      queries.push({ query: parts.join(" "), limit });
+      allCombos.push(parts.join(" "));
     }
   }
 
-  return queries.slice(0, 24);
+  // Každý den jiný start v matici obor × město → víc nových firem po vyloučení duplicit.
+  const rotated = rotateArray(allCombos, pragueDayOfYear(now) * 3);
+
+  // Kolik firem chceme z jednoho dotazu, aby šlo naplnit denní cíl.
+  const queriesBudget = Math.min(MAX_QUERIES_PER_RUN, Math.max(rotated.length, 1));
+  const derivedPerQuery = Math.ceil(maxPerRun / Math.min(queriesBudget, 10));
+  const perQuery = Math.max(
+    1,
+    Math.min(
+      MAX_RESULTS_PER_QUERY,
+      Math.max(settings.resultsPerQuery || 0, derivedPerQuery, Math.ceil(minPerRun / 4)),
+    ),
+  );
+
+  return rotated.slice(0, MAX_QUERIES_PER_RUN).map((query) => ({
+    query,
+    limit: perQuery,
+  }));
 }
 
 export function toRadarSettingsPayload(record: {
@@ -99,11 +149,18 @@ export function toRadarSettingsPayload(record: {
   scheduleDays: number[];
   scheduleTime: string;
   resultsPerQuery: number;
+  minCompaniesPerRun?: number | null;
   maxCompaniesPerRun: number;
 }): RadarSettingsPayload {
   const companySize = RADAR_COMPANY_SIZE_OPTIONS.some((o) => o.value === record.companySize)
     ? (record.companySize as RadarCompanySize)
     : "any";
+
+  const maxCompaniesPerRun = Math.max(1, record.maxCompaniesPerRun || 50);
+  const minCompaniesPerRun = Math.max(
+    1,
+    Math.min(record.minCompaniesPerRun || Math.min(20, maxCompaniesPerRun), maxCompaniesPerRun),
+  );
 
   return {
     targetIndustries: record.targetIndustries ?? [],
@@ -112,7 +169,8 @@ export function toRadarSettingsPayload(record: {
     autoStartOutreach: record.autoStartOutreach ?? false,
     scheduleDays: record.scheduleDays?.length ? record.scheduleDays : [1, 4],
     scheduleTime: record.scheduleTime || "03:00",
-    resultsPerQuery: record.resultsPerQuery || 8,
-    maxCompaniesPerRun: record.maxCompaniesPerRun || 50,
+    resultsPerQuery: record.resultsPerQuery || 20,
+    minCompaniesPerRun,
+    maxCompaniesPerRun,
   };
 }

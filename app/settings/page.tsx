@@ -113,34 +113,34 @@ export default async function SettingsPage() {
   const emailConnection = isWorkspaceReady ? await getEmailConnectionState() : null;
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-start pt-0 pb-12">
-      <div className="mb-6 space-y-2 text-center">
+    <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0">
+      <div className="mb-4 space-y-2 px-1 text-center sm:mb-6">
         <div className="mb-2 flex items-center justify-center gap-3">
-          <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-            <Settings className="h-8 w-8" />
+          <div className="rounded-2xl bg-blue-50 p-2.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:p-3">
+            <Settings className="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
           Pracovní prostor
         </h1>
-        <p className="mx-auto max-w-lg text-sm text-muted-foreground">
+        <p className="mx-auto max-w-lg text-xs text-muted-foreground sm:text-sm">
           Spravujte nastavení projektu, integrace s vaším CRM a čerpání AI kreditů.
         </p>
       </div>
 
       <SettingsSaveProvider>
-      <div className="flex w-full max-w-3xl flex-col gap-6 px-4">
+      <div className="flex w-full max-w-3xl flex-col gap-4 px-0 sm:gap-6 sm:px-4">
         
         {/* PŮVODNÍ HLAVIČKA S PŘEDPLATNÝM */}
-        <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-card p-5">
+        <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           {isWorkspaceReady ? (
             <>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Předplatné</p>
                 {workspace?.subscriptionStatus === "FREE" ? (
-                  <p className="text-lg font-semibold">Bez aktivního tarifu (Free verze)</p>
+                  <p className="text-base font-semibold sm:text-lg">Bez aktivního tarifu (Free verze)</p>
                 ) : (
-                  <p className="text-lg font-semibold">
+                  <p className="text-base font-semibold sm:text-lg">
                     {isFreePlanTier ? "Free verze" : workspace?.planTier}
                   </p>
                 )}
@@ -168,7 +168,7 @@ export default async function SettingsPage() {
           {/* PROFIL FIRMY PRO AI */}
           <AccordionItem
             value="company-profile"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -197,7 +197,7 @@ export default async function SettingsPage() {
           {/* NABÍZENÉ SLUŽBY FIRMY */}
           <AccordionItem
             value="offered-services"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -229,7 +229,7 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: KREDITY */}
           <AccordionItem
             value="credits"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger id="credits-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -304,7 +304,7 @@ export default async function SettingsPage() {
           <AccordionItem
             id={EMAIL_SETUP_SETTINGS_HASH}
             value="email-integration"
-            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger id="email-integration-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -332,7 +332,7 @@ export default async function SettingsPage() {
           <AccordionItem
             id="integrations"
             value="integrations"
-            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="scroll-mt-24 rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger id="integrations-trigger" className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -352,7 +352,7 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: AI CHOVÁNÍ */}
           <AccordionItem
             value="ai"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">
@@ -382,7 +382,7 @@ export default async function SettingsPage() {
           {/* PŮVODNÍ SEKCE: TÝM */}
           <AccordionItem
             value="team"
-            className="rounded-2xl border border-border/60 bg-card px-6 shadow-sm transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
+            className="rounded-2xl border border-border/60 bg-card px-3 shadow-sm sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-6 hover:no-underline">
               <div className="flex items-center gap-3">

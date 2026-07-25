@@ -20,6 +20,7 @@ export type RadarSettingsFormData = {
   autoStartOutreach: boolean;
   radarDays: number[];
   radarRunTime: string;
+  minCompaniesPerRun: number;
   maxCompaniesPerRun: number;
 };
 
@@ -32,6 +33,11 @@ export type FullAutoSettingsFormData = {
 export type RadarSettingsView = RadarSettingsFormData;
 
 function formToPayload(form: RadarSettingsFormData): RadarSettingsPayload {
+  const maxCompaniesPerRun = Math.max(1, form.maxCompaniesPerRun || 50);
+  const minCompaniesPerRun = Math.max(
+    1,
+    Math.min(form.minCompaniesPerRun || 20, maxCompaniesPerRun),
+  );
   return {
     targetIndustries: parseCommaSeparatedInput(form.targetIndustries),
     locations: form.locations.trim(),
@@ -39,8 +45,10 @@ function formToPayload(form: RadarSettingsFormData): RadarSettingsPayload {
     autoStartOutreach: form.autoStartOutreach,
     scheduleDays: form.radarDays,
     scheduleTime: form.radarRunTime,
-    resultsPerQuery: 8,
-    maxCompaniesPerRun: Math.max(1, form.maxCompaniesPerRun || 50),
+    // Dřív hardcode 8 → málo firem; teď dost na naplnění denního cíle.
+    resultsPerQuery: 20,
+    minCompaniesPerRun,
+    maxCompaniesPerRun,
   };
 }
 
@@ -52,6 +60,7 @@ function recordToForm(record: RadarSettingsPayload): RadarSettingsFormData {
     autoStartOutreach: record.autoStartOutreach,
     radarDays: record.scheduleDays,
     radarRunTime: record.scheduleTime,
+    minCompaniesPerRun: record.minCompaniesPerRun,
     maxCompaniesPerRun: record.maxCompaniesPerRun,
   };
 }
@@ -78,6 +87,7 @@ export async function getRadarSettings(): Promise<
         autoStartOutreach: false,
         radarDays: [1, 4],
         radarRunTime: "03:00",
+        minCompaniesPerRun: 20,
         maxCompaniesPerRun: 50,
       },
     };
@@ -114,6 +124,7 @@ export async function saveRadarSettings(
       scheduleDays: payload.scheduleDays,
       scheduleTime: payload.scheduleTime,
       resultsPerQuery: payload.resultsPerQuery,
+      minCompaniesPerRun: payload.minCompaniesPerRun,
       maxCompaniesPerRun: payload.maxCompaniesPerRun,
     },
     update: {
@@ -124,6 +135,7 @@ export async function saveRadarSettings(
       scheduleDays: payload.scheduleDays,
       scheduleTime: payload.scheduleTime,
       resultsPerQuery: payload.resultsPerQuery,
+      minCompaniesPerRun: payload.minCompaniesPerRun,
       maxCompaniesPerRun: payload.maxCompaniesPerRun,
     },
   });
@@ -149,7 +161,8 @@ export async function loadRadarSettingsPayloadForWorkspace(
       autoStartOutreach: false,
       scheduleDays: [1, 4],
       scheduleTime: "03:00",
-      resultsPerQuery: 8,
+      resultsPerQuery: 20,
+      minCompaniesPerRun: 20,
       maxCompaniesPerRun: 50,
     });
   }

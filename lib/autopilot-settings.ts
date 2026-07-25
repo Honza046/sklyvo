@@ -12,6 +12,7 @@ export type AutopilotAutomationSettings = {
   companySize: RadarCompanySize;
   autoStartOutreach: boolean;
   maxCompaniesPerRun: number;
+  minCompaniesPerRun: number;
   window1Start: string;
   window1End: string;
   window2Start: string;
@@ -40,6 +41,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   companySize: "any",
   autoStartOutreach: false,
   maxCompaniesPerRun: 50,
+  minCompaniesPerRun: 20,
   window1Start: "09:00",
   window1End: "11:30",
   window2Start: "14:00",

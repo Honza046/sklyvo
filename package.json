@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate"
@@ -29,6 +29,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.15",
+    "@serwist/next": "^9.5.12",
     "@stripe/stripe-js": "^9.4.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.105.1",
@@ -46,6 +47,7 @@
     "react-dom": "^18.3.1",
     "react-textarea-autosize": "^8.5.9",
     "resend": "^6.14.0",
+    "serwist": "^9.5.12",
     "sonner": "^2.0.7",
     "stripe": "^22.1.0",
     "tailwind-merge": "^2.5.4",

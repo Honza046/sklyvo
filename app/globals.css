@@ -105,6 +105,23 @@ body {
     width: 0;
     height: 0;
   }
+
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+  .min-h-dvh-safe {
+    min-height: 100dvh;
+  }
+}
+
+/* Toast above mobile bottom nav */
+@media (max-width: 767px) {
+  [data-sonner-toaster] {
+    bottom: calc(4.25rem + env(safe-area-inset-bottom)) !important;
+  }
 }
 
 /* Driver.js — onboarding tour (Venegard UI) */

@@ -402,6 +402,7 @@ export async function runAutomatedRadarForWorkspace(
   const radarSettings = await loadRadarSettingsPayloadForWorkspace(workspaceId);
   const searches = buildRadarSearchQueries(radarSettings);
   const maxPerRun = Math.max(1, radarSettings.maxCompaniesPerRun ?? 50);
+  const minPerRun = Math.max(1, Math.min(radarSettings.minCompaniesPerRun ?? 1, maxPerRun));
   const shouldAutoQueue =
     options?.forceAutoStartOutreach === true || radarSettings.autoStartOutreach;
 
@@ -465,6 +466,12 @@ export async function runAutomatedRadarForWorkspace(
   revalidatePath("/radar");
   revalidatePath("/autopilot");
   revalidatePath("/");
+
+  if (createdCount < minPerRun) {
+    console.warn(
+      `[radar] workspace ${workspaceId}: pouze ${createdCount} nových firem (cíl ${minPerRun}–${maxPerRun}), queries=${queriesRun}`,
+    );
+  }
 
   return {
     ok: true,

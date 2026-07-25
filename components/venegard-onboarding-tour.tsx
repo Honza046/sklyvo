@@ -7,7 +7,7 @@ import { completeOnboardingTour } from "@/app/actions/onboarding-tour";
 
 const TOUR_POPOVER_CLASS = "venegard-driver-popover";
 
-function buildSteps(): DriveStep[] {
+function buildDesktopSteps(): DriveStep[] {
   return [
     {
       element: '[data-tour="onboarding-sidebar"]',
@@ -50,6 +50,59 @@ function buildSteps(): DriveStep[] {
   ];
 }
 
+function buildMobileSteps(): DriveStep[] {
+  return [
+    {
+      element: '[data-tour="onboarding-mobile-header"]',
+      popover: {
+        title: "Vítejte",
+        description:
+          "Vítejte v aplikaci! Nahoře je menu (☰) s Autopilotem, nastavením a účtem.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    {
+      element: '[data-tour="onboarding-mobile-tabs"]',
+      popover: {
+        title: "Hlavní nástroje",
+        description: "Dole přepínáte Přehled, Sniper, Radar a CRM.",
+        side: "top",
+        align: "center",
+      },
+    },
+    {
+      element: '[data-tour="onboarding-radar"]',
+      popover: {
+        title: "Radar",
+        description:
+          "Tohle je váš vyhledávač. Zde najdete nové klienty a získáte na ně kontaktní údaje.",
+        side: "top",
+        align: "center",
+      },
+    },
+    {
+      element: '[data-tour="onboarding-sniper"]',
+      popover: {
+        title: "Sniper",
+        description: "Tady probíhá hlavní kouzlo. Sniper vám vygeneruje emaily přesně na míru.",
+        side: "top",
+        align: "center",
+      },
+    },
+    {
+      element: '[data-tour="onboarding-mobile-menu"]',
+      popover: {
+        title: "Nastavení",
+        description:
+          "V menu najdete Autopilot a pracovní prostor — nastavte si profil, aby zprávy zněly jako vy.",
+        side: "bottom",
+        align: "end",
+      },
+    },
+  ];
+}
+
 export function VenegardOnboardingTour({
   active,
   userId,
@@ -86,24 +139,33 @@ export function VenegardOnboardingTour({
   useEffect(() => {
     if (!active || !userId) return;
 
-    const mdUp = () => typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
-    if (!mdUp()) return;
+    const mdUp = () =>
+      typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
 
-    const selectors = [
+    const desktopSelectors = [
       '[data-tour="onboarding-sidebar"]',
       '[data-tour="onboarding-radar"]',
       '[data-tour="onboarding-sniper"]',
       '[data-tour="onboarding-settings"]',
     ] as const;
 
-    const allPresent = () => selectors.every((s) => document.querySelector(s));
+    const mobileSelectors = [
+      '[data-tour="onboarding-mobile-header"]',
+      '[data-tour="onboarding-mobile-tabs"]',
+      '[data-tour="onboarding-radar"]',
+      '[data-tour="onboarding-sniper"]',
+      '[data-tour="onboarding-mobile-menu"]',
+    ] as const;
+
+    const selectors = () => (mdUp() ? desktopSelectors : mobileSelectors);
+    const allPresent = () => selectors().every((s) => document.querySelector(s));
 
     let cancelled = false;
     let attempts = 0;
     let timeoutId: number | undefined;
 
     const start = () => {
-      if (cancelled || !mdUp() || !allPresent() || startedForSessionRef.current) return;
+      if (cancelled || !allPresent() || startedForSessionRef.current) return;
       startedForSessionRef.current = true;
 
       const d = driver({
@@ -118,7 +180,7 @@ export function VenegardOnboardingTour({
         popoverClass: TOUR_POPOVER_CLASS,
         overlayOpacity: 0.55,
         stageRadius: 12,
-        steps: buildSteps(),
+        steps: mdUp() ? buildDesktopSteps() : buildMobileSteps(),
         onDestroyed: () => {
           driverRef.current = null;
           void persistCompletion();

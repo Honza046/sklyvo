@@ -7,10 +7,8 @@ import {
   Globe,
   Loader2,
   Mail,
-  Rocket,
   Send,
   Trash2,
-  Zap,
 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import {
@@ -564,8 +562,8 @@ export function AutopilotSniperView() {
         powerEnabled={featureEnabled}
         description={
           featureEnabled
-            ? "Automatické odesílání zapnuté — cron posílá splatné maily z fronty."
-            : "Automatické odesílání vypnuté — cron nic neposílá. Ruční odeslání funguje dál."
+            ? "Cron posílá splatné maily z fronty."
+            : "Cron vypnutý — ruční oslovení je v sekci Sniper."
         }
         actions={
           <>
@@ -575,32 +573,6 @@ export function AutopilotSniperView() {
               accent="blue"
               onClick={() => void toggleFeaturePower()}
             />
-            <button
-              type="button"
-              onClick={() => void handleForceSendQueue()}
-              disabled={queuedCount === 0 || isRunning || isForceSending}
-              className={cn(
-                "inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-blue-600 px-4",
-                "bg-white text-sm font-medium text-blue-600 transition-colors",
-                "hover:bg-blue-50 disabled:pointer-events-none disabled:opacity-50",
-                "dark:bg-zinc-900 dark:hover:bg-zinc-800",
-              )}
-            >
-              {isForceSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Zap className="h-4 w-4" />
-              )}
-              Odeslat e-maily ihned
-            </button>
-            <Button
-              onClick={() => void handleStart()}
-              disabled={selectedIds.length === 0 || isRunning}
-              className="h-9 shrink-0 bg-blue-600 px-6 font-semibold text-white hover:bg-blue-700"
-            >
-              <Rocket className="mr-2 h-4 w-4" />
-              Spustit Autopilota
-            </Button>
             <AutopilotSettingsIconButton
               label="Nastavení odesílání"
               onClick={openSettings}
@@ -659,7 +631,7 @@ export function AutopilotSniperView() {
 
           <div className={cn(AUTOPILOT_TABLE_CARD_CLASS, "relative z-0 mt-4 shrink-0")}>
             <div className={AUTOPILOT_TABLE_SCROLL_CLASS}>
-              <table className="w-full table-fixed text-sm">
+              <table className="w-full min-w-[520px] table-fixed text-sm">
                 <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
                   <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     <th
@@ -871,7 +843,7 @@ export function AutopilotSniperView() {
                 </div>
 
                 <div className="h-[190px] min-h-[190px] max-h-[190px] overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <table className="w-full table-fixed text-sm">
+                  <table className="w-full min-w-[520px] table-fixed text-sm">
                     <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
                       <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                         <th className="sticky top-0 z-10 h-10 w-[34%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">

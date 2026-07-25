@@ -5,7 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const connectionString = process.env.DATABASE_URL;
 
 /** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "outreach-autopilot-power-toggles-v1";
+const PRISMA_SCHEMA_FINGERPRINT = "outreach-radar-daily-target-range-v1";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -23,14 +23,14 @@ declare global {
   var prisma: undefined | PrismaClient;
 }
 
-function leadModelHasAuthorField(client: PrismaClient): boolean {
+function runtimeModelHasField(client: PrismaClient, model: string, field: string): boolean {
   try {
     const runtime = (client as unknown as {
       _runtimeDataModel?: { models?: Record<string, { fields?: Record<string, unknown> }> };
     })._runtimeDataModel;
-    const fields = runtime?.models?.Lead?.fields;
+    const fields = runtime?.models?.[model]?.fields;
     if (!fields) return true;
-    return "author" in fields;
+    return field in fields;
   } catch {
     return true;
   }
@@ -43,7 +43,16 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (fingerprinted.__fingerprint !== PRISMA_SCHEMA_FINGERPRINT) {
     return true;
   }
-  if (!leadModelHasAuthorField(client)) {
+  if (!runtimeModelHasField(client, "Lead", "author")) {
+    return true;
+  }
+  if (!runtimeModelHasField(client, "RadarSettings", "radarCronEnabled")) {
+    return true;
+  }
+  if (!runtimeModelHasField(client, "RadarSettings", "emailSendCronEnabled")) {
+    return true;
+  }
+  if (!runtimeModelHasField(client, "RadarSettings", "minCompaniesPerRun")) {
     return true;
   }
   return (

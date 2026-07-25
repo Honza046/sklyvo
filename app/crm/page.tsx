@@ -525,18 +525,18 @@ function CrmPageContent() {
   };
 
   return (
-      <div className="flex h-[calc(100vh-2rem)] w-full flex-col items-center overflow-hidden md:h-[calc(100vh-3rem)]">
+      <div className="flex h-[calc(100dvh-8.5rem)] w-full flex-col items-center overflow-hidden md:h-[calc(100dvh-3rem)]">
         
-        <div className="mb-2 shrink-0 space-y-1 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+        <div className="mb-2 shrink-0 space-y-1 px-1 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
             CRM
           </h1>
-          <p className="text-sm text-muted-foreground max-w-lg mx-auto">
+          <p className="mx-auto max-w-lg text-xs text-muted-foreground sm:text-sm">
             Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
           </p>
         </div>
 
-        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 overflow-hidden px-4 md:px-8">
+        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-3 overflow-hidden px-0 sm:gap-4 md:px-8">
           {dueOutreachLeads.length > 0 && (
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
               <div className="flex items-start gap-2">
@@ -989,9 +989,134 @@ function CrmPageContent() {
           )}
 
           {view === "list" && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden rounded-2xl border border-border/60 bg-card shadow-sm animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm animate-in fade-in zoom-in-95 duration-300">
 
-              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {/* Mobile cards */}
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 md:hidden">
+                {paginatedLeads.map((lead) => {
+                  const companyWeb = leadFullWebsiteUrl(lead.url);
+                  const emailTrim = (lead.email ?? "").trim();
+                  const phoneTrim = (lead.phone ?? "").trim();
+                  return (
+                    <div
+                      key={lead.id}
+                      className="rounded-xl border border-border/50 bg-background p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          checked={selectedLeads.includes(lead.id)}
+                          onCheckedChange={() => toggleRowSelection(lead.id)}
+                          className="mt-1"
+                        />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[10px] font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                          {lead.avatar}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-foreground break-words">{lead.company}</p>
+                          {lead.author ? (
+                            <p className="text-xs text-muted-foreground">{lead.author}</p>
+                          ) : null}
+                          <p className="mt-0.5 text-xs text-muted-foreground">{lead.date}</p>
+                          <p className="mt-1 break-words text-sm">
+                            {emailTrim || "Bez emailu"}
+                          </p>
+                          {phoneTrim ? (
+                            <p className="break-words text-xs text-muted-foreground">{phoneTrim}</p>
+                          ) : null}
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-semibold">{formatCurrency(lead.value)}</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    "inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-widest",
+                                    statusColorMap[lead.status],
+                                  )}
+                                >
+                                  {statusLabelMap[lead.status]}
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "BREAK_UP")}>BREAKUP</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="h-9 flex-1 rounded-lg border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                            >
+                              <Link href={buildSniperLeadHref(lead)}>
+                                <Send className="mr-2 h-4 w-4" />
+                                Sniper
+                              </Link>
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-zinc-950 z-50 border shadow-md">
+                                <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Upravit deal
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Poslat follow-up
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
+                                  <Mail className="mr-2 h-4 w-4" />
+                                  Poslat breakup
+                                </DropdownMenuItem>
+                                {companyWeb ? (
+                                  <DropdownMenuItem asChild>
+                                    <a href={companyWeb} target="_blank" rel="noreferrer">
+                                      <Globe className="mr-2 h-4 w-4" />
+                                      Web
+                                    </a>
+                                  </DropdownMenuItem>
+                                ) : null}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => handleDeleteSingleLead(lead.id)}
+                                  className="text-red-600 focus:text-red-700"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Smazat
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!isLoading && paginatedLeads.length === 0 && (
+                  <div className="flex min-h-[200px] items-center justify-center text-sm text-muted-foreground">
+                    Žádné firmy neodpovídají hledání.
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="flex min-h-[200px] items-center justify-center text-sm text-muted-foreground">
+                    Načítám dealy...
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop table */}
+              <div className="hidden min-h-0 flex-1 overflow-y-auto overflow-x-hidden md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full table-fixed text-sm">
                   <thead>
                     <tr className="border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">

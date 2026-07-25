@@ -5,16 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
-  Crosshair,
-  Radio,
-  Users,
   Settings,
   LogOut,
   Moon,
   Sun,
   User,
   LifeBuoy,
-  LayoutDashboard,
   Zap,
   Rocket,
 } from "lucide-react";
@@ -34,19 +30,12 @@ import { VenegardOnboardingTour } from "@/components/venegard-onboarding-tour";
 import { AICopilotWidget } from "@/components/ai/AICopilotWidget";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
-
-const mainNav = [
-  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard },
-  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair },
-  { href: "/radar", labelKey: "nav.radar", icon: Radio },
-  { href: "/crm", labelKey: "nav.crm", icon: Users },
-] as const;
-
-const autopilotSubNav = [
-  { href: "/autopilot/radar", labelKey: "nav.autopilotCollect" },
-  { href: "/autopilot/sniper", labelKey: "nav.autopilotSend" },
-  { href: "/autopilot/full-auto", labelKey: "nav.autopilotFullAuto" },
-] as const;
+import {
+  AUTOPILOT_SUB_NAV,
+  MAIN_NAV,
+  MobileBottomNav,
+  MobileTopBar,
+} from "@/components/mobile-nav";
 
 function isWorkspaceSettingsRoute(pathname: string) {
   return (
@@ -278,8 +267,12 @@ export function DashboardShell({
     return null;
   })();
 
+  const mobileCreditsLabel = hasSessionData
+    ? `${creditsRemaining.toLocaleString(dateLocale)} / ${displayCreditsTotal.toLocaleString(dateLocale)}`
+    : null;
+
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-background">
       
       {/* BOČNÍ PANEL */}
       <aside
@@ -300,7 +293,7 @@ export function DashboardShell({
           <span className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
             {t("nav.tools")}
           </span>
-          {mainNav.map(({ href, labelKey, icon: Icon }) => {
+          {MAIN_NAV.map(({ href, labelKey, icon: Icon }) => {
             const active = href === activeHref;
             return (
               <Link
@@ -354,7 +347,7 @@ export function DashboardShell({
 
             {isAutopilotActive && (
               <div className="flex flex-col gap-0.5 pl-6">
-                {autopilotSubNav.map(({ href, labelKey }) => {
+                {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
                   const subActive =
                     pathname === href || pathname.startsWith(`${href}/`);
                   return (
@@ -563,21 +556,32 @@ export function DashboardShell({
       {/* HLAVNÍ OBSAHOVÁ ČÁST */}
       <div
         className={cn(
-          "relative min-w-0 flex-1",
+          "relative flex min-w-0 flex-1 flex-col",
           lockMainScroll
-            ? "h-screen max-h-screen overflow-hidden"
+            ? "h-dvh max-h-dvh overflow-hidden"
             : "h-full overflow-y-auto",
         )}
       >
+        <MobileTopBar
+          creditsLabel={mobileCreditsLabel}
+          creditsHref={creditsWidgetHref}
+          displayName={displayName}
+          displayEmail={displayEmail}
+          avatarSrc={avatarSrc}
+          initials={initials}
+          onLogout={() => void handleLogout()}
+        />
         <main
           className={cn(
+            "pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0",
             lockMainScroll
-              ? "flex h-full max-h-full min-h-0 flex-col overflow-hidden p-4 md:px-6 md:py-4"
-              : "min-h-full p-4 md:p-6",
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 md:px-6 md:py-4"
+              : "min-h-full flex-1 p-3 sm:p-4 md:p-6",
           )}
         >
           {children}
         </main>
+        <MobileBottomNav activeHref={activeHref} />
       </div>
       <VenegardOnboardingTour
         active={hasSessionData && onboardingTourCompleted === false}
