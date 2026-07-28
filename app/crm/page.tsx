@@ -1595,25 +1595,27 @@ function CrmPageContent() {
                         <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
                         <td className="px-3 py-3 align-top">
                           <div className="flex min-w-0 items-start gap-2">
-                            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                              <span
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p
                                 className={cn(
-                                  "break-words text-sm",
+                                  "truncate whitespace-nowrap text-sm",
                                   emailTrim ? "text-foreground" : "text-muted-foreground",
                                 )}
                                 title={emailTrim || undefined}
                               >
                                 {emailTrim || "Bez emailu"}
-                              </span>
+                              </p>
                               {phoneTrim ? (
-                                <span
-                                  className="break-words text-xs text-muted-foreground"
+                                <p
+                                  className="truncate whitespace-nowrap text-xs text-muted-foreground"
                                   title={phoneTrim}
                                 >
                                   {phoneTrim}
-                                </span>
+                                </p>
                               ) : (
-                                <span className="text-xs text-muted-foreground">Bez telefonu</span>
+                                <p className="truncate whitespace-nowrap text-xs text-muted-foreground">
+                                  Bez telefonu
+                                </p>
                               )}
                             </div>
                             {companyWeb && (!emailTrim || !phoneTrim) ? (
