@@ -202,10 +202,10 @@ function WebsiteVisitedGlobeButton({
         ) : (
           <>
             <p className="text-xs font-semibold leading-snug text-foreground">
-              Otevřít web firmy
+              Otevřít web
             </p>
             <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-              Po první návštěvě zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).
+              Po první návštěvě zezelená.
             </p>
           </>
         )}
