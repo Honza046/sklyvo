@@ -29,6 +29,7 @@ enum LeadSource {
   RADAR
   SNIPER
   MANUAL
+  AUTOPILOT
 }
 
 enum EmailQueueStatus {
@@ -77,6 +78,8 @@ model User {
   /** Obnova zapomenutého hesla: unikátní token s expirací. */
   passwordResetToken     String?   @unique
   passwordResetExpiresAt DateTime?
+
+  emailConnection UserEmailConnection?
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -218,6 +221,11 @@ model Lead {
   /** Odkud lead přišel — řídí list v Google Sheets (Radar / Sniper). */
   source        LeadSource @default(MANUAL)
 
+  /** Kdy někdo z týmu otevřel web firmy (zeměkoule v CRM). */
+  websiteVisitedAt DateTime?
+  /** Kdo web otevřel (např. Jan Sedlář). */
+  websiteVisitedBy String?
+
   /** Poslední odeslaný outreach e-mail. */
   lastContactedAt   DateTime?
   /** Kdy je další follow-up / breakup splatný. */
@@ -247,12 +255,15 @@ model EmailQueue {
   scheduledAt  DateTime
   status       EmailQueueStatus @default(PENDING)
   kind         OutreachKind     @default(INITIAL)
+  /** Kdo mail zařadil — odesílá se z jeho osobního e-mailu (fallback workspace). */
+  senderUserId String?
   sentAt       DateTime?
   errorMessage String?
   createdAt    DateTime         @default(now())
 
   @@index([status, scheduledAt])
   @@index([leadId, status])
+  @@index([senderUserId])
 }
 
 model WorkspaceEmailConnection {
@@ -279,6 +290,32 @@ model WorkspaceEmailConnection {
 
   createdAt   DateTime                  @default(now())
   updatedAt   DateTime                  @updatedAt
+}
+
+/** Osobní odesílací schránka člena týmu (každý má svůj venegard e-mail). */
+model UserEmailConnection {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider    EmailConnectionProvider?
+  status      EmailConnectionStatus     @default(DISCONNECTED)
+
+  senderName  String?
+  senderEmail String?
+  smtpHost    String?
+  smtpPort    Int?
+  smtpSecret  String?                   @db.Text
+
+  googleAccessToken      String?       @db.Text
+  googleRefreshToken     String?       @db.Text
+  googleTokenExpiresAt   DateTime?
+
+  connectedAt DateTime?
+  lastError   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 /** Live mirror of CRM leads into a Google Spreadsheet (App → Sheets). */

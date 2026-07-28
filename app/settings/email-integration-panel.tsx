@@ -43,8 +43,8 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
     initialState.provider === "CUSTOM_SMTP" ? "CUSTOM_SMTP" : "OUTLOOK_SMTP",
   );
   const [form, setForm] = useState({
-    senderName: initialState.senderName ?? "",
-    senderEmail: initialState.senderEmail ?? "",
+    senderName: initialState.senderName ?? initialState.suggestedSenderName ?? "",
+    senderEmail: initialState.senderEmail ?? initialState.suggestedSenderEmail ?? "",
     smtpHost: initialState.smtpHost ?? "smtp.office365.com",
     smtpPort: initialState.smtpPort?.toString() ?? "587",
     appPassword: "",
@@ -54,8 +54,14 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
     setSmtpProvider("CUSTOM_SMTP");
     setForm((prev) => ({
       ...prev,
-      senderEmail: prev.senderEmail.trim() || "jan@venegard.com",
-      senderName: prev.senderName.trim() || "Jan Sedlář",
+      senderEmail:
+        prev.senderEmail.trim() ||
+        state.suggestedSenderEmail?.trim() ||
+        "",
+      senderName:
+        prev.senderName.trim() ||
+        state.suggestedSenderName?.trim() ||
+        "",
       smtpHost: "smtp.seznam.cz",
       smtpPort: "465",
     }));
@@ -65,8 +71,14 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
     setState(initialState);
     setForm((prev) => ({
       ...prev,
-      senderName: initialState.senderName ?? prev.senderName,
-      senderEmail: initialState.senderEmail ?? prev.senderEmail,
+      senderName:
+        initialState.senderName ??
+        initialState.suggestedSenderName ??
+        prev.senderName,
+      senderEmail:
+        initialState.senderEmail ??
+        initialState.suggestedSenderEmail ??
+        prev.senderEmail,
       smtpHost: initialState.smtpHost ?? prev.smtpHost,
       smtpPort: initialState.smtpPort?.toString() ?? prev.smtpPort,
     }));
@@ -209,12 +221,12 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-border/60 bg-background p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-red-100 bg-white dark:border-slate-700 dark:bg-slate-900">
               <span className="text-lg font-bold leading-none">
                 <span className="text-[#4285F4]">G</span>
               </span>
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-semibold">{t("settings.emailIntegration.googleTitle")}</h3>
               <p className="text-xs text-muted-foreground">
                 {t("settings.emailIntegration.googleDescription")}
@@ -232,10 +244,10 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
 
         <div className="rounded-2xl border border-border/60 bg-background p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
               <Mail className="h-5 w-5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-semibold">{t("settings.emailIntegration.smtpTitle")}</h3>
               <p className="text-xs text-muted-foreground">
                 {t("settings.emailIntegration.smtpDescription")}
@@ -280,9 +292,9 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
 
           {form.smtpHost.includes("seznam") && (
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-              Seznam: heslo k{" "}
-              <strong>jan@venegard.com</strong> (nebo heslo aplikace ze Seznam účtu). Host{" "}
+              Seznam: heslo k vašemu venegard e-mailu (nebo heslo aplikace ze Seznam účtu). Host{" "}
               <code className="font-mono">smtp.seznam.cz</code>, port <code className="font-mono">465</code>.
+              Každý člen týmu si připojuje <strong>svůj</strong> účet — maily pak odcházejí z něj.
             </p>
           )}
 

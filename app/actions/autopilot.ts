@@ -154,13 +154,16 @@ export async function queueAutopilotLead(
   );
 
   let workspaceId: string | undefined;
+  let senderUserId: string | undefined;
   if (input.workspaceId?.trim()) {
     if (!verifyInternalWorkspaceToken(input.workspaceId, input.internalToken)) {
       return { error: "Nejste přihlášen." };
     }
     workspaceId = input.workspaceId.trim();
   } else {
-    workspaceId = (await getSessionUser()).user?.workspaceId ?? undefined;
+    const session = await getSessionUser();
+    workspaceId = session.user?.workspaceId ?? undefined;
+    senderUserId = session.user?.id ?? undefined;
   }
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
@@ -208,6 +211,7 @@ export async function queueAutopilotLead(
       scheduledAt,
       status: "PENDING",
       kind: "INITIAL",
+      senderUserId: senderUserId ?? null,
     },
   });
 
@@ -364,6 +368,7 @@ export async function processEmailQueue(
       subject: item.subject,
       html: item.htmlBody,
       workspaceId: item.lead.workspaceId,
+      userId: item.senderUserId ?? undefined,
       internalToken: createInternalWorkspaceToken(item.lead.workspaceId),
     });
 

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { 
   Search, Target, ListOrdered, Loader2, 
-  Globe, Crosshair, Plus, Zap, Check, Mail, Radar, Info
+  Globe, Crosshair, Plus, Zap, Check, Mail, Radio, Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { searchRadarLeads } from "@/app/actions/radar";
@@ -307,7 +307,7 @@ export default function RadarPage() {
         <div className="mb-2 hidden text-center md:block">
           <div className="mb-2 flex items-center justify-center gap-3">
             <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Radar className="h-8 w-8" />
+              <Radio className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">

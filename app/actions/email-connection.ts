@@ -9,7 +9,10 @@ import type {
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-const disconnectedState = (): EmailConnectionState => ({
+const disconnectedState = (extras?: {
+  suggestedSenderName?: string | null;
+  suggestedSenderEmail?: string | null;
+}): EmailConnectionState => ({
   connected: false,
   provider: null,
   status: "DISCONNECTED",
@@ -20,6 +23,9 @@ const disconnectedState = (): EmailConnectionState => ({
   hasSmtpSecret: false,
   connectedAt: null,
   lastError: null,
+  scope: null,
+  suggestedSenderName: extras?.suggestedSenderName ?? null,
+  suggestedSenderEmail: extras?.suggestedSenderEmail ?? null,
 });
 
 function mapConnectionRecord(
@@ -34,9 +40,14 @@ function mapConnectionRecord(
     connectedAt: Date | null;
     lastError: string | null;
   } | null,
+  scope: "user" | "workspace" | null,
+  suggested?: { name?: string | null; email?: string | null },
 ): EmailConnectionState {
-  if (!record) {
-    return disconnectedState();
+  if (!record || record.status === "DISCONNECTED") {
+    return disconnectedState({
+      suggestedSenderName: suggested?.name ?? null,
+      suggestedSenderEmail: suggested?.email ?? null,
+    });
   }
 
   return {
@@ -50,38 +61,52 @@ function mapConnectionRecord(
     hasSmtpSecret: Boolean(record.smtpSecret),
     connectedAt: record.connectedAt?.toISOString() ?? null,
     lastError: record.lastError,
+    scope,
+    suggestedSenderName: suggested?.name ?? null,
+    suggestedSenderEmail: suggested?.email ?? null,
   };
 }
 
+const connectionSelect = {
+  provider: true,
+  status: true,
+  senderName: true,
+  senderEmail: true,
+  smtpHost: true,
+  smtpPort: true,
+  smtpSecret: true,
+  connectedAt: true,
+  lastError: true,
+} as const;
+
+/**
+ * Stav e-mailu pro aktuálního uživatele (osobní schránka).
+ * Workspace connection se tu nezobrazuje — každý si připojuje svůj účet.
+ */
 export async function getEmailConnectionState(): Promise<EmailConnectionState> {
   const session = await getSessionUser();
-  const workspaceId = session.user?.workspaceId;
-  if (!workspaceId) {
+  const userId = session.user?.id;
+  if (!userId) {
     return disconnectedState();
   }
 
-  const record = await prisma.workspaceEmailConnection.findUnique({
-    where: { workspaceId },
-    select: {
-      provider: true,
-      status: true,
-      senderName: true,
-      senderEmail: true,
-      smtpHost: true,
-      smtpPort: true,
-      smtpSecret: true,
-      connectedAt: true,
-      lastError: true,
-    },
+  const suggested = {
+    name: session.user?.name ?? null,
+    email: session.user?.email ?? null,
+  };
+
+  const record = await prisma.userEmailConnection.findUnique({
+    where: { userId },
+    select: connectionSelect,
   });
 
-  return mapConnectionRecord(record);
+  return mapConnectionRecord(record, "user", suggested);
 }
 
 export async function saveSmtpEmailConnection(input: SaveSmtpConnectionInput) {
   const session = await getSessionUser();
-  const workspaceId = session.user?.workspaceId;
-  if (!workspaceId) {
+  const userId = session.user?.id;
+  if (!userId) {
     return { error: "Nejste přihlášen." };
   }
 
@@ -102,10 +127,10 @@ export async function saveSmtpEmailConnection(input: SaveSmtpConnectionInput) {
   if (!appPassword) return { error: "Heslo aplikace je povinné." };
 
   try {
-    await prisma.workspaceEmailConnection.upsert({
-      where: { workspaceId },
+    await prisma.userEmailConnection.upsert({
+      where: { userId },
       create: {
-        workspaceId,
+        userId,
         provider: input.provider,
         status: "CONNECTED",
         senderName,
@@ -143,16 +168,16 @@ export async function saveSmtpEmailConnection(input: SaveSmtpConnectionInput) {
 
 export async function disconnectEmailConnection() {
   const session = await getSessionUser();
-  const workspaceId = session.user?.workspaceId;
-  if (!workspaceId) {
+  const userId = session.user?.id;
+  if (!userId) {
     return { error: "Nejste přihlášen." };
   }
 
   try {
-    await prisma.workspaceEmailConnection.upsert({
-      where: { workspaceId },
+    await prisma.userEmailConnection.upsert({
+      where: { userId },
       create: {
-        workspaceId,
+        userId,
         status: "DISCONNECTED",
       },
       update: {
@@ -182,7 +207,7 @@ export async function disconnectEmailConnection() {
 
 export async function getGoogleEmailOAuthUrl() {
   const session = await getSessionUser();
-  if (!session.user?.workspaceId) {
+  if (!session.user?.id) {
     return { error: "Nejste přihlášen." };
   }
 
@@ -208,7 +233,7 @@ export async function getGoogleEmailOAuthUrl() {
       "https://www.googleapis.com/auth/gmail.send",
       "https://www.googleapis.com/auth/userinfo.email",
     ].join(" "),
-    state: session.user.workspaceId,
+    state: `user:${session.user.id}`,
   });
 
   return {

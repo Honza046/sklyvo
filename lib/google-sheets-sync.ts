@@ -42,6 +42,7 @@ const SOURCE_TOOL_LABEL: Record<string, string> = {
   RADAR: "Radar",
   SNIPER: "Sniper",
   MANUAL: "Manuální",
+  AUTOPILOT: "Autopilot",
 };
 
 const pendingSync = new Map<string, ReturnType<typeof setTimeout>>();
@@ -888,7 +889,7 @@ export async function writeSplitOutreachSheets(input: {
   });
 
   const radarRows = leads
-    .filter((l) => l.source === "RADAR")
+    .filter((l) => l.source === "RADAR" || l.source === "AUTOPILOT")
     .map((l) => leadToOutreachRow(l, (l.author ?? author).trim() || author));
   const sniperRows = leads
     .filter((l) => l.source === "SNIPER" || l.source === "MANUAL")

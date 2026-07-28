@@ -287,7 +287,7 @@ export const en: MessageTree = {
     },
     emailIntegration: {
       description:
-        "Connect the company mailbox Autopilot will send outreach from. Without it, Autopilot stays inactive.",
+        "Connect your own venegard mailbox for outreach. Each teammate has a personal inbox — Autopilot and Sniper send from your account.",
       statusConnected: "✅ Connected — Autopilot is active",
       statusDisconnected: "⚠️ Not connected — Autopilot is inactive",
       disconnect: "Disconnect",
@@ -301,7 +301,7 @@ export const en: MessageTree = {
       smtpDescription: "Manual setup with SMTP server and app password.",
       customSmtp: "Custom SMTP",
       senderName: "Sender name",
-      senderEmail: "Company email",
+      senderEmail: "Your company email",
       smtpHost: "SMTP server",
       smtpPort: "SMTP port",
       appPassword: "App password",

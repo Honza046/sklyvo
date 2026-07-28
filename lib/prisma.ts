@@ -1,52 +1,102 @@
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient, Prisma } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
 
 /** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "outreach-lead-favicon-v1";
+const PRISMA_SCHEMA_FINGERPRINT = "outreach-user-email-connection-v1";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
 };
 
-const prismaClientSingleton = (): PrismaClient => {
-  const pool = new Pool({ connectionString });
-  const adapter = new PrismaPg(pool);
-  const client = new PrismaClient({ adapter }) as PrismaSingleton;
-  client.__fingerprint = PRISMA_SCHEMA_FINGERPRINT;
-  return client;
-};
-
 declare global {
+  // eslint-disable-next-line no-var
   var prisma: undefined | PrismaClient;
+  // eslint-disable-next-line no-var
+  var __prismaPool: undefined | Pool;
+}
+
+function generatedSchemaHasLeadField(field: string): boolean {
+  try {
+    const lead = Prisma.dmmf.datamodel.models.find((model) => model.name === "Lead");
+    return Boolean(lead?.fields.some((f) => f.name === field));
+  } catch {
+    return true;
+  }
 }
 
 function runtimeModelHasField(client: PrismaClient, model: string, field: string): boolean {
   try {
-    const runtime = (client as unknown as {
-      _runtimeDataModel?: { models?: Record<string, { fields?: Record<string, unknown> }> };
-    })._runtimeDataModel;
+    const runtime = (
+      client as unknown as {
+        _runtimeDataModel?: {
+          models?: Record<
+            string,
+            {
+              fields?:
+                | Record<string, unknown>
+                | Array<{ name?: string }>
+            }
+          >;
+        };
+      }
+    )._runtimeDataModel;
     const fields = runtime?.models?.[model]?.fields;
     if (!fields) return true;
+    if (Array.isArray(fields)) {
+      return fields.some((f) => f?.name === field);
+    }
     return field in fields;
   } catch {
     return true;
   }
 }
 
-/** Dev HMR can keep an outdated client after `prisma generate` — recreate if delegates are missing. */
+function disposePrismaClient(client: PrismaClient | undefined) {
+  if (!client) return;
+  void client.$disconnect().catch(() => undefined);
+}
+
+const prismaClientSingleton = (): PrismaClient => {
+  disposePrismaClient(globalThis.prisma);
+  if (globalThis.__prismaPool) {
+    void globalThis.__prismaPool.end().catch(() => undefined);
+  }
+
+  const pool = new Pool({ connectionString });
+  globalThis.__prismaPool = pool;
+  const adapter = new PrismaPg(pool);
+  const client = new PrismaClient({ adapter }) as PrismaSingleton;
+  client.__fingerprint = PRISMA_SCHEMA_FINGERPRINT;
+  return client;
+};
+
+/** Dev HMR can keep an outdated client after `prisma generate` — recreate if schema drifted. */
 function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (!client) return true;
+
   const fingerprinted = client as PrismaSingleton;
   if (fingerprinted.__fingerprint !== PRISMA_SCHEMA_FINGERPRINT) {
+    return true;
+  }
+
+  // Generated package itself is behind (should not happen after prisma generate).
+  if (!generatedSchemaHasLeadField("websiteVisitedAt")) {
+    return true;
+  }
+
+  if (!runtimeModelHasField(client, "Lead", "websiteVisitedAt")) {
     return true;
   }
   if (!runtimeModelHasField(client, "Lead", "author")) {
     return true;
   }
   if (!runtimeModelHasField(client, "Lead", "faviconUrl")) {
+    return true;
+  }
+  if (!runtimeModelHasField(client, "Lead", "source")) {
     return true;
   }
   if (!runtimeModelHasField(client, "RadarSettings", "radarCronEnabled")) {
@@ -58,9 +108,11 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (!runtimeModelHasField(client, "RadarSettings", "minCompaniesPerRun")) {
     return true;
   }
+
   return (
     !("radarSettings" in client) ||
     !("emailQueue" in client) ||
+    !("userEmailConnection" in client) ||
     !("workspaceEmailConnection" in client) ||
     !("workspaceGoogleSheetsConnection" in client)
   );
@@ -68,7 +120,10 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
 
 function getPrismaClient(): PrismaClient {
   if (process.env.NODE_ENV === "production") {
-    return globalThis.prisma ?? prismaClientSingleton();
+    if (!globalThis.prisma) {
+      globalThis.prisma = prismaClientSingleton();
+    }
+    return globalThis.prisma;
   }
 
   if (isStalePrismaClient(globalThis.prisma)) {
@@ -78,4 +133,14 @@ function getPrismaClient(): PrismaClient {
   return globalThis.prisma!;
 }
 
-export const prisma: PrismaClient = getPrismaClient();
+/**
+ * Always resolve through getPrismaClient() so HMR / prisma generate
+ * cannot leave callers stuck on a stale singleton export.
+ */
+export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop, receiver) {
+    const client = getPrismaClient();
+    const value = Reflect.get(client, prop, receiver);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});

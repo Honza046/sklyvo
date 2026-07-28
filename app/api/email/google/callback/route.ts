@@ -1,13 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+function parseOAuthState(raw: string | null): { userId?: string; workspaceId?: string } {
+  const value = (raw ?? "").trim();
+  if (!value) return {};
+  if (value.startsWith("user:")) {
+    return { userId: value.slice("user:".length).trim() || undefined };
+  }
+  // Legacy: state = workspaceId
+  return { workspaceId: value };
+}
+
 export async function GET(request: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const settingsUrl = new URL("/settings", appUrl);
   settingsUrl.hash = "email-integration";
 
   const code = request.nextUrl.searchParams.get("code");
-  const workspaceId = request.nextUrl.searchParams.get("state");
+  const state = parseOAuthState(request.nextUrl.searchParams.get("state"));
   const oauthError = request.nextUrl.searchParams.get("error");
 
   if (oauthError) {
@@ -15,7 +25,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(settingsUrl);
   }
 
-  if (!code || !workspaceId) {
+  if (!code || (!state.userId && !state.workspaceId)) {
     settingsUrl.searchParams.set(
       "emailError",
       encodeURIComponent("Chybí autorizační kód od Google."),
@@ -74,48 +84,92 @@ export async function GET(request: NextRequest) {
         ? new Date(Date.now() + tokenJson.expires_in * 1000)
         : null;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'D',location:'google/callback/route.ts:tokens',message:'Google OAuth tokens received',data:{hasAccessToken:Boolean(tokenJson.access_token),hasRefreshToken:Boolean(tokenJson.refresh_token),willPreserveExistingRefresh:!tokenJson.refresh_token},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
+    if (state.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: state.userId },
+        select: { id: true },
+      });
+      if (!user) {
+        settingsUrl.searchParams.set(
+          "emailError",
+          encodeURIComponent("Uživatel pro Google propojení nebyl nalezen."),
+        );
+        return NextResponse.redirect(settingsUrl);
+      }
 
-    const existing = await prisma.workspaceEmailConnection.findUnique({
-      where: { workspaceId },
-      select: { googleRefreshToken: true },
-    });
-    const refreshToken =
-      tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
+      const existing = await prisma.userEmailConnection.findUnique({
+        where: { userId: state.userId },
+        select: { googleRefreshToken: true },
+      });
+      const refreshToken = tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
 
-    await prisma.workspaceEmailConnection.upsert({
-      where: { workspaceId },
-      create: {
-        workspaceId,
-        provider: "GOOGLE",
-        status: "CONNECTED",
-        senderName: profile.name?.trim() || null,
-        senderEmail: profile.email?.trim() || null,
-        googleAccessToken: tokenJson.access_token,
-        googleRefreshToken: refreshToken,
-        googleTokenExpiresAt: expiresAt,
-        connectedAt: new Date(),
-        lastError: null,
-      },
-      update: {
-        provider: "GOOGLE",
-        status: "CONNECTED",
-        senderName: profile.name?.trim() || null,
-        senderEmail: profile.email?.trim() || null,
-        smtpHost: null,
-        smtpPort: null,
-        smtpSecret: null,
-        googleAccessToken: tokenJson.access_token,
-        ...(tokenJson.refresh_token
-          ? { googleRefreshToken: tokenJson.refresh_token }
-          : {}),
-        googleTokenExpiresAt: expiresAt,
-        connectedAt: new Date(),
-        lastError: null,
-      },
-    });
+      await prisma.userEmailConnection.upsert({
+        where: { userId: state.userId },
+        create: {
+          userId: state.userId,
+          provider: "GOOGLE",
+          status: "CONNECTED",
+          senderName: profile.name?.trim() || null,
+          senderEmail: profile.email?.trim() || null,
+          googleAccessToken: tokenJson.access_token,
+          googleRefreshToken: refreshToken,
+          googleTokenExpiresAt: expiresAt,
+          connectedAt: new Date(),
+          lastError: null,
+        },
+        update: {
+          provider: "GOOGLE",
+          status: "CONNECTED",
+          senderName: profile.name?.trim() || null,
+          senderEmail: profile.email?.trim() || null,
+          smtpHost: null,
+          smtpPort: null,
+          smtpSecret: null,
+          googleAccessToken: tokenJson.access_token,
+          ...(tokenJson.refresh_token ? { googleRefreshToken: tokenJson.refresh_token } : {}),
+          googleTokenExpiresAt: expiresAt,
+          connectedAt: new Date(),
+          lastError: null,
+        },
+      });
+    } else if (state.workspaceId) {
+      // Legacy workspace-level OAuth (starší odkazy)
+      const existing = await prisma.workspaceEmailConnection.findUnique({
+        where: { workspaceId: state.workspaceId },
+        select: { googleRefreshToken: true },
+      });
+      const refreshToken = tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
+
+      await prisma.workspaceEmailConnection.upsert({
+        where: { workspaceId: state.workspaceId },
+        create: {
+          workspaceId: state.workspaceId,
+          provider: "GOOGLE",
+          status: "CONNECTED",
+          senderName: profile.name?.trim() || null,
+          senderEmail: profile.email?.trim() || null,
+          googleAccessToken: tokenJson.access_token,
+          googleRefreshToken: refreshToken,
+          googleTokenExpiresAt: expiresAt,
+          connectedAt: new Date(),
+          lastError: null,
+        },
+        update: {
+          provider: "GOOGLE",
+          status: "CONNECTED",
+          senderName: profile.name?.trim() || null,
+          senderEmail: profile.email?.trim() || null,
+          smtpHost: null,
+          smtpPort: null,
+          smtpSecret: null,
+          googleAccessToken: tokenJson.access_token,
+          ...(tokenJson.refresh_token ? { googleRefreshToken: tokenJson.refresh_token } : {}),
+          googleTokenExpiresAt: expiresAt,
+          connectedAt: new Date(),
+          lastError: null,
+        },
+      });
+    }
 
     settingsUrl.searchParams.set("emailConnected", "google");
     return NextResponse.redirect(settingsUrl);

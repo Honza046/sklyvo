@@ -85,6 +85,65 @@ export function appendEmailSignatureIfMissing(body: string, signature: string): 
   return `${normalizedBody}\n\n${trimmedSignature}`;
 }
 
+/**
+ * Sdílený workspace podpis (kontaktní údaje) personalizuje na přihlášeného člena týmu.
+ * Jméno + e-mail vždy z aktuálního uživatele; web/telefon z šablony.
+ */
+export function personalizeEmailSignature(
+  template: string,
+  opts: { fullName: string; senderEmail?: string | null },
+): string {
+  const fullName = opts.fullName.trim();
+  const senderEmail = opts.senderEmail?.trim() || "";
+  const raw = template.trim();
+  if (!raw) {
+    return fullName
+      ? `S pozdravem,\n\n${fullName}`
+      : "";
+  }
+
+  const lines = raw.split(/\r?\n/);
+  const greetingIdx = lines.findIndex((line) =>
+    /^s\s+(pozdravem|úctou)\b/i.test(line.trim()),
+  );
+
+  let nameReplaced = false;
+  const out = lines.map((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) return line;
+
+    if (senderEmail && EMAIL_REGEX.test(trimmed)) {
+      EMAIL_REGEX.lastIndex = 0;
+      return trimmed.replace(EMAIL_REGEX, senderEmail);
+    }
+
+    const looksLikeContact =
+      EMAIL_REGEX.test(trimmed) ||
+      PHONE_REGEX.test(trimmed) ||
+      /^(https?:\/\/|www\.)/i.test(trimmed) ||
+      /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(trimmed);
+    EMAIL_REGEX.lastIndex = 0;
+    PHONE_REGEX.lastIndex = 0;
+
+    if (looksLikeContact || !fullName) return line;
+
+    // První „jmenný“ řádek po pozdravu → jméno přihlášeného
+    if (!nameReplaced && greetingIdx >= 0 && index > greetingIdx) {
+      nameReplaced = true;
+      return fullName;
+    }
+
+    return line;
+  });
+
+  if (!nameReplaced && fullName && greetingIdx >= 0) {
+    out.splice(greetingIdx + 1, 0, "", fullName);
+  }
+
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")

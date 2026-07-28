@@ -3,7 +3,7 @@
 import { Suspense, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Wand2, Loader2, Mail, Globe, FileText, Send, Copy, Settings2, RefreshCw, Target, Info, X, ExternalLink } from "lucide-react";
+import { Wand2, Loader2, Mail, Globe, FileText, Send, Copy, Settings2, RefreshCw, Crosshair, Info, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -525,7 +525,7 @@ function SniperContent() {
         <div className="mb-2 hidden space-y-1 text-center md:mb-2 md:block md:space-y-1">
           <div className="mb-2 flex items-center justify-center gap-3">
             <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Target className="h-8 w-8" />
+              <Crosshair className="h-8 w-8" />
             </div>
           </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">

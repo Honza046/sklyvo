@@ -11,7 +11,7 @@ import {
   type SmtpTransportBundle,
 } from "@/lib/seznam-imap-sent";
 
-type WorkspaceEmailConnectionRecord = {
+type EmailConnectionRecord = {
   provider: "GOOGLE" | "OUTLOOK_SMTP" | "CUSTOM_SMTP" | null;
   status: "DISCONNECTED" | "CONNECTED" | "ERROR";
   senderName: string | null;
@@ -24,13 +24,32 @@ type WorkspaceEmailConnectionRecord = {
   googleTokenExpiresAt: Date | null;
 };
 
+type ConnectionOwner =
+  | { kind: "user"; userId: string }
+  | { kind: "workspace"; workspaceId: string };
+
 export type WorkspaceSendEmailInput = {
   workspaceId: string;
+  /** Preferovaná osobní schránka odesílatele. */
+  userId?: string | null;
   to: string;
   subject: string;
   html: string;
   text?: string;
 };
+
+const connectionSelect = {
+  provider: true,
+  status: true,
+  senderName: true,
+  senderEmail: true,
+  smtpHost: true,
+  smtpPort: true,
+  smtpSecret: true,
+  googleAccessToken: true,
+  googleRefreshToken: true,
+  googleTokenExpiresAt: true,
+} as const;
 
 function formatFromAddress(senderName: string | null | undefined, senderEmail: string): string {
   const email = senderEmail.trim();
@@ -45,29 +64,73 @@ function isValidRecipient(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function isConnected(record: EmailConnectionRecord | null): record is EmailConnectionRecord {
+  return Boolean(record && record.status === "CONNECTED" && record.provider);
+}
+
+async function loadUserConnection(userId: string): Promise<EmailConnectionRecord | null> {
+  return prisma.userEmailConnection.findUnique({
+    where: { userId },
+    select: connectionSelect,
+  });
+}
+
 async function loadWorkspaceConnection(
   workspaceId: string,
-): Promise<WorkspaceEmailConnectionRecord | null> {
+): Promise<EmailConnectionRecord | null> {
   return prisma.workspaceEmailConnection.findUnique({
     where: { workspaceId },
-    select: {
-      provider: true,
-      status: true,
-      senderName: true,
-      senderEmail: true,
-      smtpHost: true,
-      smtpPort: true,
-      smtpSecret: true,
-      googleAccessToken: true,
-      googleRefreshToken: true,
-      googleTokenExpiresAt: true,
-    },
+    select: connectionSelect,
+  });
+}
+
+async function resolveOutboundConnection(
+  workspaceId: string,
+  userId?: string | null,
+): Promise<{ connection: EmailConnectionRecord; owner: ConnectionOwner } | null> {
+  if (userId?.trim()) {
+    const userConnection = await loadUserConnection(userId.trim());
+    if (isConnected(userConnection)) {
+      return { connection: userConnection, owner: { kind: "user", userId: userId.trim() } };
+    }
+  }
+
+  const workspaceConnection = await loadWorkspaceConnection(workspaceId);
+  if (isConnected(workspaceConnection)) {
+    return {
+      connection: workspaceConnection,
+      owner: { kind: "workspace", workspaceId },
+    };
+  }
+
+  return null;
+}
+
+async function persistConnectionUpdate(
+  owner: ConnectionOwner,
+  data: {
+    googleAccessToken?: string;
+    googleTokenExpiresAt?: Date | null;
+    lastError?: string | null;
+    status?: "CONNECTED" | "ERROR" | "DISCONNECTED";
+  },
+) {
+  if (owner.kind === "user") {
+    await prisma.userEmailConnection.update({
+      where: { userId: owner.userId },
+      data,
+    });
+    return;
+  }
+  await prisma.workspaceEmailConnection.update({
+    where: { workspaceId: owner.workspaceId },
+    data,
   });
 }
 
 async function refreshGoogleAccessToken(
-  workspaceId: string,
-  connection: WorkspaceEmailConnectionRecord,
+  owner: ConnectionOwner,
+  connection: EmailConnectionRecord,
 ): Promise<string | null> {
   const clientId = process.env.GOOGLE_EMAIL_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_EMAIL_CLIENT_SECRET?.trim();
@@ -104,21 +167,18 @@ async function refreshGoogleAccessToken(
       ? new Date(Date.now() + json.expires_in * 1000)
       : null;
 
-  await prisma.workspaceEmailConnection.update({
-    where: { workspaceId },
-    data: {
-      googleAccessToken: json.access_token,
-      googleTokenExpiresAt: expiresAt,
-      lastError: null,
-    },
+  await persistConnectionUpdate(owner, {
+    googleAccessToken: json.access_token,
+    googleTokenExpiresAt: expiresAt,
+    lastError: null,
   });
 
   return json.access_token;
 }
 
 async function resolveGoogleAccessToken(
-  workspaceId: string,
-  connection: WorkspaceEmailConnectionRecord,
+  owner: ConnectionOwner,
+  connection: EmailConnectionRecord,
 ): Promise<string | null> {
   const expiresAt = connection.googleTokenExpiresAt;
   const stillValid =
@@ -130,29 +190,24 @@ async function resolveGoogleAccessToken(
     return connection.googleAccessToken;
   }
 
-  return refreshGoogleAccessToken(workspaceId, connection);
+  return refreshGoogleAccessToken(owner, connection);
 }
 
-async function createWorkspaceTransporter(
-  workspaceId: string,
-  connection: WorkspaceEmailConnectionRecord,
+async function createOutboundTransporter(
+  owner: ConnectionOwner,
+  connection: EmailConnectionRecord,
 ): Promise<SmtpTransportBundle | { transporter: Transporter; from: string } | { error: string }> {
   const senderEmail = connection.senderEmail?.trim() ?? "";
   if (!senderEmail || !isValidRecipient(senderEmail)) {
-    return { error: "Chybí platná adresa odesílatele v nastavení pracovního prostoru." };
+    return { error: "Chybí platná adresa odesílatele v nastavení e-mailu." };
   }
 
   const from = formatFromAddress(connection.senderName, senderEmail);
 
-  if (
-    connection.provider === "OUTLOOK_SMTP" ||
-    connection.provider === "CUSTOM_SMTP"
-  ) {
+  if (connection.provider === "OUTLOOK_SMTP" || connection.provider === "CUSTOM_SMTP") {
     const host = connection.smtpHost?.trim();
     const port = connection.smtpPort;
-    const secret = connection.smtpSecret
-      ? decryptEmailSecret(connection.smtpSecret)
-      : null;
+    const secret = connection.smtpSecret ? decryptEmailSecret(connection.smtpSecret) : null;
 
     if (!host || !port) {
       return { error: "SMTP server není kompletně nakonfigurován." };
@@ -182,10 +237,10 @@ async function createWorkspaceTransporter(
   }
 
   if (connection.provider === "GOOGLE") {
-    const accessToken = await resolveGoogleAccessToken(workspaceId, connection);
+    const accessToken = await resolveGoogleAccessToken(owner, connection);
     if (!accessToken) {
       return {
-        error: "Google přístup vypršel. Znovu propojte firemní e-mail v Pracovním prostoru.",
+        error: "Google přístup vypršel. Znovu propojte svůj e-mail v Pracovním prostoru.",
       };
     }
 
@@ -240,6 +295,7 @@ async function syncSeznamSentFolder(
 
 export async function sendWorkspaceEmail({
   workspaceId,
+  userId,
   to,
   subject,
   html,
@@ -250,16 +306,17 @@ export async function sendWorkspaceEmail({
     return { success: false, error: "Neplatná e-mailová adresa příjemce." };
   }
 
-  const connection = await loadWorkspaceConnection(workspaceId);
-  if (!connection || connection.status !== "CONNECTED" || !connection.provider) {
+  const resolved = await resolveOutboundConnection(workspaceId, userId);
+  if (!resolved) {
     return {
       success: false,
       error:
-        "Firemní e-mail není propojen. Propojte Google nebo SMTP v Pracovním prostoru před odesláním.",
+        "E-mail není propojen. Každý člen si v Pracovním prostoru připojí svůj venegard e-mail (Google nebo SMTP).",
     };
   }
 
-  const transportResult = await createWorkspaceTransporter(workspaceId, connection);
+  const { connection, owner } = resolved;
+  const transportResult = await createOutboundTransporter(owner, connection);
   if ("error" in transportResult) {
     console.error(`[workspace-mailer] ${workspaceId}: ${transportResult.error}`);
     return { success: false, error: transportResult.error };
@@ -288,21 +345,13 @@ export async function sendWorkspaceEmail({
 
         console.error(`[workspace-mailer] Seznam IMAP sync failed for ${workspaceId}:`, imapMessage);
 
-        await prisma.workspaceEmailConnection
-          .update({
-            where: { workspaceId },
-            data: {
-              lastError: `E-mail odeslán, ale kopie v Odeslané se nepodařila uložit: ${imapMessage}`,
-            },
-          })
-          .catch(() => undefined);
+        await persistConnectionUpdate(owner, {
+          lastError: `E-mail odeslán, ale kopie v Odeslané se nepodařila uložit: ${imapMessage}`,
+        }).catch(() => undefined);
       }
     }
 
-    await prisma.workspaceEmailConnection.update({
-      where: { workspaceId },
-      data: { lastError: null, status: "CONNECTED" },
-    });
+    await persistConnectionUpdate(owner, { lastError: null, status: "CONNECTED" });
 
     return { success: true, id: info.messageId ?? null };
   } catch (error) {
@@ -311,12 +360,9 @@ export async function sendWorkspaceEmail({
 
     console.error(`[workspace-mailer] send failed for ${workspaceId}:`, message);
 
-    await prisma.workspaceEmailConnection
-      .update({
-        where: { workspaceId },
-        data: { lastError: message, status: "ERROR" },
-      })
-      .catch(() => undefined);
+    await persistConnectionUpdate(owner, { lastError: message, status: "ERROR" }).catch(
+      () => undefined,
+    );
 
     return { success: false, error: message };
   } finally {

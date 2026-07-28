@@ -100,7 +100,7 @@ export function AiBehaviorSettingsForm({
           htmlFor="email-signature"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Podpis na konci zprávy (Sniper)
+          Podpis — kontaktní šablona (Sniper)
         </Label>
         <Textarea
           id="email-signature"
@@ -110,7 +110,7 @@ export function AiBehaviorSettingsForm({
           className="min-h-[100px] resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-none outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-border/60 dark:bg-background dark:text-foreground"
         />
         <p className="text-[10px] text-muted-foreground">
-          Formát: S pozdravem → prázdný řádek → jméno → prázdný řádek → web, telefon a e-mail každý zvlášť.
+          Jméno a e-mail v podpisu se berou z přihlášeného člena týmu. Tady nastavte hlavně společný web / telefon (šablona).
         </p>
       </div>
 

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Lead" ADD COLUMN IF NOT EXISTS "websiteVisitedAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "websiteVisitedBy" TEXT;

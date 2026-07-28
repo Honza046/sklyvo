@@ -3,6 +3,7 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
+import { authorFromSessionName, type LeadSourceValue } from "@/lib/lead-provenance";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -29,6 +30,9 @@ type CrmLead = {
   email: string;
   phone: string;
   author: string;
+  source: LeadSourceValue;
+  websiteVisited: boolean;
+  websiteVisitedBy: string;
   lastContactedAt: string | null;
   nextOutreachAt: string | null;
   nextOutreachKind: "INITIAL" | "FOLLOW_UP" | "BREAKUP" | null;
@@ -89,6 +93,9 @@ export async function getLeads() {
       contactPhone: true,
       status: true,
       author: true,
+      source: true,
+      websiteVisitedAt: true,
+      websiteVisitedBy: true,
       createdAt: true,
       value: true,
       lastContactedAt: true,
@@ -105,6 +112,7 @@ export async function getLeads() {
         nextAt <= now &&
         (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
     );
+    const source = (lead.source ?? "MANUAL") as LeadSourceValue;
     return {
       id: lead.id,
       company: lead.companyName,
@@ -120,6 +128,9 @@ export async function getLeads() {
       email: (lead.contactEmail ?? lead.email ?? "").trim(),
       phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
       author: (lead.author ?? "").trim(),
+      source,
+      websiteVisited: Boolean(lead.websiteVisitedAt),
+      websiteVisitedBy: (lead.websiteVisitedBy ?? "").trim(),
       lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
       nextOutreachAt: lead.nextOutreachAt?.toISOString() ?? null,
       nextOutreachKind: lead.nextOutreachKind,
@@ -156,6 +167,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
   const email = input.email?.trim() || null;
   const contactPhone = input.phone?.trim() || null;
   const countryCode = normalizeCountryCode(input.countryCode);
+  const author = authorFromSessionName(session.user?.name);
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -167,6 +179,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
       contactPhone,
       status: "NEW",
       source: "RADAR",
+      author,
       workspaceId: session.workspace.id,
       industry: null,
       countryCode,
@@ -213,6 +226,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
 
   const ce = data.contactEmail?.trim() || null;
   const cp = data.contactPhone?.trim() || null;
+  const author = authorFromSessionName(session.user?.name);
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -225,6 +239,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
       value,
       status: "NEW",
       source: "MANUAL",
+      author,
       workspaceId: session.workspace.id,
       industry: null,
     } as any,
@@ -260,6 +275,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
 
   const { normalizeCountryCode } = await import("@/lib/country-language");
   const workspaceId = session.workspace.id;
+  const author = authorFromSessionName(session.user?.name);
   const normalized = leads
     .map((lead) => {
       const companyName = (lead.companyName ?? lead.name ?? "").trim();
@@ -309,6 +325,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     contactPhone: string | null;
     status: "NEW";
     source: "RADAR";
+    author: string | null;
     workspaceId: string;
     industry: null;
     contactEmail: string | null;
@@ -337,6 +354,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       contactEmail: lead.email,
       status: "NEW",
       source: "RADAR" as const,
+      author,
       workspaceId,
       industry: null,
       countryCode: lead.countryCode,
@@ -491,6 +509,54 @@ export async function updateLeadDetails(
     scheduleCrmSheetsSync(session.workspace.id);
   }
   return { success: true as const, updatedCount: result.count };
+}
+
+export async function markLeadWebsiteVisited(id: string) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const leadId = id?.trim();
+  if (!leadId) {
+    return { error: "Chybí ID leadu." };
+  }
+
+  const visitedBy = authorFromSessionName(session.user?.name);
+  const result = await prisma.lead.updateMany({
+    where: {
+      id: leadId,
+      workspaceId: session.workspace.id,
+      websiteVisitedAt: null,
+    },
+    data: {
+      websiteVisitedAt: new Date(),
+      websiteVisitedBy: visitedBy,
+    },
+  });
+
+  // Už bylo označené — vrať success, ať UI zůstane zelené.
+  if (result.count === 0) {
+    const existing = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId: session.workspace.id },
+      select: { websiteVisitedAt: true, websiteVisitedBy: true },
+    });
+    if (!existing) {
+      return { error: "Firma v CRM nebyla nalezena." };
+    }
+    return {
+      success: true as const,
+      alreadyVisited: true as const,
+      websiteVisitedBy: (existing.websiteVisitedBy ?? "").trim(),
+    };
+  }
+
+  revalidatePath("/crm");
+  return {
+    success: true as const,
+    alreadyVisited: false as const,
+    websiteVisitedBy: visitedBy ?? "",
+  };
 }
 
 export async function updateSingleLeadStatus(id: string, status: LeadStatusInput) {

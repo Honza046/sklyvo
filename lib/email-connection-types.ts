@@ -13,6 +13,11 @@ export type EmailConnectionState = {
   hasSmtpSecret: boolean;
   connectedAt: string | null;
   lastError: string | null;
+  /** Osobní schránka uživatele, nebo sdílený fallback workspace. */
+  scope: "user" | "workspace" | null;
+  /** Předvyplnění formuláře (jméno / login e-mail). */
+  suggestedSenderName: string | null;
+  suggestedSenderEmail: string | null;
 };
 
 export type SaveSmtpConnectionInput = {

@@ -14,13 +14,15 @@ type SendEmailInput = {
   subject: string;
   html: string;
   text?: string;
+  /** Preferovaná osobní schránka (jinak session user / workspace fallback). */
+  userId?: string;
   /** Pouze s platným internalToken (server-side). */
   workspaceId?: string;
   internalToken?: string;
 };
 
 /**
- * Odešle outreach e-mail přes propojený firemní účet (SMTP / Google OAuth).
+ * Odešle outreach e-mail přes propojený účet (osobní → workspace fallback).
  * Workspace ze session, nebo ověřený internal token (cron / fronta).
  */
 export async function sendEmail({
@@ -28,10 +30,12 @@ export async function sendEmail({
   subject,
   html,
   text,
+  userId,
   workspaceId,
   internalToken,
 }: SendEmailInput): Promise<SendEmailResult> {
   let resolvedWorkspaceId: string | undefined;
+  let resolvedUserId: string | undefined = userId?.trim() || undefined;
 
   if (workspaceId?.trim()) {
     if (!verifyInternalWorkspaceToken(workspaceId, internalToken)) {
@@ -41,6 +45,9 @@ export async function sendEmail({
   } else {
     const session = await getSessionUser();
     resolvedWorkspaceId = session.user?.workspaceId ?? undefined;
+    if (!resolvedUserId) {
+      resolvedUserId = session.user?.id ?? undefined;
+    }
   }
 
   if (!resolvedWorkspaceId) {
@@ -49,6 +56,7 @@ export async function sendEmail({
 
   return sendWorkspaceEmail({
     workspaceId: resolvedWorkspaceId,
+    userId: resolvedUserId,
     to,
     subject,
     html,

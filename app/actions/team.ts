@@ -112,9 +112,45 @@ export async function inviteTeamMember(input: {
     if (existing.workspaceId === workspaceId) {
       return { error: "Tento uživatel už je ve vašem workspace." };
     }
+
+    // Google / self-signup často vytvoří vlastní prázdný workspace.
+    // Solo vlastníka můžeme přesunout do Agency týmu.
+    const otherMemberCount = await prisma.user.count({
+      where: { workspaceId: existing.workspaceId },
+    });
+    if (otherMemberCount > 1) {
+      return {
+        error:
+          "Tento e-mail už má účet v jiném workspace. Pozvěte ho až po odchodu z původního týmu, nebo vytvořte nový účet.",
+      };
+    }
+
+    const oldWorkspaceId = existing.workspaceId;
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        workspaceId,
+        role,
+        ...(input.name?.trim() ? { name: input.name.trim() } : {}),
+      },
+    });
+
+    // Smaž opuštěný sólo workspace, pokud už nemá členy / data není kritické.
+    try {
+      const leftover = await prisma.user.count({ where: { workspaceId: oldWorkspaceId } });
+      if (leftover === 0) {
+        await prisma.workspace.delete({ where: { id: oldWorkspaceId } });
+      }
+    } catch (err) {
+      console.error("inviteTeamMember: could not delete empty workspace", err);
+    }
+
+    revalidatePath("/settings");
     return {
-      error:
-        "Tento e-mail už má účet v jiném workspace. Pozvěte ho až po odchodu z původního týmu, nebo vytvořte nový účet.",
+      success: true as const,
+      mode: "moved" as const,
+      email: existing.email,
+      name: (existing.name ?? "").trim() || name,
     };
   }
 

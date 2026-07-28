@@ -14,7 +14,7 @@ import {
   parseForbiddenWordsFromStoredSystemPrompt,
   parseStoredAiBehaviorSettings,
 } from "@/lib/ai-behavior-settings";
-import { plainTextToHtml, plainTextToMimeText, appendEmailSignatureIfMissing } from "@/lib/email-format";
+import { plainTextToHtml, plainTextToMimeText, appendEmailSignatureIfMissing, personalizeEmailSignature } from "@/lib/email-format";
 import { sendEmail } from "@/app/actions/email";
 
 const google = createGoogleGenerativeAI({
@@ -891,8 +891,9 @@ function buildSniperSystemPrompt(
     "• Nepoužívej oslovení typu „týme [doména]“. Piš „Dobrý den,“ nebo konkrétní jméno, pokud je na webu.",
     "",
     "KDO PÍŠE (identita odesílatele):",
-    `• Jmenuješ se ${author.fullName}. V češtině drž správný rod podle křestního jména „${author.firstName}“ (např. Jan → „četl jsem“, „napadlo mě“; Jana → ženský rod). V jiných jazycích obdobně.`,
+    `• Jmenuješ se ${author.fullName}. V češtině drž správný rod podle křestního jména „${author.firstName}“ (mužské křestní jméno → „četl jsem“, „napadlo mě“; ženské → ženský rod). V jiných jazycích obdobně.`,
     "• Nikdy neodvozuj název firmy odesílatele z e-mailové domény příjemce ani nehádej poskytovatele schránky. Zakázáno např. „Jan z Postu“, „Jsem ze Seznamu“. Kdo jsme, vycházej z profilu firmy výše; jinak piš obecně „U nás…“, „Zabýváme se…“.",
+    "• V podpisu použij POUZE jméno výše. Nikdy nepodepisuj jiného člena týmu ani jméno ze staré šablony.",
     "",
     "STRUKTURA JSON POLÍ:",
     "• osloveni: pouze řádek pozdravu (např. „Dobrý den,“). Bez domény v oslovení.",
@@ -1069,10 +1070,32 @@ async function runSniperEmailGeneration(
   const isAutodetect = choice === SNIPER_AUTODETECT_VALUE;
   const offerForPrompts = isAutodetect ? "" : choice.slice(0, 80);
 
-  const ctx = await loadSniperWorkspaceContext(workspaceId);
+  const ctxRaw = await loadSniperWorkspaceContext(workspaceId);
   const author =
     input.author ??
     (input.session ? getAuthorFromSession(input.session) : { fullName: "Kolega", firstName: "Kolega" });
+
+  let senderEmail: string | null = null;
+  const sessionUserId = input.session?.user?.id;
+  if (sessionUserId) {
+    const mailbox = await prisma.userEmailConnection.findUnique({
+      where: { userId: sessionUserId },
+      select: { senderEmail: true, status: true },
+    });
+    if (mailbox?.status === "CONNECTED" && mailbox.senderEmail?.trim()) {
+      senderEmail = mailbox.senderEmail.trim();
+    } else if (input.session?.user?.email?.trim()?.toLowerCase().endsWith("@venegard.com")) {
+      senderEmail = input.session.user.email.trim();
+    }
+  }
+
+  const ctx = {
+    ...ctxRaw,
+    emailSignature: personalizeEmailSignature(ctxRaw.emailSignature, {
+      fullName: author.fullName,
+      senderEmail,
+    }),
+  };
   const clientSiteLabel = clientSiteLabelFromUrl(targetUrl);
   const websiteProbe = await probeClientWebsite(targetUrl);
   const clientWebsiteData = websiteProbe.textForModel;
@@ -1428,6 +1451,17 @@ export async function generateEmailForLead(
       ? getAuthorFromSession(session)
       : await getAuthorForWorkspace(workspaceId);
 
+    let senderEmail: string | null = null;
+    if (session?.user?.id) {
+      const mailbox = await prisma.userEmailConnection.findUnique({
+        where: { userId: session.user.id },
+        select: { senderEmail: true, status: true },
+      });
+      if (mailbox?.status === "CONNECTED" && mailbox.senderEmail?.trim()) {
+        senderEmail = mailbox.senderEmail.trim();
+      }
+    }
+
     const { nativeLanguageFromCountry, normalizeCountryCode } = await import(
       "@/lib/country-language"
     );
@@ -1449,7 +1483,10 @@ export async function generateEmailForLead(
       priorEmails,
     });
 
-    const savedSignature = (workspaceCredits.emailSignature ?? "").trim();
+    const savedSignature = personalizeEmailSignature(
+      (workspaceCredits.emailSignature ?? "").trim(),
+      { fullName: author.fullName, senderEmail },
+    );
 
     const subject =
       object.vygenerovane_predmety[0]?.trim() ||

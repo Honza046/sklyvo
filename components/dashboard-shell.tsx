@@ -495,8 +495,8 @@ export function DashboardShell({
                       <span className="truncate text-sm font-semibold text-foreground">
                         {displayName}
                       </span>
-                      <span className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {displayEmail}
+                      <span className="truncate text-[10px] text-muted-foreground">
+                        {displayEmail?.toLowerCase()}
                       </span>
                     </div>
                   </>

@@ -288,7 +288,7 @@ export const cz = {
     },
     emailIntegration: {
       description:
-        "Propojte firemní schránku, ze které bude Autopilot odesílat outreach kampaně. Bez připojení zůstává Autopilot neaktivní.",
+        "Připojte svůj venegard e-mail, ze kterého budete odesílat outreach. Každý člen týmu má vlastní schránku — Autopilot a Sniper posílají z vašeho účtu.",
       statusConnected: "✅ Připojeno — Autopilot je aktivní",
       statusDisconnected: "⚠️ Nepřipojeno — Autopilot je neaktivní",
       disconnect: "Odpojit",
@@ -302,7 +302,7 @@ export const cz = {
       smtpDescription: "Ruční konfigurace přes SMTP server a heslo aplikace.",
       customSmtp: "Vlastní SMTP",
       senderName: "Jméno odesílatele",
-      senderEmail: "Firemní e-mail",
+      senderEmail: "Váš firemní e-mail",
       smtpHost: "SMTP server",
       smtpPort: "SMTP port",
       appPassword: "Heslo aplikace",

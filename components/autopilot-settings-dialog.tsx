@@ -157,22 +157,20 @@ export function AutopilotSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "flex w-full flex-col gap-0 overflow-hidden p-0",
-          // Mobile: nearly full-screen sheet
+          "flex w-full flex-col gap-0 overflow-hidden bg-background p-0",
+          // Mobile: full-screen sheet
           "left-0 top-0 h-[100dvh] max-h-[100dvh] max-w-none translate-x-0 translate-y-0 rounded-none",
           "data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-bottom-2",
-          // Desktop: centered dialog
-          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
-          section === "radar"
-            ? "sm:max-h-[min(92vh,640px)] sm:max-w-4xl"
-            : section === "sniper"
-              ? "sm:max-h-[min(94vh,720px)] sm:max-w-4xl"
-              : "sm:max-h-[min(92vh,480px)] sm:max-w-xl",
+          // Desktop: centered modal (not fullscreen)
+          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[min(90vh,720px)] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
+          section === "radar" || section === "sniper"
+            ? "sm:max-w-3xl"
+            : "sm:max-w-lg sm:max-h-[min(90vh,560px)]",
         )}
       >
         <div
           className={cn(
-            "min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 pb-2 pt-8 sm:overflow-visible sm:px-6 sm:pb-3 sm:pt-9",
+            "min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-4 pb-3 pt-8 sm:px-6 sm:pb-4 sm:pt-9",
             section === "sniper" && "sm:space-y-2",
           )}
         >
@@ -785,7 +783,7 @@ export function AutopilotSettingsDialog({
         )}
         </div>
 
-        <DialogFooter className="flex shrink-0 flex-row justify-end gap-2 border-t border-border/60 bg-background px-6 py-3 sm:flex-row sm:space-x-0">
+        <DialogFooter className="relative z-10 flex shrink-0 flex-row justify-end gap-2 border-t border-border/60 bg-background px-6 py-3 sm:flex-row sm:space-x-0">
           <Button
             type="button"
             variant="outline"
@@ -797,7 +795,7 @@ export function AutopilotSettingsDialog({
           <Button
             type="button"
             disabled={disabled}
-            className={cn("shrink-0", saveButtonClass)}
+            className={cn("relative z-10 shrink-0", saveButtonClass)}
             onClick={() => {
               void (async () => {
                 await onSave?.();

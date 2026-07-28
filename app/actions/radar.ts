@@ -21,6 +21,7 @@ import {
   filterStandaloneCompanyPlaces,
   isStandaloneCompanyWebsite,
 } from "@/lib/radar-website-quality";
+import { authorFromSessionName } from "@/lib/lead-provenance";
 
 type RadarSearchInput = {
   query: string;
@@ -351,6 +352,21 @@ async function loadCrmEmailKeys(workspaceId: string): Promise<Set<string>> {
   return emails;
 }
 
+async function resolveWorkspaceLeadAuthor(workspaceId: string): Promise<string | null> {
+  const owner = await prisma.user.findFirst({
+    where: { workspaceId, role: "OWNER" },
+    select: { name: true },
+    orderBy: { createdAt: "asc" },
+  });
+  if (owner?.name) return authorFromSessionName(owner.name);
+  const anyMember = await prisma.user.findFirst({
+    where: { workspaceId },
+    select: { name: true },
+    orderBy: { createdAt: "asc" },
+  });
+  return authorFromSessionName(anyMember?.name);
+}
+
 async function persistAutomatedRadarLeads(
   workspaceId: string,
   leads: RadarLead[],
@@ -358,11 +374,13 @@ async function persistAutomatedRadarLeads(
   crmEmails: Set<string>,
   maxToCreate?: number,
   countryCode?: string | null,
+  author?: string | null,
 ): Promise<{ created: number; skipped: number; createdLeadIds: string[] }> {
   let created = 0;
   let skipped = 0;
   const createdLeadIds: string[] = [];
   const resolvedCountry = normalizeCountryCode(countryCode);
+  const resolvedAuthor = author ?? (await resolveWorkspaceLeadAuthor(workspaceId));
 
   const toCreate: Array<{
     companyName: string;
@@ -373,7 +391,8 @@ async function persistAutomatedRadarLeads(
     contactPhone: string | null;
     contactEmail: string | null;
     status: "NEW";
-    source: "RADAR";
+    source: "AUTOPILOT";
+    author: string | null;
     workspaceId: string;
     industry: null;
     countryCode: string | null;
@@ -425,7 +444,8 @@ async function persistAutomatedRadarLeads(
       contactPhone,
       contactEmail: email,
       status: "NEW",
-      source: "RADAR",
+      source: "AUTOPILOT",
+      author: resolvedAuthor,
       workspaceId,
       industry: null,
       countryCode: resolvedCountry,
@@ -536,6 +556,7 @@ export async function runAutomatedRadarForWorkspace(
 
   const crmKeys = await loadCrmExclusionKeys(workspaceId);
   const crmEmails = await loadCrmEmailKeys(workspaceId);
+  const autopilotAuthor = await resolveWorkspaceLeadAuthor(workspaceId);
 
   let queriesRun = 0;
   let createdCount = 0;
@@ -577,6 +598,7 @@ export async function runAutomatedRadarForWorkspace(
         crmEmails,
         maxPerRun - createdCount,
         regionCode,
+        autopilotAuthor,
       );
       createdCount += persist.created;
       skippedCount += persist.skipped;

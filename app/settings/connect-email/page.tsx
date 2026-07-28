@@ -203,7 +203,7 @@ export default function ConnectEmailPage() {
             >
               <div
                 className={cn(
-                  "mb-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
+                  "mb-4 flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border",
                   provider.iconWrapClassName,
                 )}
               >

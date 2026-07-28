@@ -61,6 +61,7 @@ import {
   Hand,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatLeadProvenance, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
 import {
   bulkDeleteLeads,
   bulkUpdateLeads,
@@ -68,6 +69,7 @@ import {
   scrapeLeadContacts,
   createManualLead,
   getLeads,
+  markLeadWebsiteVisited,
   updateLeadDetails,
   updateSingleLeadStatus,
 } from "@/app/actions/crm";
@@ -100,6 +102,9 @@ type Lead = {
   email: string;
   phone: string;
   author: string;
+  source: LeadSourceValue;
+  websiteVisited?: boolean;
+  websiteVisitedBy?: string;
   lastContactedAt?: string | null;
   nextOutreachAt?: string | null;
   nextOutreachKind?: OutreachKindValue | null;
@@ -198,7 +203,7 @@ function CrmPageContent() {
   const ITEMS_PER_PAGE = 50;
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "value_high" | "value_low">("newest");
   const [statusFilter, setStatusFilter] = useState<"all" | Lead["leadStatus"]>("all");
-  const [sourceFilter, setSourceFilter] = useState<"all" | "radar" | "manual">("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "radar" | "autopilot" | "sniper" | "manual">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "last_7_days" | "last_30_days" | "this_year">("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
@@ -289,7 +294,10 @@ function CrmPageContent() {
       const matchStatus = statusFilter === "all" || lead.leadStatus === statusFilter;
       const matchSource =
         sourceFilter === "all" ||
-        (sourceFilter === "radar" ? Boolean(lead.placeId) : !lead.placeId);
+        (sourceFilter === "radar" && lead.source === "RADAR") ||
+        (sourceFilter === "autopilot" && lead.source === "AUTOPILOT") ||
+        (sourceFilter === "sniper" && lead.source === "SNIPER") ||
+        (sourceFilter === "manual" && lead.source === "MANUAL");
 
       const created = new Date(lead.createdAt);
       const matchDate =
@@ -521,6 +529,34 @@ function CrmPageContent() {
     });
   }, []);
 
+  const handleOpenWebsite = useCallback((lead: Lead, websiteUrl: string) => {
+    window.open(websiteUrl, "_blank", "noopener,noreferrer");
+    if (lead.websiteVisited) return;
+
+    setLeads((prev) =>
+      prev.map((row) => (row.id === lead.id ? { ...row, websiteVisited: true } : row)),
+    );
+
+    void markLeadWebsiteVisited(lead.id).then((result) => {
+      if ("error" in result && result.error) {
+        setLeads((prev) =>
+          prev.map((row) =>
+            row.id === lead.id ? { ...row, websiteVisited: false, websiteVisitedBy: "" } : row,
+          ),
+        );
+        return;
+      }
+      const who = ("websiteVisitedBy" in result ? result.websiteVisitedBy : "") || "";
+      setLeads((prev) =>
+        prev.map((row) =>
+          row.id === lead.id
+            ? { ...row, websiteVisited: true, websiteVisitedBy: who || row.websiteVisitedBy || "" }
+            : row,
+        ),
+      );
+    });
+  }, []);
+
   useEffect(() => {
     if (isLoading) return;
     const leadParam = searchParams.get("lead");
@@ -648,6 +684,11 @@ function CrmPageContent() {
 
         {/* Desktop header */}
         <div className="mb-2 hidden shrink-0 space-y-1 px-1 text-center md:mb-2 md:block">
+          <div className="mb-2 flex items-center justify-center gap-3">
+            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <Users className="h-8 w-8" />
+            </div>
+          </div>
           <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
             CRM
           </h1>
@@ -872,6 +913,27 @@ function CrmPageContent() {
                         </div>
 
                         <div className="space-y-1.5">
+                          <Label>Zdroj</Label>
+                          <Select
+                            value={sourceFilter}
+                            onValueChange={(v) =>
+                              setSourceFilter(v as "all" | "radar" | "autopilot" | "sniper" | "manual")
+                            }
+                          >
+                            <SelectTrigger className="h-9 w-full bg-background">
+                              <SelectValue placeholder="Zdroj" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                              <SelectItem value="all">Všechny zdroje</SelectItem>
+                              <SelectItem value="radar">Radar</SelectItem>
+                              <SelectItem value="autopilot">Autopilot</SelectItem>
+                              <SelectItem value="sniper">Sniper</SelectItem>
+                              <SelectItem value="manual">Manuálně</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
                           <Label>Řazení</Label>
                           <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "oldest" | "value_high" | "value_low")}>
                             <SelectTrigger className="h-9 w-full bg-background">
@@ -993,9 +1055,9 @@ function CrmPageContent() {
                         <h4 className="mb-1 truncate text-sm font-bold leading-none text-foreground">
                           {lead.company}
                         </h4>
-                        {lead.author ? (
+                        {formatLeadProvenance(lead.source, lead.author) ? (
                           <p className="text-[9px] text-muted-foreground truncate mb-0.5">
-                            {lead.author}
+                            {formatLeadProvenance(lead.source, lead.author)}
                           </p>
                         ) : null}
                         {companyWeb ? (
@@ -1170,6 +1232,11 @@ function CrmPageContent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
+                        {formatLeadProvenance(lead.source, lead.author) ? (
+                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                            {formatLeadProvenance(lead.source, lead.author)}
+                          </p>
+                        ) : null}
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                           {emailTrim || "Bez e-mailu"}
                           <span className="mx-1 text-border">·</span>
@@ -1199,15 +1266,24 @@ function CrmPageContent() {
                         </Button>
                         {companyWeb ? (
                           <Button
-                            asChild
+                            type="button"
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            title="Otevřít web"
+                            onClick={() => handleOpenWebsite(lead, companyWeb)}
+                            className={cn(
+                              "h-8 w-8 rounded-full p-0 hover:bg-muted",
+                              lead.websiteVisited
+                                ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                                : "text-muted-foreground hover:text-foreground",
+                            )}
+                            title={
+                              lead.websiteVisited
+                                ? `Web prohlédnut${lead.websiteVisitedBy ? ` (${shortLeadAuthorName(lead.websiteVisitedBy)})` : ""}`
+                                : "Otevřít web"
+                            }
+                            aria-label="Otevřít web"
                           >
-                            <a href={companyWeb} target="_blank" rel="noopener noreferrer" aria-label="Otevřít web">
-                              <Globe className="h-3.5 w-3.5" />
-                            </a>
+                            <Globe className="h-3.5 w-3.5" />
                           </Button>
                         ) : null}
                         <Button
@@ -1246,11 +1322,14 @@ function CrmPageContent() {
                               Poslat breakup
                             </DropdownMenuItem>
                             {companyWeb ? (
-                              <DropdownMenuItem asChild>
-                                <a href={companyWeb} target="_blank" rel="noreferrer">
-                                  <Globe className="mr-2 h-4 w-4" />
-                                  Web
-                                </a>
+                              <DropdownMenuItem onClick={() => handleOpenWebsite(lead, companyWeb)}>
+                                <Globe
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    lead.websiteVisited && "text-emerald-600 dark:text-emerald-400",
+                                  )}
+                                />
+                                {lead.websiteVisited ? "Web (prohlédnut)" : "Web"}
                               </DropdownMenuItem>
                             ) : null}
                             <DropdownMenuSeparator />
@@ -1341,8 +1420,10 @@ function CrmPageContent() {
                             />
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground break-words">{lead.company}</p>
-                              {lead.author ? (
-                                <p className="text-xs text-muted-foreground">{lead.author}</p>
+                              {formatLeadProvenance(lead.source, lead.author) ? (
+                                <p className="text-xs text-muted-foreground">
+                                  {formatLeadProvenance(lead.source, lead.author)}
+                                </p>
                               ) : null}
                               {companyWeb ? (
                               <a href={companyWeb} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 break-words block">
@@ -1432,21 +1513,24 @@ function CrmPageContent() {
                             </Button>
                             {companyWeb ? (
                               <Button
-                                asChild
+                                type="button"
                                 variant="outline"
                                 size="sm"
-                                className="h-8 w-8 shrink-0 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                                onClick={() => handleOpenWebsite(lead, companyWeb)}
+                                className={cn(
+                                  "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
+                                  lead.websiteVisited
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
+                                    : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+                                )}
+                                title={
+                                  lead.websiteVisited
+                                    ? `Web prohlédnut${lead.websiteVisitedBy ? ` (${shortLeadAuthorName(lead.websiteVisitedBy)})` : ""}`
+                                    : "Otevřít web"
+                                }
+                                aria-label="Otevřít web"
                               >
-                                <a
-                                  href={companyWeb}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex size-full items-center justify-center"
-                                  title="Otevřít web"
-                                  aria-label="Otevřít web"
-                                >
-                                  <Globe className="h-4 w-4" />
-                                </a>
+                                <Globe className="h-4 w-4" />
                               </Button>
                             ) : null}
                             <Button
