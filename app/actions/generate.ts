@@ -192,6 +192,13 @@ export type GenerateEmailParams = {
   segment: string;
   /** Base64 PDF (bez prefixu data URL), volitelný kontext pro Gemini. */
   pdfData?: string;
+  /** ISO country from Radar (e.g. DE) — used for native-language weighting. */
+  countryCode?: string | null;
+  /**
+   * auto = EN primary + country native strongly (model picks from website).
+   * manual = hard lock to `language` (user overrode Sniper select).
+   */
+  languageMode?: "auto" | "manual";
 };
 
 type SniperWorkspaceContext = {
@@ -861,8 +868,27 @@ function buildLanguageToneSegmentBlock(params: GenerateEmailParams): string {
           ? "stručný a úderný, bez ozdob"
           : params.tone;
 
+  const languageMode = params.languageMode === "manual" ? "manual" : "auto";
+  const countryCode = (params.countryCode ?? "").trim().toUpperCase() || null;
+  const nativeHint = params.language;
+
+  const languageLines =
+    languageMode === "manual"
+      ? [
+          `Jazyk výstupu (VŠECHNA textová pole v JSON, tvrdé): ${params.language}`,
+          "Uživatel jazyk ručně zvolil — piš výhradně v tomto jazyce, bez přepínání do angličtiny.",
+        ]
+      : [
+          "Jazyk výstupu (režim AUTO):",
+          "- Primární kandidát: angličtina (en).",
+          `- Rodný/místní jazyk země${countryCode ? ` ${countryCode}` : ""} silně zohledni (návrh: ${nativeHint}).`,
+          "- Finální jazyk zvol podle webu a firmy (jazyk webu, cílová země, B2B kontext).",
+          "- Celý e-mail (osloveni + tělo + předměty) musí být v JEDNOM zvoleném jazyce.",
+          `- Do detekovany_jazyk vrať kód skutečně použitého jazyka (en / ${nativeHint} / jiný povolený).`,
+        ];
+
   return [
-    `Jazyk výstupu (všechny textové pole v JSON): ${params.language}`,
+    ...languageLines,
     `Tón: ${params.tone} (${toneHint})`,
     "SEGMENT KLIENTA: Vždy odvoď VÝHRADNĚ z textu webu (např. gynekologická ordinace → healthcare). Nikdy nevnucuj B2B SaaS.",
     "STYL: elegantní, věcný, krátký. Žádná AI vata („digitální doba“, „vizitka“, výčet SEO/marketing).",
@@ -939,6 +965,8 @@ type SniperGenerationInput = {
   tone: string;
   segment: string;
   pdfBase64?: string;
+  countryCode?: string | null;
+  languageMode?: "auto" | "manual";
   outreachKind?: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
   priorEmails?: Array<{ kind: string; subject: string; body: string; sentAt: string }>;
 };
@@ -979,6 +1007,8 @@ async function runSniperEmailGeneration(
     language,
     tone,
     segment,
+    countryCode: input.countryCode,
+    languageMode: input.languageMode === "manual" ? "manual" : "auto",
   };
   const pdfBlock = pdfBase64
     ? [
@@ -1112,7 +1142,16 @@ async function runSniperEmailGeneration(
 
 export async function generateEmailContent(params: GenerateEmailParams) {
   try {
-    const { targetUrl, selectedOfferedService, language, tone, segment, pdfData } = params;
+    const {
+      targetUrl,
+      selectedOfferedService,
+      language,
+      tone,
+      segment,
+      pdfData,
+      countryCode,
+      languageMode,
+    } = params;
     const session = await getSessionUser();
     if (!session.user?.workspaceId) {
       return { error: "Nejste přihlášen." };
@@ -1171,6 +1210,8 @@ export async function generateEmailContent(params: GenerateEmailParams) {
       tone,
       segment,
       pdfBase64,
+      countryCode,
+      languageMode: languageMode === "manual" ? "manual" : "auto",
     });
 
     await prisma.workspace.update({
@@ -1261,6 +1302,7 @@ export async function generateEmailForLead(
         domain: true,
         email: true,
         contactEmail: true,
+        countryCode: true,
       },
     });
     if (!lead) {
@@ -1302,15 +1344,23 @@ export async function generateEmailForLead(
       ? getAuthorFromSession(session)
       : await getAuthorForWorkspace(workspaceId);
 
+    const { nativeLanguageFromCountry, normalizeCountryCode } = await import(
+      "@/lib/country-language"
+    );
+    const countryCode = normalizeCountryCode(lead.countryCode);
+    const nativeLanguage = nativeLanguageFromCountry(countryCode);
+
     const object = await runSniperEmailGeneration({
       session,
       author,
       workspaceId,
       targetUrl,
       selectedOfferedService: SNIPER_AUTODETECT_VALUE,
-      language: "cs",
+      language: nativeLanguage,
       tone: "friendly",
       segment: "auto",
+      countryCode,
+      languageMode: "auto",
       outreachKind: kind,
       priorEmails,
     });

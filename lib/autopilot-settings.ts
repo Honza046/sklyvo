@@ -9,6 +9,7 @@ export type AutopilotAutomationSettings = {
   radarRunTime: string;
   targetIndustries: string;
   locations: string;
+  countryCode: string;
   companySize: RadarCompanySize;
   autoStartOutreach: boolean;
   maxCompaniesPerRun: number;
@@ -45,6 +46,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   radarRunTime: "03:00",
   targetIndustries: "",
   locations: "",
+  countryCode: "CZ",
   companySize: "any",
   autoStartOutreach: false,
   maxCompaniesPerRun: 50,

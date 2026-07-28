@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,14 @@ import { addLeadFromRadar, importMultipleLeads } from "@/app/actions/crm";
 import { toast } from "sonner";
 import { useLanguage } from "@/context/LanguageContext";
 import { messages } from "@/lib/i18n/messages";
+import {
+  DEFAULT_RADAR_COUNTRY,
+  RADAR_COUNTRY_NONE,
+  RADAR_COUNTRY_OPTIONS,
+  RADAR_COUNTRY_STORAGE_KEY,
+  detectCountryFromQuery,
+  normalizeCountryCode,
+} from "@/lib/country-language";
 
 type RadarResult = {
   id: string;
@@ -76,6 +84,7 @@ export default function RadarPage() {
   }, [language]);
   const [query, setQuery] = useState("");
   const [count, setCount] = useState("5");
+  const [country, setCountry] = useState(DEFAULT_RADAR_COUNTRY);
   const [isSearching, setIsSearching] = useState(false);
   const [hasResults, setHasResults] = useState(false);
   
@@ -90,6 +99,56 @@ export default function RadarPage() {
   const [addingLeadIds, setAddingLeadIds] = useState<string[]>([]);
   const [isImportingAll, setIsImportingAll] = useState(false);
 
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(RADAR_COUNTRY_STORAGE_KEY)?.trim();
+      if (!stored) return;
+      if (stored === RADAR_COUNTRY_NONE) {
+        setCountry(RADAR_COUNTRY_NONE);
+        return;
+      }
+      const normalized = normalizeCountryCode(stored);
+      if (normalized) setCountry(normalized);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleCountryChange = (value: string) => {
+    setCountry(value);
+    try {
+      window.localStorage.setItem(RADAR_COUNTRY_STORAGE_KEY, value);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  /** When query mentions a city/country (Londýn, Berlín…), auto-switch the country select. */
+  const applyCountryFromQuery = (text: string) => {
+    const detected = detectCountryFromQuery(text);
+    if (!detected) return null;
+    if (country !== detected) {
+      handleCountryChange(detected);
+    }
+    return detected;
+  };
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    applyCountryFromQuery(value);
+  };
+
+  const activeCountryCode = country === RADAR_COUNTRY_NONE ? null : normalizeCountryCode(country);
+
+  const sniperHref = (result: RadarResult) => {
+    const params = new URLSearchParams();
+    params.set("company", result.name);
+    if (result.url) params.set("url", result.url);
+    if (result.email) params.set("email", result.email);
+    if (activeCountryCode) params.set("country", activeCountryCode);
+    return `/sniper?${params.toString()}`;
+  };
+
   const handleSearch = async () => {
     if (!query.trim()) return;
     setIsSearching(true);
@@ -98,10 +157,16 @@ export default function RadarPage() {
     setAddedLeadIds([]);
     setSearchError(null);
 
+    const detected = applyCountryFromQuery(query);
+    const regionForSearch =
+      detected ??
+      (country === RADAR_COUNTRY_NONE ? null : normalizeCountryCode(country));
+
     const radarResponse = await searchRadarLeads({
       query,
       limit: Number(count),
       excludeCrm,
+      regionCode: regionForSearch,
     });
 
     setIsSearching(false);
@@ -134,6 +199,7 @@ export default function RadarPage() {
       phone: lead.phone,
       address: lead.address,
       placeId: lead.placeId,
+      countryCode: activeCountryCode,
     });
     setAddingLeadIds((prev) => prev.filter((id) => id !== lead.id));
 
@@ -157,6 +223,7 @@ export default function RadarPage() {
         email: lead.email ?? undefined,
         phone: lead.phone,
         placeId: lead.placeId,
+        countryCode: activeCountryCode,
       })),
     );
 
@@ -233,22 +300,40 @@ export default function RadarPage() {
                   className="h-10 border-0 bg-transparent pl-7 text-[15px] shadow-none focus-visible:ring-0"
                   placeholder="např. Architektonická studia v Brně"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => handleQueryChange(e.target.value)}
                   autoComplete="off"
                 />
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-2 flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
                 {searchInspirations.map((text) => (
                   <button
                     key={text}
                     type="button"
-                    onClick={() => setQuery(text)}
-                    className="rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium text-foreground/80"
+                    onClick={() => handleQueryChange(text)}
+                    className="shrink-0 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium text-foreground/80"
                   >
                     {text}
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="border-b border-border/40 px-4 py-3">
+              <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
+                Země
+              </label>
+              <Select value={country} onValueChange={handleCountryChange}>
+                <SelectTrigger className="h-10 w-full border-0 bg-transparent px-0 text-[15px] shadow-none focus:ring-0 focus:ring-offset-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
+                  <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
+                  {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.code} value={opt.code}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="border-b border-border/40 px-4 py-3">
               <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
@@ -322,7 +407,7 @@ export default function RadarPage() {
           {/* Desktop form */}
           <div className="relative hidden flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all md:flex md:p-8">
             
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-[2fr_1fr]">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-[2fr_1fr_1fr]">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <Target className="h-3.5 w-3.5" />
@@ -334,25 +419,45 @@ export default function RadarPage() {
                     className="h-12 rounded-xl border-border/50 bg-background pl-10 text-base" 
                     placeholder="např. Architektonická studia v Brně" 
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => handleQueryChange(e.target.value)}
                     autoComplete="off"
                   />
                 </div>
                 <div className="space-y-1.5 pt-1">
                   <p className="text-[11px] text-muted-foreground">{t("radar.inspirationLabel")}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
                     {searchInspirations.map((text) => (
                       <button
                         key={text}
                         type="button"
-                        onClick={() => setQuery(text)}
-                        className="rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
+                        onClick={() => handleQueryChange(text)}
+                        className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
                       >
                         {text}
                       </button>
                     ))}
                   </div>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <Globe className="h-3.5 w-3.5" />
+                  Země
+                </Label>
+                <Select value={country} onValueChange={handleCountryChange}>
+                  <SelectTrigger className="h-12 rounded-xl border-border/50 bg-background text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
+                    <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
+                    {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -531,23 +636,11 @@ export default function RadarPage() {
                       <p className="max-w-3xl text-xs leading-snug text-muted-foreground/80 sm:text-sm sm:leading-relaxed">
                         {result.address}
                       </p>
-                      {(result.phone || result.url) && (
+                      {(result.phone) && (
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] sm:mt-2 sm:gap-3 sm:text-xs">
-                          {result.phone && (
-                            <span className="text-muted-foreground">
-                              Tel: <span className="font-semibold text-foreground">{result.phone}</span>
-                            </span>
-                          )}
-                          {result.url && (
-                            <a
-                              href={result.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-blue-600 hover:underline"
-                            >
-                              Otevřít web
-                            </a>
-                          )}
+                          <span className="text-muted-foreground">
+                            Tel: <span className="font-semibold text-foreground">{result.phone}</span>
+                          </span>
                         </div>
                       )}
                       {result.email && (
@@ -573,9 +666,24 @@ export default function RadarPage() {
                           )}
                           {addedLeadIds.includes(result.id) ? "V CRM" : "Do CRM"}
                         </Button>
-                        <Button asChild size="sm" className="h-8 rounded-lg bg-foreground px-3 text-[10px] font-bold uppercase tracking-widest text-background hover:bg-foreground/90">
-                          <Link href={`/sniper?company=${encodeURIComponent(result.name)}&url=${encodeURIComponent(result.url || "")}&email=${encodeURIComponent(result.email || "")}`}>
-                            <Crosshair className="mr-1.5 h-3.5 w-3.5" /> Sniper
+                        <Button
+                          asChild
+                          size="sm"
+                          disabled={!result.url}
+                          className="h-8 w-8 shrink-0 rounded-lg bg-foreground p-0 text-background hover:bg-foreground/90 disabled:opacity-40"
+                        >
+                          <a
+                            href={result.url || undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Otevřít web"
+                          >
+                            <Globe className="h-3.5 w-3.5" />
+                          </a>
+                        </Button>
+                        <Button asChild size="sm" className="h-8 w-8 shrink-0 rounded-lg bg-foreground p-0 text-background hover:bg-foreground/90">
+                          <Link href={sniperHref(result)} aria-label="Sniper">
+                            <Crosshair className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
                       </div>
@@ -596,9 +704,23 @@ export default function RadarPage() {
                           <Plus className="h-5 w-5" />
                         )}
                       </Button>
-                      <Button asChild className="h-10 rounded-xl bg-foreground px-5 text-[10px] font-bold uppercase tracking-widest text-background shadow-sm hover:bg-foreground/90">
-                        <Link href={`/sniper?company=${encodeURIComponent(result.name)}&url=${encodeURIComponent(result.url || "")}&email=${encodeURIComponent(result.email || "")}`}>
-                        <Crosshair className="mr-2 h-4 w-4" /> Sniper
+                      <Button
+                        asChild
+                        disabled={!result.url}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground p-0 text-background shadow-sm hover:bg-foreground/90 disabled:opacity-40"
+                      >
+                        <a
+                          href={result.url || undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Otevřít web"
+                        >
+                          <Globe className="h-4 w-4" />
+                        </a>
+                      </Button>
+                      <Button asChild className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground p-0 text-background shadow-sm hover:bg-foreground/90">
+                        <Link href={sniperHref(result)} aria-label="Sniper">
+                          <Crosshair className="h-4 w-4" />
                         </Link>
                       </Button>
                     </div>

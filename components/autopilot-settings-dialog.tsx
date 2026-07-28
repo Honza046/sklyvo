@@ -32,6 +32,10 @@ import {
   type SendingStrategy,
 } from "@/lib/autopilot-settings";
 import { RADAR_COMPANY_SIZE_OPTIONS } from "@/lib/radar-settings-meta";
+import {
+  RADAR_COUNTRY_NONE,
+  RADAR_COUNTRY_OPTIONS,
+} from "@/lib/country-language";
 
 export type AutopilotSettingsSection = "radar" | "sniper" | "full-auto";
 
@@ -390,6 +394,27 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       className="min-h-[52px] resize-none text-sm"
                     />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-sm">Země hledání</Label>
+                    <Select
+                      value={settings.countryCode || "CZ"}
+                      onValueChange={(value) => patch({ countryCode: value })}
+                      disabled={disabled}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Vyberte zemi" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-zinc-950">
+                        <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
+                        {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.code} value={opt.code}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-1">

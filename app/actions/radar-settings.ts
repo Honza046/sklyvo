@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 export type RadarSettingsFormData = {
   targetIndustries: string;
   locations: string;
+  countryCode: string;
   companySize: RadarCompanySize;
   autoStartOutreach: boolean;
   radarDays: number[];
@@ -38,9 +39,11 @@ function formToPayload(form: RadarSettingsFormData): RadarSettingsPayload {
     1,
     Math.min(form.minCompaniesPerRun || 20, maxCompaniesPerRun),
   );
+  const rawCountry = (form.countryCode ?? "CZ").trim().toUpperCase();
   return {
     targetIndustries: parseCommaSeparatedInput(form.targetIndustries),
     locations: form.locations.trim(),
+    countryCode: rawCountry === "NONE" ? "" : rawCountry,
     companySize: form.companySize,
     autoStartOutreach: form.autoStartOutreach,
     scheduleDays: form.radarDays,
@@ -56,6 +59,7 @@ function recordToForm(record: RadarSettingsPayload): RadarSettingsFormData {
   return {
     targetIndustries: joinCommaSeparatedInput(record.targetIndustries),
     locations: record.locations.trim(),
+    countryCode: record.countryCode?.trim() || "NONE",
     companySize: record.companySize,
     autoStartOutreach: record.autoStartOutreach,
     radarDays: record.scheduleDays,
@@ -83,6 +87,7 @@ export async function getRadarSettings(): Promise<
       settings: {
         targetIndustries: "",
         locations: "",
+        countryCode: "CZ",
         companySize: "any",
         autoStartOutreach: false,
         radarDays: [1, 4],
@@ -119,6 +124,7 @@ export async function saveRadarSettings(
       workspaceId,
       targetIndustries: payload.targetIndustries,
       locations: payload.locations,
+      countryCode: payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
       companySize: payload.companySize,
       autoStartOutreach: payload.autoStartOutreach,
       scheduleDays: payload.scheduleDays,
@@ -130,6 +136,7 @@ export async function saveRadarSettings(
     update: {
       targetIndustries: payload.targetIndustries,
       locations: payload.locations,
+      countryCode: payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
       companySize: payload.companySize,
       autoStartOutreach: payload.autoStartOutreach,
       scheduleDays: payload.scheduleDays,
@@ -157,6 +164,7 @@ export async function loadRadarSettingsPayloadForWorkspace(
     return toRadarSettingsPayload({
       targetIndustries: DEFAULT_RADAR_INDUSTRIES,
       locations: joinCommaSeparatedInput(DEFAULT_RADAR_LOCATIONS),
+      countryCode: "CZ",
       companySize: "any",
       autoStartOutreach: false,
       scheduleDays: [1, 4],

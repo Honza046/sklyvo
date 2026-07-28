@@ -134,6 +134,7 @@ type AddLeadFromRadarInput = {
   phone?: string;
   address?: string;
   placeId?: string;
+  countryCode?: string | null;
 };
 
 export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
@@ -147,9 +148,11 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
     return { error: "Chybí název firmy." };
   }
 
+  const { normalizeCountryCode } = await import("@/lib/country-language");
   const domain = toDomain(input.url);
   const email = input.email?.trim() || null;
   const contactPhone = input.phone?.trim() || null;
+  const countryCode = normalizeCountryCode(input.countryCode);
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -163,6 +166,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
       source: "RADAR",
       workspaceId: session.workspace.id,
       industry: null,
+      countryCode,
     } as any,
     select: {
       id: true,
@@ -238,6 +242,7 @@ type ImportLeadInput = {
   email?: string;
   phone?: string;
   placeId?: string;
+  countryCode?: string | null;
 };
 
 export async function importMultipleLeads(leads: ImportLeadInput[]) {
@@ -250,6 +255,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     return { createdCount: 0, skippedCount: 0, inCrmPlaceIds: [] as string[] };
   }
 
+  const { normalizeCountryCode } = await import("@/lib/country-language");
   const workspaceId = session.workspace.id;
   const normalized = leads
     .map((lead) => {
@@ -258,7 +264,8 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       const domain = toDomain(lead.url);
       const email = lead.email?.trim() || null;
       const contactPhone = lead.phone?.trim() || null;
-      return { companyName, placeId, domain, email, contactPhone };
+      const countryCode = normalizeCountryCode(lead.countryCode);
+      return { companyName, placeId, domain, email, contactPhone, countryCode };
     })
     .filter((lead) => lead.companyName.length > 0);
 
@@ -302,6 +309,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     workspaceId: string;
     industry: null;
     contactEmail: string | null;
+    countryCode: string | null;
   }> = [];
   let skippedCount = 0;
 
@@ -328,6 +336,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       source: "RADAR" as const,
       workspaceId,
       industry: null,
+      countryCode: lead.countryCode,
     });
 
     if (lead.placeId) inBatchPlaceIds.add(lead.placeId);

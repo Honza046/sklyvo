@@ -195,6 +195,11 @@ function SniperContent() {
 
   const [language, setLanguage] = useState("cs");
   const [tone, setTone] = useState("friendly");
+  /** ISO country from Radar URL — drives EN+native auto language. */
+  const [countryCode, setCountryCode] = useState<string | null>(null);
+  /** True after user manually changes the language select. */
+  const [languageManualOverride, setLanguageManualOverride] = useState(false);
+  const [prefilledLanguage, setPrefilledLanguage] = useState("cs");
 
   /**
    * Parametry skutečně použité u právě zobrazeného e-mailu (zmrazené při generování).
@@ -259,7 +264,24 @@ function SniperContent() {
     if (prefillEmail) {
       setEmailTarget(prefillEmail);
     }
+
+    void (async () => {
+      const { nativeLanguageFromCountry, normalizeCountryCode } = await import(
+        "@/lib/country-language"
+      );
+      const country = normalizeCountryCode(searchParams.get("country"));
+      setCountryCode(country);
+      const native = nativeLanguageFromCountry(country);
+      setPrefilledLanguage(native);
+      setLanguage(native);
+      setLanguageManualOverride(false);
+    })();
   }, [searchParams]);
+
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value);
+    setLanguageManualOverride(value !== prefilledLanguage);
+  };
 
   const handleGenerate = async () => {
     if (!selectedOffer) {
@@ -294,6 +316,8 @@ function SniperContent() {
         tone,
         segment: "auto",
         pdfData,
+        countryCode,
+        languageMode: languageManualOverride ? "manual" : "auto",
       });
 
       if ("error" in result && result.error) {
@@ -322,11 +346,17 @@ function SniperContent() {
         const finalSegment =
           d.detected_segment && segmentMap[d.detected_segment] ? d.detected_segment : null;
         const finalTone = d.detected_tone && toneMap[d.detected_tone] ? d.detected_tone : tone;
-        const finalLanguage =
-          d.detected_language && languageFlagMap[d.detected_language] ? d.detected_language : language;
+        const finalLanguage = languageManualOverride
+          ? language
+          : d.detected_language && languageFlagMap[d.detected_language]
+            ? d.detected_language
+            : language;
 
         setTone(finalTone);
         setLanguage(finalLanguage);
+        if (!languageManualOverride && finalLanguage !== prefilledLanguage) {
+          setPrefilledLanguage(finalLanguage);
+        }
 
         setGeneratedParams({
           segment: finalSegment,
@@ -453,6 +483,8 @@ function SniperContent() {
         language,
         tone,
         segment: "auto",
+        countryCode,
+        languageMode: languageManualOverride ? "manual" : "auto",
       });
 
       if ("error" in result && result.error) {
@@ -542,7 +574,7 @@ function SniperContent() {
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                         Jazyk výstupu
                       </label>
-                      <Select value={language} onValueChange={setLanguage}>
+                      <Select value={language} onValueChange={handleLanguageChange}>
                         <SelectTrigger className="h-10 rounded-xl bg-background text-sm">
                           <SelectValue placeholder="Vyberte jazyk" />
                         </SelectTrigger>
@@ -853,7 +885,7 @@ function SniperContent() {
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                           Jazyk výstupu
                         </label>
-                        <Select value={language} onValueChange={setLanguage}>
+                        <Select value={language} onValueChange={handleLanguageChange}>
                           <SelectTrigger className="h-9 rounded-lg bg-background text-xs">
                             <SelectValue placeholder="Vyberte jazyk" />
                           </SelectTrigger>

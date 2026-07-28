@@ -140,6 +140,8 @@ model RadarSettings {
   targetIndustries  String[]  @default([])
   /** Lokality — každý řádek v UI = jedna lokalita (ukládáno jako newline text). */
   locations         String    @default("") @db.Text
+  /** ISO country for Places regionCode (e.g. CZ, DE, GB). Empty = no bias. */
+  countryCode       String    @default("CZ")
   /** any | micro | small | medium | large */
   companySize       String    @default("any")
   autoStartOutreach Boolean   @default(false)
@@ -206,6 +208,8 @@ model Lead {
   contactEmail  String?
   contactPhone  String?
   industry      String?
+  /** ISO country from Radar search (e.g. CZ, DE, GB) — drives email language hints. */
+  countryCode   String?
   /** Kdo lead zapsal (např. Jan Sedlář / Matěj Pazdera / Filip Retzl). */
   author        String?
   status        LeadStatus @default(NEW)

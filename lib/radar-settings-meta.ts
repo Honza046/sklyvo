@@ -60,6 +60,8 @@ export type RadarSearchQuery = {
 export type RadarSettingsPayload = {
   targetIndustries: string[];
   locations: string;
+  /** ISO country for Places regionCode; empty = no bias. */
+  countryCode: string;
   companySize: RadarCompanySize;
   autoStartOutreach: boolean;
   scheduleDays: number[];
@@ -144,6 +146,7 @@ export function buildRadarSearchQueries(
 export function toRadarSettingsPayload(record: {
   targetIndustries: string[];
   locations: string;
+  countryCode?: string | null;
   companySize: string;
   autoStartOutreach: boolean;
   scheduleDays: number[];
@@ -162,9 +165,14 @@ export function toRadarSettingsPayload(record: {
     Math.min(record.minCompaniesPerRun || Math.min(20, maxCompaniesPerRun), maxCompaniesPerRun),
   );
 
+  const rawCountry = (record.countryCode ?? "CZ").trim().toUpperCase();
+  const countryCode =
+    rawCountry === "" || rawCountry === "NONE" ? "" : rawCountry;
+
   return {
     targetIndustries: record.targetIndustries ?? [],
     locations: record.locations ?? "",
+    countryCode,
     companySize,
     autoStartOutreach: record.autoStartOutreach ?? false,
     scheduleDays: record.scheduleDays?.length ? record.scheduleDays : [1, 4],

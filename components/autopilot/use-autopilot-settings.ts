@@ -90,6 +90,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             ...prev,
             targetIndustries: result.settings.targetIndustries,
             locations: result.settings.locations,
+            countryCode: result.settings.countryCode || "CZ",
             companySize: result.settings.companySize,
             autoStartOutreach: result.settings.autoStartOutreach,
             radarDays: result.settings.radarDays,
@@ -171,6 +172,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           saveRadarSettings({
             targetIndustries: automationSettings.targetIndustries,
             locations: automationSettings.locations,
+            countryCode: automationSettings.countryCode,
             companySize: automationSettings.companySize,
             autoStartOutreach: automationSettings.autoStartOutreach,
             radarDays: automationSettings.radarDays,

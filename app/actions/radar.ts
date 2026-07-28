@@ -9,12 +9,23 @@ import { queueAutopilotLead } from "@/app/actions/autopilot";
 import { loadSheetsArchiveExclusionKeys, scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
+import {
+  broadenRadarQuery,
+  filterStandaloneCompanyPlaces,
+  isStandaloneCompanyWebsite,
+} from "@/lib/radar-website-quality";
+import {
+  normalizeCountryCode,
+  placesLanguageFromCountry,
+} from "@/lib/country-language";
 
 type RadarSearchInput = {
   query: string;
   limit: number;
   /** Pokud true, vynechá firmy už uložené v CRM (placeId, doména webu, název). */
   excludeCrm?: boolean;
+  /** ISO country for Places regionCode (e.g. CZ, DE). */
+  regionCode?: string | null;
 };
 
 type RadarLead = {
@@ -113,14 +124,16 @@ function googlePlaceIsInCrm(item: GooglePlaceV2, keys: CrmExclusionKeys): boolea
   return false;
 }
 
-/** Text Search (New): max 20 výsledků na stránku, přes nextPageToken typicky do ~60 celkem. */
+/** Text Search (New): max 20 výsledků na stránku; bereme víc stránek kvůli filtru vlastních webů. */
 const GOOGLE_SEARCH_PAGE_SIZE = 20;
-const GOOGLE_SEARCH_MAX_RAW_PLACES = 60;
+const GOOGLE_SEARCH_MAX_RAW_PLACES = 100;
+const GOOGLE_SEARCH_MAX_PAGES = 5;
 
 async function fetchGooglePlacesSearchTextPage(
   apiKey: string,
   textQuery: string,
   pageToken?: string,
+  options?: { regionCode?: string | null; languageCode?: string | null },
 ): Promise<{ places: GooglePlaceV2[]; nextPageToken?: string; error?: string }> {
   const body: Record<string, unknown> = {
     textQuery,
@@ -128,6 +141,14 @@ async function fetchGooglePlacesSearchTextPage(
   };
   if (pageToken) {
     body.pageToken = pageToken;
+  }
+  const regionCode = normalizeCountryCode(options?.regionCode);
+  if (regionCode) {
+    body.regionCode = regionCode;
+  }
+  const languageCode = options?.languageCode?.trim();
+  if (languageCode) {
+    body.languageCode = languageCode;
   }
 
   const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
@@ -162,55 +183,98 @@ async function collectGooglePlacesForQuery(
   textQuery: string,
   requestedLimit: number,
   crmKeys: CrmExclusionKeys | null,
+  regionCode?: string | null,
 ): Promise<{ places: GooglePlaceV2[]; error?: string }> {
   const normalizedQuery = textQuery.trim();
   if (!normalizedQuery) {
     return { places: [], error: "Prázdný dotaz." };
   }
 
+  const placesOpts = {
+    regionCode: normalizeCountryCode(regionCode),
+    languageCode: placesLanguageFromCountry(regionCode) ?? null,
+  };
+
   const collected: GooglePlaceV2[] = [];
   const seenPlaceIds = new Set<string>();
   let pageToken: string | undefined;
   let pageIndex = 0;
+  let lastError: string | undefined;
 
-  while (collected.length < GOOGLE_SEARCH_MAX_RAW_PLACES && pageIndex < 5) {
-    pageIndex += 1;
-    const page = await fetchGooglePlacesSearchTextPage(apiKey, normalizedQuery, pageToken);
+  const queryVariants = broadenRadarQuery(normalizedQuery);
 
-    if (page.error) {
-      if (collected.length === 0) {
-        return { places: [], error: page.error };
+  for (const variant of queryVariants) {
+    pageToken = undefined;
+    pageIndex = 0;
+
+    while (collected.length < GOOGLE_SEARCH_MAX_RAW_PLACES && pageIndex < GOOGLE_SEARCH_MAX_PAGES) {
+      pageIndex += 1;
+      const page = await fetchGooglePlacesSearchTextPage(
+        apiKey,
+        variant,
+        pageToken,
+        placesOpts,
+      );
+
+      if (page.error) {
+        lastError = page.error;
+        if (collected.length === 0 && variant === queryVariants[0]) {
+          // keep trying other variants unless first page of first query failed hard
+        }
+        break;
       }
-      break;
+
+      for (const p of page.places) {
+        if (collected.length >= GOOGLE_SEARCH_MAX_RAW_PLACES) break;
+        const pid = p.id?.trim();
+        if (pid) {
+          if (seenPlaceIds.has(pid)) continue;
+          seenPlaceIds.add(pid);
+        } else {
+          // Dedupe by name+website when place id missing
+          const key = `${normalizeCompanyName(p.displayName?.text)}|${normalizeDomainFromWebsite(p.websiteUri) ?? ""}`;
+          if (seenPlaceIds.has(key)) continue;
+          seenPlaceIds.add(key);
+        }
+        collected.push(p);
+      }
+
+      const usable = filterStandaloneCompanyPlaces(
+        (crmKeys ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys)) : collected).filter(
+          (p) => isStandaloneCompanyWebsite(p.websiteUri),
+        ),
+      );
+
+      if (usable.length >= requestedLimit) {
+        return { places: usable.slice(0, requestedLimit) };
+      }
+      if (!page.nextPageToken) break;
+      if (page.places.length === 0) break;
+
+      pageToken = page.nextPageToken;
+      await new Promise((r) => setTimeout(r, 150));
     }
 
-    for (const p of page.places) {
-      if (collected.length >= GOOGLE_SEARCH_MAX_RAW_PLACES) break;
-      const pid = p.id?.trim();
-      if (pid) {
-        if (seenPlaceIds.has(pid)) continue;
-        seenPlaceIds.add(pid);
-      }
-      collected.push(p);
+    const usableSoFar = filterStandaloneCompanyPlaces(
+      (crmKeys ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys)) : collected).filter(
+        (p) => isStandaloneCompanyWebsite(p.websiteUri),
+      ),
+    );
+    if (usableSoFar.length >= requestedLimit) {
+      return { places: usableSoFar.slice(0, requestedLimit) };
     }
-
-    const afterFilter = crmKeys
-      ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys))
-      : collected;
-
-    if (afterFilter.length >= requestedLimit) break;
-    if (!page.nextPageToken) break;
-    if (page.places.length === 0) break;
-
-    pageToken = page.nextPageToken;
-    await new Promise((r) => setTimeout(r, 150));
   }
 
-  const afterFilter = crmKeys
+  const afterCrm = crmKeys
     ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys))
     : collected;
+  const usable = filterStandaloneCompanyPlaces(afterCrm);
 
-  return { places: afterFilter.slice(0, requestedLimit) };
+  if (usable.length === 0 && collected.length === 0 && lastError) {
+    return { places: [], error: lastError };
+  }
+
+  return { places: usable.slice(0, requestedLimit) };
 }
 
 async function mapGooglePlaceToRadarLead(
@@ -264,10 +328,12 @@ async function persistAutomatedRadarLeads(
   crmKeys: CrmExclusionKeys,
   crmEmails: Set<string>,
   maxToCreate?: number,
+  countryCode?: string | null,
 ): Promise<{ created: number; skipped: number; createdLeadIds: string[] }> {
   let created = 0;
   let skipped = 0;
   const createdLeadIds: string[] = [];
+  const resolvedCountry = normalizeCountryCode(countryCode);
 
   const toCreate: Array<{
     companyName: string;
@@ -281,6 +347,7 @@ async function persistAutomatedRadarLeads(
     source: "RADAR";
     workspaceId: string;
     industry: null;
+    countryCode: string | null;
   }> = [];
 
   const inBatchPlaceIds = new Set<string>();
@@ -332,6 +399,7 @@ async function persistAutomatedRadarLeads(
       source: "RADAR",
       workspaceId,
       industry: null,
+      countryCode: resolvedCountry,
     });
   }
 
@@ -428,6 +496,7 @@ export async function runAutomatedRadarForWorkspace(
 
   const radarSettings = await loadRadarSettingsPayloadForWorkspace(workspaceId);
   const searches = buildRadarSearchQueries(radarSettings);
+  const regionCode = normalizeCountryCode(radarSettings.countryCode);
   const maxPerRun = Math.min(
     Math.max(1, radarSettings.maxCompaniesPerRun ?? 50),
     maxAffordableLeads,
@@ -458,6 +527,7 @@ export async function runAutomatedRadarForWorkspace(
         search.query,
         search.limit,
         crmKeys,
+        regionCode,
       );
 
       if (error) {
@@ -477,6 +547,7 @@ export async function runAutomatedRadarForWorkspace(
         crmKeys,
         crmEmails,
         maxPerRun - createdCount,
+        regionCode,
       );
       createdCount += persist.created;
       skippedCount += persist.skipped;
@@ -767,62 +838,26 @@ export async function searchRadarLeads(input: RadarSearchInput) {
   const requestedLimit = Math.max(1, input.limit);
   const excludeCrm = input.excludeCrm === true;
   const crmKeys = excludeCrm ? await loadCrmExclusionKeys(session.workspace.id) : null;
+  const regionCode = normalizeCountryCode(input.regionCode);
 
-  const collected: GooglePlaceV2[] = [];
-  const seenPlaceIds = new Set<string>();
-  let pageToken: string | undefined;
-  let pageIndex = 0;
+  const { places: placesToMap, error: placesError } = await collectGooglePlacesForQuery(
+    apiKey,
+    normalizedQuery,
+    requestedLimit,
+    crmKeys,
+    regionCode,
+  );
 
-  while (collected.length < GOOGLE_SEARCH_MAX_RAW_PLACES && pageIndex < 5) {
-    pageIndex += 1;
-    const page = await fetchGooglePlacesSearchTextPage(apiKey, normalizedQuery, pageToken);
-
-    if (page.error) {
-      if (collected.length === 0) {
-        return { error: page.error };
-      }
-      break;
-    }
-
-    for (const p of page.places) {
-      if (collected.length >= GOOGLE_SEARCH_MAX_RAW_PLACES) {
-        break;
-      }
-      const pid = p.id?.trim();
-      if (pid) {
-        if (seenPlaceIds.has(pid)) continue;
-        seenPlaceIds.add(pid);
-      }
-      collected.push(p);
-    }
-
-    const afterFilter = crmKeys
-      ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys))
-      : collected;
-
-    if (afterFilter.length >= requestedLimit) {
-      break;
-    }
-    if (!page.nextPageToken) {
-      break;
-    }
-    if (page.places.length === 0) {
-      break;
-    }
-
-    pageToken = page.nextPageToken;
-    await new Promise((r) => setTimeout(r, 150));
+  if (placesError && placesToMap.length === 0) {
+    return { error: placesError };
   }
-
-  const afterFilter = crmKeys
-    ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys))
-    : collected;
-
-  const placesToMap = afterFilter.slice(0, requestedLimit);
 
   const mappedResults: RadarLead[] = await Promise.all(
     placesToMap.map((item, index) => mapGooglePlaceToRadarLead(item, index, true)),
   );
+
+  // Drop any leftovers without a real standalone website (safety net after scrape).
+  const standaloneResults = mappedResults.filter((r) => isStandaloneCompanyWebsite(r.url));
 
   await prisma.workspace.update({
     where: { id: session.workspace.id },
@@ -832,5 +867,5 @@ export async function searchRadarLeads(input: RadarSearchInput) {
   revalidatePath("/radar");
   revalidatePath("/");
 
-  return { results: mappedResults };
+  return { results: standaloneResults };
 }
