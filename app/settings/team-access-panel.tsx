@@ -177,6 +177,9 @@ export function TeamAccessPanel() {
           <p className="text-xs text-muted-foreground">
             Všichni vidí stejné CRM, stavy a Google Sheets.
           </p>
+          <p className="text-xs text-muted-foreground">
+            Billing Agency účtu spravuje jeden profil (vlastník workspace).
+          </p>
         </div>
         {canManage && (
           <Button

@@ -59,7 +59,35 @@ const DIRECTORY_OR_PROMO_HOSTS = [
   "business.site",
   "sites.google.com",
   "mapy.cz",
+  // Ecommerce platform vendors (HQ / corporate — not merchant shops)
+  "shopify.com",
+  "shopify.co.uk",
+  "myshopify.com",
+  "shoptet.cz",
+  "shoptet.sk",
+  "shoptet.com",
+  "woocommerce.com",
+  "wordpress.com",
+  "wix.com",
+  "squarespace.com",
+  "bigcommerce.com",
+  "prestashop.com",
+  "magento.com",
+  "adobe.com",
 ] as const;
+
+/** Exact / near-exact Place names that are the platform company, not a merchant. */
+const PLATFORM_VENDOR_NAMES = [
+  /^shopify$/i,
+  /^shopify\s+(inc|ltd|limited|uk|ireland|europe)\.?$/i,
+  /^shoptet$/i,
+  /^shoptet\s+(a\.?\s*s\.?|s\.?\s*r\.?\s*o\.?)$/i,
+  /^woocommerce$/i,
+  /^wix\.com$/i,
+  /^wix$/i,
+  /^squarespace$/i,
+  /^bigcommerce$/i,
+];
 
 const PROMO_PATH_HINTS = [
   "/katalog",
@@ -127,13 +155,44 @@ export function isStandaloneCompanyWebsite(rawUrl: string | null | undefined): b
   return true;
 }
 
+/** True if Places result is the ecommerce platform vendor itself (Shopify HQ, Shoptet…). */
+export function isEcommercePlatformVendor(input: {
+  name?: string | null;
+  websiteUri?: string | null;
+}): boolean {
+  const name = (input.name ?? "").trim();
+  if (name && PLATFORM_VENDOR_NAMES.some((re) => re.test(name))) return true;
+  const host = hostnameOf(input.websiteUri ?? "");
+  if (!host) return false;
+  const vendorHosts = [
+    "shopify.com",
+    "shopify.co.uk",
+    "shoptet.cz",
+    "shoptet.sk",
+    "shoptet.com",
+    "woocommerce.com",
+    "wix.com",
+    "squarespace.com",
+    "bigcommerce.com",
+  ];
+  return vendorHosts.some((h) => host === h || host.endsWith(`.${h}`));
+}
+
 export type PlaceWithWebsite = {
   websiteUri?: string | null;
+  displayName?: { text?: string } | null;
+  name?: string | null;
 };
 
-/** Keep places that have their own company website (not directories / social-only). */
+/** Keep places that have their own company website (not directories / social-only / platform HQ). */
 export function filterStandaloneCompanyPlaces<T extends PlaceWithWebsite>(places: T[]): T[] {
-  return places.filter((p) => isStandaloneCompanyWebsite(p.websiteUri ?? ""));
+  return places.filter((p) => {
+    const name = p.displayName?.text ?? p.name ?? "";
+    const url = p.websiteUri ?? "";
+    if (!isStandaloneCompanyWebsite(url)) return false;
+    if (isEcommercePlatformVendor({ name, websiteUri: url })) return false;
+    return true;
+  });
 }
 
 /**

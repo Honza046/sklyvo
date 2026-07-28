@@ -33,6 +33,39 @@ import {
   normalizeCountryCode,
 } from "@/lib/country-language";
 
+const RADAR_RECENT_STORAGE_KEY = "venegard-radar-recent-searches";
+const RADAR_RECENT_MAX = 4;
+
+function loadRecentSearches(): string[] {
+  try {
+    const raw = window.localStorage.getItem(RADAR_RECENT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .filter(Boolean)
+      .slice(0, RADAR_RECENT_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function pushRecentSearch(query: string): string[] {
+  const q = query.trim();
+  if (!q) return loadRecentSearches();
+  const next = [q, ...loadRecentSearches().filter((item) => item.toLowerCase() !== q.toLowerCase())].slice(
+    0,
+    RADAR_RECENT_MAX,
+  );
+  try {
+    window.localStorage.setItem(RADAR_RECENT_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  return next;
+}
+
 type RadarResult = {
   id: string;
   name: string;
@@ -98,8 +131,10 @@ export default function RadarPage() {
   const [addedLeadIds, setAddedLeadIds] = useState<string[]>([]);
   const [addingLeadIds, setAddingLeadIds] = useState<string[]>([]);
   const [isImportingAll, setIsImportingAll] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   useEffect(() => {
+    setRecentSearches(loadRecentSearches());
     try {
       const stored = window.localStorage.getItem(RADAR_COUNTRY_STORAGE_KEY)?.trim();
       if (!stored) return;
@@ -176,6 +211,8 @@ export default function RadarPage() {
       setResults([]);
       return;
     }
+
+    setRecentSearches(pushRecentSearch(query.trim()));
 
     const raw = radarResponse.results ?? [];
     const filtered = onlyEmail ? raw.filter((r) => Boolean(r.email?.trim())) : raw;
@@ -304,17 +341,41 @@ export default function RadarPage() {
                   autoComplete="off"
                 />
               </div>
-              <div className="mt-2 flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
-                {searchInspirations.map((text) => (
-                  <button
-                    key={text}
-                    type="button"
-                    onClick={() => handleQueryChange(text)}
-                    className="shrink-0 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium text-foreground/80"
-                  >
-                    {text}
-                  </button>
-                ))}
+              <div className="mt-2 space-y-2">
+                <div className="min-w-0">
+                  <p className="mb-1 text-[10px] text-muted-foreground">{t("radar.inspirationLabel")}</p>
+                  <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
+                    {searchInspirations.map((text) => (
+                      <button
+                        key={text}
+                        type="button"
+                        onClick={() => handleQueryChange(text)}
+                        className="shrink-0 rounded-full bg-background/80 px-2.5 py-1 text-[10px] font-medium text-foreground/80"
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <p className="mb-1 text-[10px] text-muted-foreground">{t("radar.recentLabel")}</p>
+                  {recentSearches.length > 0 ? (
+                    <div className="flex min-w-0 flex-nowrap gap-1.5 overflow-x-auto scrollbar-hide">
+                      {recentSearches.map((text) => (
+                        <button
+                          key={text}
+                          type="button"
+                          onClick={() => handleQueryChange(text)}
+                          className="shrink-0 rounded-full border border-border/40 bg-background px-2.5 py-1 text-[10px] font-medium text-foreground/80"
+                        >
+                          {text}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground/80">{t("radar.recentEmpty")}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div className="border-b border-border/40 px-4 py-3">
@@ -423,21 +484,6 @@ export default function RadarPage() {
                     autoComplete="off"
                   />
                 </div>
-                <div className="space-y-1.5 pt-1">
-                  <p className="text-[11px] text-muted-foreground">{t("radar.inspirationLabel")}</p>
-                  <div className="flex flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
-                    {searchInspirations.map((text) => (
-                      <button
-                        key={text}
-                        type="button"
-                        onClick={() => handleQueryChange(text)}
-                        className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
-                      >
-                        {text}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className="space-y-2">
@@ -475,6 +521,43 @@ export default function RadarPage() {
                     <SelectItem value="15">15 výsledků</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="min-w-0 space-y-1.5">
+                <p className="text-[11px] text-muted-foreground">{t("radar.inspirationLabel")}</p>
+                <div className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
+                  {searchInspirations.map((text) => (
+                    <button
+                      key={text}
+                      type="button"
+                      onClick={() => handleQueryChange(text)}
+                      className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
+                    >
+                      {text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="min-w-0 space-y-1.5">
+                <p className="text-[11px] text-muted-foreground">{t("radar.recentLabel")}</p>
+                {recentSearches.length > 0 ? (
+                  <div className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
+                    {recentSearches.map((text) => (
+                      <button
+                        key={text}
+                        type="button"
+                        onClick={() => handleQueryChange(text)}
+                        className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-background px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground/80">{t("radar.recentEmpty")}</p>
+                )}
               </div>
             </div>
 
@@ -668,9 +751,10 @@ export default function RadarPage() {
                         </Button>
                         <Button
                           asChild
+                          variant="ghost"
                           size="sm"
                           disabled={!result.url}
-                          className="h-8 w-8 shrink-0 rounded-lg bg-foreground p-0 text-background hover:bg-foreground/90 disabled:opacity-40"
+                          className="h-8 w-8 shrink-0 rounded-lg p-0 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
                         >
                           <a
                             href={result.url || undefined}
@@ -706,8 +790,9 @@ export default function RadarPage() {
                       </Button>
                       <Button
                         asChild
+                        variant="ghost"
                         disabled={!result.url}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground p-0 text-background shadow-sm hover:bg-foreground/90 disabled:opacity-40"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl p-0 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
                       >
                         <a
                           href={result.url || undefined}
@@ -715,7 +800,7 @@ export default function RadarPage() {
                           rel="noopener noreferrer"
                           aria-label="Otevřít web"
                         >
-                          <Globe className="h-4 w-4" />
+                          <Globe className="h-5 w-5" />
                         </a>
                       </Button>
                       <Button asChild className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground p-0 text-background shadow-sm hover:bg-foreground/90">

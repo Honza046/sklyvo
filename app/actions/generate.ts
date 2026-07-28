@@ -762,8 +762,18 @@ function buildSniperSystemPrompt(
     .map((w) => `„${w}“`)
     .join(", ");
   const signatureInstruction = ctx.emailSignature
-    ? `Použij přesně tento podpis na konci těla e-mailu (za rozloučením):\n${ctx.emailSignature}`
-    : `řádek „S pozdravem“, nový řádek a podpis: ${author.fullName}. Nikdy nepodepisuj „Tým …“, pokud to není v profilu firmy.`;
+    ? [
+        "Použij přesně tento podpis jako poslední odstavec těla (za CTA, před ním prázdný řádek).",
+        "Zachovej přesné zalomení řádků — jako v klasickém mailu / Seznamu:",
+        ctx.emailSignature,
+      ].join("\n")
+    : [
+        "řádek „S pozdravem,“",
+        `nový řádek: ${author.fullName}`,
+        "další řádky (pokud znáš z kontextu): e-mail, telefon, web — každý na vlastním řádku.",
+        "Nikdy nepodepisuj „Tým …“, pokud to není v profilu firmy.",
+      ].join(" ");
+
   const personaIntro = ctx.systemPrompt.trim()
     ? ctx.systemPrompt.trim()
     : [
@@ -824,9 +834,12 @@ function buildSniperSystemPrompt(
       ? "3) Nabídka: 1 až 2 věty. Co konkrétně umíme (redesign / Shopify na míru / migrace) a jak to sedí na bod 2. Bez výčtu funkcí a bez „moderní a konverzní“ frází bez obsahu."
       : `3) Nabídka: 1 až 2 věty. Co umíme v návaznosti na „${nab}“ a bod 2. Bez výčtu funkcí a bez obecného marketingového pitchování.`,
     "4) CTA: jen krátká otázka (např. jestli mají příští týden 10 minut). BEZ podpisu v tomto odstavci.",
-    "5) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek). Přesný formát:",
+    "5) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek), formát jako v mailu/Seznamu:",
     "   S pozdravem,",
-    `   ${author.fullName} … (nebo uložený podpis níže; jméno vždy na novém řádku pod „S pozdravem,“)`,
+    `   ${author.fullName}`,
+    "   e-mail",
+    "   telefon",
+    "   web",
     `   ${signatureInstruction}`,
     "",
     "Příklad úrovně konkrétnosti (NEKOPÍRUJ, jen tón):",

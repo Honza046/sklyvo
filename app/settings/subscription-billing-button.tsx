@@ -5,7 +5,13 @@ import { type MouseEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-export function SubscriptionBillingButton({ showChoosePlan }: { showChoosePlan: boolean }) {
+export function SubscriptionBillingButton({
+  showChoosePlan,
+  isAgency = false,
+}: {
+  showChoosePlan: boolean;
+  isAgency?: boolean;
+}) {
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
@@ -29,19 +35,33 @@ export function SubscriptionBillingButton({ showChoosePlan }: { showChoosePlan: 
 
   if (showChoosePlan) {
     return (
-      <Button asChild className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700">
-        <Link href="/settings/billing">Vybrat tarif</Link>
-      </Button>
+      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+        <Button asChild className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700">
+          <Link href="/settings/billing">Vybrat tarif</Link>
+        </Button>
+        {isAgency && (
+          <p className="max-w-[16rem] text-right text-[11px] leading-snug text-muted-foreground">
+            U Agency účtu billing spravuje jeden profil (vlastník workspace).
+          </p>
+        )}
+      </div>
     );
   }
 
   return (
-    <Button
-      type="button"
-      className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700"
-      onClick={(e) => void handleBillingPortal(e)}
-    >
-      Spravovat billing
-    </Button>
+    <div className="flex flex-col items-stretch gap-2 sm:items-end">
+      <Button
+        type="button"
+        className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700"
+        onClick={(e) => void handleBillingPortal(e)}
+      >
+        Spravovat billing
+      </Button>
+      {isAgency && (
+        <p className="max-w-[16rem] text-right text-[11px] leading-snug text-muted-foreground">
+          U Agency účtu billing spravuje jeden profil (vlastník workspace).
+        </p>
+      )}
+    </div>
   );
 }

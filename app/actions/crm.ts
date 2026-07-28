@@ -518,6 +518,88 @@ function hasContactValue(raw: string | null | undefined) {
 }
 
 /**
+ * Důkladný re-scan jednoho leadu — doplní chybějící e-mail a/nebo telefon z webu.
+ */
+export async function scrapeLeadContacts(leadId: string) {
+  const session = await getSessionUser();
+  if (!session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const id = (leadId ?? "").trim();
+  if (!id) {
+    return { error: "Chybí ID leadu." };
+  }
+
+  const lead = await prisma.lead.findFirst({
+    where: { id, workspaceId: session.workspace.id },
+    select: {
+      id: true,
+      domain: true,
+      email: true,
+      contactEmail: true,
+      phone: true,
+      contactPhone: true,
+    },
+  });
+
+  if (!lead) {
+    return { error: "Lead nenalezen." };
+  }
+
+  const web = (lead.domain ?? "").trim();
+  if (!web) {
+    return { error: "Lead nemá webovou adresu." };
+  }
+
+  try {
+    const scraped = await scrapeWebsiteContacts(web, { thorough: true });
+    const needEmail =
+      !hasContactValue(lead.contactEmail) && !hasContactValue(lead.email);
+    const needPhone =
+      !hasContactValue(lead.contactPhone) && !hasContactValue(lead.phone);
+
+    const data: {
+      email?: string;
+      contactEmail?: string;
+      phone?: string;
+      contactPhone?: string;
+    } = {};
+
+    if (needEmail && scraped.email) {
+      data.email = scraped.email;
+      data.contactEmail = scraped.email;
+    }
+    if (needPhone && scraped.phone) {
+      data.phone = scraped.phone;
+      data.contactPhone = scraped.phone;
+    }
+
+    if (Object.keys(data).length > 0) {
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data,
+      });
+      revalidatePath("/crm");
+      revalidatePath("/");
+      scheduleCrmSheetsSync(session.workspace.id);
+    }
+
+    return {
+      success: true as const,
+      emailFound: Boolean(data.email),
+      phoneFound: Boolean(data.phone),
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      pagesChecked: scraped.pagesChecked,
+      alreadyComplete: !needEmail && !needPhone,
+    };
+  } catch {
+    return { error: "Nepodařilo se projít web." };
+  }
+}
+
+/**
  * Deep scrape webů vybraných leadů — doplní chybějící e-mail / telefon.
  * Běží s omezenou paralelitou (4), aby servery webů nepadaly.
  */
@@ -565,7 +647,7 @@ export async function bulkScrapeLeadContacts(ids: string[]) {
     }
 
     try {
-      const scraped = await scrapeWebsiteContacts(web);
+      const scraped = await scrapeWebsiteContacts(web, { thorough: true });
       const needEmail =
         !hasContactValue(lead.contactEmail) && !hasContactValue(lead.email);
       const needPhone =

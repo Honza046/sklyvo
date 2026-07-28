@@ -41,7 +41,7 @@ export type RunState = {
   htmlBody?: string;
 };
 
-export const ITEMS_PER_PAGE = 10;
+export const ITEMS_PER_PAGE = 50;
 
 export const AUTOPILOT_TABLE_CARD_CLASS =
   "mt-2 flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-8 sm:rounded-2xl sm:overflow-x-hidden";

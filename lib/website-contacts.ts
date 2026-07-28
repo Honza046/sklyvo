@@ -51,6 +51,36 @@ const DEEP_CONTACT_PATHS = [
   "/en/contact",
 ];
 
+/** Extra cesty pro důkladnější CRM re-scan. */
+const THOROUGH_CONTACT_PATHS = [
+  ...DEEP_CONTACT_PATHS,
+  "/kontaktujte-nas",
+  "/kontaktujte",
+  "/write-us",
+  "/get-in-touch",
+  "/team",
+  "/tym",
+  "/tým",
+  "/people",
+  "/lide",
+  "/lidé",
+  "/staff",
+  "/footer",
+  "/cs/kontakty",
+  "/en/contacts",
+  "/sk/kontakt",
+  "/de/kontakt",
+  "/de/impressum",
+  "/privacy",
+  "/ochrana-udaju",
+  "/gdpr",
+];
+
+export type ScrapeWebsiteContactsOptions = {
+  /** Více stránek, delší timeout — pro CRM „doplnit kontakt“. */
+  thorough?: boolean;
+};
+
 export type ScrapedWebsiteContacts = {
   email: string | null;
   phone: string | null;
@@ -173,12 +203,12 @@ export function extractPhoneFromHtml(html: string): string | null {
 }
 
 /** Najde další kontaktní URL na stejné doméně z odkazů na homepage. */
-function discoverContactLinks(html: string, origin: string): string[] {
+function discoverContactLinks(html: string, origin: string, limit = 6): string[] {
   const found: string[] = [];
   const re = /href\s*=\s*["']([^"']+)["']/gi;
   let m: RegExpExecArray | null;
   const keywords =
-    /kontakt|contact|about|o-nas|onas|impressum|firma|napiste|poptavk|en\/contact|cs\/kontakt/i;
+    /kontakt|contact|about|o-nas|onas|impressum|firma|napiste|poptavk|en\/contact|cs\/kontakt|team|tym|tým|people|gdpr|privacy|ochrana/i;
 
   while ((m = re.exec(html)) !== null) {
     const href = (m[1] ?? "").trim();
@@ -194,7 +224,7 @@ function discoverContactLinks(html: string, origin: string): string[] {
       /* ignore */
     }
   }
-  return Array.from(new Set(found)).slice(0, 6);
+  return Array.from(new Set(found)).slice(0, limit);
 }
 
 function normalizeFetchKey(url: string): string {
@@ -207,9 +237,12 @@ function normalizeFetchKey(url: string): string {
   }
 }
 
-async function fetchPageHtml(url: string): Promise<string | null> {
+async function fetchPageHtml(
+  url: string,
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<string | null> {
   const fetched = await safeFetchHtml(url, {
-    timeoutMs: FETCH_TIMEOUT_MS,
+    timeoutMs,
     maxBodyChars: MAX_BODY_CHARS,
     headers: {
       "User-Agent": BROWSER_UA,
@@ -220,19 +253,30 @@ async function fetchPageHtml(url: string): Promise<string | null> {
   return fetched.html;
 }
 
-async function fetchPageHtmlOnce(url: string, seen: Set<string>): Promise<string | null> {
+async function fetchPageHtmlOnce(
+  url: string,
+  seen: Set<string>,
+  timeoutMs = FETCH_TIMEOUT_MS,
+): Promise<string | null> {
   const key = normalizeFetchKey(url);
   if (seen.has(key)) return null;
   seen.add(key);
-  return fetchPageHtml(url);
+  return fetchPageHtml(url, timeoutMs);
 }
 
 /**
  * Deep scrape: homepage → objevené kontaktní odkazy → standardní cesty (/kontakt, /contact, …).
+ * `thorough` projede více podstránek (CRM doplnění kontaktu).
  */
 export async function scrapeWebsiteContacts(
   websiteUri: string,
+  options?: ScrapeWebsiteContactsOptions,
 ): Promise<ScrapedWebsiteContacts> {
+  const thorough = Boolean(options?.thorough);
+  const timeoutMs = thorough ? 8_000 : FETCH_TIMEOUT_MS;
+  const maxDiscovered = thorough ? 14 : 6;
+  const paths = thorough ? THOROUGH_CONTACT_PATHS : DEEP_CONTACT_PATHS;
+
   const parsed = parseWebsiteUrl(websiteUri);
   if (!parsed) {
     return { email: null, phone: null, pagesChecked: 0 };
@@ -247,16 +291,16 @@ export async function scrapeWebsiteContacts(
   const seen = new Set<string>();
   const queue: string[] = [homepage];
 
-  for (const path of DEEP_CONTACT_PATHS) {
+  for (const path of paths) {
     queue.push(`${origin}${path}`);
   }
 
-  const homeHtml = await fetchPageHtmlOnce(homepage, seen);
+  const homeHtml = await fetchPageHtmlOnce(homepage, seen, timeoutMs);
   if (homeHtml) {
     pagesChecked += 1;
     email = extractEmailFromHtml(homeHtml);
     phone = extractPhoneFromHtml(homeHtml);
-    for (const link of discoverContactLinks(homeHtml, origin)) {
+    for (const link of discoverContactLinks(homeHtml, origin, maxDiscovered)) {
       queue.push(link);
     }
   }
@@ -265,7 +309,7 @@ export async function scrapeWebsiteContacts(
   const rest = queue.filter((u) => !seen.has(normalizeFetchKey(u)));
   for (const pageUrl of rest) {
     if (email && phone) break;
-    const html = await fetchPageHtmlOnce(pageUrl, seen);
+    const html = await fetchPageHtmlOnce(pageUrl, seen, timeoutMs);
     if (!html) continue;
     pagesChecked += 1;
     if (!email) email = extractEmailFromHtml(html);

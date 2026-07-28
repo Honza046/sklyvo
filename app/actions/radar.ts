@@ -10,14 +10,17 @@ import { loadSheetsArchiveExclusionKeys, scheduleCrmSheetsSync } from "@/lib/goo
 import { scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import {
+  COUNTRY_LOCATION_BIAS,
+  addressMatchesCountry,
+  normalizeCountryCode,
+  placesLanguageFromCountry,
+  rewriteRadarQueryForPlaces,
+} from "@/lib/country-language";
+import {
   broadenRadarQuery,
   filterStandaloneCompanyPlaces,
   isStandaloneCompanyWebsite,
 } from "@/lib/radar-website-quality";
-import {
-  normalizeCountryCode,
-  placesLanguageFromCountry,
-} from "@/lib/country-language";
 
 type RadarSearchInput = {
   query: string;
@@ -145,6 +148,14 @@ async function fetchGooglePlacesSearchTextPage(
   const regionCode = normalizeCountryCode(options?.regionCode);
   if (regionCode) {
     body.regionCode = regionCode;
+    const bias = COUNTRY_LOCATION_BIAS[regionCode];
+    if (bias && !pageToken) {
+      // Soft bias — regionCode alone is too weak for brand names (e.g. Shoptet → Praha).
+      // Circle radius max is 50 km; use country viewport rectangle instead.
+      body.locationBias = {
+        rectangle: bias.viewport,
+      };
+    }
   }
   const languageCode = options?.languageCode?.trim();
   if (languageCode) {
@@ -178,6 +189,18 @@ async function fetchGooglePlacesSearchTextPage(
   };
 }
 
+function placeMatchesSelectedCountry(
+  place: GooglePlaceV2,
+  regionCode: string | null,
+): boolean {
+  if (!regionCode) return true;
+  return addressMatchesCountry(
+    place.formattedAddress,
+    place.internationalPhoneNumber,
+    regionCode,
+  );
+}
+
 async function collectGooglePlacesForQuery(
   apiKey: string,
   textQuery: string,
@@ -190,9 +213,10 @@ async function collectGooglePlacesForQuery(
     return { places: [], error: "Prázdný dotaz." };
   }
 
+  const resolvedRegion = normalizeCountryCode(regionCode);
   const placesOpts = {
-    regionCode: normalizeCountryCode(regionCode),
-    languageCode: placesLanguageFromCountry(regionCode) ?? null,
+    regionCode: resolvedRegion,
+    languageCode: placesLanguageFromCountry(resolvedRegion) ?? null,
   };
 
   const collected: GooglePlaceV2[] = [];
@@ -201,7 +225,20 @@ async function collectGooglePlacesForQuery(
   let pageIndex = 0;
   let lastError: string | undefined;
 
-  const queryVariants = broadenRadarQuery(normalizedQuery);
+  const rewritten = rewriteRadarQueryForPlaces(normalizedQuery, resolvedRegion);
+  const queryVariants = Array.from(
+    new Set([rewritten, ...broadenRadarQuery(rewritten), ...broadenRadarQuery(normalizedQuery)]),
+  );
+
+  const usableFromCollected = () => {
+    let list = collected;
+    if (crmKeys) {
+      list = list.filter((place) => !googlePlaceIsInCrm(place, crmKeys));
+    }
+    list = list.filter((p) => isStandaloneCompanyWebsite(p.websiteUri));
+    list = list.filter((p) => placeMatchesSelectedCountry(p, resolvedRegion));
+    return filterStandaloneCompanyPlaces(list);
+  };
 
   for (const variant of queryVariants) {
     pageToken = undefined;
@@ -218,9 +255,6 @@ async function collectGooglePlacesForQuery(
 
       if (page.error) {
         lastError = page.error;
-        if (collected.length === 0 && variant === queryVariants[0]) {
-          // keep trying other variants unless first page of first query failed hard
-        }
         break;
       }
 
@@ -231,7 +265,6 @@ async function collectGooglePlacesForQuery(
           if (seenPlaceIds.has(pid)) continue;
           seenPlaceIds.add(pid);
         } else {
-          // Dedupe by name+website when place id missing
           const key = `${normalizeCompanyName(p.displayName?.text)}|${normalizeDomainFromWebsite(p.websiteUri) ?? ""}`;
           if (seenPlaceIds.has(key)) continue;
           seenPlaceIds.add(key);
@@ -239,12 +272,7 @@ async function collectGooglePlacesForQuery(
         collected.push(p);
       }
 
-      const usable = filterStandaloneCompanyPlaces(
-        (crmKeys ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys)) : collected).filter(
-          (p) => isStandaloneCompanyWebsite(p.websiteUri),
-        ),
-      );
-
+      const usable = usableFromCollected();
       if (usable.length >= requestedLimit) {
         return { places: usable.slice(0, requestedLimit) };
       }
@@ -255,23 +283,24 @@ async function collectGooglePlacesForQuery(
       await new Promise((r) => setTimeout(r, 150));
     }
 
-    const usableSoFar = filterStandaloneCompanyPlaces(
-      (crmKeys ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys)) : collected).filter(
-        (p) => isStandaloneCompanyWebsite(p.websiteUri),
-      ),
-    );
+    const usableSoFar = usableFromCollected();
     if (usableSoFar.length >= requestedLimit) {
       return { places: usableSoFar.slice(0, requestedLimit) };
     }
   }
 
-  const afterCrm = crmKeys
-    ? collected.filter((place) => !googlePlaceIsInCrm(place, crmKeys))
-    : collected;
-  const usable = filterStandaloneCompanyPlaces(afterCrm);
+  const usable = usableFromCollected();
 
   if (usable.length === 0 && collected.length === 0 && lastError) {
     return { places: [], error: lastError };
+  }
+
+  if (usable.length === 0 && resolvedRegion) {
+    return {
+      places: [],
+      error:
+        "V této zemi jsme nenašli firmy s vlastním webem. Zkus obecnější dotaz (např. „online shop London“) nebo jiný počet výsledků.",
+    };
   }
 
   return { places: usable.slice(0, requestedLimit) };

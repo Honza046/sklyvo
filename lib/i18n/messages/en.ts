@@ -139,6 +139,8 @@ export const en: MessageTree = {
     emailOnlyHelp: "Shows only results with a found contact.",
     addedToCrm: "Company added to CRM",
     inspirationLabel: "Search inspiration:",
+    recentLabel: "Recent:",
+    recentEmpty: "No recent searches yet",
     inspirations: [
       "Digital agencies Brno",
       "Furniture e-shops",

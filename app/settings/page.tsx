@@ -38,6 +38,8 @@ export default async function SettingsPage() {
   const planTier = workspace?.planTier;
   const isFreePlanTier =
     !planTier || planTier === "NONE" || planTier === "FREE";
+  const isAgencyPlan =
+    typeof planTier === "string" && planTier.toUpperCase().includes("AGENCY");
 
   const creditsUsed = workspace?.creditsUsed;
   const creditsTotal = workspace?.creditsTotal;
@@ -113,7 +115,7 @@ export default async function SettingsPage() {
   const emailConnection = isWorkspaceReady ? await getEmailConnectionState() : null;
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0">
+    <div className="flex min-h-full w-full flex-col items-center justify-start pb-24 pt-0 md:pb-28">
       <div className="mb-2 space-y-1 px-1 text-center sm:mb-6 sm:space-y-2">
         <div className="mb-1 flex items-center justify-center gap-2 sm:mb-2 sm:gap-3">
           <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-2xl sm:p-3">
@@ -148,7 +150,10 @@ export default async function SettingsPage() {
                   <p className="text-xs text-muted-foreground">{subscriptionDateLine}</p>
                 )}
               </div>
-              <SubscriptionBillingButton showChoosePlan={workspace?.subscriptionStatus === "FREE"} />
+              <SubscriptionBillingButton
+                showChoosePlan={workspace?.subscriptionStatus === "FREE"}
+                isAgency={isAgencyPlan}
+              />
             </>
           ) : (
             <>

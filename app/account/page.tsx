@@ -245,7 +245,7 @@ export default function AccountPage() {
   }
 
   return (
-      <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0 md:pb-12">
+      <div className="flex min-h-full w-full flex-col items-center justify-start pb-24 pt-0 md:pb-28">
         
         {/* HLAVIČKA */}
         <div className="mb-3 space-y-1 text-center md:mb-6 md:space-y-2">

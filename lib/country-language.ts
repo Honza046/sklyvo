@@ -62,6 +62,225 @@ export function countryLabel(code: string | null | undefined): string | null {
   return getRadarCountryOption(code)?.label ?? null;
 }
 
+/** Soft country bias for Places Text Search (circle max radius is 50 km — use viewport). */
+export const COUNTRY_LOCATION_BIAS: Record<
+  string,
+  {
+    englishName: string;
+    /** Approximate country bounding box for locationBias.rectangle */
+    viewport: {
+      low: { latitude: number; longitude: number };
+      high: { latitude: number; longitude: number };
+    };
+  }
+> = {
+  CZ: {
+    englishName: "Czechia",
+    viewport: { low: { latitude: 48.55, longitude: 12.09 }, high: { latitude: 51.06, longitude: 18.86 } },
+  },
+  SK: {
+    englishName: "Slovakia",
+    viewport: { low: { latitude: 47.73, longitude: 16.83 }, high: { latitude: 49.61, longitude: 22.57 } },
+  },
+  DE: {
+    englishName: "Germany",
+    viewport: { low: { latitude: 47.27, longitude: 5.87 }, high: { latitude: 55.06, longitude: 15.04 } },
+  },
+  AT: {
+    englishName: "Austria",
+    viewport: { low: { latitude: 46.37, longitude: 9.53 }, high: { latitude: 49.02, longitude: 17.16 } },
+  },
+  PL: {
+    englishName: "Poland",
+    viewport: { low: { latitude: 49.0, longitude: 14.12 }, high: { latitude: 54.84, longitude: 24.15 } },
+  },
+  GB: {
+    englishName: "United Kingdom",
+    viewport: { low: { latitude: 49.86, longitude: -8.65 }, high: { latitude: 60.86, longitude: 1.77 } },
+  },
+  US: {
+    englishName: "United States",
+    viewport: { low: { latitude: 24.4, longitude: -125.0 }, high: { latitude: 49.4, longitude: -66.9 } },
+  },
+  IE: {
+    englishName: "Ireland",
+    viewport: { low: { latitude: 51.4, longitude: -10.5 }, high: { latitude: 55.4, longitude: -5.9 } },
+  },
+  FR: {
+    englishName: "France",
+    viewport: { low: { latitude: 41.3, longitude: -5.2 }, high: { latitude: 51.1, longitude: 9.6 } },
+  },
+  ES: {
+    englishName: "Spain",
+    viewport: { low: { latitude: 35.9, longitude: -9.3 }, high: { latitude: 43.8, longitude: 4.3 } },
+  },
+  IT: {
+    englishName: "Italy",
+    viewport: { low: { latitude: 36.6, longitude: 6.6 }, high: { latitude: 47.1, longitude: 18.5 } },
+  },
+  NL: {
+    englishName: "Netherlands",
+    viewport: { low: { latitude: 50.75, longitude: 3.3 }, high: { latitude: 53.7, longitude: 7.23 } },
+  },
+  BE: {
+    englishName: "Belgium",
+    viewport: { low: { latitude: 49.5, longitude: 2.5 }, high: { latitude: 51.5, longitude: 6.4 } },
+  },
+  CH: {
+    englishName: "Switzerland",
+    viewport: { low: { latitude: 45.8, longitude: 5.95 }, high: { latitude: 47.8, longitude: 10.5 } },
+  },
+};
+
+/** Address / phone hints that identify a country (positive match). */
+const COUNTRY_ADDRESS_POSITIVE: Record<string, RegExp[]> = {
+  CZ: [
+    /\bczechia\b/i,
+    /\bczech republic\b/i,
+    /\bčeská republika\b/i,
+    /\bčesko\b/i,
+    /\bpraha\b/i,
+    /\bprague\b/i,
+    /\bbrno\b/i,
+    /\bostrava\b/i,
+    /\+\s*420\b/,
+  ],
+  SK: [/\bslovakia\b/i, /\bslovensko\b/i, /\bbratislava\b/i, /\+\s*421\b/],
+  DE: [
+    /\bgermany\b/i,
+    /\bdeutschland\b/i,
+    /\bněmecko\b/i,
+    /\bberlin\b/i,
+    /\bmünchen\b/i,
+    /\bmunich\b/i,
+    /\bhamburg\b/i,
+    /\+\s*49\b/,
+  ],
+  AT: [/\baustria\b/i, /\bösterreich\b/i, /\brakousko\b/i, /\bvienna\b/i, /\bwien\b/i, /\+\s*43\b/],
+  PL: [/\bpoland\b/i, /\bpolska\b/i, /\bpolsko\b/i, /\bwarsaw\b/i, /\bwarszawa\b/i, /\+\s*48\b/],
+  GB: [
+    /\bunited kingdom\b/i,
+    /\bgreat britain\b/i,
+    /\bengland\b/i,
+    /\bscotland\b/i,
+    /\bwales\b/i,
+    /\blondon\b/i,
+    /,\s*uk\b/i,
+    /\+\s*44\b/,
+  ],
+  US: [/\bunited states\b/i, /\busa\b/i, /\bnew york\b/i, /\bcalifornia\b/i, /\+\s*1\b/],
+  IE: [/\bireland\b/i, /\béire\b/i, /\bdublin\b/i, /\+\s*353\b/],
+  FR: [/\bfrance\b/i, /\bfrancie\b/i, /\bparis\b/i, /\+\s*33\b/],
+  ES: [/\bspain\b/i, /\bespaña\b/i, /\bšpanělsko\b/i, /\bmadrid\b/i, /\bbarcelona\b/i, /\+\s*34\b/],
+  IT: [/\bitaly\b/i, /\bitalia\b/i, /\bitálie\b/i, /\brome\b/i, /\bmilan\b/i, /\+\s*39\b/],
+  NL: [/\bnetherlands\b/i, /\bholland\b/i, /\bnizozemsko\b/i, /\bamsterdam\b/i, /\+\s*31\b/],
+  BE: [/\bbelgium\b/i, /\bbelgie\b/i, /\bbrussels\b/i, /\+\s*32\b/],
+  CH: [/\bswitzerland\b/i, /\bschweiz\b/i, /\bsuisse\b/i, /\bzurich\b/i, /\+\s*41\b/],
+};
+
+/**
+ * True if address/phone clearly belongs to `countryCode`.
+ * Rejects when another country's markers dominate (e.g. Prague while GB selected).
+ */
+export function addressMatchesCountry(
+  address: string | null | undefined,
+  phone: string | null | undefined,
+  countryCode: string | null | undefined,
+): boolean {
+  const code = normalizeCountryCode(countryCode);
+  if (!code) return true;
+
+  const hay = `${address ?? ""} ${phone ?? ""}`.trim();
+  if (!hay) return false;
+
+  const positive = COUNTRY_ADDRESS_POSITIVE[code] ?? [];
+  if (positive.some((re) => re.test(hay))) return true;
+
+  // Strong foreign markers (official names + dial codes) → reject
+  const FOREIGN_STRONG: Array<{ code: string; re: RegExp }> = [
+    { code: "CZ", re: /\bczechia\b|\bczech republic\b|\bčeská republika\b|\+\s*420\b/i },
+    { code: "SK", re: /\bslovakia\b|\bslovensko\b|\+\s*421\b/i },
+    { code: "DE", re: /\bgermany\b|\bdeutschland\b|\+\s*49\b/i },
+    { code: "AT", re: /\baustria\b|\bösterreich\b|\+\s*43\b/i },
+    { code: "PL", re: /\bpoland\b|\bpolska\b|\+\s*48\b/i },
+    { code: "GB", re: /\bunited kingdom\b|\bgreat britain\b|,\s*uk\b|\+\s*44\b/i },
+    { code: "US", re: /\bunited states\b|\busa\b/i },
+    { code: "IE", re: /\bireland\b|\+\s*353\b/i },
+    { code: "FR", re: /\bfrance\b|\+\s*33\b/i },
+    { code: "ES", re: /\bspain\b|\bespaña\b|\+\s*34\b/i },
+    { code: "IT", re: /\bitaly\b|\bitalia\b|\+\s*39\b/i },
+    { code: "NL", re: /\bnetherlands\b|\bholland\b|\+\s*31\b/i },
+    { code: "BE", re: /\bbelgium\b|\+\s*32\b/i },
+    { code: "CH", re: /\bswitzerland\b|\bschweiz\b|\+\s*41\b/i },
+  ];
+
+  for (const { code: other, re } of FOREIGN_STRONG) {
+    if (other === code) continue;
+    if (re.test(hay)) return false;
+  }
+
+  // No clear positive match for selected country → drop (strict)
+  return false;
+}
+
+/** Localize CZ spellings and strip platform-brand HQ traps for foreign searches. */
+export function rewriteRadarQueryForPlaces(
+  query: string,
+  regionCode: string | null | undefined,
+): string {
+  let q = query.trim().replace(/\s+/g, " ");
+  if (!q) return q;
+
+  const code = normalizeCountryCode(regionCode);
+
+  const cityNorm: Array<[RegExp, string]> = [
+    [/Lond[yý]n[\p{L}]*/giu, "London"],
+    [/Berl[ií]n[\p{L}]*/giu, "Berlin"],
+    [/Pa[rř][ií][zž][\p{L}]*/giu, "Paris"],
+    [/V[ií]de[nň][\p{L}]*/giu, "Vienna"],
+    [/Mnichov[\p{L}]*/giu, "Munich"],
+    [/Hamburk[\p{L}]*/giu, "Hamburg"],
+    [/Var[sš]av[\p{L}]*/giu, "Warsaw"],
+    [/Krakov[\p{L}]*/giu, "Krakow"],
+    [/(?<!\p{L})[RŘ][ií]m[\p{L}]*/giu, "Rome"],
+    [/Mil[aá]n[\p{L}]*/giu, "Milan"],
+    [/Ben[aá]tk[\p{L}]*/giu, "Venice"],
+    [/Brusel[\p{L}]*/giu, "Brussels"],
+    [/\bPraze\b|\bPraha\b|\bPrague\b/giu, "Prague"],
+  ];
+  for (const [re, repl] of cityNorm) {
+    q = q.replace(re, repl);
+  }
+
+  // Platform brands → Places returns vendor HQ; rephrase to merchant/store intent.
+  const hadShopify = /\bshopify\b/i.test(q);
+  const hadShoptet = /\bshoptet\b/i.test(q);
+
+  if (hadShopify || hadShoptet) {
+    q = q
+      .replace(/\bshopify\b/gi, "")
+      .replace(/\bshoptet\b/gi, "")
+      .replace(/\be-?shops?\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    // Ask for real shops, not the platform company
+    q = `${q} independent online shop ecommerce store`.replace(/\s+/g, " ").trim();
+  } else if (code && code !== "CZ") {
+    q = q.replace(/\be-?shop\b/gi, "ecommerce shop");
+  }
+
+  const bias = code ? COUNTRY_LOCATION_BIAS[code] : null;
+  if (bias && !new RegExp(bias.englishName.replace(/\s+/g, "\\s+"), "i").test(q)) {
+    if (code === "GB" && /\blondon\b/i.test(q) && !/\bunited kingdom\b|\buk\b/i.test(q)) {
+      q = `${q} United Kingdom`;
+    } else if (!/\b(united kingdom|germany|france|czechia|poland|austria)\b/i.test(q)) {
+      q = `${q} ${bias.englishName}`;
+    }
+  }
+
+  return q.replace(/\s+/g, " ").trim();
+}
+
 /**
  * City / country aliases → ISO code. Longer phrases first when matching.
  * Covers common CZ spellings (Londýn, Berlín…) and English names.

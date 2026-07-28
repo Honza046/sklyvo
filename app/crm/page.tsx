@@ -54,14 +54,16 @@ import {
   Target,
   Send,
   Rocket,
-  Mail,
   Bell,
+  Loader2,
+  ScanSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   bulkDeleteLeads,
   bulkUpdateLeads,
   bulkScrapeLeadContacts,
+  scrapeLeadContacts,
   createManualLead,
   getLeads,
   updateLeadDetails,
@@ -131,7 +133,7 @@ function buildSniperLeadHref(lead: Pick<Lead, "url" | "email">): string {
 }
 
 function CrmPageContent() {
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 50;
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "value_high" | "value_low">("newest");
   const [statusFilter, setStatusFilter] = useState<"all" | Lead["leadStatus"]>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | "radar" | "manual">("all");
@@ -140,6 +142,7 @@ function CrmPageContent() {
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
   const [autopilotLeads, setAutopilotLeads] = useState<AutopilotLead[] | null>(null);
   const [isBulkRunning, setIsBulkRunning] = useState(false);
+  const [scrapingLeadIds, setScrapingLeadIds] = useState<string[]>([]);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [editForm, setEditForm] = useState({
     company: "",
@@ -372,6 +375,41 @@ function CrmPageContent() {
         (result.failed ? ` Chyby: ${result.failed}.` : ""),
     );
     await loadLeads();
+  };
+
+  const handleScrapeLeadContacts = async (lead: Lead) => {
+    if (scrapingLeadIds.includes(lead.id) || isBulkRunning) return;
+    const web = leadFullWebsiteUrl(lead.url);
+    if (!web) {
+      toast.error("Firma nemá webovou adresu.");
+      return;
+    }
+
+    setScrapingLeadIds((prev) => [...prev, lead.id]);
+    toast.message(`Prohledávám web ${lead.company}…`);
+    const result = await scrapeLeadContacts(lead.id);
+    setScrapingLeadIds((prev) => prev.filter((id) => id !== lead.id));
+
+    if ("error" in result && result.error) {
+      toast.error(result.error);
+      return;
+    }
+
+    if (result.alreadyComplete) {
+      toast.message("Kontakt je už kompletní.");
+      return;
+    }
+
+    if (result.emailFound || result.phoneFound) {
+      const parts: string[] = [];
+      if (result.emailFound && result.email) parts.push(result.email);
+      if (result.phoneFound && result.phone) parts.push(result.phone);
+      toast.success(`Doplněno: ${parts.join(" · ")}`);
+      await loadLeads();
+      return;
+    }
+
+    toast.message("Na webu se e-mail ani telefon nepodařilo najít.");
   };
 
   const handleBulkDelete = () => {
@@ -631,14 +669,14 @@ function CrmPageContent() {
                       <Globe className="mr-2 h-4 w-4" />
                       Doplnit kontakty z webu
                     </Button>
-                    <Button
+                      <Button
                       size="sm"
                       variant="outline"
                       onClick={() => void handleBulkOutreach("FOLLOW_UP")}
                       disabled={isBulkRunning}
                       className="border-amber-200 bg-background font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300"
                     >
-                      <Mail className="mr-2 h-4 w-4" />
+                      <span className="mr-2" aria-hidden>🔄</span>
                       Follow-up
                     </Button>
                     <Button
@@ -648,7 +686,7 @@ function CrmPageContent() {
                       disabled={isBulkRunning}
                       className="border-orange-200 bg-background font-semibold text-orange-800 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300"
                     >
-                      <Mail className="mr-2 h-4 w-4" />
+                      <span className="mr-2" aria-hidden>👋</span>
                       Breakup
                     </Button>
                     <Button
@@ -940,13 +978,17 @@ function CrmPageContent() {
                         <DropdownMenuItem
                           onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
                         >
-                          <Mail className="mr-2 h-4 w-4" />
+                          <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                            🔄
+                          </span>
                           Poslat follow-up
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
                         >
-                          <Mail className="mr-2 h-4 w-4" />
+                          <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                            👋
+                          </span>
                           Poslat breakup
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -1018,6 +1060,8 @@ function CrmPageContent() {
                 {paginatedLeads.map((lead) => {
                   const companyWeb = leadFullWebsiteUrl(lead.url);
                   const emailTrim = (lead.email ?? "").trim();
+                  const phoneTrim = (lead.phone ?? "").trim();
+                  const needsContactScrape = Boolean(companyWeb) && (!emailTrim || !phoneTrim);
                   return (
                     <div
                       key={lead.id}
@@ -1062,10 +1106,28 @@ function CrmPageContent() {
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                           {emailTrim || "Bez e-mailu"}
                           <span className="mx-1 text-border">·</span>
-                          {lead.date}
+                          {phoneTrim || "Bez telefonu"}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-0.5">
+                        {needsContactScrape ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={scrapingLeadIds.includes(lead.id) || isBulkRunning}
+                            onClick={() => void handleScrapeLeadContacts(lead)}
+                            className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50"
+                            title="Důkladně prohledat web"
+                            aria-label="Důkladně prohledat web"
+                          >
+                            {scrapingLeadIds.includes(lead.id) ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <ScanSearch className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        ) : null}
                         <Button
                           asChild
                           variant="ghost"
@@ -1077,6 +1139,17 @@ function CrmPageContent() {
                             <Send className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleOpenEdit(lead)}
+                          className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          title="Upravit deal"
+                          aria-label="Upravit deal"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0 text-muted-foreground">
@@ -1084,16 +1157,25 @@ function CrmPageContent() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="z-50 w-52 border bg-white shadow-md dark:bg-zinc-950">
-                            <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Upravit deal
-                            </DropdownMenuItem>
+                            {needsContactScrape ? (
+                              <DropdownMenuItem
+                                disabled={scrapingLeadIds.includes(lead.id)}
+                                onClick={() => void handleScrapeLeadContacts(lead)}
+                              >
+                                <ScanSearch className="mr-2 h-4 w-4" />
+                                Doplnit kontakt z webu
+                              </DropdownMenuItem>
+                            ) : null}
                             <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
-                              <Mail className="mr-2 h-4 w-4" />
+                              <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                                🔄
+                              </span>
                               Poslat follow-up
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
-                              <Mail className="mr-2 h-4 w-4" />
+                              <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                                👋
+                              </span>
                               Poslat breakup
                             </DropdownMenuItem>
                             {companyWeb ? (
@@ -1163,7 +1245,7 @@ function CrmPageContent() {
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[26%]">KONTAKT</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Hodnota</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Status</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 text-right font-semibold dark:bg-zinc-950 w-[96px]">Akce</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 text-right font-semibold dark:bg-zinc-950 w-[128px]">Akce</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1203,23 +1285,45 @@ function CrmPageContent() {
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
                         <td className="px-3 py-3 align-top">
-                          <div className="flex min-w-0 flex-col gap-0.5">
-                            <span
-                              className={cn(
-                                "break-words text-sm",
-                                emailTrim ? "text-foreground" : "text-muted-foreground",
-                              )}
-                              title={emailTrim || undefined}
-                            >
-                              {emailTrim || "Bez emailu"}
-                            </span>
-                            {phoneTrim ? (
+                          <div className="flex min-w-0 items-start gap-2">
+                            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                               <span
-                                className="break-words text-xs text-muted-foreground"
-                                title={phoneTrim}
+                                className={cn(
+                                  "break-words text-sm",
+                                  emailTrim ? "text-foreground" : "text-muted-foreground",
+                                )}
+                                title={emailTrim || undefined}
                               >
-                                {phoneTrim}
+                                {emailTrim || "Bez emailu"}
                               </span>
+                              {phoneTrim ? (
+                                <span
+                                  className="break-words text-xs text-muted-foreground"
+                                  title={phoneTrim}
+                                >
+                                  {phoneTrim}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Bez telefonu</span>
+                              )}
+                            </div>
+                            {companyWeb && (!emailTrim || !phoneTrim) ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={scrapingLeadIds.includes(lead.id) || isBulkRunning}
+                                onClick={() => void handleScrapeLeadContacts(lead)}
+                                className="h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                                title="Důkladně prohledat web a doplnit kontakt"
+                                aria-label="Důkladně prohledat web a doplnit kontakt"
+                              >
+                                {scrapingLeadIds.includes(lead.id) ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <ScanSearch className="h-3.5 w-3.5" />
+                                )}
+                              </Button>
                             ) : null}
                           </div>
                         </td>
@@ -1262,6 +1366,17 @@ function CrmPageContent() {
                                 <Send className="h-4 w-4" />
                               </Link>
                             </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenEdit(lead)}
+                              className="h-8 w-8 shrink-0 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                              title="Upravit deal"
+                              aria-label="Upravit deal"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="sm" className="h-8 px-2">
@@ -1269,20 +1384,29 @@ function CrmPageContent() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-zinc-950 z-50 border shadow-md">
-                                <DropdownMenuItem onClick={() => handleOpenEdit(lead)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Upravit deal
-                                </DropdownMenuItem>
+                                {companyWeb && (!emailTrim || !phoneTrim) ? (
+                                  <DropdownMenuItem
+                                    disabled={scrapingLeadIds.includes(lead.id)}
+                                    onClick={() => void handleScrapeLeadContacts(lead)}
+                                  >
+                                    <ScanSearch className="mr-2 h-4 w-4" />
+                                    Doplnit kontakt z webu
+                                  </DropdownMenuItem>
+                                ) : null}
                                 <DropdownMenuItem
                                   onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
                                 >
-                                  <Mail className="mr-2 h-4 w-4" />
+                                  <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                                    🔄
+                                  </span>
                                   Poslat follow-up
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
                                 >
-                                  <Mail className="mr-2 h-4 w-4" />
+                                  <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
+                                    👋
+                                  </span>
                                   Poslat breakup
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />

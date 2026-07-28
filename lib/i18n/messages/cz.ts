@@ -138,6 +138,8 @@ export const cz = {
     emailOnlyHelp: "Ukáže jen výsledky s nalezeným kontaktem.",
     addedToCrm: "Firma přidána do CRM",
     inspirationLabel: "Inspirace pro vyhledávání:",
+    recentLabel: "Poslední:",
+    recentEmpty: "Zatím žádná hledání",
     inspirations: [
       "Digitální agentury Brno",
       "E-shopy s nábytkem",
