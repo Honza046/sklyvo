@@ -7,12 +7,12 @@ const SOURCE_LABEL: Record<LeadSourceValue, string> = {
   RADAR: "Radar",
   SNIPER: "Sniper",
   MANUAL: "Manuálně",
-  AUTOPILOT: "AP Radar",
+  AUTOPILOT: "Autopilot Radar",
 };
 
 const CONTACTED_VIA_LABEL: Record<ContactedViaValue, string> = {
   SNIPER: "Sniper",
-  AUTOPILOT_SNIPER: "AP Sniper",
+  AUTOPILOT_SNIPER: "Autopilot Sniper",
 };
 
 /** Krátké jméno pro CRM (Jan / Matěj / Filip), jinak celé jméno. */
@@ -43,7 +43,7 @@ export function contactedViaLabel(via: string | null | undefined): string {
 /**
  * CRM štítek zdroje:
  * - po odeslání e-mailu → Sniper / Autopilot-Sniper
- * - jinak → Radar / AP Radar / Manuálně / Sniper
+ * - jinak → Radar / Autopilot Radar / Manuálně / Sniper
  */
 export function leadChannelLabel(
   source: string | null | undefined,

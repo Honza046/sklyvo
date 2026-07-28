@@ -292,7 +292,9 @@ function CrmPageContent() {
   const ITEMS_PER_PAGE = 50;
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "value_high" | "value_low">("newest");
   const [statusFilter, setStatusFilter] = useState<"all" | Lead["leadStatus"]>("all");
-  const [sourceFilter, setSourceFilter] = useState<"all" | "radar" | "autopilot" | "sniper" | "manual">("all");
+  const [sourceFilter, setSourceFilter] = useState<
+    "all" | "radar" | "ap_radar" | "ap_sniper" | "sniper" | "manual"
+  >("all");
   const [dateFilter, setDateFilter] = useState<"all" | "last_7_days" | "last_30_days" | "this_year">("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
@@ -416,12 +418,13 @@ function CrmPageContent() {
         (sourceFilter === "radar" &&
           lead.source === "RADAR" &&
           !lead.contactedVia) ||
-        (sourceFilter === "autopilot" &&
-          (lead.source === "AUTOPILOT" || lead.contactedVia === "AUTOPILOT_SNIPER")) ||
+        (sourceFilter === "ap_radar" &&
+          lead.source === "AUTOPILOT" &&
+          !lead.contactedVia) ||
+        (sourceFilter === "ap_sniper" && lead.contactedVia === "AUTOPILOT_SNIPER") ||
         (sourceFilter === "sniper" &&
-          (lead.source === "SNIPER" ||
-            lead.contactedVia === "SNIPER" ||
-            lead.contactedVia === "AUTOPILOT_SNIPER")) ||
+          (lead.source === "SNIPER" || lead.contactedVia === "SNIPER") &&
+          lead.contactedVia !== "AUTOPILOT_SNIPER") ||
         (sourceFilter === "manual" && lead.source === "MANUAL" && !lead.contactedVia);
 
       const created = new Date(lead.createdAt);
@@ -1001,7 +1004,7 @@ function CrmPageContent() {
                         <span className="hidden md:inline">Filtry</span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="z-50 w-80 border bg-white shadow-md dark:bg-zinc-950" align="end">
+                    <PopoverContent className="z-[100] w-80 border border-border bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-950" align="end">
                       <div className="flex flex-col gap-4">
                         <div className="space-y-1.5">
                           <Label>Status</Label>
@@ -1042,16 +1045,19 @@ function CrmPageContent() {
                           <Select
                             value={sourceFilter}
                             onValueChange={(v) =>
-                              setSourceFilter(v as "all" | "radar" | "autopilot" | "sniper" | "manual")
+                              setSourceFilter(
+                                v as "all" | "radar" | "ap_radar" | "ap_sniper" | "sniper" | "manual",
+                              )
                             }
                           >
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Zdroj" />
                             </SelectTrigger>
-                            <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                            <SelectContent className="z-[110] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
                               <SelectItem value="all">Všechny zdroje</SelectItem>
                               <SelectItem value="radar">Radar</SelectItem>
-                              <SelectItem value="autopilot">AP Radar / Sniper</SelectItem>
+                              <SelectItem value="ap_radar">Autopilot Radar</SelectItem>
+                              <SelectItem value="ap_sniper">Autopilot Sniper</SelectItem>
                               <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="manual">Manuálně</SelectItem>
                             </SelectContent>
