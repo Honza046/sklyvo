@@ -286,9 +286,15 @@ export function DashboardShell({
         className="hidden h-full w-64 flex-shrink-0 overflow-hidden border-r bg-background md:flex md:flex-col"
       >
         
-        {/* LOGO */}
+        {/* LOGO → Přehled */}
         <div className="flex h-16 shrink-0 items-center px-6">
-          <VenegardWordmark markSize={30} />
+          <Link
+            href="/"
+            className="-mx-2 flex items-center rounded-xl px-2 py-2 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500/30"
+            aria-label={t("nav.overview")}
+          >
+            <VenegardWordmark markSize={30} />
+          </Link>
         </div>
         
         {/* HLAVNÍ NAVIGACE — scrolluje jen střed; profil dole zůstane vždy vidět */}

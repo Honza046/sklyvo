@@ -135,7 +135,13 @@ export function MobileTopBar({
         >
           <SheetHeader className="border-b px-4 py-4 text-left">
             <SheetTitle className="sr-only">VENEGARD</SheetTitle>
-            <VenegardWordmark markSize={28} />
+            <Link
+              href="/"
+              className="-mx-1 inline-flex items-center rounded-xl px-1 py-1 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500/30"
+              aria-label="Přehled"
+            >
+              <VenegardWordmark markSize={28} />
+            </Link>
             <div className="flex items-center gap-3 pt-2">
               <Avatar className="h-10 w-10 rounded-xl border border-border/50">
                 <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
