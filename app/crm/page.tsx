@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,6 +57,8 @@ import {
   Bell,
   Loader2,
   ScanSearch,
+  RefreshCw,
+  Hand,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -130,6 +132,64 @@ function buildSniperLeadHref(lead: Pick<Lead, "url" | "email">): string {
   if (website) qs.push(`url=${encodeURIComponent(website)}`);
   if (email) qs.push(`email=${encodeURIComponent(email)}`);
   return qs.length > 0 ? `/sniper?${qs.join("&")}` : "/sniper";
+}
+
+const SCRAPE_CONTACT_HINT = "Důkladně prohledá web a doplní e-mail nebo telefon";
+
+function ScrapeContactButton({
+  isLoading,
+  disabled,
+  onClick,
+  variant = "outline",
+  className,
+}: {
+  isLoading: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  variant?: "outline" | "ghost";
+  className?: string;
+}) {
+  const [hintOpen, setHintOpen] = useState(false);
+
+  return (
+    <Popover open={hintOpen} onOpenChange={setHintOpen}>
+      <div
+        className="shrink-0"
+        onMouseEnter={() => setHintOpen(true)}
+        onMouseLeave={() => setHintOpen(false)}
+      >
+        <PopoverAnchor asChild>
+          <Button
+            type="button"
+            variant={variant}
+            size="sm"
+            disabled={disabled || isLoading}
+            onClick={onClick}
+            onFocus={() => setHintOpen(true)}
+            onBlur={() => setHintOpen(false)}
+            className={className}
+            aria-label={SCRAPE_CONTACT_HINT}
+          >
+            {isLoading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <ScanSearch className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </PopoverAnchor>
+      </div>
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={8}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        className="w-auto max-w-[15rem] rounded-xl border-border/70 bg-white px-3 py-2 shadow-lg dark:border-zinc-700/90 dark:bg-zinc-950"
+      >
+        <p className="text-xs font-medium leading-snug text-foreground">{SCRAPE_CONTACT_HINT}</p>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 function CrmPageContent() {
@@ -676,7 +736,7 @@ function CrmPageContent() {
                       disabled={isBulkRunning}
                       className="border-amber-200 bg-background font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300"
                     >
-                      <span className="mr-2" aria-hidden>🔄</span>
+                      <RefreshCw className="mr-2 h-4 w-4" />
                       Follow-up
                     </Button>
                     <Button
@@ -686,7 +746,7 @@ function CrmPageContent() {
                       disabled={isBulkRunning}
                       className="border-orange-200 bg-background font-semibold text-orange-800 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300"
                     >
-                      <span className="mr-2" aria-hidden>👋</span>
+                      <Hand className="mr-2 h-4 w-4" />
                       Breakup
                     </Button>
                     <Button
@@ -978,17 +1038,13 @@ function CrmPageContent() {
                         <DropdownMenuItem
                           onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
                         >
-                          <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                            🔄
-                          </span>
+                          <RefreshCw className="mr-2 h-4 w-4" />
                           Poslat follow-up
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
                         >
-                          <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                            👋
-                          </span>
+                          <Hand className="mr-2 h-4 w-4" />
                           Poslat breakup
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -1111,22 +1167,13 @@ function CrmPageContent() {
                       </div>
                       <div className="flex shrink-0 items-center gap-0.5">
                         {needsContactScrape ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={scrapingLeadIds.includes(lead.id) || isBulkRunning}
+                          <ScrapeContactButton
+                            isLoading={scrapingLeadIds.includes(lead.id)}
+                            disabled={isBulkRunning}
                             onClick={() => void handleScrapeLeadContacts(lead)}
+                            variant="ghost"
                             className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50"
-                            title="Důkladně prohledat web"
-                            aria-label="Důkladně prohledat web"
-                          >
-                            {scrapingLeadIds.includes(lead.id) ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <ScanSearch className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
+                          />
                         ) : null}
                         <Button
                           asChild
@@ -1167,15 +1214,11 @@ function CrmPageContent() {
                               </DropdownMenuItem>
                             ) : null}
                             <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
-                              <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                                🔄
-                              </span>
+                              <RefreshCw className="mr-2 h-4 w-4" />
                               Poslat follow-up
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
-                              <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                                👋
-                              </span>
+                              <Hand className="mr-2 h-4 w-4" />
                               Poslat breakup
                             </DropdownMenuItem>
                             {companyWeb ? (
@@ -1308,22 +1351,12 @@ function CrmPageContent() {
                               )}
                             </div>
                             {companyWeb && (!emailTrim || !phoneTrim) ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={scrapingLeadIds.includes(lead.id) || isBulkRunning}
+                              <ScrapeContactButton
+                                isLoading={scrapingLeadIds.includes(lead.id)}
+                                disabled={isBulkRunning}
                                 onClick={() => void handleScrapeLeadContacts(lead)}
                                 className="h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
-                                title="Důkladně prohledat web a doplnit kontakt"
-                                aria-label="Důkladně prohledat web a doplnit kontakt"
-                              >
-                                {scrapingLeadIds.includes(lead.id) ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <ScanSearch className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
+                              />
                             ) : null}
                           </div>
                         </td>
@@ -1396,17 +1429,13 @@ function CrmPageContent() {
                                 <DropdownMenuItem
                                   onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
                                 >
-                                  <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                                    🔄
-                                  </span>
+                                  <RefreshCw className="mr-2 h-4 w-4" />
                                   Poslat follow-up
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
                                 >
-                                  <span className="mr-2 inline-flex w-4 justify-center text-sm leading-none" aria-hidden>
-                                    👋
-                                  </span>
+                                  <Hand className="mr-2 h-4 w-4" />
                                   Poslat breakup
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
