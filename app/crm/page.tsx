@@ -1187,15 +1187,21 @@ function CrmPageContent() {
                           {lead.company}
                         </h4>
                         {(() => {
-                          const { sourceLabel } = leadProvenanceParts(
+                          const { sourceLabel, authorLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
                             lead.contactedVia,
                           );
-                          if (!sourceLabel) return null;
+                          if (!sourceLabel && !authorLabel) return null;
                           return (
                             <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
                               {sourceLabel}
+                              {authorLabel ? (
+                                <>
+                                  {" · "}
+                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
+                                </>
+                              ) : null}
                             </p>
                           );
                         })()}
@@ -1372,15 +1378,21 @@ function CrmPageContent() {
                           </DropdownMenu>
                         </div>
                         {(() => {
-                          const { sourceLabel } = leadProvenanceParts(
+                          const { sourceLabel, authorLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
                             lead.contactedVia,
                           );
-                          if (!sourceLabel) return null;
+                          if (!sourceLabel && !authorLabel) return null;
                           return (
                             <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                               {sourceLabel}
+                              {authorLabel ? (
+                                <>
+                                  {" · "}
+                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
+                                </>
+                              ) : null}
                             </p>
                           );
                         })()}
@@ -1567,15 +1579,23 @@ function CrmPageContent() {
                                 {lead.company}
                               </p>
                               {(() => {
-                                const { sourceLabel } = leadProvenanceParts(
+                                const { sourceLabel, authorLabel } = leadProvenanceParts(
                                   lead.source,
                                   lead.author,
                                   lead.contactedVia,
                                 );
-                                if (!sourceLabel) return null;
+                                if (!sourceLabel && !authorLabel) return null;
                                 return (
                                   <p className="truncate text-xs text-muted-foreground">
                                     {sourceLabel}
+                                    {authorLabel ? (
+                                      <>
+                                        {" · "}
+                                        <span className="font-semibold text-foreground/80">
+                                          {authorLabel}
+                                        </span>
+                                      </>
+                                    ) : null}
                                   </p>
                                 );
                               })()}
