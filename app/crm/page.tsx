@@ -1485,18 +1485,23 @@ function CrmPageContent() {
                   );
                 })}
                 {!isLoading && paginatedLeads.length === 0 && (
-                  <div className="flex min-h-[200px] items-center justify-center text-sm text-muted-foreground">
+                  <div className="flex min-h-[50vh] flex-1 items-center justify-center text-sm text-muted-foreground">
                     Žádné firmy neodpovídají hledání.
                   </div>
                 )}
                 {isLoading && (
-                  <div className="flex min-h-[200px] items-center justify-center text-sm text-muted-foreground">
+                  <div className="flex min-h-[50vh] flex-1 items-center justify-center text-sm text-muted-foreground">
                     Načítám dealy...
                   </div>
                 )}
               </div>
 
               {/* Desktop table */}
+              {isLoading ? (
+                <div className="hidden min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground md:flex">
+                  Načítám dealy...
+                </div>
+              ) : (
               <div className="hidden min-h-0 flex-1 overflow-y-auto overflow-x-hidden md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full table-fixed text-sm">
                   <thead>
@@ -1745,17 +1750,8 @@ function CrmPageContent() {
                     {!isLoading && paginatedLeads.length === 0 && (
                       <tr>
                         <td colSpan={8} className="p-0">
-                          <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                          <div className="flex min-h-[min(50vh,28rem)] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Žádné firmy neodpovídají hledání.
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {isLoading && (
-                      <tr>
-                        <td colSpan={8} className="p-0">
-                          <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
-                            Načítám dealy...
                           </div>
                         </td>
                       </tr>
@@ -1763,6 +1759,7 @@ function CrmPageContent() {
                   </tbody>
                 </table>
               </div>
+              )}
 
               <div className="mt-0 flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 md:gap-3 md:border-border/60 md:bg-muted/30 md:px-6 md:py-2.5">
                 <p className="text-[11px] text-muted-foreground md:text-xs">
