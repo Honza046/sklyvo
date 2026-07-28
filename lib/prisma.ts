@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const connectionString = process.env.DATABASE_URL;
 
 /** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "outreach-user-email-connection-v1";
+const PRISMA_SCHEMA_FINGERPRINT = "outreach-user-email-connection-v2";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -136,11 +136,14 @@ function getPrismaClient(): PrismaClient {
 /**
  * Always resolve through getPrismaClient() so HMR / prisma generate
  * cannot leave callers stuck on a stale singleton export.
+ *
+ * Important: Reflect.get must use the real client as receiver so Prisma
+ * model getters (userEmailConnection, lead, …) keep the correct `this`.
  */
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
-  get(_target, prop, receiver) {
+  get(_target, prop) {
     const client = getPrismaClient();
-    const value = Reflect.get(client, prop, receiver);
+    const value = Reflect.get(client, prop, client);
     return typeof value === "function" ? value.bind(client) : value;
   },
 });
