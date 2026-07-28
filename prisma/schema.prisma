@@ -32,6 +32,12 @@ enum LeadSource {
   AUTOPILOT
 }
 
+/** Jak byl lead osloven e-mailem (CRM zobrazí místo zdroje nalezení). */
+enum ContactedVia {
+  SNIPER
+  AUTOPILOT_SNIPER
+}
+
 enum EmailQueueStatus {
   PENDING
   SENT
@@ -220,6 +226,8 @@ model Lead {
   status        LeadStatus @default(NEW)
   /** Odkud lead přišel — řídí list v Google Sheets (Radar / Sniper). */
   source        LeadSource @default(MANUAL)
+  /** Po odeslání e-mailu: Sniper vs Autopilot-Sniper (CRM štítek). */
+  contactedVia  ContactedVia?
 
   /** Kdy někdo z týmu otevřel web firmy (zeměkoule v CRM). */
   websiteVisitedAt DateTime?

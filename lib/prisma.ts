@@ -4,8 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-/** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "outreach-user-email-connection-v2";
+  // Bump when schema changes require a fresh client
+  const PRISMA_SCHEMA_FINGERPRINT = "outreach-lead-contacted-via-v1";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;

@@ -3,7 +3,7 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
-import { authorFromSessionUser, type LeadSourceValue } from "@/lib/lead-provenance";
+import { authorFromSessionUser, type ContactedViaValue, type LeadSourceValue } from "@/lib/lead-provenance";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -31,6 +31,7 @@ type CrmLead = {
   phone: string;
   author: string;
   source: LeadSourceValue;
+  contactedVia: ContactedViaValue | "";
   websiteVisited: boolean;
   websiteVisitedBy: string;
   lastContactedAt: string | null;
@@ -94,6 +95,7 @@ export async function getLeads() {
       status: true,
       author: true,
       source: true,
+      contactedVia: true,
       websiteVisitedAt: true,
       websiteVisitedBy: true,
       createdAt: true,
@@ -113,6 +115,10 @@ export async function getLeads() {
         (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
     );
     const source = (lead.source ?? "MANUAL") as LeadSourceValue;
+    const contactedVia =
+      lead.contactedVia === "SNIPER" || lead.contactedVia === "AUTOPILOT_SNIPER"
+        ? (lead.contactedVia as ContactedViaValue)
+        : ("" as const);
     return {
       id: lead.id,
       company: lead.companyName,
@@ -129,6 +135,7 @@ export async function getLeads() {
       phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
       author: (lead.author ?? "").trim(),
       source,
+      contactedVia,
       websiteVisited: Boolean(lead.websiteVisitedAt),
       websiteVisitedBy: (lead.websiteVisitedBy ?? "").trim(),
       lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,

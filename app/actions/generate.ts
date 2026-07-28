@@ -1551,7 +1551,7 @@ export async function processSingleLead(leadId: string): Promise<ProcessSingleLe
     await prisma.$transaction([
       prisma.lead.update({
         where: { id: generated.leadId },
-        data: { status: "CONTACTED" } as any,
+        data: { status: "CONTACTED", contactedVia: "SNIPER" } as any,
       }),
       prisma.activityLog.create({
         data: {

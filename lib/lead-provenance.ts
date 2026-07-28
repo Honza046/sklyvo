@@ -1,12 +1,18 @@
 import { normalizeLeadAuthor } from "@/lib/lead-author";
 
 export type LeadSourceValue = "RADAR" | "SNIPER" | "MANUAL" | "AUTOPILOT";
+export type ContactedViaValue = "SNIPER" | "AUTOPILOT_SNIPER";
 
 const SOURCE_LABEL: Record<LeadSourceValue, string> = {
   RADAR: "Radar",
   SNIPER: "Sniper",
   MANUAL: "Manuálně",
-  AUTOPILOT: "Autopilot",
+  AUTOPILOT: "Autopilot-Radar",
+};
+
+const CONTACTED_VIA_LABEL: Record<ContactedViaValue, string> = {
+  SNIPER: "Sniper",
+  AUTOPILOT_SNIPER: "Autopilot-Sniper",
 };
 
 /** Krátké jméno pro CRM (Jan / Matěj / Filip), jinak celé jméno. */
@@ -27,12 +33,34 @@ export function leadSourceLabel(source: string | null | undefined): string {
   return SOURCE_LABEL.MANUAL;
 }
 
+export function contactedViaLabel(via: string | null | undefined): string {
+  if (via === "SNIPER" || via === "AUTOPILOT_SNIPER") {
+    return CONTACTED_VIA_LABEL[via];
+  }
+  return "";
+}
+
+/**
+ * CRM štítek zdroje:
+ * - po odeslání e-mailu → Sniper / Autopilot-Sniper
+ * - jinak → Radar / Autopilot-Radar / Manuálně / Sniper
+ */
+export function leadChannelLabel(
+  source: string | null | undefined,
+  contactedVia?: string | null | undefined,
+): string {
+  const via = contactedViaLabel(contactedVia);
+  if (via) return via;
+  return leadSourceLabel(source);
+}
+
 /** Např. "Radar · Jan" — vždy se snaží ukázat i jméno. */
 export function formatLeadProvenance(
   source: string | null | undefined,
   author: string | null | undefined,
+  contactedVia?: string | null | undefined,
 ): string {
-  const tool = leadSourceLabel(source);
+  const tool = leadChannelLabel(source, contactedVia);
   const who = shortLeadAuthorName(author);
   if (tool && who) return `${tool} · ${who}`;
   if (who) return who;
@@ -43,9 +71,10 @@ export function formatLeadProvenance(
 export function leadProvenanceParts(
   source: string | null | undefined,
   author: string | null | undefined,
+  contactedVia?: string | null | undefined,
 ): { sourceLabel: string; authorLabel: string } {
   return {
-    sourceLabel: leadSourceLabel(source),
+    sourceLabel: leadChannelLabel(source, contactedVia),
     authorLabel: shortLeadAuthorName(author),
   };
 }

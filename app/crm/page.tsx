@@ -103,6 +103,7 @@ type Lead = {
   phone: string;
   author: string;
   source: LeadSourceValue;
+  contactedVia?: "" | "SNIPER" | "AUTOPILOT_SNIPER";
   websiteVisited?: boolean;
   websiteVisitedBy?: string;
   lastContactedAt?: string | null;
@@ -403,10 +404,16 @@ function CrmPageContent() {
       const matchStatus = statusFilter === "all" || lead.leadStatus === statusFilter;
       const matchSource =
         sourceFilter === "all" ||
-        (sourceFilter === "radar" && lead.source === "RADAR") ||
-        (sourceFilter === "autopilot" && lead.source === "AUTOPILOT") ||
-        (sourceFilter === "sniper" && lead.source === "SNIPER") ||
-        (sourceFilter === "manual" && lead.source === "MANUAL");
+        (sourceFilter === "radar" &&
+          lead.source === "RADAR" &&
+          !lead.contactedVia) ||
+        (sourceFilter === "autopilot" &&
+          (lead.source === "AUTOPILOT" || lead.contactedVia === "AUTOPILOT_SNIPER")) ||
+        (sourceFilter === "sniper" &&
+          (lead.source === "SNIPER" ||
+            lead.contactedVia === "SNIPER" ||
+            lead.contactedVia === "AUTOPILOT_SNIPER")) ||
+        (sourceFilter === "manual" && lead.source === "MANUAL" && !lead.contactedVia);
 
       const created = new Date(lead.createdAt);
       const matchDate =
@@ -1037,7 +1044,8 @@ function CrmPageContent() {
                             <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
                               <SelectItem value="all">Všechny zdroje</SelectItem>
                               <SelectItem value="radar">Radar</SelectItem>
-                              <SelectItem value="autopilot">Autopilot</SelectItem>
+                              <SelectItem value="autopilot">Autopilot-Radar / Sniper</SelectItem>
+                              <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="manual">Manuálně</SelectItem>
                             </SelectContent>
@@ -1170,6 +1178,7 @@ function CrmPageContent() {
                           const { sourceLabel, authorLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
+                            lead.contactedVia,
                           );
                           if (!sourceLabel && !authorLabel) return null;
                           return (
@@ -1360,6 +1369,7 @@ function CrmPageContent() {
                           const { sourceLabel, authorLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
+                            lead.contactedVia,
                           );
                           if (!sourceLabel && !authorLabel) return null;
                           return (
@@ -1554,6 +1564,7 @@ function CrmPageContent() {
                                 const { sourceLabel, authorLabel } = leadProvenanceParts(
                                   lead.source,
                                   lead.author,
+                                  lead.contactedVia,
                                 );
                                 if (!sourceLabel && !authorLabel) return null;
                                 return (

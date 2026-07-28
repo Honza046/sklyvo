@@ -147,6 +147,7 @@ export async function sendOutreachEmailNow(input: {
         lastContactedAt: now,
         nextOutreachAt: next.nextOutreachAt,
         nextOutreachKind: next.nextOutreachKind,
+        contactedVia: "SNIPER",
       },
     }),
     prisma.activityLog.create({

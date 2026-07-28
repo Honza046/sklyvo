@@ -400,6 +400,7 @@ export async function processEmailQueue(
             lastContactedAt: now,
             nextOutreachAt: next.nextOutreachAt,
             nextOutreachKind: next.nextOutreachKind,
+            contactedVia: "AUTOPILOT_SNIPER" as const,
           };
         })(),
       }),

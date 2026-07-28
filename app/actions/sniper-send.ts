@@ -125,6 +125,7 @@ export async function sendSniperEmailNow(input: {
           lastContactedAt: now,
           email: to,
           contactEmail: to,
+          contactedVia: "SNIPER",
         },
       }),
       prisma.activityLog.create({
