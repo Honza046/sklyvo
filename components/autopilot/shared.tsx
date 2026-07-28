@@ -129,7 +129,7 @@ export function formatProcessedDateTime(iso: string): string {
 }
 
 export function FullAutoStatusBadge({ status }: { status: FullAutoAutomationStatus }) {
-  const meta = FULL_AUTO_STATUS_BADGES[status];
+  const meta = FULL_AUTO_STATUS_BADGES[status] ?? FULL_AUTO_STATUS_BADGES.found;
   return (
     <span
       className={cn(
@@ -369,7 +369,7 @@ export function AutopilotTableEmptyState({
       <td colSpan={colSpan} className="p-0 align-middle">
         <div
           className={cn(
-            "sticky left-0 flex h-[min(42dvh,240px)] w-[min(100vw-1.5rem,100%)] flex-col items-center justify-center px-4 text-center text-sm text-muted-foreground",
+            "sticky left-0 flex h-[min(42dvh,240px)] w-full max-w-full flex-col items-center justify-center px-4 text-center text-sm text-muted-foreground",
             className,
           )}
         >

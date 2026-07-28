@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, ArrowRight } from "lucide-react";
-import { checkIfUserExists, requestPasswordReset } from "@/app/actions/auth";
+import { requestPasswordReset } from "@/app/actions/auth";
 import { VenegardWordmark } from "@/components/brand-marks";
 
 export default function RecoveryPage() {
@@ -29,77 +29,15 @@ export default function RecoveryPage() {
       return;
     }
 
-    const userCheck = await checkIfUserExists(email);
-    if (!userCheck.exists) {
-      setError("Tento e-mail u nás není registrován.");
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // #region agent log
-      fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "dc49be",
-        },
-        body: JSON.stringify({
-          sessionId: "dc49be",
-          runId: "post-fix",
-          hypothesisId: "A",
-          location: "recovery/page.tsx:reset",
-          message: "Recovery using Prisma path",
-          data: { authSystem: "prisma", hasUser: userCheck.exists },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       const result = await requestPasswordReset(email, window.location.origin);
       if ("error" in result) {
-        // #region agent log
-        fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "dc49be",
-          },
-          body: JSON.stringify({
-            sessionId: "dc49be",
-            runId: "post-fix",
-            hypothesisId: "A",
-            location: "recovery/page.tsx:prisma-error",
-            message: "Prisma reset failed",
-            data: { error: result.error },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
         setError(result.error);
       } else {
-        setMessage("Odkaz pro obnovu hesla byl úspěšně odeslán na váš e-mail.");
+        setMessage("Odkaz pro obnovu hesla byl odeslán na váš e-mail. Zkontrolujte schránku (i spam).");
       }
     } catch (err) {
       console.error(err);
-      // #region agent log
-      fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "dc49be",
-        },
-        body: JSON.stringify({
-          sessionId: "dc49be",
-          runId: "post-fix",
-          hypothesisId: "A",
-          location: "recovery/page.tsx:catch",
-          message: "Recovery threw",
-          data: { error: err instanceof Error ? err.message : "unknown" },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       setError("Při odesílání e-mailu nastala chyba. Zkuste to později.");
     } finally {
       setIsLoading(false);
@@ -122,13 +60,16 @@ export default function RecoveryPage() {
               Obnova hesla
             </h1>
             <p className="text-sm text-muted-foreground">
-              Zadejte svůj e-mail a pošleme vám odkaz pro vytvoření nového hesla.
+              Zadejte e-mail svého účtu a pošleme vám odkaz pro nové heslo.
             </p>
           </div>
 
           <form onSubmit={handleResetPassword} className="flex flex-col gap-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <Label
+                htmlFor="email"
+                className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+              >
                 E-mail
               </Label>
               <div className="relative">
@@ -138,6 +79,7 @@ export default function RecoveryPage() {
                   name="email"
                   type="email"
                   required
+                  autoComplete="email"
                   placeholder="jan@firma.cz"
                   className="h-11 rounded-xl border-border/60 bg-background pl-10"
                 />

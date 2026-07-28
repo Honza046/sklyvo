@@ -3,6 +3,7 @@
 import { Resend } from "resend";
 import { getSessionUser } from "@/app/actions/auth";
 import type { SendEmailResult } from "@/lib/email-types";
+import { getResendFromAddress, mapResendSendError } from "@/lib/resend-system-mail";
 import { sendWorkspaceEmail } from "@/lib/workspace-mailer";
 import { verifyInternalWorkspaceToken } from "@/lib/internal-auth";
 
@@ -59,8 +60,6 @@ export async function sendEmail({
  * Odešle 6místný ověřovací kód pro změnu e-mailu na NOVOU (skutečnou) adresu.
  * Na rozdíl od `sendEmail` zde NIKDY nepřesměrováváme příjemce – kód musí dorazit
  * na adresu, kterou si uživatel ověřuje.
- * Pozn.: V testovacím režimu Resendu (onboarding@resend.dev) e-mail fakticky dorazí
- * pouze na adresu vlastníka Resend účtu; pro libovolného příjemce je nutné ověřit doménu.
  */
 export async function sendVerificationCodeEmail(
   to: string,
@@ -96,26 +95,29 @@ export async function sendVerificationCodeEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
+      from: getResendFromAddress(),
       to: recipient,
       subject: "Bezpečnostní kód pro změnu e-mailu",
       html,
     });
 
     if (error) {
-      return { success: false, error: error.message || "Resend odmítl odeslání." };
+      return {
+        success: false,
+        error: mapResendSendError(error.message || "Resend odmítl odeslání."),
+      };
     }
 
     return { success: true, id: data?.id ?? null };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Neznámá chyba při odesílání.";
-    return { success: false, error: message };
+    return { success: false, error: mapResendSendError(message) };
   }
 }
 
 /**
  * Odešle e-mail s odkazem pro obnovu zapomenutého hesla.
- * Pozn.: stejně jako ostatní systémové e-maily používá testovací odesílatele onboarding@resend.dev.
+ * Produkce: nastav RESEND_FROM_EMAIL na adresu z ověřené domény v Resendu.
  */
 export async function sendPasswordResetEmail(
   to: string,
@@ -158,19 +160,22 @@ export async function sendPasswordResetEmail(
 
   try {
     const { data, error } = await resend.emails.send({
-      from: "onboarding@resend.dev",
+      from: getResendFromAddress(),
       to: recipient,
       subject: "Obnova zapomenutého hesla",
       html,
     });
 
     if (error) {
-      return { success: false, error: error.message || "Resend odmítl odeslání." };
+      return {
+        success: false,
+        error: mapResendSendError(error.message || "Resend odmítl odeslání."),
+      };
     }
 
     return { success: true, id: data?.id ?? null };
   } catch (e) {
     const message = e instanceof Error ? e.message : "Neznámá chyba při odesílání.";
-    return { success: false, error: message };
+    return { success: false, error: mapResendSendError(message) };
   }
 }

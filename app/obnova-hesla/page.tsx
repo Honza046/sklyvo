@@ -41,25 +41,6 @@ function ObnovaHeslaForm() {
 
     setIsLoading(true);
     try {
-      // #region agent log
-      fetch("http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "dc49be",
-        },
-        body: JSON.stringify({
-          sessionId: "dc49be",
-          runId: "post-fix",
-          hypothesisId: "B",
-          location: "obnova-hesla/page.tsx:submit",
-          message: "Prisma resetPassword submit",
-          data: { hasToken: Boolean(token) },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       const result = await resetPassword(token, password);
       if ("error" in result) {
         setError(result.error);

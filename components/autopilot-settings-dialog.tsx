@@ -147,6 +147,12 @@ export function AutopilotSettingsDialog({
     "full-auto": "bg-violet-600 font-semibold text-white hover:bg-violet-700",
   }[section];
 
+  // Mount dialog body only when open — avoids evaluating section UI (and possible
+  // crashes) on every parent render, and keeps heavy portals off the Full Auto page.
+  if (!open) {
+    return <Dialog open={open} onOpenChange={onOpenChange} />;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -766,8 +772,12 @@ export function AutopilotSettingsDialog({
                   />
                 </div>
                 <p className="min-w-0 flex-1 rounded-lg bg-violet-50 px-3 py-2 text-xs leading-snug text-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
-                  Full Auto na Vercelu kolem 08:00 Praha ({FULL_AUTO_FREQUENCY_LABELS[settings.fullAutoFrequency].toLowerCase()})
-                  — nejdřív Radar, pak odeslání.
+                  Full Auto na Vercelu kolem 08:00 Praha (
+                  {(
+                    FULL_AUTO_FREQUENCY_LABELS[settings.fullAutoFrequency] ??
+                    FULL_AUTO_FREQUENCY_LABELS.twice_weekly
+                  ).toLowerCase()}
+                  ) — nejdřív Radar, pak odeslání.
                 </p>
               </div>
             </section>

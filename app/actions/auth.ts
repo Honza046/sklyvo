@@ -483,7 +483,7 @@ export async function requestPasswordReset(
   });
 
   if (!user) {
-    return { success: true };
+    return { error: "Tento e-mail u nás není registrován." };
   }
 
   const token = randomBytes(32).toString("hex");
@@ -504,7 +504,16 @@ export async function requestPasswordReset(
 
   const sent = await sendPasswordResetEmail(user.email, resetLink);
   if (!sent.success) {
+    // V devu necháme odkaz v logu, ať jde obnovu otestovat i bez ověřené Resend domény.
+    if (process.env.NODE_ENV === "development") {
+      console.info("[password-reset] Odeslání selhalo, odkaz pro test:", resetLink);
+      console.info("[password-reset] Důvod:", sent.error);
+    }
     return { error: sent.error };
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[password-reset] Odesláno na", user.email, "→", resetLink);
   }
 
   return { success: true };
