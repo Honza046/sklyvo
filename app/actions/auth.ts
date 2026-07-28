@@ -236,8 +236,13 @@ export async function getWorkspaceAccessState() {
   const now = Date.now();
   const trialEndsAt = session.workspace.trialEndsAt ? new Date(session.workspace.trialEndsAt) : null;
   const trialRemainingMs = trialEndsAt ? Math.max(0, trialEndsAt.getTime() - now) : 0;
-  const isTrial = session.workspace.subscriptionStatus === "TRIAL";
-  const isSubscribed = ACTIVE_STATUSES.has(session.workspace.subscriptionStatus);
+  const status = (session.workspace.subscriptionStatus ?? "FREE").toUpperCase();
+  const planTier = (session.workspace.planTier ?? "NONE").toUpperCase();
+  const hasPaidPlanTier = planTier !== "NONE" && planTier !== "FREE";
+  // Stripe uses TRIALING; legacy/manual rows may use TRIAL.
+  const isTrial = status === "TRIAL" || status === "TRIALING";
+  // Paid planTier (e.g. manually provisioned AGENCY) must unlock Radar/Sniper even if status is still FREE.
+  const isSubscribed = ACTIVE_STATUSES.has(status) || hasPaidPlanTier;
   const isBlocked = !isSubscribed && (!isTrial || trialRemainingMs <= 0);
 
   return {
