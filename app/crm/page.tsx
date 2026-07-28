@@ -805,21 +805,19 @@ function CrmPageContent() {
           </Button>
         </div>
 
-        {/* Desktop header — kompaktní, ať CRM vždy vejde do výšky okna */}
-        <div className="mb-2 hidden w-full max-w-7xl shrink-0 px-1 md:block md:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Users className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                CRM
-              </h1>
-              <p className="truncate text-xs text-muted-foreground">
-                Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
-              </p>
+        {/* Desktop hero — stejný styl jako Radar / Sniper */}
+        <div className="mb-2 hidden shrink-0 space-y-1 text-center md:block">
+          <div className="mb-2 flex items-center justify-center gap-3">
+            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <Users className="h-8 w-8" />
             </div>
           </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            CRM
+          </h1>
+          <p className="mx-auto max-w-lg text-sm text-muted-foreground">
+            Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
+          </p>
         </div>
 
         <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4 md:px-8">
