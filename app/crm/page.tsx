@@ -1046,7 +1046,6 @@ function CrmPageContent() {
                               <SelectItem value="radar">Radar</SelectItem>
                               <SelectItem value="autopilot">Autopilot-Radar / Sniper</SelectItem>
                               <SelectItem value="sniper">Sniper</SelectItem>
-                              <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="manual">Manuálně</SelectItem>
                             </SelectContent>
                           </Select>
