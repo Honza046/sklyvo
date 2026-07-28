@@ -37,8 +37,14 @@ export function EmailRichEditor({ value, onChange, className }: EmailRichEditorP
   };
 
   return (
-    <div className={cn("overflow-hidden rounded-xl border border-border/50 bg-background", className)}>
-      <div className="flex items-center gap-0.5 border-b border-border/50 bg-muted/30 px-2 py-1.5">
+    <div
+      className={cn(
+        "rounded-xl border border-border/50 bg-background transition-[border-color,box-shadow]",
+        "focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/25",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-0.5 rounded-t-xl border-b border-border/50 bg-muted/30 px-2 py-1.5">
         <Button
           type="button"
           variant="ghost"
@@ -83,7 +89,7 @@ export function EmailRichEditor({ value, onChange, className }: EmailRichEditorP
         aria-multiline
         aria-label="Text e-mailu"
         suppressContentEditableWarning
-        className="min-h-[140px] max-h-[min(36dvh,240px)] overflow-y-auto px-3 py-3 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-600 sm:min-h-[220px] sm:max-h-none sm:overflow-visible sm:px-4 sm:py-4 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
+        className="min-h-[140px] max-h-[min(36dvh,240px)] overflow-y-auto rounded-b-xl px-3 py-3 text-sm leading-relaxed outline-none sm:min-h-[220px] sm:max-h-none sm:overflow-visible sm:px-4 sm:py-4 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline"
         onInput={emitChange}
         onBlur={emitChange}
       />
