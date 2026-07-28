@@ -1152,7 +1152,7 @@ function CrmPageContent() {
                               <button
                                 type="button"
                                 className={cn(
-                                  "shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide",
+                                  "shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide",
                                   statusColorMap[lead.status],
                                 )}
                               >
@@ -1197,6 +1197,19 @@ function CrmPageContent() {
                             <Send className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
+                        {companyWeb ? (
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            title="Otevřít web"
+                          >
+                            <a href={companyWeb} target="_blank" rel="noopener noreferrer" aria-label="Otevřít web">
+                              <Globe className="h-3.5 w-3.5" />
+                            </a>
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="ghost"
@@ -1294,12 +1307,12 @@ function CrmPageContent() {
                           />
                         </div>
                       </th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[26%]">Firma</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[14%]">Datum přidání</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[26%]">KONTAKT</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Hodnota</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Status</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 text-right font-semibold dark:bg-zinc-950 w-[128px]">Akce</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[24%]">Firma</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Datum přidání</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">KONTAKT</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[10%]">Hodnota</th>
+                      <th className="sticky top-0 z-10 min-w-[11rem] bg-white px-3 py-3 pr-8 font-semibold dark:bg-zinc-950 w-[15%]">Status</th>
+                      <th className="sticky top-0 z-10 w-[11.5rem] bg-white px-3 py-3 pl-6 text-right font-semibold dark:bg-zinc-950">Akce</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1376,12 +1389,15 @@ function CrmPageContent() {
                           </div>
                         </td>
                         <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">{formatCurrency(lead.value)}</td>
-                        <td className="px-3 py-3">
+                        <td className="min-w-[11rem] px-3 py-3 pr-8">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button
                                 type="button"
-                                className={cn("inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold border uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer", statusColorMap[lead.status])}
+                                className={cn(
+                                  "inline-flex shrink-0 items-center whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide hover:opacity-80 transition-opacity cursor-pointer",
+                                  statusColorMap[lead.status],
+                                )}
                               >
                                 {statusLabelMap[lead.status]}
                               </button>
@@ -1397,8 +1413,8 @@ function CrmPageContent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="px-3 py-3 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1">
+                        <td className="w-[11.5rem] px-3 py-3 pl-6 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
                             <Button
                               asChild
                               variant="outline"
@@ -1414,6 +1430,25 @@ function CrmPageContent() {
                                 <Send className="h-4 w-4" />
                               </Link>
                             </Button>
+                            {companyWeb ? (
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 shrink-0 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                              >
+                                <a
+                                  href={companyWeb}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex size-full items-center justify-center"
+                                  title="Otevřít web"
+                                  aria-label="Otevřít web"
+                                >
+                                  <Globe className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            ) : null}
                             <Button
                               type="button"
                               variant="outline"

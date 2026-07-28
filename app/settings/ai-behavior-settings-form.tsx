@@ -106,11 +106,11 @@ export function AiBehaviorSettingsForm({
           id="email-signature"
           value={emailSignature}
           onChange={(e) => setEmailSignature(e.target.value)}
-          placeholder={"S pozdravem,\n\nJan Sedlář\njan@venegard.com\n+420 605 875 808\nvenegard.com"}
+          placeholder={"S pozdravem,\n\nJan Sedlář\n\nvenegard.com\n+420 605 875 808\njan@venegard.com"}
           className="min-h-[100px] resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-none outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-border/60 dark:bg-background dark:text-foreground"
         />
         <p className="text-[10px] text-muted-foreground">
-          Formát jako v mailu / Seznamu: jméno, e-mail, telefon a web každý na novém řádku.
+          Formát: S pozdravem → prázdný řádek → jméno → prázdný řádek → web, telefon a e-mail každý zvlášť.
         </p>
       </div>
 

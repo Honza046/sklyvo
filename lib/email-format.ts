@@ -22,10 +22,15 @@ export function normalizeContactSignatureLine(line: string): string {
 
   const emails = uniqueTokens([...trimmed.matchAll(EMAIL_REGEX)].map((match) => match[0]));
   const phones = uniqueTokens([...trimmed.matchAll(PHONE_REGEX)].map((match) => match[0].trim()));
+
+  let textWithoutEmails = trimmed;
+  for (const email of emails) {
+    textWithoutEmails = textWithoutEmails.replace(email, " ");
+  }
   const domains = uniqueTokens(
-    [...trimmed.matchAll(DOMAIN_REGEX)]
-      .map((match) => match[0].replace(/^https?:\/\//i, "").replace(/^www\./i, ""))
-      .filter((domain) => !emails.some((email) => email.toLowerCase().includes(domain.toLowerCase()))),
+    [...textWithoutEmails.matchAll(DOMAIN_REGEX)].map((match) =>
+      match[0].replace(/^https?:\/\//i, "").replace(/^www\./i, ""),
+    ),
   );
 
   const contactCount = emails.length + phones.length + domains.length;

@@ -318,16 +318,78 @@ function ensureVygenerovanePredmetyCount(subjects: string[], nabizenaSluzba: str
   return out.slice(0, SNIPER_SUBJECT_VARIANTS_MAX);
 }
 
-/** Oddělí a zformátuje podpis: vždy na vlastním bloku, jméno na dalším řádku. */
+/** Oddělí a zformátuje podpis ve stylu Seznamu: pozdrav → jméno → prázdný řádek → web / tel / e-mail. */
 function formatClosingSignatureBlock(block: string): string {
-  const cleaned = block.replace(/\s+/g, " ").trim();
-  const match = cleaned.match(/^(S\s+(?:pozdravem|úctou))[,.]?\s*(.*)$/i);
-  if (!match) return cleaned;
-  const isUctou = /úctou/i.test(match[1] ?? "");
+  const lines = block
+    .split(/\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const first = lines[0] ?? "";
+  const greetingMatch = first.match(/^(S\s+(?:pozdravem|úctou))[,.]?\s*(.*)$/i);
+  if (!greetingMatch) {
+    return block.trim();
+  }
+
+  const isUctou = /úctou/i.test(greetingMatch[1] ?? "");
   const greeting = isUctou ? "S úctou," : "S pozdravem,";
-  const rest = (match[2] ?? "").trim();
-  if (!rest) return greeting;
-  return `${greeting}\n${rest}`;
+
+  const restParts = [
+    (greetingMatch[2] ?? "").trim(),
+    ...lines.slice(1),
+  ].filter(Boolean);
+  const restText = restParts.join(" ");
+
+  const emails = uniqueTokensFromText(
+    [...restText.matchAll(/[\w.+-]+@[\w.-]+\.\w+/gi)].map((m) => m[0]),
+  );
+  const phones = uniqueTokensFromText(
+    [...restText.matchAll(/\+?\d[\d\s]{8,15}/g)].map((m) => m[0].replace(/\s+/g, " ").trim()),
+  );
+
+  // Domény ber až z textu bez e-mailů — jinak „venegard.com“ z jan@venegard.com zmizí.
+  let textWithoutEmails = restText;
+  for (const email of emails) {
+    textWithoutEmails = textWithoutEmails.replace(email, " ");
+  }
+  const domains = uniqueTokensFromText(
+    [...textWithoutEmails.matchAll(/(?:https?:\/\/)?(?:www\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi)].map(
+      (m) => m[0].replace(/^https?:\/\//i, "").replace(/^www\./i, ""),
+    ),
+  );
+
+  let name = restText;
+  for (const token of [...emails, ...phones, ...domains, ...domains.map((d) => `www.${d}`)]) {
+    name = name.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+  }
+  name = name.replace(/\s{2,}/g, " ").trim();
+
+  const contactLines = [...domains, ...phones, ...emails];
+  if (!name && contactLines.length === 0) {
+    return greeting;
+  }
+
+  if (!name) {
+    return `${greeting}\n\n${contactLines.join("\n")}`;
+  }
+
+  if (contactLines.length === 0) {
+    return `${greeting}\n\n${name}`;
+  }
+
+  return `${greeting}\n\n${name}\n\n${contactLines.join("\n")}`;
+}
+
+function uniqueTokensFromText(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(value);
+  }
+  return result;
 }
 
 /** Nahradí pomlčky mezerou; u těla e-mailu zachová odstavce (oddělené prázdným řádkem). */
@@ -765,12 +827,21 @@ function buildSniperSystemPrompt(
     ? [
         "Použij přesně tento podpis jako poslední odstavec těla (za CTA, před ním prázdný řádek).",
         "Zachovej přesné zalomení řádků — jako v klasickém mailu / Seznamu:",
+        "- „S pozdravem,“",
+        "- prázdný řádek",
+        "- jméno",
+        "- prázdný řádek",
+        "- web, telefon a e-mail každý na vlastním řádku (v tomto pořadí, pokud jsou v podpisu)",
+        "NIKDY nedávej jméno a web na stejný řádek.",
+        "",
         ctx.emailSignature,
       ].join("\n")
     : [
         "řádek „S pozdravem,“",
+        "prázdný řádek",
         `nový řádek: ${author.fullName}`,
-        "další řádky (pokud znáš z kontextu): e-mail, telefon, web — každý na vlastním řádku.",
+        "prázdný řádek",
+        "další řádky (pokud znáš z kontextu): web, telefon, e-mail — každý na vlastním řádku.",
         "Nikdy nepodepisuj „Tým …“, pokud to není v profilu firmy.",
       ].join(" ");
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type SyntheticEvent } from "react";
 import { cn } from "@/lib/utils";
 
 type CompanyAvatarProps = {
@@ -14,6 +14,14 @@ type CompanyAvatarProps = {
   textClassName?: string;
 };
 
+/**
+ * Google s2 returns HTTP 200 even for missing favicons — a generic 16×16 globe.
+ * Treat tiny default icons as missing so we show company initials instead.
+ */
+function isGenericFavicon(img: HTMLImageElement): boolean {
+  return img.naturalWidth > 0 && img.naturalWidth <= 16 && img.naturalHeight <= 16;
+}
+
 export function CompanyAvatar({
   name,
   initials,
@@ -24,7 +32,18 @@ export function CompanyAvatar({
   textClassName = "text-[10px]",
 }: CompanyAvatarProps) {
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [faviconUrl]);
+
   const showImage = Boolean(faviconUrl) && !failed;
+
+  const handleLoad = (e: SyntheticEvent<HTMLImageElement>) => {
+    if (isGenericFavicon(e.currentTarget)) {
+      setFailed(true);
+    }
+  };
 
   return (
     <div
@@ -45,6 +64,7 @@ export function CompanyAvatar({
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
+          onLoad={handleLoad}
           onError={() => setFailed(true)}
         />
       ) : (
