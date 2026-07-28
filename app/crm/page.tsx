@@ -1534,8 +1534,7 @@ function CrmPageContent() {
                           />
                         </div>
                       </th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[20%]">Firma</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Autor</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[28%]">Firma</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[11%]">Datum přidání</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">KONTAKT</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Hodnota</th>
@@ -1559,7 +1558,7 @@ function CrmPageContent() {
                           </div>
                         </td>
                         <td className="px-3 py-3">
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex min-w-0 items-center gap-3">
                             <CompanyAvatar
                               name={lead.company}
                               initials={lead.avatar}
@@ -1567,52 +1566,55 @@ function CrmPageContent() {
                               sizeClassName="h-9 w-9"
                               textClassName="text-[10px]"
                             />
-                            <div className="min-w-0">
-                              <p className="font-semibold text-foreground break-words">{lead.company}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-semibold text-foreground" title={lead.company}>
+                                {lead.company}
+                              </p>
                               {(() => {
                                 const { sourceLabel, authorLabel } = leadProvenanceParts(
                                   lead.source,
                                   lead.author,
                                   lead.contactedVia,
                                 );
-                                if (!sourceLabel && !authorLabel) return null;
+                                const meta = [sourceLabel, authorLabel].filter(Boolean).join(" · ");
+                                const urlLabel = companyWeb ? lead.url || companyWeb : "";
+                                if (!meta && !urlLabel) return null;
                                 return (
-                                  <p className="text-xs text-muted-foreground">
-                                    {sourceLabel}
-                                    {authorLabel ? (
-                                      <>
-                                        {" · "}
-                                        <span className="font-semibold text-foreground/80">
-                                          {authorLabel}
-                                        </span>
-                                      </>
+                                  <p className="truncate text-xs text-muted-foreground">
+                                    {meta ? (
+                                      <span>
+                                        {sourceLabel}
+                                        {authorLabel ? (
+                                          <>
+                                            {" · "}
+                                            <span className="font-semibold text-foreground/80">
+                                              {authorLabel}
+                                            </span>
+                                          </>
+                                        ) : null}
+                                      </span>
+                                    ) : null}
+                                    {meta && urlLabel ? (
+                                      <span className="text-border"> · </span>
+                                    ) : null}
+                                    {urlLabel ? (
+                                      <a
+                                        href={companyWeb!}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="hover:text-blue-600 dark:hover:text-blue-400"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {urlLabel}
+                                      </a>
                                     ) : null}
                                   </p>
                                 );
                               })()}
-                              {companyWeb ? (
-                              <a href={companyWeb} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 break-words block">
-                                {lead.url || companyWeb}
-                              </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">–</span>
-                              )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={cn(
-                              "text-sm font-semibold",
-                              shortLeadAuthorName(lead.author)
-                                ? "text-foreground"
-                                : "text-muted-foreground",
-                            )}
-                          >
-                            {shortLeadAuthorName(lead.author) || "—"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
+                        <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">{lead.date}</td>
                         <td className="px-3 py-3 align-middle">
                           <div className="flex min-w-0 items-center gap-2">
                             <div className="min-w-0 flex-1 leading-tight">
@@ -1754,7 +1756,7 @@ function CrmPageContent() {
                     })}
                     {!isLoading && paginatedLeads.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="p-0">
+                        <td colSpan={7} className="p-0">
                           <div className="flex min-h-[min(50vh,28rem)] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Žádné firmy neodpovídají hledání.
                           </div>
