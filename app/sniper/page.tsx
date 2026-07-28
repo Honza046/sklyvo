@@ -20,6 +20,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmailRichEditor } from "@/components/sniper/email-rich-editor";
+import {
+  LanguageFlag,
+  SNIPER_LANGUAGE_LABELS,
+  hasLanguageFlag,
+} from "@/components/language-flag";
 import { cn } from "@/lib/utils";
 import { htmlToPlainText, plainTextToEditorHtml } from "@/lib/email-format";
 import { toast } from "sonner";
@@ -54,19 +59,19 @@ const segmentMap: Record<string, OptionMeta> = {
   gastro: { label: "Gastro / Restaurace", emoji: "🍔" },
 };
 
-/** Vlajka podle jazyka výstupu — sjednocená ikona pro menu i štítek. */
-const languageFlagMap: Record<string, string> = {
-  cs: "🇨🇿",
-  sk: "🇸🇰",
-  en: "🇬🇧",
-  de: "🇩🇪",
-  es: "🇪🇸",
-  ru: "🇷🇺",
-  fr: "🇫🇷",
-  pl: "🇵🇱",
-  it: "🇮🇹",
-  nl: "🇳🇱",
-};
+/** Jazyky výstupu — vlajka přes PNG (Windows nezobrazuje emoji vlajky). */
+const SNIPER_LANGUAGES = [
+  { value: "cs", label: "Čeština" },
+  { value: "sk", label: "Slovenština" },
+  { value: "en", label: "Angličtina" },
+  { value: "de", label: "Němčina" },
+  { value: "es", label: "Španělština" },
+  { value: "ru", label: "Ruština" },
+  { value: "fr", label: "Francouzština" },
+  { value: "pl", label: "Polština" },
+  { value: "it", label: "Italština" },
+  { value: "nl", label: "Nizozemština" },
+] as const;
 
 const MOCK_SUBJECTS = [
   "rychlá myšlenka k vašemu webu",
@@ -348,7 +353,7 @@ function SniperContent() {
         const finalTone = d.detected_tone && toneMap[d.detected_tone] ? d.detected_tone : tone;
         const finalLanguage = languageManualOverride
           ? language
-          : d.detected_language && languageFlagMap[d.detected_language]
+          : d.detected_language && hasLanguageFlag(d.detected_language)
             ? d.detected_language
             : language;
 
@@ -579,16 +584,14 @@ function SniperContent() {
                           <SelectValue placeholder="Vyberte jazyk" />
                         </SelectTrigger>
                         <SelectContent className="border-border/60 bg-card shadow-lg">
-                          <SelectItem value="cs">🇨🇿 Čeština</SelectItem>
-                          <SelectItem value="sk">🇸🇰 Slovenština</SelectItem>
-                          <SelectItem value="en">🇬🇧 Angličtina</SelectItem>
-                          <SelectItem value="de">🇩🇪 Němčina</SelectItem>
-                          <SelectItem value="es">🇪🇸 Španělština</SelectItem>
-                          <SelectItem value="ru">🇷🇺 Ruština</SelectItem>
-                          <SelectItem value="fr">🇫🇷 Francouzština</SelectItem>
-                          <SelectItem value="pl">🇵🇱 Polština</SelectItem>
-                          <SelectItem value="it">🇮🇹 Italština</SelectItem>
-                          <SelectItem value="nl">🇳🇱 Nizozemština</SelectItem>
+                          {SNIPER_LANGUAGES.map(({ value, label }) => (
+                            <SelectItem key={value} value={value}>
+                              <span className="inline-flex items-center gap-2">
+                                <LanguageFlag code={value} />
+                                {label}
+                              </span>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -890,16 +893,14 @@ function SniperContent() {
                             <SelectValue placeholder="Vyberte jazyk" />
                           </SelectTrigger>
                           <SelectContent className="border-border/60 bg-card shadow-lg">
-                            <SelectItem value="cs">🇨🇿 Čeština</SelectItem>
-                            <SelectItem value="sk">🇸🇰 Slovenština</SelectItem>
-                            <SelectItem value="en">🇬🇧 Angličtina</SelectItem>
-                            <SelectItem value="de">🇩🇪 Němčina</SelectItem>
-                            <SelectItem value="es">🇪🇸 Španělština</SelectItem>
-                            <SelectItem value="ru">🇷🇺 Ruština</SelectItem>
-                            <SelectItem value="fr">🇫🇷 Francouzština</SelectItem>
-                            <SelectItem value="pl">🇵🇱 Polština</SelectItem>
-                            <SelectItem value="it">🇮🇹 Italština</SelectItem>
-                            <SelectItem value="nl">🇳🇱 Nizozemština</SelectItem>
+                            {SNIPER_LANGUAGES.map(({ value, label }) => (
+                              <SelectItem key={value} value={value}>
+                                <span className="inline-flex items-center gap-2">
+                                  <LanguageFlag code={value} />
+                                  {label}
+                                </span>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1023,9 +1024,10 @@ function SniperContent() {
                     {toneMap[generatedParams?.tone ?? ""]?.emoji}{" "}
                     {toneMap[generatedParams?.tone ?? ""]?.label}
                   </span>
-                  <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
-                    {languageFlagMap[generatedParams?.language ?? ""] ?? "🌍"}{" "}
-                    {(generatedParams?.language ?? "").toUpperCase()}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">
+                    <LanguageFlag code={generatedParams?.language ?? ""} />
+                    {SNIPER_LANGUAGE_LABELS[generatedParams?.language ?? ""] ??
+                      (generatedParams?.language ?? "").toUpperCase()}
                   </span>
                 </div>
               </div>

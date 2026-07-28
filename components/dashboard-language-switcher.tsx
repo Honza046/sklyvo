@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import {
-  LANGUAGE_FLAGS,
   LANGUAGE_LABELS,
   LANGUAGES,
   type Language,
 } from "@/lib/i18n/types";
+import { LanguageFlag } from "@/components/language-flag";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,8 +58,8 @@ export function DashboardLanguageSwitcher({
                 !isCompact && (isDropdownOpen ? "gap-2" : "gap-0 group-hover:gap-2"),
               )}
             >
-              <span className="flex h-3.5 w-5 shrink-0 items-center justify-center text-sm leading-none select-none">
-                {LANGUAGE_FLAGS[language]}
+              <span className="flex h-3.5 w-5 shrink-0 items-center justify-center select-none">
+                <LanguageFlag code={language} />
               </span>
               {!isCompact && (
                 <span
@@ -90,8 +90,8 @@ export function DashboardLanguageSwitcher({
               )}
               onClick={() => setLanguage(lang)}
             >
-              <span className="flex h-3.5 w-5 shrink-0 items-center justify-center text-sm leading-none">
-                {LANGUAGE_FLAGS[lang]}
+              <span className="flex h-3.5 w-5 shrink-0 items-center justify-center">
+                <LanguageFlag code={lang} />
               </span>
               <span className="min-w-0 flex-1 truncate">{LANGUAGE_LABELS[lang]}</span>
               <span className="flex w-3.5 shrink-0 items-center justify-center">
