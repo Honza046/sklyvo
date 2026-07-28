@@ -74,6 +74,7 @@ import {
 import { sendOutreachEmailBulk, sendOutreachEmailNow } from "@/app/actions/outreach";
 import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
 import { AutopilotDialog, type AutopilotLead } from "@/app/crm/autopilot-dialog";
+import { CompanyAvatar } from "@/components/crm/company-avatar";
 import { toast } from "sonner";
 import { OUTREACH_KIND_LABELS, type OutreachKindValue } from "@/lib/outreach";
 
@@ -94,6 +95,7 @@ type Lead = {
   createdAt: string;
   value: number;
   avatar: string;
+  faviconUrl?: string | null;
   placeId: string | null;
   email: string;
   phone: string;
@@ -980,9 +982,13 @@ function CrmPageContent() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-[10px] font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                        {lead.avatar}
-                      </div>
+                      <CompanyAvatar
+                        name={lead.company}
+                        initials={lead.avatar}
+                        faviconUrl={lead.faviconUrl}
+                        sizeClassName="h-8 w-8"
+                        textClassName="text-[10px]"
+                      />
                       <div className="min-w-0">
                         <h4 className="mb-1 truncate text-sm font-bold leading-none text-foreground">
                           {lead.company}
@@ -1128,9 +1134,14 @@ function CrmPageContent() {
                         onCheckedChange={() => toggleRowSelection(lead.id)}
                         className="shrink-0"
                       />
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                        {lead.avatar}
-                      </div>
+                      <CompanyAvatar
+                        name={lead.company}
+                        initials={lead.avatar}
+                        faviconUrl={lead.faviconUrl}
+                        shape="circle"
+                        sizeClassName="h-9 w-9"
+                        textClassName="text-[10px]"
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <p className="truncate text-[14px] font-semibold leading-tight text-foreground">
@@ -1308,9 +1319,13 @@ function CrmPageContent() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[10px] font-bold text-blue-700 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800">
-                              {lead.avatar}
-                            </div>
+                            <CompanyAvatar
+                              name={lead.company}
+                              initials={lead.avatar}
+                              faviconUrl={lead.faviconUrl}
+                              sizeClassName="h-9 w-9"
+                              textClassName="text-[10px]"
+                            />
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground break-words">{lead.company}</p>
                               {lead.author ? (

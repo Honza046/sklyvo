@@ -201,6 +201,8 @@ model Lead {
   id            String     @id @default(cuid())
   companyName   String
   domain        String?
+  /** Cached favicon URL for CRM avatar (usually Google s2 for the domain). */
+  faviconUrl    String?
   placeId       String?
   value         Int?       @default(0)
   email         String?

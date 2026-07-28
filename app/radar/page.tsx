@@ -765,7 +765,12 @@ export default function RadarPage() {
                             <Globe className="h-3.5 w-3.5" />
                           </a>
                         </Button>
-                        <Button asChild size="sm" className="h-8 w-8 shrink-0 rounded-lg bg-foreground p-0 text-background hover:bg-foreground/90">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 shrink-0 rounded-lg p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        >
                           <Link href={sniperHref(result)} aria-label="Sniper">
                             <Crosshair className="h-3.5 w-3.5" />
                           </Link>
@@ -803,9 +808,13 @@ export default function RadarPage() {
                           <Globe className="h-5 w-5" />
                         </a>
                       </Button>
-                      <Button asChild className="flex h-10 w-10 items-center justify-center rounded-xl bg-foreground p-0 text-background shadow-sm hover:bg-foreground/90">
+                      <Button
+                        asChild
+                        variant="ghost"
+                        className="flex h-10 w-10 items-center justify-center rounded-xl p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
                         <Link href={sniperHref(result)} aria-label="Sniper">
-                          <Crosshair className="h-4 w-4" />
+                          <Crosshair className="h-5 w-5" />
                         </Link>
                       </Button>
                     </div>

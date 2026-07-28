@@ -42,6 +42,7 @@ export type KanbanLead = {
   date: string;
   value: number;
   avatar: string;
+  faviconUrl?: string | null;
 };
 
 function columnIdToLeadStatus(columnId: string): string | null {
