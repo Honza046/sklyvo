@@ -1620,7 +1620,7 @@ function CrmPageContent() {
                             <div className="min-w-0 flex-1 leading-tight">
                               <p
                                 className={cn(
-                                  "truncate whitespace-nowrap text-[11px] leading-tight",
+                                  "truncate whitespace-nowrap text-sm leading-snug",
                                   emailTrim ? "text-foreground" : "text-muted-foreground",
                                 )}
                                 title={emailTrim || undefined}
@@ -1629,13 +1629,13 @@ function CrmPageContent() {
                               </p>
                               {phoneTrim ? (
                                 <p
-                                  className="truncate whitespace-nowrap text-[10px] leading-tight text-muted-foreground"
+                                  className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground"
                                   title={phoneTrim}
                                 >
                                   {phoneTrim}
                                 </p>
                               ) : (
-                                <p className="truncate whitespace-nowrap text-[10px] leading-tight text-muted-foreground">
+                                <p className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground">
                                   Bez telefonu
                                 </p>
                               )}
