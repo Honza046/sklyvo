@@ -27,7 +27,7 @@ export function leadSourceLabel(source: string | null | undefined): string {
   return SOURCE_LABEL.MANUAL;
 }
 
-/** Např. "Radar · Jan" nebo jen "Autopilot" když chybí autor. */
+/** Např. "Radar · Jan" — vždy se snaží ukázat i jméno. */
 export function formatLeadProvenance(
   source: string | null | undefined,
   author: string | null | undefined,
@@ -35,9 +35,34 @@ export function formatLeadProvenance(
   const tool = leadSourceLabel(source);
   const who = shortLeadAuthorName(author);
   if (tool && who) return `${tool} · ${who}`;
-  return tool || who || "";
+  if (who) return who;
+  return tool || "";
+}
+
+/** Zdroj a autor zvlášť — pro CRM UI. */
+export function leadProvenanceParts(
+  source: string | null | undefined,
+  author: string | null | undefined,
+): { sourceLabel: string; authorLabel: string } {
+  return {
+    sourceLabel: leadSourceLabel(source),
+    authorLabel: shortLeadAuthorName(author),
+  };
 }
 
 export function authorFromSessionName(name: string | null | undefined): string | null {
   return normalizeLeadAuthor(name) ?? (name?.trim() || null);
+}
+
+/** Jméno z session — name, jinak e-mail (jan@… → Jan Sedlář). */
+export function authorFromSessionUser(user: {
+  name?: string | null;
+  email?: string | null;
+} | null | undefined): string | null {
+  if (!user) return null;
+  return (
+    authorFromSessionName(user.name) ??
+    normalizeLeadAuthor(user.email) ??
+    authorFromSessionName(user.email?.split("@")[0] ?? null)
+  );
 }

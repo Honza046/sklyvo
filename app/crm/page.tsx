@@ -61,7 +61,7 @@ import {
   Hand,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatLeadProvenance, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
+import { leadProvenanceParts, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
 import {
   bulkDeleteLeads,
   bulkUpdateLeads,
@@ -269,6 +269,29 @@ function CrmPageContent() {
   useEffect(() => {
     void loadLeads();
   }, []);
+
+  // Jednou doplní chybějící autory z připojeného Google Sheetu
+  useEffect(() => {
+    if (isLoading || leads.length === 0) return;
+    const missing = leads.some((l) => !shortLeadAuthorName(l.author));
+    if (!missing) return;
+    const key = "venegard-author-backfill-v1";
+    try {
+      if (sessionStorage.getItem(key) === "1") return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* ignore */
+    }
+    void (async () => {
+      const { backfillAuthorsFromConnectedSheet } = await import(
+        "@/app/actions/google-sheets"
+      );
+      const result = await backfillAuthorsFromConnectedSheet();
+      if ("updated" in result && (result.updated ?? 0) > 0) {
+        await loadLeads();
+      }
+    })();
+  }, [isLoading, leads]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -1057,11 +1080,24 @@ function CrmPageContent() {
                         <h4 className="mb-1 truncate text-sm font-bold leading-none text-foreground">
                           {lead.company}
                         </h4>
-                        {formatLeadProvenance(lead.source, lead.author) ? (
-                          <p className="text-[9px] text-muted-foreground truncate mb-0.5">
-                            {formatLeadProvenance(lead.source, lead.author)}
-                          </p>
-                        ) : null}
+                        {(() => {
+                          const { sourceLabel, authorLabel } = leadProvenanceParts(
+                            lead.source,
+                            lead.author,
+                          );
+                          if (!sourceLabel && !authorLabel) return null;
+                          return (
+                            <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
+                              {sourceLabel}
+                              {authorLabel ? (
+                                <>
+                                  {" · "}
+                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
+                                </>
+                              ) : null}
+                            </p>
+                          );
+                        })()}
                         {companyWeb ? (
                         <a
                           href={companyWeb}
@@ -1234,11 +1270,24 @@ function CrmPageContent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-                        {formatLeadProvenance(lead.source, lead.author) ? (
-                          <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                            {formatLeadProvenance(lead.source, lead.author)}
-                          </p>
-                        ) : null}
+                        {(() => {
+                          const { sourceLabel, authorLabel } = leadProvenanceParts(
+                            lead.source,
+                            lead.author,
+                          );
+                          if (!sourceLabel && !authorLabel) return null;
+                          return (
+                            <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                              {sourceLabel}
+                              {authorLabel ? (
+                                <>
+                                  {" · "}
+                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
+                                </>
+                              ) : null}
+                            </p>
+                          );
+                        })()}
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                           {emailTrim || "Bez e-mailu"}
                           <span className="mx-1 text-border">·</span>
@@ -1388,11 +1437,12 @@ function CrmPageContent() {
                           />
                         </div>
                       </th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[24%]">Firma</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[12%]">Datum přidání</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">KONTAKT</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[10%]">Hodnota</th>
-                      <th className="sticky top-0 z-10 min-w-[11rem] bg-white px-3 py-3 pr-8 font-semibold dark:bg-zinc-950 w-[15%]">Status</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">Firma</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Autor</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[11%]">Datum přidání</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[20%]">KONTAKT</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Hodnota</th>
+                      <th className="sticky top-0 z-10 min-w-[11rem] bg-white px-3 py-3 pr-8 font-semibold dark:bg-zinc-950 w-[14%]">Status</th>
                       <th className="sticky top-0 z-10 w-[11.5rem] bg-white px-3 py-3 pl-6 text-right font-semibold dark:bg-zinc-950">Akce</th>
                     </tr>
                   </thead>
@@ -1422,11 +1472,26 @@ function CrmPageContent() {
                             />
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground break-words">{lead.company}</p>
-                              {formatLeadProvenance(lead.source, lead.author) ? (
-                                <p className="text-xs text-muted-foreground">
-                                  {formatLeadProvenance(lead.source, lead.author)}
-                                </p>
-                              ) : null}
+                              {(() => {
+                                const { sourceLabel, authorLabel } = leadProvenanceParts(
+                                  lead.source,
+                                  lead.author,
+                                );
+                                if (!sourceLabel && !authorLabel) return null;
+                                return (
+                                  <p className="text-xs text-muted-foreground">
+                                    {sourceLabel}
+                                    {authorLabel ? (
+                                      <>
+                                        {" · "}
+                                        <span className="font-semibold text-foreground/80">
+                                          {authorLabel}
+                                        </span>
+                                      </>
+                                    ) : null}
+                                  </p>
+                                );
+                              })()}
                               {companyWeb ? (
                               <a href={companyWeb} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 break-words block">
                                 {lead.url || companyWeb}
@@ -1436,6 +1501,18 @@ function CrmPageContent() {
                               )}
                             </div>
                           </div>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span
+                            className={cn(
+                              "text-sm font-semibold",
+                              shortLeadAuthorName(lead.author)
+                                ? "text-foreground"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            {shortLeadAuthorName(lead.author) || "—"}
+                          </span>
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
                         <td className="px-3 py-3 align-top">
@@ -1591,7 +1668,7 @@ function CrmPageContent() {
                     })}
                     {!isLoading && paginatedLeads.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Žádné firmy neodpovídají hledání.
                           </div>
@@ -1600,7 +1677,7 @@ function CrmPageContent() {
                     )}
                     {isLoading && (
                       <tr>
-                        <td colSpan={7} className="p-0">
+                        <td colSpan={8} className="p-0">
                           <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Načítám dealy...
                           </div>

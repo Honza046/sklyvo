@@ -667,3 +667,44 @@ export async function backfillAuthorsFromOutreachSheet(input: {
     authorCounts,
   };
 }
+
+/** Doplní autory z připojeného Google Sheetu (URL uložené v integraci). */
+export async function backfillAuthorsFromConnectedSheet() {
+  const session = await getSessionUser();
+  const workspaceId = session.user?.workspaceId;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen.", updated: 0 };
+  }
+
+  const missing = await prisma.lead.count({
+    where: {
+      workspaceId,
+      OR: [{ author: null }, { author: "" }],
+    },
+  });
+  if (missing === 0) {
+    return { success: true as const, updated: 0, skipped: true as const };
+  }
+
+  const conn = await prisma.workspaceGoogleSheetsConnection.findUnique({
+    where: { workspaceId },
+    select: { spreadsheetUrl: true, spreadsheetId: true },
+  });
+  const ref = (conn?.spreadsheetUrl || conn?.spreadsheetId || "").trim();
+  if (!ref) {
+    return {
+      error: "Nejdřív připoj Google Sheets a nastav tabulku v Integracích.",
+      updated: 0,
+    };
+  }
+
+  const result = await backfillAuthorsFromOutreachSheet({ spreadsheetUrlOrId: ref });
+  if ("error" in result && result.error) {
+    return { error: result.error, updated: 0 };
+  }
+  return {
+    success: true as const,
+    updated: result.updated ?? 0,
+    authorCounts: result.authorCounts,
+  };
+}

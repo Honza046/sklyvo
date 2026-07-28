@@ -1,4 +1,4 @@
-/** Normalizace jmen autorů z outreach Sheetu / Notion. */
+/** Normalizace jmen autorů z outreach Sheetu / Notion / e-mailu. */
 export function normalizeLeadAuthor(raw: string | null | undefined): string | null {
   const s = (raw ?? "").trim();
   if (!s || s === "-") return null;
@@ -10,20 +10,34 @@ export function normalizeLeadAuthor(raw: string | null | undefined): string | nu
     .replace(/\s+/g, " ")
     .trim();
 
+  // E-mail local-part (jan@venegard.com → jan)
+  const local = key.includes("@") ? key.split("@")[0]! : key;
+
   if (
-    key === "honza" ||
+    local === "honza" ||
+    local === "jan" ||
     key.includes("sedlar") ||
     key === "jan sedlar" ||
     key.startsWith("jan s")
   ) {
     return "Jan Sedlář";
   }
-  if (key.includes("pazdera") || key.includes("matej")) {
+  if (
+    local === "matej" ||
+    local === "matěj" ||
+    key.includes("pazdera") ||
+    key.includes("matej")
+  ) {
     return "Matěj Pazdera";
   }
-  if (key.includes("retzl") || key === "filip retzl" || key.startsWith("filip r")) {
+  if (
+    local === "filip" ||
+    key.includes("retzl") ||
+    key === "filip retzl" ||
+    key.startsWith("filip r")
+  ) {
     return "Filip Retzl";
   }
 
-  return s;
+  return s.includes("@") ? null : s;
 }

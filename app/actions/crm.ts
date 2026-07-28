@@ -3,7 +3,7 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
-import { authorFromSessionName, type LeadSourceValue } from "@/lib/lead-provenance";
+import { authorFromSessionUser, type LeadSourceValue } from "@/lib/lead-provenance";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -167,7 +167,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
   const email = input.email?.trim() || null;
   const contactPhone = input.phone?.trim() || null;
   const countryCode = normalizeCountryCode(input.countryCode);
-  const author = authorFromSessionName(session.user?.name);
+  const author = authorFromSessionUser(session.user);
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -226,7 +226,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
 
   const ce = data.contactEmail?.trim() || null;
   const cp = data.contactPhone?.trim() || null;
-  const author = authorFromSessionName(session.user?.name);
+  const author = authorFromSessionUser(session.user);
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -275,7 +275,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
 
   const { normalizeCountryCode } = await import("@/lib/country-language");
   const workspaceId = session.workspace.id;
-  const author = authorFromSessionName(session.user?.name);
+  const author = authorFromSessionUser(session.user);
   const normalized = leads
     .map((lead) => {
       const companyName = (lead.companyName ?? lead.name ?? "").trim();
@@ -522,7 +522,7 @@ export async function markLeadWebsiteVisited(id: string) {
     return { error: "Chybí ID leadu." };
   }
 
-  const visitedBy = authorFromSessionName(session.user?.name);
+  const visitedBy = authorFromSessionUser(session.user);
   const result = await prisma.lead.updateMany({
     where: {
       id: leadId,

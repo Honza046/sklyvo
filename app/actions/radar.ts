@@ -21,7 +21,7 @@ import {
   filterStandaloneCompanyPlaces,
   isStandaloneCompanyWebsite,
 } from "@/lib/radar-website-quality";
-import { authorFromSessionName } from "@/lib/lead-provenance";
+import { authorFromSessionUser, authorFromSessionName } from "@/lib/lead-provenance";
 
 type RadarSearchInput = {
   query: string;
@@ -355,16 +355,19 @@ async function loadCrmEmailKeys(workspaceId: string): Promise<Set<string>> {
 async function resolveWorkspaceLeadAuthor(workspaceId: string): Promise<string | null> {
   const owner = await prisma.user.findFirst({
     where: { workspaceId, role: "OWNER" },
-    select: { name: true },
+    select: { name: true, email: true },
     orderBy: { createdAt: "asc" },
   });
-  if (owner?.name) return authorFromSessionName(owner.name);
+  if (owner) {
+    const fromOwner = authorFromSessionUser(owner);
+    if (fromOwner) return fromOwner;
+  }
   const anyMember = await prisma.user.findFirst({
     where: { workspaceId },
-    select: { name: true },
+    select: { name: true, email: true },
     orderBy: { createdAt: "asc" },
   });
-  return authorFromSessionName(anyMember?.name);
+  return authorFromSessionUser(anyMember) ?? authorFromSessionName(anyMember?.name);
 }
 
 async function persistAutomatedRadarLeads(
