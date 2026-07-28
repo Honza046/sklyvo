@@ -126,16 +126,6 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(amount);
 };
 
-function websiteGlobeHint(visited: boolean | undefined, visitedBy: string | undefined): string {
-  if (visited) {
-    const who = shortLeadAuthorName(visitedBy);
-    return who
-      ? `Zelená = web už někdo prošel.\nPrvní návštěva webu: ${who}`
-      : "Zelená = web už někdo z týmu prošel.";
-  }
-  return "Otevřít web firmy.\nPo první návštěvě zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).";
-}
-
 function WebsiteVisitedGlobeButton({
   visited,
   visitedBy,
@@ -147,7 +137,6 @@ function WebsiteVisitedGlobeButton({
   onOpen: () => void;
   size?: "sm" | "md";
 }) {
-  const hint = websiteGlobeHint(visited, visitedBy);
   const who = shortLeadAuthorName(visitedBy);
   const isSm = size === "sm";
   const [hintOpen, setHintOpen] = useState(false);
@@ -179,7 +168,6 @@ function WebsiteVisitedGlobeButton({
                   ? "text-muted-foreground hover:text-foreground"
                   : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
-            title={hint}
             aria-label={
               visited
                 ? who
@@ -198,7 +186,7 @@ function WebsiteVisitedGlobeButton({
         sideOffset={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
-        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
+        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-white px-3 py-2 opacity-100 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
       >
         {visited ? (
           <>
@@ -1062,8 +1050,8 @@ function CrmPageContent() {
                             </SelectTrigger>
                             <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
                               <SelectItem value="all">Všechny zdroje</SelectItem>
-                              <SelectItem value="radar">Manuální Radar</SelectItem>
-                              <SelectItem value="autopilot">Autopilot-Radar / Sniper</SelectItem>
+                              <SelectItem value="radar">Radar</SelectItem>
+                              <SelectItem value="autopilot">AP Radar / Sniper</SelectItem>
                               <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="manual">Manuálně</SelectItem>
                             </SelectContent>
@@ -1193,21 +1181,15 @@ function CrmPageContent() {
                           {lead.company}
                         </h4>
                         {(() => {
-                          const { sourceLabel, authorLabel } = leadProvenanceParts(
+                          const { sourceLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
                             lead.contactedVia,
                           );
-                          if (!sourceLabel && !authorLabel) return null;
+                          if (!sourceLabel) return null;
                           return (
                             <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
                               {sourceLabel}
-                              {authorLabel ? (
-                                <>
-                                  {" · "}
-                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
-                                </>
-                              ) : null}
                             </p>
                           );
                         })()}
@@ -1384,21 +1366,15 @@ function CrmPageContent() {
                           </DropdownMenu>
                         </div>
                         {(() => {
-                          const { sourceLabel, authorLabel } = leadProvenanceParts(
+                          const { sourceLabel } = leadProvenanceParts(
                             lead.source,
                             lead.author,
                             lead.contactedVia,
                           );
-                          if (!sourceLabel && !authorLabel) return null;
+                          if (!sourceLabel) return null;
                           return (
                             <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
                               {sourceLabel}
-                              {authorLabel ? (
-                                <>
-                                  {" · "}
-                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
-                                </>
-                              ) : null}
                             </p>
                           );
                         })()}
@@ -1585,23 +1561,15 @@ function CrmPageContent() {
                                 {lead.company}
                               </p>
                               {(() => {
-                                const { sourceLabel, authorLabel } = leadProvenanceParts(
+                                const { sourceLabel } = leadProvenanceParts(
                                   lead.source,
                                   lead.author,
                                   lead.contactedVia,
                                 );
-                                if (!sourceLabel && !authorLabel) return null;
+                                if (!sourceLabel) return null;
                                 return (
                                   <p className="truncate text-xs text-muted-foreground">
                                     {sourceLabel}
-                                    {authorLabel ? (
-                                      <>
-                                        {" · "}
-                                        <span className="font-semibold text-foreground/80">
-                                          {authorLabel}
-                                        </span>
-                                      </>
-                                    ) : null}
                                   </p>
                                 );
                               })()}
