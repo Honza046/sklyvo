@@ -125,6 +125,92 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(amount);
 };
 
+function websiteGlobeHint(visited: boolean | undefined, visitedBy: string | undefined): string {
+  if (visited) {
+    const who = shortLeadAuthorName(visitedBy);
+    return who
+      ? `Zelená = web už někdo prošel.\nPrvní klik: ${who}`
+      : "Zelená = web už někdo z týmu prošel.";
+  }
+  return "Otevřít web firmy.\nPo prvním kliknutí zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).";
+}
+
+function WebsiteVisitedGlobeButton({
+  visited,
+  visitedBy,
+  onOpen,
+  size = "md",
+}: {
+  visited?: boolean;
+  visitedBy?: string;
+  onOpen: () => void;
+  size?: "sm" | "md";
+}) {
+  const hint = websiteGlobeHint(visited, visitedBy);
+  const who = shortLeadAuthorName(visitedBy);
+  const isSm = size === "sm";
+
+  return (
+    <div className="group/globe relative inline-flex">
+      <Button
+        type="button"
+        variant={isSm ? "ghost" : "outline"}
+        size="sm"
+        onClick={onOpen}
+        className={cn(
+          isSm
+            ? "h-8 w-8 rounded-full p-0 hover:bg-muted"
+            : "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
+          visited
+            ? isSm
+              ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
+            : isSm
+              ? "text-muted-foreground hover:text-foreground"
+              : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+        title={hint}
+        aria-label={
+          visited
+            ? who
+              ? `Web prohlédnut — první klik: ${who}`
+              : "Web prohlédnut"
+            : "Otevřít web firmy"
+        }
+      >
+        <Globe className={isSm ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      </Button>
+      <div
+        role="tooltip"
+        className={cn(
+          "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-52 -translate-x-1/2 rounded-lg border border-border/60 bg-popover px-2.5 py-2 text-left text-[11px] leading-snug text-popover-foreground shadow-lg",
+          "opacity-0 transition-opacity duration-150 group-hover/globe:opacity-100 group-focus-within/globe:opacity-100",
+        )}
+      >
+        {visited ? (
+          <>
+            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
+              Web už někdo prošel
+            </p>
+            <p className="mt-0.5 text-muted-foreground">
+              {who
+                ? `První klik na zeměkouli: ${who}`
+                : "Někdo z týmu už web otevřel."}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold text-foreground">Otevřít web firmy</p>
+            <p className="mt-0.5 text-muted-foreground">
+              Po prvním kliknutí zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function leadFullWebsiteUrl(domainOrUrl: string): string {
   const raw = (domainOrUrl ?? "").trim();
   if (!raw) return "";
@@ -1316,26 +1402,12 @@ function CrmPageContent() {
                           </Link>
                         </Button>
                         {companyWeb ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
+                          <WebsiteVisitedGlobeButton
+                            visited={lead.websiteVisited}
+                            visitedBy={lead.websiteVisitedBy}
+                            onOpen={() => handleOpenWebsite(lead, companyWeb)}
                             size="sm"
-                            onClick={() => handleOpenWebsite(lead, companyWeb)}
-                            className={cn(
-                              "h-8 w-8 rounded-full p-0 hover:bg-muted",
-                              lead.websiteVisited
-                                ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                                : "text-muted-foreground hover:text-foreground",
-                            )}
-                            title={
-                              lead.websiteVisited
-                                ? `Web prohlédnut${lead.websiteVisitedBy ? ` (${shortLeadAuthorName(lead.websiteVisitedBy)})` : ""}`
-                                : "Otevřít web"
-                            }
-                            aria-label="Otevřít web"
-                          >
-                            <Globe className="h-3.5 w-3.5" />
-                          </Button>
+                          />
                         ) : null}
                         <Button
                           type="button"
@@ -1380,7 +1452,13 @@ function CrmPageContent() {
                                     lead.websiteVisited && "text-emerald-600 dark:text-emerald-400",
                                   )}
                                 />
-                                {lead.websiteVisited ? "Web (prohlédnut)" : "Web"}
+                                {lead.websiteVisited
+                                  ? `Web prohlédnut${
+                                      shortLeadAuthorName(lead.websiteVisitedBy)
+                                        ? ` · ${shortLeadAuthorName(lead.websiteVisitedBy)}`
+                                        : ""
+                                    }`
+                                  : "Otevřít web"}
                               </DropdownMenuItem>
                             ) : null}
                             <DropdownMenuSeparator />
@@ -1591,26 +1669,12 @@ function CrmPageContent() {
                               </Link>
                             </Button>
                             {companyWeb ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleOpenWebsite(lead, companyWeb)}
-                                className={cn(
-                                  "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
-                                  lead.websiteVisited
-                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
-                                    : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
-                                )}
-                                title={
-                                  lead.websiteVisited
-                                    ? `Web prohlédnut${lead.websiteVisitedBy ? ` (${shortLeadAuthorName(lead.websiteVisitedBy)})` : ""}`
-                                    : "Otevřít web"
-                                }
-                                aria-label="Otevřít web"
-                              >
-                                <Globe className="h-4 w-4" />
-                              </Button>
+                              <WebsiteVisitedGlobeButton
+                                visited={lead.websiteVisited}
+                                visitedBy={lead.websiteVisitedBy}
+                                onOpen={() => handleOpenWebsite(lead, companyWeb)}
+                                size="md"
+                              />
                             ) : null}
                             <Button
                               type="button"
