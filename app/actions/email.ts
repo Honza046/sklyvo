@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { getSessionUser } from "@/app/actions/auth";
 import type { SendEmailResult } from "@/lib/email-types";
 import { sendWorkspaceEmail } from "@/lib/workspace-mailer";
+import { verifyInternalWorkspaceToken } from "@/lib/internal-auth";
 
 export type { SendEmailResult } from "@/lib/email-types";
 
@@ -12,12 +13,14 @@ type SendEmailInput = {
   subject: string;
   html: string;
   text?: string;
+  /** Pouze s platným internalToken (server-side). */
   workspaceId?: string;
+  internalToken?: string;
 };
 
 /**
  * Odešle outreach e-mail přes propojený firemní účet (SMTP / Google OAuth).
- * Systémové e-maily (ověření, reset hesla) používají samostatné Resend helpery níže.
+ * Workspace ze session, nebo ověřený internal token (cron / fronta).
  */
 export async function sendEmail({
   to,
@@ -25,10 +28,16 @@ export async function sendEmail({
   html,
   text,
   workspaceId,
+  internalToken,
 }: SendEmailInput): Promise<SendEmailResult> {
-  let resolvedWorkspaceId = workspaceId?.trim();
+  let resolvedWorkspaceId: string | undefined;
 
-  if (!resolvedWorkspaceId) {
+  if (workspaceId?.trim()) {
+    if (!verifyInternalWorkspaceToken(workspaceId, internalToken)) {
+      return { success: false, error: "Nejste přihlášen nebo chybí workspace." };
+    }
+    resolvedWorkspaceId = workspaceId.trim();
+  } else {
     const session = await getSessionUser();
     resolvedWorkspaceId = session.user?.workspaceId ?? undefined;
   }

@@ -50,7 +50,7 @@ export type QueueAutopilotCampaignResult =
   | { error: string };
 
 export type ProcessEmailQueueResult = {
-  ok: true;
+  ok: boolean;
   processed: number;
   sent: number;
   failed: number;
@@ -147,12 +147,21 @@ export async function getFullAutoProcessHistory(): Promise<
 }
 
 export async function queueAutopilotLead(
-  input: QueueAutopilotLeadInput & { workspaceId?: string },
+  input: QueueAutopilotLeadInput & { workspaceId?: string; internalToken?: string },
 ): Promise<QueueAutopilotLeadResult> {
-  const sessionWorkspaceId = input.workspaceId
-    ? null
-    : (await getSessionUser()).user?.workspaceId;
-  const workspaceId = input.workspaceId?.trim() || sessionWorkspaceId;
+  const { verifyInternalWorkspaceToken, createInternalWorkspaceToken } = await import(
+    "@/lib/internal-auth"
+  );
+
+  let workspaceId: string | undefined;
+  if (input.workspaceId?.trim()) {
+    if (!verifyInternalWorkspaceToken(input.workspaceId, input.internalToken)) {
+      return { error: "Nejste přihlášen." };
+    }
+    workspaceId = input.workspaceId.trim();
+  } else {
+    workspaceId = (await getSessionUser()).user?.workspaceId ?? undefined;
+  }
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
   }
@@ -183,7 +192,10 @@ export async function queueAutopilotLead(
     return { error: "Lead nebyl nalezen." };
   }
 
-  const generated = await generateEmailForLead(leadId, { workspaceId });
+  const generated = await generateEmailForLead(leadId, {
+    workspaceId,
+    internalToken: createInternalWorkspaceToken(workspaceId),
+  });
   if ("error" in generated) {
     return { error: generated.error };
   }
@@ -268,12 +280,25 @@ export async function queueAutopilotCampaign(
 export type ProcessEmailQueueOptions = {
   workspaceId?: string;
   ignoreSchedule?: boolean;
+  /** Povinné pro jakékoli volání — HMAC z CRON_SECRET (cron) nebo workspace token. */
+  internalToken?: string;
 };
 
 export async function processEmailQueue(
   limit = 50,
   options?: ProcessEmailQueueOptions,
 ): Promise<ProcessEmailQueueResult> {
+  const { verifyInternalWorkspaceToken, verifyInternalCronToken, createInternalWorkspaceToken } =
+    await import("@/lib/internal-auth");
+
+  if (options?.workspaceId?.trim()) {
+    if (!verifyInternalWorkspaceToken(options.workspaceId, options.internalToken)) {
+      return { ok: false, processed: 0, sent: 0, failed: 0, errors: ["Neautorizováno."] };
+    }
+  } else if (!verifyInternalCronToken("processEmailQueue", options?.internalToken)) {
+    return { ok: false, processed: 0, sent: 0, failed: 0, errors: ["Neautorizováno."] };
+  }
+
   const now = new Date();
 
   const enabledWorkspaceIds = options?.workspaceId
@@ -339,6 +364,7 @@ export async function processEmailQueue(
       subject: item.subject,
       html: item.htmlBody,
       workspaceId: item.lead.workspaceId,
+      internalToken: createInternalWorkspaceToken(item.lead.workspaceId),
     });
 
     if (!sendResult.success) {
@@ -427,6 +453,7 @@ export async function forceSendAutopilotEmailQueue(): Promise<
   return processEmailQueue(Math.max(pendingCount, 50), {
     workspaceId,
     ignoreSchedule: true,
+    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
   });
 }
 

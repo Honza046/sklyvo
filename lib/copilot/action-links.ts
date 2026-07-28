@@ -5,14 +5,45 @@ export type CopilotAction = {
 
 const ACTION_PATTERN = /\[ACTION:\s*([^\]|]+)(?:\|([^\]]+))?\]/g;
 
-/** Map legacy / conceptual routes to real app paths. */
-export function normalizeCopilotActionPath(rawPath: string): string {
+const ALLOWED_PREFIXES = [
+  "/",
+  "/settings",
+  "/crm",
+  "/radar",
+  "/sniper",
+  "/autopilot",
+  "/help",
+  "/account",
+  "/pracovni-prostor",
+  "/dashboard",
+] as const;
+
+function isAllowedAppPath(path: string): boolean {
+  if (!path.startsWith("/")) return false;
+  if (path.startsWith("//")) return false;
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(path)) return false; // http:, javascript:
+  const bare = path.split(/[?#]/)[0] || "/";
+  if (bare === "/") return true;
+  return ALLOWED_PREFIXES.some((prefix) => {
+    if (prefix === "/") return false;
+    return bare === prefix || bare.startsWith(`${prefix}/`);
+  });
+}
+
+/** Map legacy / conceptual routes to real app paths. Rejects open redirects. */
+export function normalizeCopilotActionPath(rawPath: string): string | null {
   const trimmed = rawPath.trim();
+  if (!trimmed || trimmed.startsWith("//") || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    return null;
+  }
+
   const [pathPart, queryPart] = trimmed.split("?");
-  const params = new URLSearchParams(queryPart ?? "");
+  const hashIdx = trimmed.indexOf("#");
+  const hash = hashIdx >= 0 ? trimmed.slice(hashIdx) : "";
+  const params = new URLSearchParams(queryPart?.split("#")[0] ?? "");
   const section = params.get("section");
 
-  let path = pathPart;
+  let path = pathPart.split("#")[0];
   if (path === "/pracovni-prostor") path = "/settings";
   if (path === "/dashboard") path = "/";
 
@@ -20,7 +51,23 @@ export function normalizeCopilotActionPath(rawPath: string): string {
     return "/settings#email-integration";
   }
 
-  return trimmed.startsWith("/") ? trimmed.replace("/pracovni-prostor", "/settings") : `/${trimmed}`;
+  let normalized = path.startsWith("/") ? path : `/${path}`;
+  normalized = normalized.replace("/pracovni-prostor", "/settings");
+  if (hash && !normalized.includes("#")) {
+    normalized = `${normalized}${hash}`;
+  } else if (trimmed.includes("#email-integration") && normalized.startsWith("/settings")) {
+    normalized = "/settings#email-integration";
+  } else if (trimmed.includes("#credits") && normalized.startsWith("/settings")) {
+    normalized = "/settings#credits";
+  } else if (trimmed.includes("#integrations") && normalized.startsWith("/settings")) {
+    normalized = "/settings#integrations";
+  }
+
+  if (!isAllowedAppPath(normalized.split("#")[0] || "/")) {
+    return null;
+  }
+
+  return normalized;
 }
 
 export function parseCopilotActions(content: string): {
@@ -32,6 +79,7 @@ export function parseCopilotActions(content: string): {
 
   const text = content.replace(ACTION_PATTERN, (_, rawPath: string, rawLabel?: string) => {
     const path = normalizeCopilotActionPath(rawPath);
+    if (!path) return "";
     const label = (rawLabel ?? defaultActionLabel(path)).trim();
     actions.push({ path, label });
     return `__ACTION_${index++}__`;

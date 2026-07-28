@@ -3,8 +3,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-
-const SESSION_COOKIE = "session_user_id";
+import {
+  SESSION_COOKIE,
+  createSessionToken,
+  sessionCookieOptions,
+} from "@/lib/session";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -70,13 +73,8 @@ export async function GET(request: Request) {
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, dbUser.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  const token = await createSessionToken(dbUser.id);
+  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
 
   return NextResponse.redirect(new URL(next, url.origin));
 }

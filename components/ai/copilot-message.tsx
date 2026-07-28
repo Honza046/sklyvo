@@ -72,6 +72,7 @@ export function CopilotMessage({
 
   const handleAction = (path: string) => {
     const target = normalizeCopilotActionPath(path);
+    if (!target) return;
     const hash = target.includes("#") ? target.split("#")[1] : null;
     onNavigate?.();
     router.push(target);

@@ -5,8 +5,14 @@ import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationCodeEmail, sendPasswordResetEmail } from "@/app/actions/email";
+import { hashPassword, verifyPassword } from "@/lib/password";
+import {
+  SESSION_COOKIE,
+  createSessionToken,
+  sessionCookieOptions,
+  verifySessionToken,
+} from "@/lib/session";
 
-const SESSION_COOKIE = "session_user_id";
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING"]);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -17,7 +23,34 @@ function getFirstName(fullName: string | null | undefined) {
   return trimmed.split(/\s+/)[0] ?? null;
 }
 
+async function setSessionCookie(userId: string) {
+  const token = await createSessionToken(userId);
+  const cookieStore = await cookies();
+  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
+}
+
+async function clearSessionCookie() {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE);
+}
+
+async function readSessionUserId(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
+}
+
 export async function checkIfUserExists(email: string) {
+  const { getRequestIp } = await import("@/lib/request-ip");
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const ip = await getRequestIp();
+  const limited = await consumeRateLimit({
+    key: `auth-exists:${ip}`,
+    ...RATE_LIMITS.authIp,
+  });
+  if (!limited.ok) {
+    return { exists: false as const };
+  }
+
   const trimmed = email.trim();
   if (!trimmed) {
     return { exists: false as const };
@@ -30,6 +63,17 @@ export async function checkIfUserExists(email: string) {
 }
 
 export async function registerUser(formData: FormData) {
+  const { getRequestIp } = await import("@/lib/request-ip");
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const ip = await getRequestIp();
+  const limited = await consumeRateLimit({
+    key: `register:${ip}`,
+    ...RATE_LIMITS.registerIp,
+  });
+  if (!limited.ok) {
+    return { error: "Příliš mnoho registrací. Zkuste to později." };
+  }
+
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -38,34 +82,29 @@ export async function registerUser(formData: FormData) {
     return { error: "E-mail a heslo jsou povinné." };
   }
 
+  if (password.length < 8) {
+    return { error: "Heslo musí mít alespoň 8 znaků." };
+  }
+
   try {
-    // 1. Vytvoříme nový Pracovní prostor (Workspace) pro tohoto uživatele
     const workspace = await prisma.workspace.create({
       data: {
         name: `Prostor - ${name || email}`,
-      }
+      },
     });
 
-    // 2. Vytvoříme Uživatele a rovnou mu přiřadíme ID nového Workspace
+    const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        passwordHash: password, // Pro produkci sem později přidáme bezpečné hashování (bcrypt)
+        passwordHash,
         workspaceId: workspace.id,
-        role: "OWNER" // Zakladatel účtu
-      }
+        role: "OWNER",
+      },
     });
 
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE, user.id, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 30,
-    });
-
+    await setSessionCookie(user.id);
     return { success: true };
   } catch (error) {
     console.error("Chyba při registraci:", error);
@@ -75,12 +114,13 @@ export async function registerUser(formData: FormData) {
 
 export async function getSessionUser() {
   noStore();
-  const cookieStore = await cookies();
-  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  const userId = await readSessionUserId();
 
   if (!userId) {
     return { user: null, workspace: null };
   }
+
+  const cookieStore = await cookies();
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -214,6 +254,17 @@ export async function getWorkspaceAccessState() {
 }
 
 export async function loginUser(formData: FormData) {
+  const { getRequestIp } = await import("@/lib/request-ip");
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const ip = await getRequestIp();
+  const limited = await consumeRateLimit({
+    key: `login:${ip}`,
+    ...RATE_LIMITS.authIp,
+  });
+  if (!limited.ok) {
+    return { error: "Příliš mnoho pokusů. Zkuste to za chvíli." };
+  }
+
   const email = (formData.get("email") as string | null)?.trim();
   const password = formData.get("password") as string | null;
 
@@ -229,19 +280,23 @@ export async function loginUser(formData: FormData) {
     },
   });
 
-  if (!user || user.passwordHash !== password) {
+  if (!user) {
     return { error: "Neplatné přihlašovací údaje." };
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, user.id, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  const check = await verifyPassword(password, user.passwordHash);
+  if (!check.ok) {
+    return { error: "Neplatné přihlašovací údaje." };
+  }
 
+  if (check.needsRehash) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(password) },
+    });
+  }
+
+  await setSessionCookie(user.id);
   return { success: true as const };
 }
 
@@ -260,8 +315,7 @@ export async function updateUserPassword(input: {
     return { error: "Nové heslo musí mít alespoň 8 znaků." };
   }
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  const userId = await readSessionUserId();
   if (!userId) {
     return { error: "Nejste přihlášeni." };
   }
@@ -275,22 +329,19 @@ export async function updateUserPassword(input: {
     return { error: "Účet nebyl nalezen." };
   }
 
-  if (user.passwordHash !== currentPassword) {
+  const check = await verifyPassword(currentPassword, user.passwordHash);
+  if (!check.ok) {
     return { error: "Aktuální heslo není správné." };
   }
 
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash: newPassword },
+    data: { passwordHash: await hashPassword(newPassword) },
   });
 
   return { success: true };
 }
 
-/**
- * Krok 1 bezpečné změny e-mailu: vygeneruje 6místný kód, uloží čekající adresu + kód
- * s 15minutovou expirací a odešle kód na NOVOU adresu. Hlavní e-mail se zatím nemění.
- */
 export async function requestEmailChange(
   newEmail: string,
 ): Promise<{ success: true } | { error: string }> {
@@ -299,8 +350,7 @@ export async function requestEmailChange(
     return { error: "Zadejte platnou e-mailovou adresu." };
   }
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  const userId = await readSessionUserId();
   if (!userId) {
     return { error: "Nejste přihlášeni." };
   }
@@ -344,12 +394,6 @@ export async function requestEmailChange(
   return { success: true };
 }
 
-/**
- * Krok 2 bezpečné změny e-mailu: ověří kód a jeho platnost. Při úspěchu nastaví hlavní
- * `email` na hodnotu z `pendingEmail` a vymaže všechny ověřovací sloupce.
- * Identita uživatele žije v Prisma (vlastní cookie session), takže není potřeba
- * synchronizovat externí auth provider.
- */
 export async function verifyEmailChange(
   code: string,
 ): Promise<{ success: true; email: string } | { error: string }> {
@@ -358,8 +402,7 @@ export async function verifyEmailChange(
     return { error: "Zadejte ověřovací kód." };
   }
 
-  const cookieStore = await cookies();
-  const userId = cookieStore.get(SESSION_COOKIE)?.value;
+  const userId = await readSessionUserId();
   if (!userId) {
     return { error: "Nejste přihlášeni." };
   }
@@ -409,16 +452,21 @@ export async function verifyEmailChange(
   return { success: true, email: newEmail };
 }
 
-/**
- * Krok 1 obnovy hesla: najde uživatele podle e-mailu, vygeneruje bezpečný unikátní token
- * s 60minutovou expirací, uloží ho a odešle odkaz pro nastavení nového hesla.
- * Z bezpečnostních důvodů (zabránění zjišťování existence účtů) vrací úspěch i tehdy,
- * když uživatel s daným e-mailem neexistuje.
- */
 export async function requestPasswordReset(
   email: string,
   appOrigin?: string,
 ): Promise<{ success: true } | { error: string }> {
+  const { getRequestIp } = await import("@/lib/request-ip");
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const ip = await getRequestIp();
+  const limited = await consumeRateLimit({
+    key: `reset:${ip}`,
+    ...RATE_LIMITS.authIp,
+  });
+  if (!limited.ok) {
+    return { error: "Příliš mnoho požadavků. Zkuste to později." };
+  }
+
   const normalized = email?.trim().toLowerCase();
   if (!normalized || !EMAIL_REGEX.test(normalized)) {
     return { error: "Zadejte platnou e-mailovou adresu." };
@@ -429,7 +477,6 @@ export async function requestPasswordReset(
     select: { id: true, email: true },
   });
 
-  // Neexistující účet: tváříme se úspěšně, ale nic neposíláme.
   if (!user) {
     return { success: true };
   }
@@ -450,27 +497,14 @@ export async function requestPasswordReset(
   const baseUrl = originBase || envBase || "http://localhost:3001";
   const resetLink = `${baseUrl}/obnova-hesla?token=${token}`;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'A',location:'auth.ts:requestPasswordReset',message:'Prisma password reset email requested',data:{authSystem:'prisma',hasBaseUrl:Boolean(baseUrl),linkHost:baseUrl},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
-
   const sent = await sendPasswordResetEmail(user.email, resetLink);
   if (!sent.success) {
-    // #region agent log
-    fetch('http://127.0.0.1:7935/ingest/cd58245d-3cee-42b5-b476-9501fa947d37',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'dc49be'},body:JSON.stringify({sessionId:'dc49be',runId:'post-fix',hypothesisId:'A',location:'auth.ts:requestPasswordReset:send-fail',message:'Password reset email failed',data:{error:sent.error},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     return { error: sent.error };
   }
 
   return { success: true };
 }
 
-/**
- * Krok 2 obnovy hesla: ověří platnost tokenu, nastaví nové heslo a token zneplatní.
- * Pozn.: heslo se ukládá stejným způsobem jako ve zbytku aplikace (pole passwordHash).
- * Skutečné hashování (bcrypt) je třeba zavést napříč celou autentizací (registrace, login,
- * změna hesla) v jednom kroku, jinak by se uživatel nemohl přihlásit.
- */
 export async function resetPassword(
   token: string,
   newPassword: string,
@@ -498,7 +532,7 @@ export async function resetPassword(
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      passwordHash: newPassword,
+      passwordHash: await hashPassword(newPassword),
       passwordResetToken: null,
       passwordResetExpiresAt: null,
     },
@@ -508,7 +542,6 @@ export async function resetPassword(
 }
 
 export async function clearSession() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
+  await clearSessionCookie();
   return { success: true as const };
 }

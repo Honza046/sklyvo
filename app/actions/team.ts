@@ -112,30 +112,19 @@ export async function inviteTeamMember(input: {
     if (existing.workspaceId === workspaceId) {
       return { error: "Tento uživatel už je ve vašem workspace." };
     }
-    await prisma.user.update({
-      where: { id: existing.id },
-      data: {
-        workspaceId,
-        role,
-        name: existing.name?.trim() || name,
-      },
-    });
-    revalidatePath("/settings");
     return {
-      success: true as const,
-      mode: "moved" as const,
-      email,
-      name: existing.name?.trim() || name,
-      temporaryPassword: null as string | null,
+      error:
+        "Tento e-mail už má účet v jiném workspace. Pozvěte ho až po odchodu z původního týmu, nebo vytvořte nový účet.",
     };
   }
 
-  const temporaryPassword = randomBytes(5).toString("hex"); // 10 hex chars
+  const temporaryPassword = randomBytes(5).toString("hex");
+  const { hashPassword } = await import("@/lib/password");
   await prisma.user.create({
     data: {
       email,
       name,
-      passwordHash: temporaryPassword,
+      passwordHash: await hashPassword(temporaryPassword),
       workspaceId,
       role,
     },

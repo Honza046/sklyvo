@@ -2,7 +2,7 @@
 
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { getSessionUser } from "@/app/actions/auth";
+import { getSessionUser, getWorkspaceAccessState } from "@/app/actions/auth";
 import { parseCopilotActions, appendAction, type CopilotAction } from "@/lib/copilot/action-links";
 import { VENEGARD_PRODUCT_KNOWLEDGE } from "@/lib/copilot/product-knowledge";
 import {
@@ -74,6 +74,28 @@ export async function askCopilot(input: {
       content: "Pro chat s venesis se musíte přihlásit.",
       actions: [],
       error: "unauthenticated",
+    };
+  }
+
+  const access = await getWorkspaceAccessState();
+  if (access.isBlocked) {
+    return {
+      content: "Váš trial nebo předplatné není aktivní. Obnovte tarif v nastavení účtu.",
+      actions: [{ path: "/account", label: "Otevřít účet" }],
+      error: "blocked",
+    };
+  }
+
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const limited = await consumeRateLimit({
+    key: `copilot:${session.user.id}`,
+    ...RATE_LIMITS.copilot,
+  });
+  if (!limited.ok) {
+    return {
+      content: `Překročen limit zpráv. Zkuste to znovu za cca ${limited.retryAfterSec} s.`,
+      actions: [],
+      error: "rate_limited",
     };
   }
 

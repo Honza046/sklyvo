@@ -106,7 +106,11 @@ export async function sendOutreachEmailNow(input: {
     return { error: "Lead už má e-mail ve frontě Autopilota — nejdřív ho vyřeš." };
   }
 
-  const generated = await generateEmailForLead(leadId, { workspaceId, kind });
+  const generated = await generateEmailForLead(leadId, {
+    workspaceId,
+    kind,
+    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
+  });
   if ("error" in generated) {
     return { error: generated.error };
   }
@@ -116,7 +120,6 @@ export async function sendOutreachEmailNow(input: {
     subject: generated.subject,
     html: generated.htmlBody,
     text: generated.textBody,
-    workspaceId,
   });
   if (!sendResult.success) {
     return { error: sendResult.error };

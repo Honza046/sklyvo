@@ -3,6 +3,8 @@
  * Sdílené mezi Radar a CRM bulk enrich.
  */
 
+import { assertSafeHttpUrl, safeFetchHtml } from "@/lib/ssrf-guard";
+
 const FETCH_TIMEOUT_MS = 5000;
 const MAX_BODY_CHARS = 400_000;
 
@@ -56,26 +58,7 @@ export type ScrapedWebsiteContacts = {
 };
 
 export function parseWebsiteUrl(websiteUri: string): URL | null {
-  const raw = websiteUri.trim();
-  if (!raw) return null;
-  try {
-    const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-    if (!["http:", "https:"].includes(u.protocol)) return null;
-    const h = u.hostname.toLowerCase();
-    if (
-      h === "localhost" ||
-      h.endsWith(".local") ||
-      h === "0.0.0.0" ||
-      /^127\./.test(h) ||
-      /^10\./.test(h) ||
-      /^192\.168\./.test(h)
-    ) {
-      return null;
-    }
-    return u;
-  } catch {
-    return null;
-  }
+  return assertSafeHttpUrl(websiteUri);
 }
 
 function isValidScrapedEmail(email: string): boolean {
@@ -225,30 +208,16 @@ function normalizeFetchKey(url: string): string {
 }
 
 async function fetchPageHtml(url: string): Promise<string | null> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    const response = await fetch(url, {
-      signal: controller.signal,
-      cache: "no-store",
-      redirect: "follow",
-      headers: {
-        "User-Agent": BROWSER_UA,
-        Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
-      },
-    });
-    clearTimeout(timeoutId);
-
-    if (!response.ok) return null;
-    const ct = response.headers.get("content-type") ?? "";
-    if (ct && !ct.includes("text/html") && !ct.includes("application/xhtml")) {
-      return null;
-    }
-    const text = await response.text();
-    return text.slice(0, MAX_BODY_CHARS);
-  } catch {
-    return null;
-  }
+  const fetched = await safeFetchHtml(url, {
+    timeoutMs: FETCH_TIMEOUT_MS,
+    maxBodyChars: MAX_BODY_CHARS,
+    headers: {
+      "User-Agent": BROWSER_UA,
+      Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+    },
+  });
+  if (!fetched.ok) return null;
+  return fetched.html;
 }
 
 async function fetchPageHtmlOnce(url: string, seen: Set<string>): Promise<string | null> {

@@ -6,7 +6,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/app/actions/auth";
+import { getSessionUser, getWorkspaceAccessState } from "@/app/actions/auth";
 import { SNIPER_AUTODETECT_VALUE } from "@/lib/constants";
 import { probeClientWebsite } from "@/lib/sniper-website-probe";
 import {
@@ -1118,6 +1118,22 @@ export async function generateEmailContent(params: GenerateEmailParams) {
       return { error: "Nejste přihlášen." };
     }
 
+    const access = await getWorkspaceAccessState();
+    if (access.isBlocked) {
+      return { error: "Váš trial nebo předplatné není aktivní." };
+    }
+
+    const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+    const limited = await consumeRateLimit({
+      key: `sniper:${session.user.workspaceId}`,
+      ...RATE_LIMITS.sniperGenerate,
+    });
+    if (!limited.ok) {
+      return {
+        error: `Překročen limit generování. Zkuste to znovu za cca ${limited.retryAfterSec} s.`,
+      };
+    }
+
     if ((session.workspace?.creditsTotal ?? 0) - (session.workspace?.creditsUsed ?? 0) <= 0) {
       return {
         error: "INSUFFICIENT_CREDITS",
@@ -1185,18 +1201,31 @@ export type GeneratedLeadEmail =
 
 /**
  * Vygeneruje Sniper e-mail pro lead bez odeslání (Autopilot fronta / follow-up / breakup).
- * `workspaceId` umožní běh z cronu bez session.
+ * Cizí `workspaceId` jen s platným `internalToken` (HMAC z CRON_SECRET / SESSION_SECRET).
  */
 export async function generateEmailForLead(
   leadId: string,
   options?: {
     workspaceId?: string;
+    internalToken?: string;
     kind?: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
   },
 ): Promise<GeneratedLeadEmail> {
   try {
-    const session = options?.workspaceId ? null : await getSessionUser();
-    const workspaceId = options?.workspaceId?.trim() || session?.user?.workspaceId;
+    const { verifyInternalWorkspaceToken } = await import("@/lib/internal-auth");
+    let session: Awaited<ReturnType<typeof getSessionUser>> | null = null;
+    let workspaceId: string | undefined;
+
+    if (options?.workspaceId?.trim()) {
+      if (!verifyInternalWorkspaceToken(options.workspaceId, options.internalToken)) {
+        return { error: "Nejste přihlášen." };
+      }
+      workspaceId = options.workspaceId.trim();
+    } else {
+      session = await getSessionUser();
+      workspaceId = session?.user?.workspaceId;
+    }
+
     if (!workspaceId) {
       return { error: "Nejste přihlášen." };
     }
@@ -1343,7 +1372,6 @@ export async function processSingleLead(leadId: string): Promise<ProcessSingleLe
       subject: generated.subject,
       html: generated.htmlBody,
       text: generated.textBody,
-      workspaceId,
     });
     if (!sendResult.success) {
       return { error: `Odeslání selhalo: ${sendResult.error}` };

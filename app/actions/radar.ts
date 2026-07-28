@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getSessionUser } from "@/app/actions/auth";
+import { getSessionUser, getWorkspaceAccessState } from "@/app/actions/auth";
 import { AUTOMATED_RADAR_CONFIG, type AutomatedRadarRunResult } from "@/lib/automated-radar-config";
 import { buildRadarSearchQueries } from "@/lib/radar-settings-meta";
 import { loadRadarSettingsPayloadForWorkspace } from "@/app/actions/radar-settings";
@@ -381,6 +381,9 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
       leadId: leadIds[index],
       scheduledAt: new Date(base + index * STAGGER_MS).toISOString(),
       workspaceId,
+      internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(
+        workspaceId,
+      ),
     });
     if ("success" in result && result.success) {
       queued += 1;
@@ -392,8 +395,13 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
 
 export async function runAutomatedRadarForWorkspace(
   workspaceId: string,
-  options?: { forceAutoStartOutreach?: boolean },
+  options?: { forceAutoStartOutreach?: boolean; internalToken?: string },
 ): Promise<(AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }> {
+  const { verifyInternalWorkspaceToken } = await import("@/lib/internal-auth");
+  if (!verifyInternalWorkspaceToken(workspaceId, options?.internalToken)) {
+    return { error: "Neautorizováno." };
+  }
+
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return { error: "Chybí GOOGLE_PLACES_API_KEY." };
@@ -592,7 +600,10 @@ export async function processScheduledRadarRuns(): Promise<{
       if (last.dateKey === dateKey) continue;
     }
 
-    const run = await runAutomatedRadarForWorkspace(row.workspaceId);
+    const { createInternalWorkspaceToken } = await import("@/lib/internal-auth");
+    const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
+      internalToken: createInternalWorkspaceToken(row.workspaceId),
+    });
     if ("error" in run) {
       results.push({ workspaceId: row.workspaceId, error: run.error });
       continue;
@@ -665,8 +676,11 @@ export async function processScheduledFullAutoRuns(): Promise<{
       if (last.dateKey === dateKey) continue;
     }
 
+    const { createInternalWorkspaceToken } = await import("@/lib/internal-auth");
+    const wsToken = createInternalWorkspaceToken(row.workspaceId);
     const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
       forceAutoStartOutreach: true,
+      internalToken: wsToken,
     });
     if ("error" in run) {
       results.push({ workspaceId: row.workspaceId, error: run.error });
@@ -677,6 +691,7 @@ export async function processScheduledFullAutoRuns(): Promise<{
     const send = await processEmailQueue(50, {
       workspaceId: row.workspaceId,
       ignoreSchedule: true,
+      internalToken: wsToken,
     });
 
     await prisma.radarSettings.update({
@@ -704,13 +719,33 @@ export async function runAutomatedRadar(): Promise<
     return { error: "Nejste přihlášen." };
   }
 
-  return runAutomatedRadarForWorkspace(session.workspace.id);
+  return runAutomatedRadarForWorkspace(session.workspace.id, {
+    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(
+      session.workspace.id,
+    ),
+  });
 }
 
 export async function searchRadarLeads(input: RadarSearchInput) {
   const session = await getSessionUser();
   if (!session.user?.id || !session.workspace?.id) {
     return { error: "Nejste přihlášen." };
+  }
+
+  const access = await getWorkspaceAccessState();
+  if (access.isBlocked) {
+    return { error: "Váš trial nebo předplatné není aktivní." };
+  }
+
+  const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
+  const limited = await consumeRateLimit({
+    key: `radar:${session.workspace.id}`,
+    ...RATE_LIMITS.radarSearch,
+  });
+  if (!limited.ok) {
+    return {
+      error: `Překročen limit Radar hledání. Zkuste to znovu za cca ${limited.retryAfterSec} s.`,
+    };
   }
 
   const normalizedQuery = input.query.trim();

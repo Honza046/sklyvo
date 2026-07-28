@@ -3,6 +3,8 @@
  * Žádné Tavily / Search API — jen HTTP fetch + regexy nad HTML (stejný náklad jako dřív).
  */
 
+import { assertSafeHttpUrl, safeFetchHtml } from "@/lib/ssrf-guard";
+
 export const SNIPER_PRIMARY_OFFERS = [
   "Redesign a tvorba webů",
   "E-shopy (Shopify) a redesign e-shopů",
@@ -29,22 +31,6 @@ export type WebsiteProbeResult = {
 const WEB_TEXT_MAX = 3600;
 const FETCH_BODY_MAX = 80_000;
 const FETCH_TIMEOUT_MS = 8000;
-
-function isBlockedHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase();
-  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local")) return true;
-  if (h === "0.0.0.0" || h === "[::1]" || h === "::1") return true;
-  if (/^127\.\d+\.\d+\.\d+$/.test(h)) return true;
-  if (/^10\.\d+\.\d+\.\d+$/.test(h)) return true;
-  if (/^192\.168\.\d+\.\d+$/.test(h)) return true;
-  const m = /^172\.(\d+)\.\d+\.\d+$/.exec(h);
-  if (m) {
-    const n = Number(m[1]);
-    if (n >= 16 && n <= 31) return true;
-  }
-  if (h.startsWith("169.254.")) return true;
-  return false;
-}
 
 function extractMeta(html: string, name: string): string {
   const re = new RegExp(
@@ -311,25 +297,15 @@ export async function probeClientWebsite(urlRaw: string): Promise<WebsiteProbeRe
   if (!raw) return fallback("(URL nebyla zadána.)");
 
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  let u: URL;
-  try {
-    u = new URL(withProtocol);
-  } catch {
-    return fallback("(Neplatná URL — nelze načíst obsah.)");
-  }
-  if (!["http:", "https:"].includes(u.protocol)) {
-    return fallback("(Nepovolený protokol.)");
-  }
-  if (isBlockedHostname(u.hostname)) {
-    return fallback("(Interní nebo nepovolená adresa — obsah nestahujeme.)");
+  const u = assertSafeHttpUrl(withProtocol);
+  if (!u) {
+    return fallback("(Interní, neplatná nebo nepovolená adresa — obsah nestahujeme.)");
   }
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(u.toString(), {
-      signal: controller.signal,
-      redirect: "follow",
+    const fetched = await safeFetchHtml(u.toString(), {
+      timeoutMs: FETCH_TIMEOUT_MS,
+      maxBodyChars: FETCH_BODY_MAX,
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; VenegardSniper/2.0; +https://venegard.com)",
@@ -337,10 +313,10 @@ export async function probeClientWebsite(urlRaw: string): Promise<WebsiteProbeRe
         "Accept-Language": "cs,en;q=0.8",
       },
     });
-    if (!res.ok) {
-      return fallback(`(Stažení stránky selhalo: HTTP ${res.status}.)`);
+    if (!fetched.ok) {
+      return fallback(`(Stažení stránky selhalo: ${fetched.reason}.)`);
     }
-    const html = (await res.text()).slice(0, FETCH_BODY_MAX);
+    const html = fetched.html;
     const title = extractTitle(html);
     const description =
       extractMeta(html, "description") || extractMeta(html, "og:description");
@@ -394,7 +370,5 @@ export async function probeClientWebsite(urlRaw: string): Promise<WebsiteProbeRe
     return fallback(
       "(Obsah stránky se nepodařilo načíst — pracuj jen s informacemi z URL a názvu domény. NEVYMÝŠLEJ SaaS ani jiný obor, pokud z URL jasně neplyne.)",
     );
-  } finally {
-    clearTimeout(timer);
   }
 }

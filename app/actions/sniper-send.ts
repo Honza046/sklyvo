@@ -73,7 +73,6 @@ export async function sendSniperEmailNow(input: {
     subject,
     html,
     text,
-    workspaceId,
   });
   if (!sendResult.success) {
     return { error: sendResult.error || "Odeslání selhalo." };
