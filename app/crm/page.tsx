@@ -130,10 +130,10 @@ function websiteGlobeHint(visited: boolean | undefined, visitedBy: string | unde
   if (visited) {
     const who = shortLeadAuthorName(visitedBy);
     return who
-      ? `Zelená = web už někdo prošel.\nPrvní klik: ${who}`
+      ? `Zelená = web už někdo prošel.\nPrvní návštěva webu: ${who}`
       : "Zelená = web už někdo z týmu prošel.";
   }
-  return "Otevřít web firmy.\nPo prvním kliknutí zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).";
+  return "Otevřít web firmy.\nPo první návštěvě zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).";
 }
 
 function WebsiteVisitedGlobeButton({
@@ -150,65 +150,79 @@ function WebsiteVisitedGlobeButton({
   const hint = websiteGlobeHint(visited, visitedBy);
   const who = shortLeadAuthorName(visitedBy);
   const isSm = size === "sm";
+  const [hintOpen, setHintOpen] = useState(false);
 
   return (
-    <div className="group/globe relative inline-flex">
-      <Button
-        type="button"
-        variant={isSm ? "ghost" : "outline"}
-        size="sm"
-        onClick={onOpen}
-        className={cn(
-          isSm
-            ? "h-8 w-8 rounded-full p-0 hover:bg-muted"
-            : "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
-          visited
-            ? isSm
-              ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
-            : isSm
-              ? "text-muted-foreground hover:text-foreground"
-              : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
-        )}
-        title={hint}
-        aria-label={
-          visited
-            ? who
-              ? `Web prohlédnut — první klik: ${who}`
-              : "Web prohlédnut"
-            : "Otevřít web firmy"
-        }
-      >
-        <Globe className={isSm ? "h-3.5 w-3.5" : "h-4 w-4"} />
-      </Button>
+    <Popover open={hintOpen} onOpenChange={setHintOpen}>
       <div
-        role="tooltip"
-        className={cn(
-          "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-52 -translate-x-1/2 rounded-lg border border-border/60 bg-popover px-2.5 py-2 text-left text-[11px] leading-snug text-popover-foreground shadow-lg",
-          "opacity-0 transition-opacity duration-150 group-hover/globe:opacity-100 group-focus-within/globe:opacity-100",
-        )}
+        className="relative inline-flex shrink-0"
+        onMouseEnter={() => setHintOpen(true)}
+        onMouseLeave={() => setHintOpen(false)}
+      >
+        <PopoverAnchor asChild>
+          <Button
+            type="button"
+            variant={isSm ? "ghost" : "outline"}
+            size="sm"
+            onClick={onOpen}
+            onFocus={() => setHintOpen(true)}
+            onBlur={() => setHintOpen(false)}
+            className={cn(
+              isSm
+                ? "h-8 w-8 rounded-full p-0 hover:bg-muted"
+                : "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
+              visited
+                ? isSm
+                  ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
+                : isSm
+                  ? "text-muted-foreground hover:text-foreground"
+                  : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+            title={hint}
+            aria-label={
+              visited
+                ? who
+                  ? `Web prohlédnut — první návštěva webu: ${who}`
+                  : "Web prohlédnut"
+                : "Otevřít web firmy"
+            }
+          >
+            <Globe className={isSm ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          </Button>
+        </PopoverAnchor>
+      </div>
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={8}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-white px-3 py-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
       >
         {visited ? (
           <>
-            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
+            <p className="text-xs font-semibold leading-snug text-emerald-700 dark:text-emerald-400">
               Web už někdo prošel
             </p>
-            <p className="mt-0.5 text-muted-foreground">
+            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
               {who
-                ? `První klik na zeměkouli: ${who}`
+                ? `První návštěva webu: ${who}`
                 : "Někdo z týmu už web otevřel."}
             </p>
           </>
         ) : (
           <>
-            <p className="font-semibold text-foreground">Otevřít web firmy</p>
-            <p className="mt-0.5 text-muted-foreground">
-              Po prvním kliknutí zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).
+            <p className="text-xs font-semibold leading-snug text-foreground">
+              Otevřít web firmy
+            </p>
+            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+              Po první návštěvě zezelená a uloží se, kdo web otevřel (Jan / Matěj / Filip).
             </p>
           </>
         )}
-      </div>
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
