@@ -283,7 +283,7 @@ export function DashboardShell({
       {/* BOČNÍ PANEL */}
       <aside
         data-tour="onboarding-sidebar"
-        className="scrollbar-hide hidden h-full w-64 flex-shrink-0 overflow-y-auto border-r bg-background md:flex md:flex-col"
+        className="hidden h-full w-64 flex-shrink-0 overflow-hidden border-r bg-background md:flex md:flex-col"
       >
         
         {/* LOGO */}
@@ -291,8 +291,8 @@ export function DashboardShell({
           <VenegardWordmark markSize={30} />
         </div>
         
-        {/* HLAVNÍ NAVIGACE */}
-        <nav className="flex flex-col gap-1.5 px-4 mt-4">
+        {/* HLAVNÍ NAVIGACE — scrolluje jen střed; profil dole zůstane vždy vidět */}
+        <nav className="scrollbar-hide mt-4 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4">
           <span className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
             {t("nav.tools")}
           </span>
@@ -381,10 +381,8 @@ export function DashboardShell({
           </div>
         </nav>
 
-        <div className="flex-1" /> {/* Flex spacer */}
-
-        {/* SPODNÍ ČÁST S NASTAVENÍM A PROFILEM */}
-        <div className="px-4 pb-6 flex flex-col gap-2 shrink-0">
+        {/* SPODNÍ ČÁST S NASTAVENÍM A PROFILEM — vždy pinned dole */}
+        <div className="flex shrink-0 flex-col gap-2 border-t border-border/40 px-4 pb-6 pt-3">
           
           {/* Centrum nápovědy */}
           <Link

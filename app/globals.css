@@ -3,35 +3,13 @@
 @tailwind utilities;
 
 /*
-  Viewport scale: MacBook-class widths (~1280–1728) stay at the current design size.
-  Larger desktops / 2K+ bump root rem (Tailwind spacing & type) plus a light zoom so
-  fixed px utilities grow too — similar UI density across monitors.
+  Fixed UI density on every monitor: same rem as the Mac design (16px).
+  No zoom — zoom shrinks the layout viewport and forces sidebar/page scroll.
 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* ~16px around 1440–1680; ~19–20px at 2560 */
-  font-size: clamp(16px, calc(12.5px + 0.28vw), 20px);
-}
-
-@media (min-width: 1920px) {
-  html {
-    zoom: 1.06;
-  }
-}
-
-@media (min-width: 2560px) {
-  html {
-    /* 2K / QHD */
-    zoom: 1.12;
-  }
-}
-
-@media (min-width: 3200px) {
-  html {
-    /* 3K / 4K at native CSS pixels */
-    zoom: 1.18;
-  }
+  font-size: 16px;
 }
 
 html,
