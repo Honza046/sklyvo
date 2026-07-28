@@ -75,77 +75,136 @@ function toDomain(value: string | null | undefined) {
 }
 
 export async function getLeads() {
-  const session = await getSessionUser();
-  if (!session.workspace?.id) {
-    return { error: "Nejste přihlášen.", leads: [] as CrmLead[] };
-  }
+  try {
+    const session = await getSessionUser();
+    if (!session.workspace?.id) {
+      return { error: "Nejste přihlášen.", leads: [] as CrmLead[] };
+    }
 
-  const leadsRaw = await prisma.lead.findMany({
-    where: { workspaceId: session.workspace.id },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      companyName: true,
-      domain: true,
-      placeId: true,
-      email: true,
-      phone: true,
-      contactEmail: true,
-      contactPhone: true,
-      status: true,
-      author: true,
-      source: true,
-      contactedVia: true,
-      websiteVisitedAt: true,
-      websiteVisitedBy: true,
-      createdAt: true,
-      value: true,
-      lastContactedAt: true,
-      nextOutreachAt: true,
-      nextOutreachKind: true,
-    },
-  });
+    const workspaceId = session.workspace.id;
+    let leadsRaw: Array<{
+      id: string;
+      companyName: string;
+      domain: string | null;
+      placeId: string | null;
+      email: string | null;
+      phone: string | null;
+      contactEmail: string | null;
+      contactPhone: string | null;
+      status: CrmLead["leadStatus"];
+      author: string | null;
+      source: string | null;
+      contactedVia?: string | null;
+      websiteVisitedAt: Date | null;
+      websiteVisitedBy: string | null;
+      createdAt: Date;
+      value: number | null;
+      lastContactedAt: Date | null;
+      nextOutreachAt: Date | null;
+      nextOutreachKind: CrmLead["nextOutreachKind"];
+    }>;
 
-  const now = Date.now();
-  const leads: CrmLead[] = leadsRaw.map((lead) => {
-    const nextAt = lead.nextOutreachAt?.getTime() ?? null;
-    const outreachDue = Boolean(
-      nextAt != null &&
-        nextAt <= now &&
-        (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
-    );
-    const source = (lead.source ?? "MANUAL") as LeadSourceValue;
-    const contactedVia =
-      lead.contactedVia === "SNIPER" || lead.contactedVia === "AUTOPILOT_SNIPER"
-        ? (lead.contactedVia as ContactedViaValue)
-        : ("" as const);
+    try {
+      leadsRaw = await prisma.lead.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          companyName: true,
+          domain: true,
+          placeId: true,
+          email: true,
+          phone: true,
+          contactEmail: true,
+          contactPhone: true,
+          status: true,
+          author: true,
+          source: true,
+          contactedVia: true,
+          websiteVisitedAt: true,
+          websiteVisitedBy: true,
+          createdAt: true,
+          value: true,
+          lastContactedAt: true,
+          nextOutreachAt: true,
+          nextOutreachKind: true,
+        },
+      });
+    } catch {
+      // Stale Prisma client / schema drift — načti bez contactedVia
+      leadsRaw = await prisma.lead.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          companyName: true,
+          domain: true,
+          placeId: true,
+          email: true,
+          phone: true,
+          contactEmail: true,
+          contactPhone: true,
+          status: true,
+          author: true,
+          source: true,
+          websiteVisitedAt: true,
+          websiteVisitedBy: true,
+          createdAt: true,
+          value: true,
+          lastContactedAt: true,
+          nextOutreachAt: true,
+          nextOutreachKind: true,
+        },
+      });
+    }
+
+    const now = Date.now();
+    const leads: CrmLead[] = leadsRaw.map((lead) => {
+      const nextAt = lead.nextOutreachAt?.getTime() ?? null;
+      const outreachDue = Boolean(
+        nextAt != null &&
+          nextAt <= now &&
+          (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
+      );
+      const source = (lead.source ?? "MANUAL") as LeadSourceValue;
+      const contactedVia =
+        lead.contactedVia === "SNIPER" || lead.contactedVia === "AUTOPILOT_SNIPER"
+          ? (lead.contactedVia as ContactedViaValue)
+          : ("" as const);
+      return {
+        id: lead.id,
+        company: lead.companyName,
+        url: lead.domain ?? "",
+        status: mapLeadStatus(lead.status),
+        leadStatus: lead.status,
+        date: lead.createdAt.toLocaleDateString("cs-CZ"),
+        createdAt: lead.createdAt.toISOString(),
+        value: lead.value ?? 0,
+        avatar: getInitials(lead.companyName),
+        faviconUrl: buildLeadFaviconUrl(lead.domain),
+        placeId: lead.placeId ?? null,
+        email: (lead.contactEmail ?? lead.email ?? "").trim(),
+        phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
+        author: (lead.author ?? "").trim(),
+        source,
+        contactedVia,
+        websiteVisited: Boolean(lead.websiteVisitedAt),
+        websiteVisitedBy: (lead.websiteVisitedBy ?? "").trim(),
+        lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
+        nextOutreachAt: lead.nextOutreachAt?.toISOString() ?? null,
+        nextOutreachKind: lead.nextOutreachKind,
+        outreachDue,
+      };
+    });
+
+    return { leads };
+  } catch (err) {
+    console.error("getLeads failed", err);
     return {
-      id: lead.id,
-      company: lead.companyName,
-      url: lead.domain ?? "",
-      status: mapLeadStatus(lead.status),
-      leadStatus: lead.status,
-      date: lead.createdAt.toLocaleDateString("cs-CZ"),
-      createdAt: lead.createdAt.toISOString(),
-      value: lead.value ?? 0,
-      avatar: getInitials(lead.companyName),
-      faviconUrl: buildLeadFaviconUrl(lead.domain),
-      placeId: lead.placeId ?? null,
-      email: (lead.contactEmail ?? lead.email ?? "").trim(),
-      phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
-      author: (lead.author ?? "").trim(),
-      source,
-      contactedVia,
-      websiteVisited: Boolean(lead.websiteVisitedAt),
-      websiteVisitedBy: (lead.websiteVisitedBy ?? "").trim(),
-      lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
-      nextOutreachAt: lead.nextOutreachAt?.toISOString() ?? null,
-      nextOutreachKind: lead.nextOutreachKind,
-      outreachDue,
+      error: "Nepodařilo se načíst leady.",
+      leads: [] as CrmLead[],
     };
-  });
-
-  return { leads };
+  }
 }
 
 type AddLeadFromRadarInput = {

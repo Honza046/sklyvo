@@ -326,31 +326,38 @@ function CrmPageContent() {
   const searchParams = useSearchParams();
 
   const loadLeads = async () => {
-    const result = await getLeads();
-    if ("error" in result && result.error) {
-      setLeads([]);
-      setIsLoading(false);
-      return;
-    }
-    
-    // Mapování DB dat na frontend strukturu
-    const mappedLeads = (result.leads ?? []).map(lead => {
-      let uiStatus: Lead["status"] = "new";
-      if (lead.leadStatus === "CONTACTED") uiStatus = "contacted";
-      if (lead.leadStatus === "REPLIED") uiStatus = "follow_up";
-      if (lead.leadStatus === "MEETING_SET") uiStatus = "communication";
-      if (lead.leadStatus === "CLOSED_WON") uiStatus = "agreed";
-      if (lead.leadStatus === "CLOSED_LOST") uiStatus = "rejected";
-      if (lead.leadStatus === "BREAK_UP") uiStatus = "breakup";
-      
-      return {
-        ...lead,
-        status: uiStatus
-      } as Lead;
-    });
+    setIsLoading(true);
+    try {
+      const result = await getLeads();
+      if ("error" in result && result.error) {
+        toast.error(result.error);
+        setLeads([]);
+        return;
+      }
 
-    setLeads(mappedLeads);
-    setIsLoading(false);
+      const mappedLeads = (result.leads ?? []).map((lead) => {
+        let uiStatus: Lead["status"] = "new";
+        if (lead.leadStatus === "CONTACTED") uiStatus = "contacted";
+        if (lead.leadStatus === "REPLIED") uiStatus = "follow_up";
+        if (lead.leadStatus === "MEETING_SET") uiStatus = "communication";
+        if (lead.leadStatus === "CLOSED_WON") uiStatus = "agreed";
+        if (lead.leadStatus === "CLOSED_LOST") uiStatus = "rejected";
+        if (lead.leadStatus === "BREAK_UP") uiStatus = "breakup";
+
+        return {
+          ...lead,
+          status: uiStatus,
+        } as Lead;
+      });
+
+      setLeads(mappedLeads);
+    } catch (err) {
+      console.error("loadLeads failed", err);
+      toast.error("Nepodařilo se načíst CRM.");
+      setLeads([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
