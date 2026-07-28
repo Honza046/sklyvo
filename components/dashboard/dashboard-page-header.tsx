@@ -10,9 +10,9 @@ export function DashboardPageHeader({ firstName }: { firstName: string }) {
   const { t } = useLanguage();
 
   return (
-    <div className="mb-0.5 flex w-full shrink-0 flex-col justify-between gap-1.5 md:mb-2 md:gap-2 md:flex-row md:items-end">
+    <div className="mb-0.5 flex w-full shrink-0 flex-col justify-between gap-1.5 md:mb-1 md:flex-row md:items-end md:gap-2">
       <div className="space-y-0.5">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-2xl md:text-3xl">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl md:text-2xl">
           {t("dashboard.welcome", { name: firstName })}
         </h1>
       </div>

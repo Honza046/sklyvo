@@ -33,7 +33,7 @@ type AttentionTask = {
 };
 
 const DASHBOARD_PANEL_CARD =
-  "flex h-[340px] flex-col gap-4 overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-sm";
+  "flex min-h-0 flex-1 flex-col gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-3 shadow-sm sm:gap-4 sm:p-4";
 
 const DASHBOARD_PANEL_LIST_SCROLL =
   "min-h-0 flex-1 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
@@ -114,7 +114,7 @@ export function DashboardBodyView({
     status === "NEW" ? t("dashboard.attentionNewLead") : t("dashboard.attentionReplied");
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
       <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
@@ -172,8 +172,8 @@ export function DashboardBodyView({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-6">
-        <div className="flex h-full min-h-0 flex-col gap-4 lg:col-span-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-3 lg:grid-cols-3 lg:gap-4">
+        <div className="flex h-full min-h-0 flex-col gap-3 lg:col-span-2">
           <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
 
           <div className={DASHBOARD_PANEL_CARD}>
@@ -220,7 +220,7 @@ export function DashboardBodyView({
           </div>
         </div>
 
-        <div className="flex h-full min-h-0 flex-col gap-4">
+        <div className="flex h-full min-h-0 flex-col gap-3">
           <div className="flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm md:p-4">
             <h2 className="mb-2 shrink-0 text-base font-bold">{t("dashboard.quickActions")}</h2>
 

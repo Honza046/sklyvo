@@ -65,12 +65,12 @@ export function DashboardConversionFunnel({ initialCounts }: DashboardConversion
         </Select>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col justify-center gap-1.5 sm:gap-2.5">
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-1 sm:gap-1.5">
         {FUNNEL_STATUS_META.map((row) => {
           const count = counts[row.key];
           const width = getFunnelWidth(count);
           return (
-            <div key={row.key} className="space-y-1">
+            <div key={row.key} className="space-y-0.5">
               <div className="flex justify-between text-[11px] font-semibold sm:text-xs">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`} />

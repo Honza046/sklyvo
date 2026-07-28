@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardOnboardingGate needsOnboarding={needsOnboarding}>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 overflow-y-auto p-0 md:gap-3 md:overflow-hidden md:p-6">
+      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 overflow-hidden p-0 md:gap-3 md:p-6">
         <DashboardPageHeader firstName={firstName} />
 
         <Suspense

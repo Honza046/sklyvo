@@ -682,19 +682,21 @@ function CrmPageContent() {
           </Button>
         </div>
 
-        {/* Desktop header */}
-        <div className="mb-2 hidden shrink-0 space-y-1 px-1 text-center md:mb-2 md:block">
-          <div className="mb-2 flex items-center justify-center gap-3">
-            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Users className="h-8 w-8" />
+        {/* Desktop header — kompaktní, ať CRM vždy vejde do výšky okna */}
+        <div className="mb-2 hidden w-full max-w-7xl shrink-0 px-1 md:block md:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+              <Users className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                CRM
+              </h1>
+              <p className="truncate text-xs text-muted-foreground">
+                Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
+              </p>
             </div>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            CRM
-          </h1>
-          <p className="mx-auto max-w-lg text-sm text-muted-foreground">
-            Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
-          </p>
         </div>
 
         <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4 md:px-8">
@@ -753,7 +755,7 @@ function CrmPageContent() {
             </div>
           )}
           
-          <div className="flex min-h-0 shrink-0 items-center rounded-2xl bg-muted/50 p-1.5 dark:bg-muted/20 md:min-h-[76px] md:rounded-2xl md:border md:border-border/60 md:bg-card md:p-4 md:shadow-sm">
+          <div className="flex min-h-0 shrink-0 items-center rounded-2xl bg-muted/50 p-1.5 dark:bg-muted/20 md:rounded-2xl md:border md:border-border/60 md:bg-card md:p-3 md:shadow-sm">
             {selectedLeads.length > 0 ? (
               <div className="flex w-full flex-col gap-2 rounded-md bg-blue-50 p-2 dark:bg-blue-900/20">
                 <div className="flex w-full flex-wrap items-center justify-between gap-2">
@@ -858,7 +860,7 @@ function CrmPageContent() {
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:h-4 md:w-4" />
                   <Input 
                     placeholder="Hledat firmu…" 
-                    className="h-9 border-0 bg-transparent pl-9 text-[15px] shadow-none focus-visible:ring-0 md:h-11 md:rounded-xl md:border md:border-border/50 md:bg-background md:pl-9 md:text-sm md:shadow-sm"
+                    className="h-9 border-0 bg-transparent pl-9 text-[15px] shadow-none focus-visible:ring-0 md:h-9 md:rounded-xl md:border md:border-border/50 md:bg-background md:pl-9 md:text-sm md:shadow-sm"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
@@ -978,7 +980,7 @@ function CrmPageContent() {
 
                   <Button
                     type="button"
-                    className="hidden h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 md:inline-flex"
+                    className="hidden h-9 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 md:inline-flex"
                     onClick={() => setIsNewDealOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -1590,7 +1592,7 @@ function CrmPageContent() {
                     {!isLoading && paginatedLeads.length === 0 && (
                       <tr>
                         <td colSpan={7} className="p-0">
-                          <div className="flex min-h-[300px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                          <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Žádné firmy neodpovídají hledání.
                           </div>
                         </td>
@@ -1599,7 +1601,7 @@ function CrmPageContent() {
                     {isLoading && (
                       <tr>
                         <td colSpan={7} className="p-0">
-                          <div className="flex min-h-[300px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                          <div className="flex min-h-[160px] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
                             Načítám dealy...
                           </div>
                         </td>
@@ -1609,7 +1611,7 @@ function CrmPageContent() {
                 </table>
               </div>
 
-              <div className="mt-0 flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 md:gap-3 md:border-border/60 md:bg-muted/30 md:px-6 md:py-4">
+              <div className="mt-0 flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 md:gap-3 md:border-border/60 md:bg-muted/30 md:px-6 md:py-2.5">
                 <p className="text-[11px] text-muted-foreground md:text-xs">
                   <span className="md:hidden">{shownFrom}–{shownTo} / {totalItems}</span>
                   <span className="hidden md:inline">
