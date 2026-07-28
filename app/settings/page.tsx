@@ -27,6 +27,7 @@ import { EmailIntegrationPanel } from "@/app/settings/email-integration-panel";
 import { SettingsAccordion } from "@/app/settings/settings-accordion";
 import { parseStoredAiBehaviorSettings } from "@/lib/ai-behavior-settings";
 import { EMAIL_SETUP_SETTINGS_HASH } from "@/lib/copilot/setup-knowledge";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,21 @@ export default async function SettingsPage() {
     !planTier || planTier === "NONE" || planTier === "FREE";
   const isAgencyPlan =
     typeof planTier === "string" && planTier.toUpperCase().includes("AGENCY");
+
+  let billingManagerName: string | null = null;
+  if (isAgencyPlan && workspace?.id) {
+    const owner = await prisma.user.findFirst({
+      where: { workspaceId: workspace.id, role: "OWNER" },
+      select: { name: true, email: true },
+    });
+    const name = owner?.name?.trim();
+    if (name) {
+      billingManagerName = name;
+    } else if (owner?.email) {
+      const local = owner.email.split("@")[0] ?? "";
+      billingManagerName = local ? local.charAt(0).toUpperCase() + local.slice(1) : null;
+    }
+  }
 
   const creditsUsed = workspace?.creditsUsed;
   const creditsTotal = workspace?.creditsTotal;
@@ -153,6 +169,7 @@ export default async function SettingsPage() {
               <SubscriptionBillingButton
                 showChoosePlan={workspace?.subscriptionStatus === "FREE"}
                 isAgency={isAgencyPlan}
+                billingManagerName={billingManagerName}
               />
             </>
           ) : (

@@ -8,10 +8,17 @@ import { Button } from "@/components/ui/button";
 export function SubscriptionBillingButton({
   showChoosePlan,
   isAgency = false,
+  billingManagerName,
 }: {
   showChoosePlan: boolean;
   isAgency?: boolean;
+  /** Jméno vlastníka workspace (Agency billing). */
+  billingManagerName?: string | null;
 }) {
+  const agencyHint = billingManagerName?.trim()
+    ? `Předplatné spravuje ${billingManagerName.trim()}`
+    : "Předplatné spravuje vlastník workspace";
+
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
@@ -26,7 +33,9 @@ export function SubscriptionBillingButton({
       }
       window.location.href = url;
     } catch {
-      toast.error("Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...", { id: toastId });
+      toast.error("Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...", {
+        id: toastId,
+      });
       setTimeout(() => {
         window.location.href = "/pricing";
       }, 2000);
@@ -35,13 +44,13 @@ export function SubscriptionBillingButton({
 
   if (showChoosePlan) {
     return (
-      <div className="flex flex-col items-stretch gap-2 sm:items-end">
+      <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
         <Button asChild className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700">
           <Link href="/settings/billing">Vybrat tarif</Link>
         </Button>
         {isAgency && (
-          <p className="max-w-[16rem] text-right text-[11px] leading-snug text-muted-foreground">
-            U Agency účtu billing spravuje jeden profil (vlastník workspace).
+          <p className="whitespace-nowrap text-right text-[11px] text-muted-foreground">
+            {agencyHint}
           </p>
         )}
       </div>
@@ -49,7 +58,7 @@ export function SubscriptionBillingButton({
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-2 sm:items-end">
+    <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
       <Button
         type="button"
         className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -58,8 +67,8 @@ export function SubscriptionBillingButton({
         Spravovat billing
       </Button>
       {isAgency && (
-        <p className="max-w-[16rem] text-right text-[11px] leading-snug text-muted-foreground">
-          U Agency účtu billing spravuje jeden profil (vlastník workspace).
+        <p className="whitespace-nowrap text-right text-[11px] text-muted-foreground">
+          {agencyHint}
         </p>
       )}
     </div>

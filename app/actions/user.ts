@@ -30,7 +30,7 @@ export async function uploadProfileAvatar(file: File) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 2. ABSOLUTNĚ ČISTÝ NÁZEV SOUBORU (jen čas a náhodné číslo, ignorujeme původní název)
-    const filePath = `${Date.now()}-${Math.floor(Math.random() * 1000)}.png`;
+    const filePath = `${Date.now()}-${Math.floor(Math.random() * 1000)}.jpg`;
 
     // 3. UNIVERZÁLNÍ PŘEVOD SOUBORU (Uint8Array funguje všude, na rozdíl od Bufferu)
     const arrayBuffer = await file.arrayBuffer();
@@ -40,7 +40,7 @@ export async function uploadProfileAvatar(file: File) {
     const { data, error: uploadError } = await supabase.storage
       .from("avatars")
       .upload(filePath, fileData, {
-        contentType: file.type || "image/png",
+        contentType: file.type || "image/jpeg",
         upsert: true,
       });
 

@@ -111,6 +111,7 @@ export function TeamAccessPanel() {
 
   const seatsUsed = teamMembers.length;
   const canManage = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
+  const ownerName = teamMembers.find((m) => m.role === "OWNER")?.name?.trim() || null;
 
   const handlePozvatClick = () => {
     setCapacityWarning(false);
@@ -178,9 +179,10 @@ export function TeamAccessPanel() {
             Všichni vidí stejné CRM, stavy a Google Sheets.
           </p>
           <p className="text-xs text-muted-foreground">
-            Billing Agency účtu spravuje jeden profil (vlastník workspace).
-          </p>
-        </div>
+            {ownerName
+              ? `Předplatné spravuje ${ownerName}`
+              : "Předplatné spravuje vlastník workspace"}
+          </p>        </div>
         {canManage && (
           <Button
             type="button"

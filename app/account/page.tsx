@@ -24,6 +24,7 @@ import {
   verifyEmailChange,
 } from "@/app/actions/auth";
 import { uploadProfileAvatar } from "@/app/actions/user";
+import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,8 @@ export default function AccountPage() {
   const [isLoading, setIsLoading] = useState(true); // Přidali jsme stav načítání
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -83,6 +86,14 @@ export default function AccountPage() {
     };
   }, [previewUrl]);
 
+  useEffect(() => {
+    return () => {
+      if (cropImageSrc) {
+        URL.revokeObjectURL(cropImageSrc);
+      }
+    };
+  }, [cropImageSrc]);
+
   const initials = useMemo(
     () =>
       (user?.name ?? "Uživatel")
@@ -96,19 +107,32 @@ export default function AccountPage() {
   const firstName = (user?.name ?? "Uživatel").split(/\s+/)[0];
   const lastName = (user?.name ?? "").split(/\s+/).slice(1).join(" ");
 
-  // Přidané funkce pro interaktivitu tlačítek
   const handleChangePhoto = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vyberte obrázek (JPG, PNG, WebP…).");
+      return;
+    }
+
+    if (cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    const localSrc = URL.createObjectURL(file);
+    setCropImageSrc(localSrc);
+    setCropOpen(true);
+  };
+
+  const handleCropConfirm = async (file: File) => {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
-
     const localPreview = URL.createObjectURL(file);
     setPreviewUrl(localPreview);
     setIsUploading(true);
@@ -116,7 +140,6 @@ export default function AccountPage() {
     const result = await uploadProfileAvatar(file);
     setIsUploading(false);
 
-    // A NAHRAĎ TO TÍMTO:
     if ("error" in result && result.error) {
       toast.error("Chyba nahrávání", { description: result.error });
       setPreviewUrl(null);
@@ -132,7 +155,22 @@ export default function AccountPage() {
       window.dispatchEvent(
         new CustomEvent("avatar-updated", { detail: result.avatarUrl }),
       );
+      setCropOpen(false);
+      if (cropImageSrc) {
+        URL.revokeObjectURL(cropImageSrc);
+        setCropImageSrc(null);
+      }
+      toast.success("Profilová fotka byla uložena.");
       router.refresh();
+    }
+  };
+
+  const handleCropOpenChange = (open: boolean) => {
+    if (isUploading) return;
+    setCropOpen(open);
+    if (!open && cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc);
+      setCropImageSrc(null);
     }
   };
 
@@ -302,6 +340,13 @@ export default function AccountPage() {
                     >
                       {isUploading ? "Nahrávám..." : "Změnit fotku"}
                     </Button>
+                    <AvatarCropDialog
+                      open={cropOpen}
+                      imageSrc={cropImageSrc}
+                      onOpenChange={handleCropOpenChange}
+                      onConfirm={handleCropConfirm}
+                      isSaving={isUploading}
+                    />
                   </div>
 
                   <div className="flex-1 w-full space-y-5">
