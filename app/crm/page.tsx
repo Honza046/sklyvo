@@ -1576,37 +1576,17 @@ function CrmPageContent() {
                                   lead.author,
                                   lead.contactedVia,
                                 );
-                                const meta = [sourceLabel, authorLabel].filter(Boolean).join(" · ");
-                                const urlLabel = companyWeb ? lead.url || companyWeb : "";
-                                if (!meta && !urlLabel) return null;
+                                if (!sourceLabel && !authorLabel) return null;
                                 return (
                                   <p className="truncate text-xs text-muted-foreground">
-                                    {meta ? (
-                                      <span>
-                                        {sourceLabel}
-                                        {authorLabel ? (
-                                          <>
-                                            {" · "}
-                                            <span className="font-semibold text-foreground/80">
-                                              {authorLabel}
-                                            </span>
-                                          </>
-                                        ) : null}
-                                      </span>
-                                    ) : null}
-                                    {meta && urlLabel ? (
-                                      <span className="text-border"> · </span>
-                                    ) : null}
-                                    {urlLabel ? (
-                                      <a
-                                        href={companyWeb!}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="hover:text-blue-600 dark:hover:text-blue-400"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        {urlLabel}
-                                      </a>
+                                    {sourceLabel}
+                                    {authorLabel ? (
+                                      <>
+                                        {" · "}
+                                        <span className="font-semibold text-foreground/80">
+                                          {authorLabel}
+                                        </span>
+                                      </>
                                     ) : null}
                                   </p>
                                 );
