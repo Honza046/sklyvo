@@ -4,7 +4,7 @@ export type LeadSourceValue = "RADAR" | "SNIPER" | "MANUAL" | "AUTOPILOT";
 export type ContactedViaValue = "SNIPER" | "AUTOPILOT_SNIPER";
 
 const SOURCE_LABEL: Record<LeadSourceValue, string> = {
-  RADAR: "Radar",
+  RADAR: "Manuální Radar",
   SNIPER: "Sniper",
   MANUAL: "Manuálně",
   AUTOPILOT: "Autopilot-Radar",
@@ -43,7 +43,7 @@ export function contactedViaLabel(via: string | null | undefined): string {
 /**
  * CRM štítek zdroje:
  * - po odeslání e-mailu → Sniper / Autopilot-Sniper
- * - jinak → Radar / Autopilot-Radar / Manuálně / Sniper
+ * - jinak → Manuální Radar / Autopilot-Radar / Manuálně / Sniper
  */
 export function leadChannelLabel(
   source: string | null | undefined,

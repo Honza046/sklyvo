@@ -1062,7 +1062,7 @@ function CrmPageContent() {
                             </SelectTrigger>
                             <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
                               <SelectItem value="all">Všechny zdroje</SelectItem>
-                              <SelectItem value="radar">Radar</SelectItem>
+                              <SelectItem value="radar">Manuální Radar</SelectItem>
                               <SelectItem value="autopilot">Autopilot-Radar / Sniper</SelectItem>
                               <SelectItem value="sniper">Sniper</SelectItem>
                               <SelectItem value="manual">Manuálně</SelectItem>
