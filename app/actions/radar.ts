@@ -8,7 +8,6 @@ import { loadRadarSettingsPayloadForWorkspace } from "@/app/actions/radar-settin
 import { queueAutopilotLead } from "@/app/actions/autopilot";
 import { loadSheetsArchiveExclusionKeys, scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { scrapeWebsiteContacts } from "@/lib/website-contacts";
-import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
 import { prisma } from "@/lib/prisma";
 import {
   COUNTRY_LOCATION_BIAS,
@@ -368,7 +367,6 @@ async function persistAutomatedRadarLeads(
   const toCreate: Array<{
     companyName: string;
     domain: string | null;
-    faviconUrl: string | null;
     placeId: string | null;
     email: string | null;
     phone: string | null;
@@ -421,7 +419,6 @@ async function persistAutomatedRadarLeads(
     toCreate.push({
       companyName,
       domain,
-      faviconUrl: buildLeadFaviconUrl(domain),
       placeId,
       email,
       phone: contactPhone,

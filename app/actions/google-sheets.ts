@@ -10,7 +10,6 @@ import {
   syncWorkspaceCrmToSheets,
 } from "@/lib/google-sheets-sync";
 import { normalizeLeadAuthor } from "@/lib/lead-author";
-import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -393,7 +392,6 @@ export async function importHistoricalOutreachSheet(input: {
   const toCreate: Array<{
     companyName: string;
     domain: string | null;
-    faviconUrl: string | null;
     placeId: null;
     email: string | null;
     phone: string | null;
@@ -480,7 +478,6 @@ export async function importHistoricalOutreachSheet(input: {
       toCreate.push({
         companyName,
         domain,
-        faviconUrl: buildLeadFaviconUrl(domain),
         placeId: null,
         email,
         phone,

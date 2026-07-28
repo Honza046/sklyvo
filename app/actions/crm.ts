@@ -82,7 +82,6 @@ export async function getLeads() {
       id: true,
       companyName: true,
       domain: true,
-      faviconUrl: true,
       placeId: true,
       email: true,
       phone: true,
@@ -116,7 +115,7 @@ export async function getLeads() {
       createdAt: lead.createdAt.toISOString(),
       value: lead.value ?? 0,
       avatar: getInitials(lead.companyName),
-      faviconUrl: lead.faviconUrl || buildLeadFaviconUrl(lead.domain),
+      faviconUrl: buildLeadFaviconUrl(lead.domain),
       placeId: lead.placeId ?? null,
       email: (lead.contactEmail ?? lead.email ?? "").trim(),
       phone: (lead.contactPhone ?? lead.phone ?? "").trim(),
@@ -161,7 +160,6 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
     data: {
       companyName,
       domain,
-      faviconUrl: buildLeadFaviconUrl(domain),
       placeId: input.placeId?.trim() || null,
       email,
       phone: contactPhone,
@@ -219,7 +217,6 @@ export async function createManualLead(data: CreateManualLeadInput) {
     data: {
       companyName,
       domain: domain || null,
-      faviconUrl: buildLeadFaviconUrl(domain || null),
       placeId: null,
       email: ce,
       phone: cp,
@@ -306,7 +303,6 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
   const toCreate: Array<{
     companyName: string;
     domain: string;
-    faviconUrl: string | null;
     placeId: string | null;
     email: string | null;
     phone: string | null;
@@ -334,7 +330,6 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     toCreate.push({
       companyName: lead.companyName,
       domain: lead.domain,
-      faviconUrl: buildLeadFaviconUrl(lead.domain),
       placeId: lead.placeId,
       email: lead.email,
       phone: lead.contactPhone,
@@ -466,7 +461,6 @@ export async function updateLeadDetails(
   }
   if (typeof data.url === "string") {
     payload.domain = toDomain(data.url);
-    payload.faviconUrl = buildLeadFaviconUrl(payload.domain as string);
   }
   if (typeof data.email === "string") {
     const email = data.email.trim() || null;
