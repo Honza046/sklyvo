@@ -5,7 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const connectionString = process.env.DATABASE_URL;
 
 /** Bump when Prisma schema changes require a fresh dev client (HMR keeps old singleton). */
-const PRISMA_SCHEMA_FINGERPRINT = "outreach-radar-daily-target-range-v1";
+const PRISMA_SCHEMA_FINGERPRINT = "outreach-lead-favicon-v1";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -44,6 +44,9 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
     return true;
   }
   if (!runtimeModelHasField(client, "Lead", "author")) {
+    return true;
+  }
+  if (!runtimeModelHasField(client, "Lead", "faviconUrl")) {
     return true;
   }
   if (!runtimeModelHasField(client, "RadarSettings", "radarCronEnabled")) {
