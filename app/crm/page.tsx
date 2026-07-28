@@ -1524,10 +1524,10 @@ function CrmPageContent() {
                           />
                         </div>
                       </th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">Firma</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[20%]">Firma</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Autor</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[11%]">Datum přidání</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[20%]">KONTAKT</th>
+                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">KONTAKT</th>
                       <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Hodnota</th>
                       <th className="sticky top-0 z-10 min-w-[11rem] bg-white px-3 py-3 pr-8 font-semibold dark:bg-zinc-950 w-[14%]">Status</th>
                       <th className="sticky top-0 z-10 w-[11.5rem] bg-white px-3 py-3 pl-6 text-right font-semibold dark:bg-zinc-950">Akce</th>
@@ -1603,12 +1603,12 @@ function CrmPageContent() {
                           </span>
                         </td>
                         <td className="px-3 py-3 text-muted-foreground">{lead.date}</td>
-                        <td className="px-3 py-3 align-top">
-                          <div className="flex min-w-0 items-start gap-2">
-                            <div className="min-w-0 flex-1 overflow-hidden">
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div className="min-w-0 flex-1 leading-tight">
                               <p
                                 className={cn(
-                                  "truncate whitespace-nowrap text-sm",
+                                  "truncate whitespace-nowrap text-[11px] leading-tight",
                                   emailTrim ? "text-foreground" : "text-muted-foreground",
                                 )}
                                 title={emailTrim || undefined}
@@ -1617,13 +1617,13 @@ function CrmPageContent() {
                               </p>
                               {phoneTrim ? (
                                 <p
-                                  className="truncate whitespace-nowrap text-xs text-muted-foreground"
+                                  className="truncate whitespace-nowrap text-[10px] leading-tight text-muted-foreground"
                                   title={phoneTrim}
                                 >
                                   {phoneTrim}
                                 </p>
                               ) : (
-                                <p className="truncate whitespace-nowrap text-xs text-muted-foreground">
+                                <p className="truncate whitespace-nowrap text-[10px] leading-tight text-muted-foreground">
                                   Bez telefonu
                                 </p>
                               )}
