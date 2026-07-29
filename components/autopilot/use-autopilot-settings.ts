@@ -49,6 +49,10 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           sniperParsed.sendingStrategy ??
           prev.sendingStrategy ??
           DEFAULT_AUTOPILOT_SETTINGS.sendingStrategy,
+        onlyWithEmail:
+          typeof sniperParsed.onlyWithEmail === "boolean"
+            ? sniperParsed.onlyWithEmail
+            : (prev.onlyWithEmail ?? DEFAULT_AUTOPILOT_SETTINGS.onlyWithEmail),
         sendDays: (() => {
           const raw =
             Array.isArray(sniperParsed.sendDays) && sniperParsed.sendDays.length > 0
@@ -210,6 +214,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           maxEmailsPerBatch: automationSettings.maxEmailsPerBatch,
           sendingStrategy: automationSettings.sendingStrategy,
           sendDays: (automationSettings.sendDays ?? []).filter((d) => d >= 1 && d <= 5),
+          onlyWithEmail: Boolean(automationSettings.onlyWithEmail),
         };
         window.localStorage.setItem(SNIPER_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
         const powerResult = await setEmailSendCronEnabled(emailSendCronEnabled);

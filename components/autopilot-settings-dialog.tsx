@@ -522,6 +522,34 @@ export function AutopilotSettingsDialog({
               </div>
             </section>
 
+            <section className="rounded-xl border border-border/60 bg-muted/15">
+              <div className="border-b border-border/50 px-3 py-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Firmy bez e-mailu
+                </p>
+              </div>
+              <label
+                htmlFor="settings-sniper-only-email"
+                className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-foreground">
+                    Pouze firmy s e-mailem
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
+                    Bez e-mailu se ve výběru nezobrazí a nevygenerují.
+                  </p>
+                </div>
+                <Switch
+                  id="settings-sniper-only-email"
+                  checked={Boolean(settings.onlyWithEmail)}
+                  disabled={disabled}
+                  onCheckedChange={(checked) => patch({ onlyWithEmail: checked })}
+                  className="shrink-0 data-[state=checked]:bg-blue-600"
+                />
+              </label>
+            </section>
+
             {settings.sendingStrategy === "batch" ? (
               <div className="grid gap-2">
                 <section className="rounded-xl border border-border/60 bg-muted/15">

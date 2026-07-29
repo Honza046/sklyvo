@@ -22,6 +22,8 @@ export type AutopilotAutomationSettings = {
   /** Dny v týdnu pro odesílání (0=Ne … 6=So), jako `Date.getDay()` / Prague. */
   sendDays: number[];
   sendingStrategy: SendingStrategy;
+  /** Autopilot Sniper: generovat jen pro firmy s e-mailem. */
+  onlyWithEmail: boolean;
   fullAutoFrequency: FullAutoFrequency;
   fullAutoRunTime: string;
 };
@@ -58,6 +60,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   maxEmailsPerBatch: 20,
   sendDays: [1, 2, 3, 4, 5],
   sendingStrategy: "batch",
+  onlyWithEmail: false,
   fullAutoFrequency: "twice_weekly",
   fullAutoRunTime: "08:00",
 };

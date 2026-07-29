@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ import {
   AUTOPILOT_TABLE_HEAD_CELL_CLASS,
   AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
   ITEMS_PER_PAGE,
+  SNIPER_SETTINGS_STORAGE_KEY,
   STATUS_META,
   leadFullWebsiteUrl,
   type AutopilotLead,
@@ -208,13 +210,38 @@ export function AutopilotSniperView() {
     setCurrentPage(1);
   }, [workspaceLeads.length]);
 
+  const onlyWithEmail = Boolean(automationSettings.onlyWithEmail);
+
+  const setOnlyWithEmail = (checked: boolean) => {
+    setAutomationSettings((prev) => ({ ...prev, onlyWithEmail: checked }));
+    try {
+      const raw = window.localStorage.getItem(SNIPER_SETTINGS_STORAGE_KEY);
+      const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      window.localStorage.setItem(
+        SNIPER_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ ...parsed, onlyWithEmail: checked }),
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
   const leads = useMemo<AutopilotLead[]>(
     () =>
       workspaceLeads
         .filter((lead) => lead.leadStatus === "NEW")
+        .filter((lead) => !onlyWithEmail || Boolean(lead.email?.trim()))
         .map(({ id, company, url, email }) => ({ id, company, url, email })),
-    [workspaceLeads],
+    [workspaceLeads, onlyWithEmail],
   );
+
+  useEffect(() => {
+    const allowed = new Set(leads.map((lead) => lead.id));
+    setSelectedIds((prev) => {
+      const next = prev.filter((id) => allowed.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [leads]);
 
   const totalItems = leads.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -378,12 +405,26 @@ export function AutopilotSniperView() {
   const handleStart = async () => {
     if (selectedIds.length === 0 || isRunning) return;
 
+    const queue = leads.filter(
+      (lead) =>
+        selectedIds.includes(lead.id) &&
+        (!onlyWithEmail || Boolean(lead.email?.trim())),
+    );
+    if (queue.length === 0) {
+      toast.error(
+        onlyWithEmail
+          ? "Žádná vybraná firma nemá e-mail. Vypni filtr nebo doplň kontakty."
+          : "Nevybrali jste žádnou firmu.",
+      );
+      return;
+    }
+
     const isImmediate = automationSettings.sendingStrategy === "immediate";
     let scheduledTimes: Date[];
 
     if (isImmediate) {
       const now = new Date();
-      scheduledTimes = selectedIds.map(() => now);
+      scheduledTimes = queue.map(() => now);
     } else {
       const windows = [
         { start: automationSettings.window1Start, end: automationSettings.window1End },
@@ -406,7 +447,7 @@ export function AutopilotSniperView() {
 
       try {
         scheduledTimes = computeScheduledTimes(
-          selectedIds.length,
+          queue.length,
           windows,
           batchSize,
           new Date(),
@@ -419,11 +460,9 @@ export function AutopilotSniperView() {
       }
     }
 
-    const queue = leads.filter((lead) => selectedIds.includes(lead.id));
-
     setCampaignLeads(queue);
     setStates(
-      Object.fromEntries(selectedIds.map((id) => [id, { status: "pending" as RunStatus }])),
+      Object.fromEntries(queue.map((lead) => [lead.id, { status: "pending" as RunStatus }])),
     );
     setActiveSubTab("queue");
     setIsRunning(true);
@@ -642,6 +681,20 @@ export function AutopilotSniperView() {
                 oken v nastavení{featureEnabled ? "" : " (zapni cron Zapnout)"}
                 .
               </p>
+              <label
+                htmlFor="sniper-only-email"
+                className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 sm:max-w-sm"
+              >
+                <span className="text-[12px] font-medium text-foreground">
+                  Pouze firmy s e-mailem
+                </span>
+                <Switch
+                  id="sniper-only-email"
+                  checked={onlyWithEmail}
+                  onCheckedChange={setOnlyWithEmail}
+                  className="shrink-0 data-[state=checked]:bg-blue-600"
+                />
+              </label>
             </div>
             <Button
               type="button"
