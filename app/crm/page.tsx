@@ -58,7 +58,9 @@ import {
   Loader2,
   ScanSearch,
   RefreshCw,
+  Eye,
   Hand,
+  Mail,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { leadProvenanceParts, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
@@ -68,10 +70,12 @@ import {
   bulkScrapeLeadContacts,
   scrapeLeadContacts,
   createManualLead,
+  getLeadSentEmails,
   getLeads,
   markLeadWebsiteVisited,
   updateLeadDetails,
   updateSingleLeadStatus,
+  type LeadSentEmailRow,
 } from "@/app/actions/crm";
 import { sendOutreachEmailBulk, sendOutreachEmailNow } from "@/app/actions/outreach";
 import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
@@ -79,6 +83,8 @@ import { AutopilotDialog, type AutopilotLead } from "@/app/crm/autopilot-dialog"
 import { CompanyAvatar } from "@/components/crm/company-avatar";
 import { toast } from "sonner";
 import { OUTREACH_KIND_LABELS, type OutreachKindValue } from "@/lib/outreach";
+import { htmlBodyToEditablePlainText } from "@/lib/email-format";
+import { leadTagLabel, LEAD_TAG_ORDER } from "@/lib/lead-tags";
 
 type Lead = {
   id: string;
@@ -110,6 +116,8 @@ type Lead = {
   nextOutreachAt?: string | null;
   nextOutreachKind?: OutreachKindValue | null;
   outreachDue?: boolean;
+  /** Neviditelné tagy pro filtraci. */
+  tags?: string[];
 };
 
 const COLUMNS = [
@@ -296,6 +304,7 @@ function CrmPageContent() {
     "all" | "radar" | "ap_radar" | "ap_sniper" | "sniper" | "manual"
   >("all");
   const [dateFilter, setDateFilter] = useState<"all" | "last_7_days" | "last_30_days" | "this_year">("all");
+  const [tagFilter, setTagFilter] = useState<string>("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
   const [autopilotLeads, setAutopilotLeads] = useState<AutopilotLead[] | null>(null);
@@ -320,6 +329,12 @@ function CrmPageContent() {
     value: 0,
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [sentEmailPreview, setSentEmailPreview] = useState<{
+    companyName: string;
+    emails: LeadSentEmailRow[];
+    activeId: string;
+  } | null>(null);
+  const [isLoadingSentEmails, setIsLoadingSentEmails] = useState(false);
 
   const [view, setView] = useState<"board" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
@@ -394,7 +409,21 @@ function CrmPageContent() {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedLeads([]);
-  }, [searchQuery, sortBy, statusFilter, sourceFilter, dateFilter]);
+  }, [searchQuery, sortBy, statusFilter, sourceFilter, dateFilter, tagFilter]);
+
+  const availableTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const lead of leads) {
+      for (const tag of lead.tags ?? []) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+    return LEAD_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
+      tag,
+      count: counts.get(tag) ?? 0,
+      label: leadTagLabel(tag),
+    }));
+  }, [leads]);
 
   const filteredLeads = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -434,7 +463,10 @@ function CrmPageContent() {
         (dateFilter === "last_30_days" && created >= thirtyDaysAgo) ||
         (dateFilter === "this_year" && created.getFullYear() === now.getFullYear());
 
-      return matchText && matchStatus && matchSource && matchDate;
+      const matchTag =
+        tagFilter === "all" || (lead.tags ?? []).includes(tagFilter);
+
+      return matchText && matchStatus && matchSource && matchDate && matchTag;
     });
 
     const sorted = [...filtered].sort((a, b) => {
@@ -447,7 +479,7 @@ function CrmPageContent() {
     });
 
     return sorted;
-  }, [leads, searchQuery, sortBy, statusFilter, sourceFilter, dateFilter]);
+  }, [leads, searchQuery, sortBy, statusFilter, sourceFilter, dateFilter, tagFilter]);
 
   const totalItems = filteredLeads.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -520,6 +552,28 @@ function CrmPageContent() {
       `${OUTREACH_KIND_LABELS[kind]} odeslán${result.nextDueLabel ? ` · další: ${result.nextDueLabel}` : ""}`,
     );
     await loadLeads();
+  };
+
+  const handleViewSentEmails = async (lead: Lead) => {
+    setIsLoadingSentEmails(true);
+    try {
+      const result = await getLeadSentEmails(lead.id);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.emails.length === 0) {
+        toast.message("Pro tuto firmu zatím nemáme uložený odeslaný e-mail.");
+        return;
+      }
+      setSentEmailPreview({
+        companyName: lead.company,
+        emails: result.emails,
+        activeId: result.emails[0]!.id,
+      });
+    } finally {
+      setIsLoadingSentEmails(false);
+    }
   };
 
   const handleBulkOutreach = async (kind: OutreachKindValue) => {
@@ -1041,6 +1095,23 @@ function CrmPageContent() {
                         </div>
 
                         <div className="space-y-1.5">
+                          <Label>Obor (neviditelný tag)</Label>
+                          <Select value={tagFilter} onValueChange={setTagFilter}>
+                            <SelectTrigger className="h-9 w-full bg-background">
+                              <SelectValue placeholder="Obor" />
+                            </SelectTrigger>
+                            <SelectContent className="z-[110] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                              <SelectItem value="all">Všechny obory</SelectItem>
+                              {availableTags.map(({ tag, label, count }) => (
+                                <SelectItem key={tag} value={tag}>
+                                  {label} ({count})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
                           <Label>Zdroj</Label>
                           <Select
                             value={sourceFilter}
@@ -1242,6 +1313,15 @@ function CrmPageContent() {
                           <Pencil className="mr-2 h-4 w-4" />
                           Upravit deal
                         </DropdownMenuItem>
+                        {(lead.lastContactedAt || lead.contactedVia) && (
+                          <DropdownMenuItem
+                            disabled={isLoadingSentEmails}
+                            onClick={() => void handleViewSentEmails(lead)}
+                          >
+                            <Mail className="mr-2 h-4 w-4" />
+                            Zobrazit odeslaný e-mail
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem asChild>
                           <Link href={buildSniperLeadHref(lead)} className="flex cursor-pointer items-center">
                             <Target className="mr-2 h-4 w-4" />
@@ -1458,6 +1538,15 @@ function CrmPageContent() {
                                 Doplnit kontakt z webu
                               </DropdownMenuItem>
                             ) : null}
+                            {(lead.lastContactedAt || lead.contactedVia) && (
+                              <DropdownMenuItem
+                                disabled={isLoadingSentEmails}
+                                onClick={() => void handleViewSentEmails(lead)}
+                              >
+                                <Mail className="mr-2 h-4 w-4" />
+                                Zobrazit odeslaný e-mail
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
                               <RefreshCw className="mr-2 h-4 w-4" />
                               Poslat follow-up
@@ -1715,6 +1804,15 @@ function CrmPageContent() {
                                     Doplnit kontakt z webu
                                   </DropdownMenuItem>
                                 ) : null}
+                                {(lead.lastContactedAt || lead.contactedVia) && (
+                                  <DropdownMenuItem
+                                    disabled={isLoadingSentEmails}
+                                    onClick={() => void handleViewSentEmails(lead)}
+                                  >
+                                    <Mail className="mr-2 h-4 w-4" />
+                                    Zobrazit odeslaný e-mail
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
                                 >
@@ -1866,6 +1964,82 @@ function CrmPageContent() {
                 {isSaving ? "Ukládám..." : "Uložit změny"}
               </Button>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={sentEmailPreview !== null}
+          onOpenChange={(open) => {
+            if (!open) setSentEmailPreview(null);
+          }}
+        >
+          <DialogContent className="flex max-h-[88vh] w-full max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl">
+            {sentEmailPreview && (() => {
+              const active =
+                sentEmailPreview.emails.find((e) => e.id === sentEmailPreview.activeId) ??
+                sentEmailPreview.emails[0]!;
+              const bodyText = htmlBodyToEditablePlainText(active.htmlBody);
+              return (
+                <>
+                  <DialogHeader className="space-y-1 border-b border-border/60 px-6 py-4 pr-12 text-left">
+                    <DialogTitle className="text-base font-semibold leading-snug">
+                      Odeslaný e-mail · {sentEmailPreview.companyName}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs">
+                      {OUTREACH_KIND_LABELS[active.kind]}
+                      {active.sentAt
+                        ? ` · ${new Date(active.sentAt).toLocaleString("cs-CZ")}`
+                        : ""}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {sentEmailPreview.emails.length > 1 ? (
+                    <div className="flex gap-1 overflow-x-auto border-b border-border/50 px-4 py-2">
+                      {sentEmailPreview.emails.map((email, index) => {
+                        const selected = email.id === active.id;
+                        return (
+                          <button
+                            key={email.id}
+                            type="button"
+                            onClick={() =>
+                              setSentEmailPreview((prev) =>
+                                prev ? { ...prev, activeId: email.id } : prev,
+                              )
+                            }
+                            className={cn(
+                              "shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                              selected
+                                ? "bg-blue-600 text-white"
+                                : "bg-muted text-muted-foreground hover:text-foreground",
+                            )}
+                          >
+                            {OUTREACH_KIND_LABELS[email.kind]}
+                            {sentEmailPreview.emails.length > 1 ? ` #${index + 1}` : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
+                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Předmět
+                      </p>
+                      <p className="text-sm font-medium text-foreground">{active.subject}</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Tělo e-mailu
+                      </p>
+                      <div className="whitespace-pre-wrap rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm leading-relaxed text-foreground">
+                        {bodyText || "—"}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </DialogContent>
         </Dialog>
 

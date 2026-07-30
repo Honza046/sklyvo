@@ -237,6 +237,7 @@ export default function RadarPage() {
       address: lead.address,
       placeId: lead.placeId,
       countryCode: activeCountryCode,
+      searchQuery: query,
     });
     setAddingLeadIds((prev) => prev.filter((id) => id !== lead.id));
 
@@ -261,6 +262,7 @@ export default function RadarPage() {
         phone: lead.phone,
         placeId: lead.placeId,
         countryCode: activeCountryCode,
+        searchQuery: query,
       })),
     );
 

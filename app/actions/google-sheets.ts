@@ -10,6 +10,7 @@ import {
   syncWorkspaceCrmToSheets,
 } from "@/lib/google-sheets-sync";
 import { normalizeLeadAuthor } from "@/lib/lead-author";
+import { inferLeadTags } from "@/lib/lead-tags";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
@@ -403,6 +404,7 @@ export async function importHistoricalOutreachSheet(input: {
     workspaceId: string;
     industry: null;
     value: number;
+    tags: string[];
   }> = [];
 
   let skipped = 0;
@@ -489,6 +491,7 @@ export async function importHistoricalOutreachSheet(input: {
         workspaceId,
         industry: null,
         value: 0,
+        tags: inferLeadTags({ companyName, domain }),
       });
       if (nameKey) batchNames.add(nameKey);
       if (domain) batchDomains.add(domain.toLowerCase());

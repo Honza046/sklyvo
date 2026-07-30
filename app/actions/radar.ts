@@ -22,6 +22,7 @@ import {
   isStandaloneCompanyWebsite,
 } from "@/lib/radar-website-quality";
 import { authorFromSessionUser, authorFromSessionName } from "@/lib/lead-provenance";
+import { inferLeadTags } from "@/lib/lead-tags";
 
 type RadarSearchInput = {
   query: string;
@@ -41,6 +42,7 @@ type RadarLead = {
   url: string;
   phone: string;
   email: string | null;
+  placeTypes: string[];
 };
 
 type GooglePlaceV2 = {
@@ -50,6 +52,8 @@ type GooglePlaceV2 = {
   websiteUri?: string;
   internationalPhoneNumber?: string;
   rating?: number;
+  primaryType?: string;
+  types?: string[];
 };
 
 type GoogleTextSearchV2Response = {
@@ -170,7 +174,7 @@ async function fetchGooglePlacesSearchTextPage(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.internationalPhoneNumber,places.rating",
+        "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.internationalPhoneNumber,places.rating,places.primaryType,places.types",
     },
     body: JSON.stringify(body),
   });
@@ -332,6 +336,10 @@ async function mapGooglePlaceToRadarLead(
     url,
     phone,
     email,
+    placeTypes: [
+      ...(item.primaryType ? [item.primaryType] : []),
+      ...(Array.isArray(item.types) ? item.types : []),
+    ],
   };
 }
 
@@ -378,6 +386,7 @@ async function persistAutomatedRadarLeads(
   maxToCreate?: number,
   countryCode?: string | null,
   author?: string | null,
+  searchQuery?: string | null,
 ): Promise<{ created: number; skipped: number; createdLeadIds: string[] }> {
   let created = 0;
   let skipped = 0;
@@ -399,6 +408,7 @@ async function persistAutomatedRadarLeads(
     workspaceId: string;
     industry: null;
     countryCode: string | null;
+    tags: string[];
   }> = [];
 
   const inBatchPlaceIds = new Set<string>();
@@ -452,6 +462,12 @@ async function persistAutomatedRadarLeads(
       workspaceId,
       industry: null,
       countryCode: resolvedCountry,
+      tags: inferLeadTags({
+        companyName,
+        domain,
+        searchQuery,
+        placeTypes: lead.placeTypes,
+      }),
     });
   }
 
@@ -602,6 +618,7 @@ export async function runAutomatedRadarForWorkspace(
         maxPerRun - createdCount,
         regionCode,
         autopilotAuthor,
+        search.query,
       );
       createdCount += persist.created;
       skippedCount += persist.skipped;

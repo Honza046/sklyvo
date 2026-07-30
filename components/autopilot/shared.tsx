@@ -19,6 +19,9 @@ export type AutopilotLead = {
   company: string;
   url: string;
   email: string;
+  author?: string;
+  scheduledAt?: string;
+  createdAt?: string;
 };
 
 export type WorkspaceLead = {
@@ -29,6 +32,8 @@ export type WorkspaceLead = {
   phone: string;
   createdAt: string;
   leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP";
+  /** Neviditelné tagy — jen pro filtraci. */
+  tags: string[];
 };
 
 export type RunStatus = "pending" | "processing" | "queued" | "error";
@@ -126,6 +131,19 @@ export function formatProcessedDateTime(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function formatQueueDateTime(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 export function FullAutoStatusBadge({ status }: { status: FullAutoAutomationStatus }) {

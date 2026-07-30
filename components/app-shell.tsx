@@ -11,6 +11,8 @@ const PERSISTENT_SIDEBAR_PATHS = new Set([
   "/sniper",
   "/radar",
   "/crm",
+  "/uloziste",
+  "/generator",
   "/autopilot",
   "/help",
   "/settings",
@@ -38,6 +40,8 @@ function normalizeActiveHref(pathname: string) {
     pathname.startsWith("/sniper") ||
     pathname.startsWith("/radar") ||
     pathname.startsWith("/crm") ||
+    pathname.startsWith("/uloziste") ||
+    pathname.startsWith("/generator") ||
     pathname.startsWith("/autopilot") ||
     pathname.startsWith("/help") ||
     pathname.startsWith("/settings") ||
@@ -47,6 +51,8 @@ function normalizeActiveHref(pathname: string) {
     if (pathname.startsWith("/sniper")) return "/sniper";
     if (pathname.startsWith("/radar")) return "/radar";
     if (pathname.startsWith("/crm")) return "/crm";
+    if (pathname.startsWith("/uloziste")) return "/uloziste";
+    if (pathname.startsWith("/generator")) return "/generator";
     if (pathname.startsWith("/autopilot")) return "/autopilot";
     if (pathname.startsWith("/help")) return "/help";
     if (pathname.startsWith("/settings")) {

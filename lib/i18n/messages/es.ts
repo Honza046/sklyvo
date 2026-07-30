@@ -20,6 +20,8 @@ export const es: MessageTree = {
     sniper: "Sniper",
     radar: "Radar",
     crm: "CRM",
+    storage: "Almacenamiento",
+    generator: "Generador",
     autopilot: "Autopilot",
     autopilotCollect: "Recolección",
     autopilotSend: "Envío",

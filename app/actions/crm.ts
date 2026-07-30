@@ -4,6 +4,7 @@ import { getSessionUser } from "@/app/actions/auth";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
 import { authorFromSessionUser, type ContactedViaValue, type LeadSourceValue } from "@/lib/lead-provenance";
+import { inferLeadTags } from "@/lib/lead-tags";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -38,6 +39,8 @@ type CrmLead = {
   nextOutreachAt: string | null;
   nextOutreachKind: "INITIAL" | "FOLLOW_UP" | "BREAKUP" | null;
   outreachDue: boolean;
+  /** Neviditelné tagy pro filtraci. */
+  tags: string[];
 };
 
 function mapLeadStatus(status: string): CrmLead["status"] {
@@ -102,6 +105,8 @@ export async function getLeads() {
       lastContactedAt: Date | null;
       nextOutreachAt: Date | null;
       nextOutreachKind: CrmLead["nextOutreachKind"];
+      industry: string | null;
+      tags: string[];
     }>;
 
     try {
@@ -128,11 +133,13 @@ export async function getLeads() {
           lastContactedAt: true,
           nextOutreachAt: true,
           nextOutreachKind: true,
+          industry: true,
+          tags: true,
         },
       });
     } catch {
-      // Stale Prisma client / schema drift — načti bez contactedVia
-      leadsRaw = await prisma.lead.findMany({
+      // Stale Prisma client / schema drift — načti bez contactedVia / tags
+      const fallback = await prisma.lead.findMany({
         where: { workspaceId },
         orderBy: { createdAt: "desc" },
         select: {
@@ -154,8 +161,35 @@ export async function getLeads() {
           lastContactedAt: true,
           nextOutreachAt: true,
           nextOutreachKind: true,
+          industry: true,
         },
       });
+      leadsRaw = fallback.map((lead) => ({ ...lead, tags: [] as string[] }));
+    }
+
+    // Jednorázový backfill prázdných tagů (max 150 / request).
+    const needsTags = leadsRaw.filter((lead) => !lead.tags || lead.tags.length === 0);
+    if (needsTags.length > 0) {
+      const batch = needsTags.slice(0, 150);
+      await Promise.all(
+        batch.map(async (lead) => {
+          const tags = inferLeadTags({
+            companyName: lead.companyName,
+            domain: lead.domain,
+            industry: lead.industry,
+          });
+          lead.tags = tags;
+          if (tags.length === 0) return;
+          try {
+            await prisma.lead.update({
+              where: { id: lead.id },
+              data: { tags },
+            });
+          } catch {
+            /* ignore — např. sloupec ještě není v DB */
+          }
+        }),
+      );
     }
 
     const now = Date.now();
@@ -194,6 +228,7 @@ export async function getLeads() {
         nextOutreachAt: lead.nextOutreachAt?.toISOString() ?? null,
         nextOutreachKind: lead.nextOutreachKind,
         outreachDue,
+        tags: Array.isArray(lead.tags) ? lead.tags : [],
       };
     });
 
@@ -215,6 +250,9 @@ type AddLeadFromRadarInput = {
   address?: string;
   placeId?: string;
   countryCode?: string | null;
+  /** Text query z Radaru (např. „fitka Praha“) — pro neviditelné tagy. */
+  searchQuery?: string | null;
+  placeTypes?: string[] | null;
 };
 
 export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
@@ -234,6 +272,12 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
   const contactPhone = input.phone?.trim() || null;
   const countryCode = normalizeCountryCode(input.countryCode);
   const author = authorFromSessionUser(session.user);
+  const tags = inferLeadTags({
+    companyName,
+    domain,
+    searchQuery: input.searchQuery,
+    placeTypes: input.placeTypes,
+  });
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -249,6 +293,7 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
       workspaceId: session.workspace.id,
       industry: null,
       countryCode,
+      tags,
     } as any,
     select: {
       id: true,
@@ -293,6 +338,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
   const ce = data.contactEmail?.trim() || null;
   const cp = data.contactPhone?.trim() || null;
   const author = authorFromSessionUser(session.user);
+  const tags = inferLeadTags({ companyName, domain });
   const lead = await prisma.lead.create({
     data: {
       companyName,
@@ -308,6 +354,7 @@ export async function createManualLead(data: CreateManualLeadInput) {
       author,
       workspaceId: session.workspace.id,
       industry: null,
+      tags,
     } as any,
     select: { id: true },
   });
@@ -327,6 +374,8 @@ type ImportLeadInput = {
   phone?: string;
   placeId?: string;
   countryCode?: string | null;
+  searchQuery?: string | null;
+  placeTypes?: string[] | null;
 };
 
 export async function importMultipleLeads(leads: ImportLeadInput[]) {
@@ -350,7 +399,13 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       const email = lead.email?.trim() || null;
       const contactPhone = lead.phone?.trim() || null;
       const countryCode = normalizeCountryCode(lead.countryCode);
-      return { companyName, placeId, domain, email, contactPhone, countryCode };
+      const tags = inferLeadTags({
+        companyName,
+        domain,
+        searchQuery: lead.searchQuery,
+        placeTypes: lead.placeTypes,
+      });
+      return { companyName, placeId, domain, email, contactPhone, countryCode, tags };
     })
     .filter((lead) => lead.companyName.length > 0);
 
@@ -396,6 +451,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
     industry: null;
     contactEmail: string | null;
     countryCode: string | null;
+    tags: string[];
   }> = [];
   let skippedCount = 0;
 
@@ -424,6 +480,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       workspaceId,
       industry: null,
       countryCode: lead.countryCode,
+      tags: lead.tags,
     });
 
     if (lead.placeId) inBatchPlaceIds.add(lead.placeId);
@@ -833,3 +890,65 @@ export async function bulkScrapeLeadContacts(ids: string[]) {
     failed,
   };
 }
+
+export type LeadSentEmailRow = {
+  id: string;
+  subject: string;
+  htmlBody: string;
+  kind: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
+  sentAt: string | null;
+  createdAt: string;
+};
+
+/** Odeslané e-maily pro lead (nejnovější první) — pro náhled v CRM. */
+export async function getLeadSentEmails(
+  leadId: string,
+): Promise<{ emails: LeadSentEmailRow[] } | { error: string }> {
+  try {
+    const session = await getSessionUser();
+    if (!session.workspace?.id || !session.user?.id) {
+      return { error: "Nejste přihlášen." };
+    }
+
+    const id = leadId?.trim();
+    if (!id) return { error: "Chybí ID leadu." };
+
+    const lead = await prisma.lead.findFirst({
+      where: { id, workspaceId: session.workspace.id },
+      select: { id: true },
+    });
+    if (!lead) return { error: "Lead nenalezen." };
+
+    const rows = await prisma.emailQueue.findMany({
+      where: {
+        leadId: id,
+        status: "SENT",
+      },
+      orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
+      take: 20,
+      select: {
+        id: true,
+        subject: true,
+        htmlBody: true,
+        kind: true,
+        sentAt: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      emails: rows.map((row) => ({
+        id: row.id,
+        subject: row.subject,
+        htmlBody: row.htmlBody,
+        kind: row.kind,
+        sentAt: row.sentAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+    };
+  } catch (error) {
+    console.error("getLeadSentEmails:", error);
+    return { error: "Nepodařilo se načíst odeslané e-maily." };
+  }
+}
+

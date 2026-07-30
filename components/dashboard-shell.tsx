@@ -75,7 +75,11 @@ export function DashboardShell({
     pathname === "/" ||
     pathname === "/sniper" ||
     pathname === "/radar" ||
-    pathname === "/crm";
+    pathname === "/crm" ||
+    pathname === "/uloziste" ||
+    pathname.startsWith("/uloziste/") ||
+    pathname === "/generator" ||
+    pathname.startsWith("/generator/");
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
@@ -302,19 +306,12 @@ export function DashboardShell({
           <span className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
             {t("nav.tools")}
           </span>
-          {MAIN_NAV.map(({ href, labelKey, icon: Icon }) => {
+          {MAIN_NAV.filter(({ href }) => href === "/").map(({ href, labelKey, icon: Icon }) => {
             const active = href === activeHref;
             return (
               <Link
                 key={href}
                 href={href}
-                data-tour={
-                  href === "/radar"
-                    ? "onboarding-radar"
-                    : href === "/sniper"
-                      ? "onboarding-sniper"
-                      : undefined
-                }
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                   active
@@ -385,6 +382,37 @@ export function DashboardShell({
               </div>
             )}
           </div>
+
+          {MAIN_NAV.filter(({ href }) => href !== "/").map(({ href, labelKey, icon: Icon }) => {
+            const active = href === activeHref;
+            return (
+              <Link
+                key={href}
+                href={href}
+                data-tour={
+                  href === "/radar"
+                    ? "onboarding-radar"
+                    : href === "/sniper"
+                      ? "onboarding-sniper"
+                      : undefined
+                }
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                  active
+                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "size-5 shrink-0 transition-colors",
+                    active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70",
+                  )}
+                />
+                {t(labelKey)}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* SPODNÍ ČÁST S NASTAVENÍM A PROFILEM — vždy pinned dole */}

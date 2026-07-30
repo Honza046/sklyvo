@@ -18,6 +18,13 @@ For bucket `avatars`:
 2. Disable **public list/enumerate** on the bucket
 3. Uploads only via service role (server actions) — do not expose service role to the browser
 
+For bucket `workspace-docs` (Úložiště):
+
+1. Keep the bucket **private** (no public read)
+2. Downloads only via **signed URLs** from server actions
+3. Uploads/deletes only via service role (server actions)
+4. Paths are scoped as `{workspaceId}/personal|shared/...`
+
 ## Billing hard cap (#04 / #08)
 
 In Google Cloud (Gemini / Generative Language API):

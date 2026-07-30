@@ -19,6 +19,8 @@ export const cz = {
     sniper: "Sniper",
     radar: "Radar",
     crm: "CRM",
+    storage: "Úložiště",
+    generator: "Generátor",
     autopilot: "Autopilot",
     autopilotCollect: "Sběr firem",
     autopilotSend: "Odesílání",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Radio, Rocket, Sparkles } from "lucide-react";
+import { Check, Radio, Rocket, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,7 +25,10 @@ import { cn } from "@/lib/utils";
 import {
   FULL_AUTO_FREQUENCY_LABELS,
   RADAR_WEEKDAYS,
+  SCHEDULE_TIME_OPTIONS,
   SEND_WEEKDAYS,
+  ensureScheduleTimeOption,
+  getActiveScheduleWindows,
   type AutopilotAutomationSettings,
   type FullAutoFrequency,
   type RadarCompanySize,
@@ -163,15 +166,19 @@ export function AutopilotSettingsDialog({
           "data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-bottom-2",
           // Desktop: centered modal (not fullscreen)
           "sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[min(90vh,720px)] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
-          section === "radar" || section === "sniper"
+          section === "radar"
             ? "sm:max-w-3xl"
-            : "sm:max-w-lg sm:max-h-[min(90vh,560px)]",
+            : section === "sniper"
+              ? "sm:max-w-xl sm:max-h-[min(92vh,640px)]"
+              : "sm:max-w-lg sm:max-h-[min(90vh,560px)]",
         )}
       >
         <div
           className={cn(
-            "min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain px-4 pb-3 pt-8 sm:px-6 sm:pb-4 sm:pt-9",
-            section === "sniper" && "sm:space-y-2",
+            "min-h-0 flex-1 space-y-2.5 px-4 pb-3 pt-8 sm:px-6 sm:pb-4 sm:pt-9",
+            section === "sniper"
+              ? "space-y-2 overflow-y-auto overscroll-contain sm:space-y-2"
+              : "overflow-y-auto overscroll-contain",
           )}
         >
           <DialogHeader className="space-y-1 text-left">
@@ -209,26 +216,23 @@ export function AutopilotSettingsDialog({
                 disabled={disabled}
                 className={cn(
                   "shrink-0",
-                  section === "radar" &&
-                    "data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-input",
-                  section === "sniper" &&
-                    "data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-input",
-                  section === "full-auto" &&
-                    "data-[state=checked]:bg-violet-600 data-[state=unchecked]:bg-input",
+                  section === "radar" && "data-[state=checked]:bg-emerald-600",
+                  section === "sniper" && "data-[state=checked]:bg-blue-600",
+                  section === "full-auto" && "data-[state=checked]:bg-violet-600",
                 )}
               />
             </div>
           ) : null}
 
         {section === "radar" && (
-          <div className="grid gap-3 md:grid-cols-2">
-            <section className="flex flex-col rounded-xl border border-border/60 bg-muted/15">
+          <div className="grid items-stretch gap-3 md:grid-cols-2">
+            <section className="flex h-full min-h-0 flex-col rounded-xl border border-border/60 bg-muted/15">
               <div className="border-b border-border/50 px-3 py-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   1 · Kdy hledat
                 </p>
               </div>
-              <div className="flex flex-1 flex-col gap-3 p-3">
+              <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <Label className="text-sm">Dny</Label>
@@ -344,109 +348,17 @@ export function AutopilotSettingsDialog({
                 </div>
 
                 {settings.radarDays.length > 0 ? (
-                  <p className="mt-auto rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
-                    {radarDayLabels} · na Vercelu kolem 03:00 · cíl{" "}
+                  <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                    {radarDayLabels} · kolem {settings.radarRunTime || "03:00"} · cíl{" "}
                     {settings.minCompaniesPerRun}–{settings.maxCompaniesPerRun} firem / den
                   </p>
                 ) : (
-                  <p className="mt-auto rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                     Vyber alespoň jeden den, jinak se sběr nespustí.
                   </p>
                 )}
-              </div>
-            </section>
 
-            <div className="flex flex-col gap-3">
-              <section className="flex flex-1 flex-col rounded-xl border border-border/60 bg-muted/15">
-                <div className="border-b border-border/50 px-3 py-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    2 · Koho hledat
-                  </p>
-                </div>
-                <div className="flex flex-1 flex-col gap-2.5 p-3">
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <Label htmlFor="radar-industries" className="text-sm">
-                        Obory
-                      </Label>
-                      <span className="text-[10px] text-muted-foreground">odděl čárkou</span>
-                    </div>
-                    <Textarea
-                      id="radar-industries"
-                      rows={2}
-                      placeholder="marketingová agentura, webové studio…"
-                      value={settings.targetIndustries}
-                      onChange={(e) => patch({ targetIndustries: e.target.value })}
-                      disabled={disabled}
-                      className="min-h-[52px] resize-none text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <Label htmlFor="radar-locations" className="text-sm">
-                        Města / regiony
-                      </Label>
-                      <span className="text-[10px] text-muted-foreground">odděl čárkou</span>
-                    </div>
-                    <Textarea
-                      id="radar-locations"
-                      rows={2}
-                      placeholder="Praha, Brno, Ostrava…"
-                      value={settings.locations}
-                      onChange={(e) => patch({ locations: e.target.value })}
-                      disabled={disabled}
-                      className="min-h-[52px] resize-none text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-sm">Země hledání</Label>
-                    <Select
-                      value={settings.countryCode || "CZ"}
-                      onValueChange={(value) => patch({ countryCode: value })}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Vyberte zemi" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-950">
-                        <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
-                        {RADAR_COUNTRY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.code} value={opt.code}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-sm">Velikost firmy</Label>
-                    <Select
-                      value={settings.companySize}
-                      onValueChange={(value) =>
-                        patch({ companySize: value as RadarCompanySize })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Vyberte velikost" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-950">
-                        {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-xl border border-border/60 bg-muted/15">
-                <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/50 pt-3">
                   <div className="min-w-0">
                     <Label htmlFor="auto-start-outreach" className="text-sm text-foreground">
                       3 · Rovnou odesílat
@@ -460,11 +372,99 @@ export function AutopilotSettingsDialog({
                     checked={settings.autoStartOutreach}
                     onCheckedChange={(checked) => patch({ autoStartOutreach: checked })}
                     disabled={disabled}
-                    className="shrink-0 data-[state=checked]:bg-emerald-600 data-[state=unchecked]:bg-input"
+                    className="shrink-0 data-[state=checked]:bg-emerald-600"
                   />
                 </div>
-              </section>
-            </div>
+              </div>
+            </section>
+
+            <section className="flex h-full flex-col rounded-xl border border-border/60 bg-muted/15">
+              <div className="border-b border-border/50 px-3 py-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  2 · Koho hledat
+                </p>
+              </div>
+              <div className="flex flex-col gap-2.5 p-3">
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label htmlFor="radar-industries" className="text-sm">
+                      Obory
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground">odděl čárkou</span>
+                  </div>
+                  <Textarea
+                    id="radar-industries"
+                    rows={2}
+                    placeholder="marketingová agentura, webové studio…"
+                    value={settings.targetIndustries}
+                    onChange={(e) => patch({ targetIndustries: e.target.value })}
+                    disabled={disabled}
+                    className="min-h-[52px] resize-none text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <Label htmlFor="radar-locations" className="text-sm">
+                      Města / regiony
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground">odděl čárkou</span>
+                  </div>
+                  <Textarea
+                    id="radar-locations"
+                    rows={2}
+                    placeholder="Praha, Brno, Ostrava…"
+                    value={settings.locations}
+                    onChange={(e) => patch({ locations: e.target.value })}
+                    disabled={disabled}
+                    className="min-h-[52px] resize-none text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-sm">Země hledání</Label>
+                  <Select
+                    value={settings.countryCode || "CZ"}
+                    onValueChange={(value) => patch({ countryCode: value })}
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Vyberte zemi" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-950">
+                      <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
+                      {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.code} value={opt.code}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-sm">Velikost firmy</Label>
+                  <Select
+                    value={settings.companySize}
+                    onValueChange={(value) =>
+                      patch({ companySize: value as RadarCompanySize })
+                    }
+                    disabled={disabled}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Vyberte velikost" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-950">
+                      {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
           </div>
         )}
 
@@ -499,7 +499,7 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       onClick={() => patch({ sendingStrategy: option.id })}
                       className={cn(
-                        "rounded-lg border px-2.5 py-2 text-left transition-all disabled:opacity-50",
+                        "rounded-lg border px-2.5 py-1.5 text-left transition-all disabled:opacity-50",
                         active
                           ? "border-blue-500 bg-blue-50 shadow-sm dark:border-blue-600 dark:bg-blue-950/40"
                           : "border-border/60 bg-background hover:bg-muted/40",
@@ -522,36 +522,29 @@ export function AutopilotSettingsDialog({
               </div>
             </section>
 
-            <section className="rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Firmy bez e-mailu
+            <label
+              htmlFor="settings-sniper-only-email"
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/15 px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-foreground">
+                  Pouze firmy s e-mailem
+                </p>
+                <p className="text-[10px] leading-snug text-muted-foreground">
+                  Bez e-mailu se ve výběru nezobrazí.
                 </p>
               </div>
-              <label
-                htmlFor="settings-sniper-only-email"
-                className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-foreground">
-                    Pouze firmy s e-mailem
-                  </p>
-                  <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
-                    Bez e-mailu se ve výběru nezobrazí a nevygenerují.
-                  </p>
-                </div>
-                <Switch
-                  id="settings-sniper-only-email"
-                  checked={Boolean(settings.onlyWithEmail)}
-                  disabled={disabled}
-                  onCheckedChange={(checked) => patch({ onlyWithEmail: checked })}
-                  className="shrink-0 data-[state=checked]:bg-blue-600"
-                />
-              </label>
-            </section>
+              <Switch
+                id="settings-sniper-only-email"
+                checked={Boolean(settings.onlyWithEmail)}
+                disabled={disabled}
+                onCheckedChange={(checked) => patch({ onlyWithEmail: checked })}
+                className="shrink-0 data-[state=checked]:bg-blue-600"
+              />
+            </label>
 
             {settings.sendingStrategy === "batch" ? (
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <section className="rounded-xl border border-border/60 bg-muted/15">
                   <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -572,7 +565,7 @@ export function AutopilotSettingsDialog({
                     </button>
                   </div>
                   <div className="p-2">
-                    <div className="flex max-w-md rounded-lg bg-muted/60 p-0.5">
+                    <div className="flex rounded-lg bg-muted/60 p-0.5">
                       {SEND_WEEKDAYS.map(({ value, label }) => {
                         const active = sendDays.includes(value);
                         return (
@@ -583,7 +576,7 @@ export function AutopilotSettingsDialog({
                             disabled={disabled}
                             aria-pressed={active}
                             className={cn(
-                              "h-8 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
+                              "h-7 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
                               active
                                 ? "bg-background text-blue-700 shadow-sm dark:text-blue-300"
                                 : "text-muted-foreground hover:text-foreground",
@@ -597,91 +590,66 @@ export function AutopilotSettingsDialog({
                   </div>
                 </section>
 
-                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                <section className="min-w-0 rounded-xl border border-border/60 bg-muted/15">
+                <section className="rounded-xl border border-border/60 bg-muted/15">
                   <div className="border-b border-border/50 px-3 py-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       3 · Časová okna
                     </p>
                   </div>
-                  <div className="grid gap-2 p-2.5 sm:grid-cols-2">
-                    <div className="rounded-lg border border-border/40 bg-background/80 p-2.5">
-                      <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">Ráno</p>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="modal-window1-start" className="text-[10px]">
-                            Od
-                          </Label>
-                          <Input
-                            id="modal-window1-start"
-                            type="time"
-                            step={60}
-                            value={settings.window1Start}
-                            onChange={(e) => patch({ window1Start: e.target.value })}
-                            disabled={disabled}
-                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label htmlFor="modal-window1-end" className="text-[10px]">
-                            Do
-                          </Label>
-                          <Input
-                            id="modal-window1-end"
-                            type="time"
-                            step={60}
-                            value={settings.window1End}
-                            onChange={(e) => patch({ window1End: e.target.value })}
-                            disabled={disabled}
-                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="rounded-lg border border-border/40 bg-background/80 p-2.5">
-                      <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">Odpoledne</p>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="space-y-0.5">
-                          <Label htmlFor="modal-window2-start" className="text-[10px]">
-                            Od
-                          </Label>
-                          <Input
-                            id="modal-window2-start"
-                            type="time"
-                            step={60}
-                            value={settings.window2Start}
-                            onChange={(e) => patch({ window2Start: e.target.value })}
-                            disabled={disabled}
-                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
-                          />
-                        </div>
-                        <div className="space-y-0.5">
-                          <Label htmlFor="modal-window2-end" className="text-[10px]">
-                            Do
-                          </Label>
-                          <Input
-                            id="modal-window2-end"
-                            type="time"
-                            step={60}
-                            value={settings.window2End}
-                            onChange={(e) => patch({ window2End: e.target.value })}
-                            disabled={disabled}
-                            className="h-9 w-[8rem] shrink-0 px-2.5 text-sm tabular-nums [&::-webkit-calendar-picker-indicator]:hidden"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="space-y-2 p-2.5">
+                    <TimeWindowRow
+                      label="Základní okno"
+                      start={settings.window1Start}
+                      end={settings.window1End}
+                      disabled={disabled}
+                      onStartChange={(value) => patch({ window1Start: value })}
+                      onEndChange={(value) => patch({ window1End: value })}
+                    />
+
+                    <OptionalWindowToggle
+                      label="2. okno"
+                      enabled={Boolean(settings.window2Enabled)}
+                      disabled={disabled}
+                      onEnabledChange={(enabled) => patch({ window2Enabled: enabled })}
+                    />
+                    {settings.window2Enabled ? (
+                      <TimeWindowRow
+                        label="2. okno"
+                        start={settings.window2Start}
+                        end={settings.window2End}
+                        disabled={disabled}
+                        onStartChange={(value) => patch({ window2Start: value })}
+                        onEndChange={(value) => patch({ window2End: value })}
+                      />
+                    ) : null}
+
+                    <OptionalWindowToggle
+                      label="3. okno"
+                      enabled={Boolean(settings.window3Enabled)}
+                      disabled={disabled}
+                      onEnabledChange={(enabled) => patch({ window3Enabled: enabled })}
+                    />
+                    {settings.window3Enabled ? (
+                      <TimeWindowRow
+                        label="3. okno"
+                        start={settings.window3Start}
+                        end={settings.window3End}
+                        disabled={disabled}
+                        onStartChange={(value) => patch({ window3Start: value })}
+                        onEndChange={(value) => patch({ window3End: value })}
+                      />
+                    ) : null}
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-border/60 bg-muted/15 sm:w-44">
+                <section className="rounded-xl border border-border/60 bg-muted/15">
                   <div className="border-b border-border/50 px-3 py-1.5">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       4 · Tempo
                     </p>
                   </div>
-                  <div className="flex flex-col gap-1.5 p-2">
-                    <div className="space-y-0.5">
+                  <div className="flex flex-wrap items-end gap-3 p-2.5">
+                    <div className="w-28 space-y-0.5">
                       <Label htmlFor="modal-max-batch" className="text-[10px]">
                         Max. na dávku
                       </Label>
@@ -697,19 +665,18 @@ export function AutopilotSettingsDialog({
                           })
                         }
                         disabled={disabled}
-                        className="h-9 text-sm"
+                        className="h-8 text-sm"
                       />
                     </div>
-                    <p className="rounded-lg bg-blue-50 px-2 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
-                      {sendDayLabels || "žádný den"} · {settings.window1Start}–{settings.window1End}
-                      {settings.window2Start && settings.window2End
-                        ? ` · ${settings.window2Start}–${settings.window2End}`
-                        : ""}{" "}
+                    <p className="min-w-0 flex-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+                      {sendDayLabels || "žádný den"} ·{" "}
+                      {getActiveScheduleWindows(settings)
+                        .map((w) => `${w.start}–${w.end}`)
+                        .join(", ")}{" "}
                       · ≤{settings.maxEmailsPerBatch}
                     </p>
                   </div>
                 </section>
-                </div>
               </div>
             ) : (
               <p className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
@@ -835,5 +802,101 @@ export function AutopilotSettingsDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function OptionalWindowToggle({
+  label,
+  enabled,
+  disabled,
+  onEnabledChange,
+}: {
+  label: string;
+  enabled: boolean;
+  disabled?: boolean;
+  onEnabledChange: (enabled: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 px-0.5 py-0.5">
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={enabled}
+        disabled={disabled}
+        onClick={() => onEnabledChange(!enabled)}
+        className={cn(
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors disabled:opacity-50",
+          enabled
+            ? "border-blue-600 bg-blue-600 text-white"
+            : "border-zinc-400 bg-white dark:border-zinc-500 dark:bg-zinc-900",
+        )}
+      >
+        {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+      </button>
+      <span className="text-[12px] font-medium text-foreground">
+        Přidat {label.toLowerCase()}
+      </span>
+    </label>
+  );
+}
+
+function TimeSelect({
+  value,
+  disabled,
+  onChange,
+  id,
+}: {
+  value: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+  id?: string;
+}) {
+  const safeValue = ensureScheduleTimeOption(value);
+  return (
+    <Select value={safeValue} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger id={id} className="h-8 w-[5.75rem] px-2 text-sm tabular-nums">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-56 bg-white dark:bg-zinc-950">
+        {SCHEDULE_TIME_OPTIONS.map((option) => (
+          <SelectItem key={option} value={option} className="tabular-nums">
+            {option}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function TimeWindowRow({
+  label,
+  start,
+  end,
+  disabled,
+  onStartChange,
+  onEndChange,
+}: {
+  label: string;
+  start: string;
+  end: string;
+  disabled?: boolean;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border/40 bg-background/80 px-2.5 py-2">
+      <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">{label}</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-0.5">
+          <Label className="text-[10px]">Od</Label>
+          <TimeSelect value={start} disabled={disabled} onChange={onStartChange} />
+        </div>
+        <span className="mb-1.5 text-xs text-muted-foreground">–</span>
+        <div className="space-y-0.5">
+          <Label className="text-[10px]">Do</Label>
+          <TimeSelect value={end} disabled={disabled} onChange={onEndChange} />
+        </div>
+      </div>
+    </div>
   );
 }

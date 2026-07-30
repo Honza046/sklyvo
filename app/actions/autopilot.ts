@@ -12,6 +12,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { plainTextToHtml } from "@/lib/email-format";
 import { nextOutreachAfterSend, type OutreachKindValue } from "@/lib/outreach";
+import { authorFromSessionUser, shortLeadAuthorName } from "@/lib/lead-provenance";
 
 export type AutopilotScheduleWindow = ScheduleTimeWindow;
 
@@ -29,6 +30,8 @@ export type QueueAutopilotLeadResult =
       htmlBody: string;
       scheduledAt: string;
       scheduledLabel: string;
+      createdAt: string;
+      author: string;
     }
   | { error: string };
 
@@ -66,6 +69,8 @@ export type AutopilotEmailQueueRow = {
   subject: string;
   htmlBody: string;
   scheduledAt: string;
+  createdAt: string;
+  author: string;
   status: "PENDING" | "SENT" | "FAILED";
   errorMessage: string | null;
 };
@@ -155,6 +160,7 @@ export async function queueAutopilotLead(
 
   let workspaceId: string | undefined;
   let senderUserId: string | undefined;
+  let authorLabel = "";
   if (input.workspaceId?.trim()) {
     if (!verifyInternalWorkspaceToken(input.workspaceId, input.internalToken)) {
       return { error: "Nejste přihlášen." };
@@ -164,6 +170,7 @@ export async function queueAutopilotLead(
     const session = await getSessionUser();
     workspaceId = session.user?.workspaceId ?? undefined;
     senderUserId = session.user?.id ?? undefined;
+    authorLabel = shortLeadAuthorName(authorFromSessionUser(session.user)) || "";
   }
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
@@ -226,6 +233,8 @@ export async function queueAutopilotLead(
     htmlBody: generated.htmlBody,
     scheduledAt: scheduledAt.toISOString(),
     scheduledLabel: formatSchedulePreview(scheduledAt),
+    createdAt: created.createdAt.toISOString(),
+    author: authorLabel,
   };
 }
 
@@ -513,6 +522,23 @@ export async function getAutopilotEmailQueue(): Promise<
     },
   });
 
+  const senderIds = Array.from(
+    new Set(items.map((item) => item.senderUserId).filter((id): id is string => Boolean(id))),
+  );
+  const senders =
+    senderIds.length > 0
+      ? await prisma.user.findMany({
+          where: { id: { in: senderIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+  const authorByUserId = new Map(
+    senders.map((user) => [
+      user.id,
+      shortLeadAuthorName(authorFromSessionUser(user)) || "",
+    ]),
+  );
+
   return {
     rows: items.map((item) => ({
       queueId: item.id,
@@ -523,10 +549,87 @@ export async function getAutopilotEmailQueue(): Promise<
       subject: item.subject,
       htmlBody: item.htmlBody,
       scheduledAt: item.scheduledAt.toISOString(),
+      createdAt: item.createdAt.toISOString(),
+      author: (item.senderUserId && authorByUserId.get(item.senderUserId)) || "",
       status: item.status,
       errorMessage: item.errorMessage,
     })),
   };
+}
+
+const RECIPIENT_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export type UpdateAutopilotQueueRecipientInput = {
+  leadId: string;
+  email: string;
+};
+
+export async function updateAutopilotQueueRecipient(
+  input: UpdateAutopilotQueueRecipientInput,
+): Promise<{ ok: true; email: string; requeued: boolean } | { error: string }> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const leadId = input.leadId?.trim();
+  const email = input.email?.trim().toLowerCase() ?? "";
+  if (!leadId) {
+    return { error: "Chybí ID leadu." };
+  }
+  if (!email || !RECIPIENT_EMAIL_RE.test(email)) {
+    return { error: "Zadejte platný e-mail." };
+  }
+
+  const lead = await prisma.lead.findFirst({
+    where: { id: leadId, workspaceId },
+    select: { id: true },
+  });
+  if (!lead) {
+    return { error: "Lead nebyl nalezen." };
+  }
+
+  const queueItem = await prisma.emailQueue.findFirst({
+    where: {
+      leadId,
+      status: { in: ["PENDING", "FAILED"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true },
+  });
+
+  if (!queueItem) {
+    return { error: "Položka ve frontě nebyla nalezena nebo už byla odeslána." };
+  }
+
+  const requeued = queueItem.status === "FAILED";
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      contactEmail: email,
+      email,
+    },
+  });
+
+  if (requeued) {
+    await prisma.emailQueue.update({
+      where: { id: queueItem.id },
+      data: {
+        status: "PENDING",
+        errorMessage: null,
+      },
+    });
+  }
+
+  const { scheduleCrmSheetsSync } = await import("@/lib/google-sheets-sync");
+  scheduleCrmSheetsSync(workspaceId);
+
+  revalidatePath("/autopilot");
+  revalidatePath("/crm");
+
+  return { ok: true, email, requeued };
 }
 
 export type UpdateAutopilotEmailQueueInput = {

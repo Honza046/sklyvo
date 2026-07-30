@@ -53,6 +53,14 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           typeof sniperParsed.onlyWithEmail === "boolean"
             ? sniperParsed.onlyWithEmail
             : (prev.onlyWithEmail ?? DEFAULT_AUTOPILOT_SETTINGS.onlyWithEmail),
+        window2Enabled:
+          typeof sniperParsed.window2Enabled === "boolean"
+            ? sniperParsed.window2Enabled
+            : Boolean(sniperParsed.window2Start && sniperParsed.window2End),
+        window3Enabled:
+          typeof sniperParsed.window3Enabled === "boolean"
+            ? sniperParsed.window3Enabled
+            : false,
         sendDays: (() => {
           const raw =
             Array.isArray(sniperParsed.sendDays) && sniperParsed.sendDays.length > 0
@@ -211,6 +219,10 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           window1End: automationSettings.window1End,
           window2Start: automationSettings.window2Start,
           window2End: automationSettings.window2End,
+          window2Enabled: Boolean(automationSettings.window2Enabled),
+          window3Start: automationSettings.window3Start,
+          window3End: automationSettings.window3End,
+          window3Enabled: Boolean(automationSettings.window3Enabled),
           maxEmailsPerBatch: automationSettings.maxEmailsPerBatch,
           sendingStrategy: automationSettings.sendingStrategy,
           sendDays: (automationSettings.sendDays ?? []).filter((d) => d >= 1 && d <= 5),

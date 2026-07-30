@@ -15,7 +15,9 @@ import {
   Sun,
   User,
   Users,
+  FolderOpen,
   Zap,
+  FileText,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,8 @@ export const MAIN_NAV = [
   { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair },
   { href: "/radar", labelKey: "nav.radar", icon: Radio },
   { href: "/crm", labelKey: "nav.crm", icon: Users },
+  { href: "/uloziste", labelKey: "nav.storage", icon: FolderOpen },
+  { href: "/generator", labelKey: "nav.generator", icon: FileText },
 ] as const;
 
 export const AUTOPILOT_SUB_NAV = [

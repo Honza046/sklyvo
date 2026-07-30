@@ -15,6 +15,13 @@ import {
   syncCrmToGoogleSheetsNow,
   type GoogleSheetsConnectionState,
 } from "@/app/actions/google-sheets";
+import {
+  disconnectMicrosoft,
+  exportCrmToExcelOneDrive,
+  getMicrosoftConnectionState,
+  getMicrosoftOAuthUrl,
+  type MicrosoftConnectionState,
+} from "@/app/actions/microsoft";
 import { ExternalLink, RefreshCw, Unplug, Download } from "lucide-react";
 
 const integrations = [
@@ -68,6 +75,7 @@ export function IntegrationsPanel() {
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>("google-sheets");
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(null);
+  const [microsoft, setMicrosoft] = useState<MicrosoftConnectionState | null>(null);
   const [isPending, startTransition] = useTransition();
   const [historySheetUrl, setHistorySheetUrl] = useState(
     "https://docs.google.com/spreadsheets/d/1KAoCo7_HHpleIs5eAKVhlsQLQuIkke-dAg-dQsYE7xs/edit",
@@ -81,13 +89,23 @@ export function IntegrationsPanel() {
     });
   };
 
+  const refreshMicrosoftState = () => {
+    startTransition(async () => {
+      const state = await getMicrosoftConnectionState();
+      setMicrosoft(state);
+    });
+  };
+
   useEffect(() => {
     refreshSheetsState();
+    refreshMicrosoftState();
   }, []);
 
   useEffect(() => {
     const connected = searchParams.get("sheetsConnected");
     const error = searchParams.get("sheetsError");
+    const msConnected = searchParams.get("msConnected");
+    const msError = searchParams.get("msError");
     if (connected === "1") {
       toast.success(
         "Google Sheets připojeno. Listy podle stavů CRM (Nový lead → Nedomluveno) + Vše jsou připravené.",
@@ -96,6 +114,13 @@ export function IntegrationsPanel() {
       router.replace("/settings#integrations", { scroll: false });
     } else if (error) {
       toast.error(decodeURIComponent(error));
+      router.replace("/settings#integrations", { scroll: false });
+    } else if (msConnected === "1") {
+      toast.success("Microsoft 365 připojeno (OneDrive / Excel / Word).");
+      refreshMicrosoftState();
+      router.replace("/settings#integrations", { scroll: false });
+    } else if (msError) {
+      toast.error(decodeURIComponent(msError));
       router.replace("/settings#integrations", { scroll: false });
     }
   }, [searchParams, router]);
@@ -236,6 +261,43 @@ export function IntegrationsPanel() {
 
   const sheetsActive = Boolean(sheets?.connected && sheets.spreadsheetUrl);
   const sheetsExpanded = expandedIntegration === "google-sheets";
+  const msActive = Boolean(microsoft?.connected);
+  const msExpanded = expandedIntegration === "microsoft";
+
+  const handleConnectMicrosoft = () => {
+    startTransition(async () => {
+      const result = await getMicrosoftOAuthUrl("/settings#integrations");
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      window.location.href = result.url;
+    });
+  };
+
+  const handleDisconnectMicrosoft = () => {
+    startTransition(async () => {
+      const result = await disconnectMicrosoft();
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Microsoft 365 odpojeno.");
+      refreshMicrosoftState();
+    });
+  };
+
+  const handleExportExcel = () => {
+    startTransition(async () => {
+      const result = await exportCrmToExcelOneDrive();
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(`CRM exportováno do OneDrive: ${result.fileName}`);
+      if (result.webUrl) window.open(result.webUrl, "_blank", "noopener,noreferrer");
+    });
+  };
 
   return (
     <div className="pb-2 pt-2">
@@ -288,7 +350,8 @@ export function IntegrationsPanel() {
                   Na serveru chybí Google OAuth (GOOGLE_SHEETS_CLIENT_ID / SECRET). Stejný Google Cloud
                   projekt jako pro Gmail stačí — přidej redirect URI na{" "}
                   <code className="text-xs">/api/integrations/google-sheets/callback</code> a zapni
-                  Google Sheets API + Google Drive API.
+                  Google Sheets API + Google Drive API + Google Docs API.
+                  Po rozšíření oprávnění znovu připojte účet (souhlas s Drive / Docs).
                 </p>
               )}
 
@@ -470,6 +533,113 @@ export function IntegrationsPanel() {
                     onClick={handleConnectSheets}
                   >
                     Připojit Google Sheets
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600 md:col-span-2"
+          onClick={() => toggleCard("microsoft")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleCard("microsoft");
+            }
+          }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-foreground">
+                Microsoft 365
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
+                OneDrive, Excel a Word — pro týmy, které nepoužívají Google. Import souborů,
+                export CRM do Excelu a generování smluv do Wordu.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span
+                className={`h-2 w-2 rounded-full ${msActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                aria-hidden
+              />
+              <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+                {msActive ? "Připojeno" : "Nepřipojeno"}
+              </span>
+            </div>
+          </div>
+
+          {msExpanded && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-border/60"
+            >
+              {!microsoft?.oauthConfigured && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Na serveru chybí Microsoft OAuth. Přidej{" "}
+                  <code className="text-xs">MICROSOFT_CLIENT_ID</code> a{" "}
+                  <code className="text-xs">MICROSOFT_CLIENT_SECRET</code> (Azure App Registration),
+                  redirect URI{" "}
+                  <code className="text-xs">/api/integrations/microsoft/callback</code> a oprávnění
+                  Files.ReadWrite + Files.Read.All + offline_access + User.Read.
+                </p>
+              )}
+
+              {msActive ? (
+                <>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/20">
+                    <p className="font-medium text-emerald-900 dark:text-emerald-200">
+                      {microsoft?.displayName || "Microsoft 365"}
+                    </p>
+                    {microsoft?.accountEmail && (
+                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
+                        Účet: {microsoft.accountEmail}
+                      </p>
+                    )}
+                    {microsoft?.lastError && (
+                      <p className="mt-2 text-rose-700 dark:text-rose-300">
+                        Chyba: {microsoft.lastError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={handleExportExcel}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Exportovat CRM do Excelu
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={handleDisconnectMicrosoft}
+                    >
+                      <Unplug className="mr-2 h-4 w-4" />
+                      Odpojit
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Po připojení půjde importovat z OneDrive, tvořit Word dokumenty v Generátoru a
+                    exportovat CRM jako Excel (.csv) do OneDrive.
+                  </p>
+                  <Button
+                    type="button"
+                    className="rounded-lg bg-[#2F2F2F] font-semibold text-white hover:bg-black"
+                    disabled={!microsoft?.oauthConfigured || isPending}
+                    onClick={handleConnectMicrosoft}
+                  >
+                    Připojit Microsoft 365
                   </Button>
                 </div>
               )}

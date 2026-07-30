@@ -86,6 +86,7 @@ model User {
   passwordResetExpiresAt DateTime?
 
   emailConnection UserEmailConnection?
+  documents       WorkspaceDocument[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -135,6 +136,8 @@ model Workspace {
   radarSettings RadarSettings?
   emailConnection WorkspaceEmailConnection?
   googleSheetsConnection WorkspaceGoogleSheetsConnection?
+  microsoftConnection WorkspaceMicrosoftConnection?
+  documents     WorkspaceDocument[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -219,6 +222,11 @@ model Lead {
   contactEmail  String?
   contactPhone  String?
   industry      String?
+  /**
+   * Neviditelné tagy pro filtraci (fitka, gastro, …) — odvozené z názvu / query / Places.
+   * V UI se na kartách neukazují, jen ve filtrech.
+   */
+  tags          String[]   @default([])
   /** ISO country from Radar search (e.g. CZ, DE, GB) — drives email language hints. */
   countryCode   String?
   /** Kdo lead zapsal (např. Jan Sedlář / Matěj Pazdera / Filip Retzl). */
@@ -381,4 +389,64 @@ model RateLimitBucket {
 
   @@unique([key, windowStart])
   @@index([key])
+}
+
+/** Microsoft 365 — OneDrive / Excel / Word (Graph API). */
+model WorkspaceMicrosoftConnection {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status EmailConnectionStatus @default(DISCONNECTED)
+
+  msAccessToken      String?   @db.Text
+  msRefreshToken     String?   @db.Text
+  msTokenExpiresAt   DateTime?
+  msAccountEmail     String?
+  msDisplayName      String?
+
+  lastError   String?
+  connectedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum DocumentScope {
+  PERSONAL
+  SHARED
+}
+
+enum DocumentKind {
+  UPLOAD
+  OFFER
+  CONTRACT
+}
+
+/** Soubory v Úložišti — osobní (jen owner) nebo společné (celý workspace). */
+model WorkspaceDocument {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  ownerUserId String
+  owner       User         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+
+  scope       DocumentScope
+  kind        DocumentKind @default(UPLOAD)
+
+  name        String
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  storagePath String
+
+  /** Metadata nabídky/smlouvy (JSON). */
+  metaJson    String?      @db.Text
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([workspaceId, scope])
+  @@index([workspaceId, ownerUserId, scope])
 }

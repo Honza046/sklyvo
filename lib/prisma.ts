@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const connectionString = process.env.DATABASE_URL;
 
   // Bump when schema changes require a fresh client
-  const PRISMA_SCHEMA_FINGERPRINT = "outreach-lead-contacted-via-v1";
+  const PRISMA_SCHEMA_FINGERPRINT = "outreach-workspace-document-v2";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -73,6 +73,17 @@ const prismaClientSingleton = (): PrismaClient => {
   return client;
 };
 
+function runtimeHasModelDelegate(client: PrismaClient, model: string): boolean {
+  try {
+    const delegate = (client as unknown as Record<string, unknown>)[model];
+    if (!delegate || typeof delegate !== "object") return false;
+    const methods = delegate as Record<string, unknown>;
+    return typeof methods.findMany === "function" && typeof methods.create === "function";
+  } catch {
+    return false;
+  }
+}
+
 /** Dev HMR can keep an outdated client after `prisma generate` — recreate if schema drifted. */
 function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   if (!client) return true;
@@ -110,11 +121,13 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
   }
 
   return (
-    !("radarSettings" in client) ||
-    !("emailQueue" in client) ||
-    !("userEmailConnection" in client) ||
-    !("workspaceEmailConnection" in client) ||
-    !("workspaceGoogleSheetsConnection" in client)
+    !runtimeHasModelDelegate(client, "radarSettings") ||
+    !runtimeHasModelDelegate(client, "emailQueue") ||
+    !runtimeHasModelDelegate(client, "userEmailConnection") ||
+    !runtimeHasModelDelegate(client, "workspaceEmailConnection") ||
+    !runtimeHasModelDelegate(client, "workspaceGoogleSheetsConnection") ||
+    !runtimeHasModelDelegate(client, "workspaceMicrosoftConnection") ||
+    !runtimeHasModelDelegate(client, "workspaceDocument")
   );
 }
 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGoogleSheetsOAuthConfig } from "@/lib/google-sheets-oauth";
+import {
+  decodeGoogleOAuthState,
+  getGoogleSheetsOAuthConfig,
+} from "@/lib/google-sheets-oauth";
 import {
   createCrmSpreadsheet,
   writeVenegardCrmWorkbook,
@@ -8,35 +11,41 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   const { appUrl, clientId, clientSecret, redirectUri } = getGoogleSheetsOAuthConfig();
-  const settingsUrl = new URL("/settings", appUrl);
-  settingsUrl.hash = "integrations";
 
   const code = request.nextUrl.searchParams.get("code");
-  const workspaceId = request.nextUrl.searchParams.get("state");
+  const rawState = request.nextUrl.searchParams.get("state");
+  const { workspaceId, returnPath } = decodeGoogleOAuthState(rawState);
   const oauthError = request.nextUrl.searchParams.get("error");
 
+  const redirectBase = new URL(returnPath.split("#")[0] || "/settings", appUrl);
+  if (returnPath.includes("#")) {
+    redirectBase.hash = returnPath.split("#")[1] || "";
+  } else if (returnPath.startsWith("/settings")) {
+    redirectBase.hash = "integrations";
+  }
+
   if (oauthError) {
-    settingsUrl.searchParams.set(
+    redirectBase.searchParams.set(
       "sheetsError",
-      encodeURIComponent("Google Sheets připojení bylo zrušeno."),
+      encodeURIComponent("Google připojení bylo zrušeno."),
     );
-    return NextResponse.redirect(settingsUrl);
+    return NextResponse.redirect(redirectBase);
   }
 
   if (!code || !workspaceId) {
-    settingsUrl.searchParams.set(
+    redirectBase.searchParams.set(
       "sheetsError",
       encodeURIComponent("Chybí autorizační kód od Google."),
     );
-    return NextResponse.redirect(settingsUrl);
+    return NextResponse.redirect(redirectBase);
   }
 
   if (!clientId || !clientSecret) {
-    settingsUrl.searchParams.set(
+    redirectBase.searchParams.set(
       "sheetsError",
-      encodeURIComponent("Google Sheets OAuth není na serveru nakonfigurován."),
+      encodeURIComponent("Google OAuth není na serveru nakonfigurován."),
     );
-    return NextResponse.redirect(settingsUrl);
+    return NextResponse.redirect(redirectBase);
   }
 
   try {
@@ -60,11 +69,11 @@ export async function GET(request: NextRequest) {
     };
 
     if (!tokenResponse.ok || !tokenJson.access_token) {
-      settingsUrl.searchParams.set(
+      redirectBase.searchParams.set(
         "sheetsError",
         encodeURIComponent(tokenJson.error_description ?? "Google token exchange selhal."),
       );
-      return NextResponse.redirect(settingsUrl);
+      return NextResponse.redirect(redirectBase);
     }
 
     const profileResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
@@ -72,30 +81,44 @@ export async function GET(request: NextRequest) {
     });
     const profile = (await profileResponse.json()) as { email?: string };
 
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { name: true },
+    const existing = await prisma.workspaceGoogleSheetsConnection.findUnique({
+      where: { workspaceId },
+      select: {
+        googleRefreshToken: true,
+        spreadsheetId: true,
+        spreadsheetUrl: true,
+        spreadsheetTitle: true,
+        sheetName: true,
+      },
     });
 
-    const title = `Venegard CRM – ${workspace?.name?.trim() || "workspace"}`;
-    const sheetName = "Vše";
-    const created = await createCrmSpreadsheet(tokenJson.access_token, title);
+    let spreadsheetId = existing?.spreadsheetId ?? null;
+    let spreadsheetUrl = existing?.spreadsheetUrl ?? null;
+    let spreadsheetTitle = existing?.spreadsheetTitle ?? null;
+    const sheetName = existing?.sheetName || "Vše";
 
-    await writeVenegardCrmWorkbook({
-      accessToken: tokenJson.access_token,
-      spreadsheetId: created.spreadsheetId,
-      workspaceId,
-    });
+    if (!spreadsheetId) {
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { name: true },
+      });
+      const title = `Venegard CRM – ${workspace?.name?.trim() || "workspace"}`;
+      const created = await createCrmSpreadsheet(tokenJson.access_token, title);
+      await writeVenegardCrmWorkbook({
+        accessToken: tokenJson.access_token,
+        spreadsheetId: created.spreadsheetId,
+        workspaceId,
+      });
+      spreadsheetId = created.spreadsheetId;
+      spreadsheetUrl = created.spreadsheetUrl;
+      spreadsheetTitle = title;
+    }
 
     const expiresAt =
       typeof tokenJson.expires_in === "number"
         ? new Date(Date.now() + tokenJson.expires_in * 1000)
         : null;
 
-    const existing = await prisma.workspaceGoogleSheetsConnection.findUnique({
-      where: { workspaceId },
-      select: { googleRefreshToken: true },
-    });
     const refreshToken =
       tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
 
@@ -108,9 +131,9 @@ export async function GET(request: NextRequest) {
         googleRefreshToken: refreshToken,
         googleTokenExpiresAt: expiresAt,
         googleAccountEmail: profile.email?.trim() || null,
-        spreadsheetId: created.spreadsheetId,
-        spreadsheetUrl: created.spreadsheetUrl,
-        spreadsheetTitle: title,
+        spreadsheetId,
+        spreadsheetUrl,
+        spreadsheetTitle,
         sheetName,
         syncEnabled: true,
         lastSyncedAt: new Date(),
@@ -127,29 +150,27 @@ export async function GET(request: NextRequest) {
             : {}),
         googleTokenExpiresAt: expiresAt,
         googleAccountEmail: profile.email?.trim() || null,
-        spreadsheetId: created.spreadsheetId,
-        spreadsheetUrl: created.spreadsheetUrl,
-        spreadsheetTitle: title,
+        spreadsheetId,
+        spreadsheetUrl,
+        spreadsheetTitle,
         sheetName,
-        syncEnabled: true,
-        lastSyncedAt: new Date(),
         lastError: null,
         connectedAt: new Date(),
       },
     });
 
-    settingsUrl.searchParams.set("sheetsConnected", "1");
-    return NextResponse.redirect(settingsUrl);
+    redirectBase.searchParams.set("googleConnected", "1");
+    return NextResponse.redirect(redirectBase);
   } catch (error) {
     console.error("Google Sheets OAuth callback:", error);
-    settingsUrl.searchParams.set(
+    redirectBase.searchParams.set(
       "sheetsError",
       encodeURIComponent(
         error instanceof Error
           ? error.message
-          : "Nepodařilo se dokončit Google Sheets propojení.",
+          : "Nepodařilo se dokončit Google propojení.",
       ),
     );
-    return NextResponse.redirect(settingsUrl);
+    return NextResponse.redirect(redirectBase);
   }
 }

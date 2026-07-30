@@ -1,17 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CheckCircle2,
   Eye,
   Globe,
+  Info,
   Loader2,
   Mail,
+  Maximize2,
+  Search,
   Send,
   Trash2,
   Wand2,
 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
+import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,10 +30,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -40,11 +54,14 @@ import {
   getAutopilotEmailQueue,
   queueAutopilotLead,
   updateAutopilotEmailQueueItem,
+  updateAutopilotQueueRecipient,
   type AutopilotEmailQueueRow,
 } from "@/app/actions/autopilot";
 import { getLeads } from "@/app/actions/crm";
 import { computeScheduledTimes, formatSchedulePreview } from "@/lib/email-scheduling";
+import { getActiveScheduleWindows } from "@/lib/autopilot-settings";
 import { htmlBodyToEditablePlainText } from "@/lib/email-format";
+import { leadTagLabel, LEAD_TAG_ORDER } from "@/lib/lead-tags";
 import TextareaAutosize from "react-textarea-autosize";
 import { toast } from "sonner";
 import {
@@ -60,6 +77,7 @@ import {
   ITEMS_PER_PAGE,
   SNIPER_SETTINGS_STORAGE_KEY,
   STATUS_META,
+  formatQueueDateTime,
   leadFullWebsiteUrl,
   type AutopilotLead,
   type RunState,
@@ -67,6 +85,12 @@ import {
   type WorkspaceLead,
 } from "@/components/autopilot/shared";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
+
+/** Kompaktní tabulka — vyplní zbývající výšku, paginace vždy vidět. */
+const SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS =
+  "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
+const SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS =
+  "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
 
 type ActivePreviewEmail = {
   leadId: string;
@@ -83,6 +107,13 @@ export function AutopilotSniperView() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeSubTab, setActiveSubTab] = useState<"selection" | "queue">("selection");
+  const [queueExpanded, setQueueExpanded] = useState(false);
+  const [selectionExpanded, setSelectionExpanded] = useState(false);
+  const [selectionDateFilter, setSelectionDateFilter] = useState<
+    "all" | "last_7_days" | "last_30_days" | "this_year"
+  >("all");
+  const [selectionTagFilter, setSelectionTagFilter] = useState<string>("all");
+  const [selectionSearch, setSelectionSearch] = useState("");
   const [campaignLeads, setCampaignLeads] = useState<AutopilotLead[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isClearingQueue, setIsClearingQueue] = useState(false);
@@ -90,11 +121,13 @@ export function AutopilotSniperView() {
   const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [states, setStates] = useState<Record<string, RunState>>({});
   const [queueStatusFilter, setQueueStatusFilter] = useState<"all" | "queued" | "error">("all");
+  const [queueSearch, setQueueSearch] = useState("");
   const [queueCurrentPage, setQueueCurrentPage] = useState(1);
   const [activePreviewEmail, setActivePreviewEmail] = useState<ActivePreviewEmail | null>(null);
   const [editedSubject, setEditedSubject] = useState("");
   const [editedBody, setEditedBody] = useState("");
   const [isSavingPreview, setIsSavingPreview] = useState(false);
+  const [savingEmailLeadId, setSavingEmailLeadId] = useState<string | null>(null);
 
   const {
     settingsOpen,
@@ -118,6 +151,9 @@ export function AutopilotSniperView() {
         company: row.company,
         url: row.url,
         email: row.email,
+        author: row.author,
+        scheduledAt: row.scheduledAt,
+        createdAt: row.createdAt,
       })),
     );
     setStates(
@@ -129,6 +165,9 @@ export function AutopilotSniperView() {
               {
                 status: "error" as RunStatus,
                 message: row.errorMessage ?? "Chyba ve frontě",
+                queueId: row.queueId,
+                subject: row.subject,
+                htmlBody: row.htmlBody,
               },
             ];
           }
@@ -184,6 +223,7 @@ export function AutopilotSniperView() {
         phone: (lead.phone ?? "").trim(),
         createdAt: lead.createdAt,
         leadStatus: lead.leadStatus,
+        tags: Array.isArray(lead.tags) ? lead.tags : [],
       }));
       setWorkspaceLeads(fresh);
     } catch (e) {
@@ -206,10 +246,6 @@ export function AutopilotSniperView() {
     }
   }, [activeSubTab, isRunning, loadQueue]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [workspaceLeads.length]);
-
   const onlyWithEmail = Boolean(automationSettings.onlyWithEmail);
 
   const setOnlyWithEmail = (checked: boolean) => {
@@ -226,14 +262,67 @@ export function AutopilotSniperView() {
     }
   };
 
-  const leads = useMemo<AutopilotLead[]>(
-    () =>
-      workspaceLeads
-        .filter((lead) => lead.leadStatus === "NEW")
-        .filter((lead) => !onlyWithEmail || Boolean(lead.email?.trim()))
-        .map(({ id, company, url, email }) => ({ id, company, url, email })),
-    [workspaceLeads, onlyWithEmail],
-  );
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [workspaceLeads.length, selectionDateFilter, selectionTagFilter, selectionSearch, onlyWithEmail]);
+
+  const availableSelectionTags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const lead of workspaceLeads) {
+      if (lead.leadStatus !== "NEW") continue;
+      for (const tag of lead.tags ?? []) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+    return LEAD_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
+      tag,
+      count: counts.get(tag) ?? 0,
+      label: leadTagLabel(tag),
+    }));
+  }, [workspaceLeads]);
+
+  const leads = useMemo<AutopilotLead[]>(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    const q = selectionSearch.trim().toLowerCase();
+
+    return workspaceLeads
+      .filter((lead) => lead.leadStatus === "NEW")
+      .filter((lead) => !onlyWithEmail || Boolean(lead.email?.trim()))
+      .filter((lead) => {
+        if (selectionTagFilter === "all") return true;
+        return (lead.tags ?? []).includes(selectionTagFilter);
+      })
+      .filter((lead) => {
+        const created = new Date(lead.createdAt);
+        if (selectionDateFilter === "all") return true;
+        if (selectionDateFilter === "last_7_days") return created >= sevenDaysAgo;
+        if (selectionDateFilter === "last_30_days") return created >= thirtyDaysAgo;
+        if (selectionDateFilter === "this_year") {
+          return created.getFullYear() === now.getFullYear();
+        }
+        return true;
+      })
+      .filter((lead) => {
+        if (!q) return true;
+        return (
+          lead.company.toLowerCase().includes(q) ||
+          lead.url.toLowerCase().includes(q) ||
+          lead.email.toLowerCase().includes(q) ||
+          (lead.tags ?? []).some((tag) => leadTagLabel(tag).toLowerCase().includes(q) || tag.includes(q))
+        );
+      })
+      .map(({ id, company, url, email }) => ({ id, company, url, email }));
+  }, [
+    workspaceLeads,
+    onlyWithEmail,
+    selectionDateFilter,
+    selectionTagFilter,
+    selectionSearch,
+  ]);
 
   useEffect(() => {
     const allowed = new Set(leads.map((lead) => lead.id));
@@ -298,18 +387,25 @@ export function AutopilotSniperView() {
   const progressValue = total > 0 ? (processedCount / total) * 100 : 0;
 
   const filteredCampaignLeads = useMemo(() => {
-    if (queueStatusFilter === "all") return campaignLeads;
+    const query = queueSearch.trim().toLowerCase();
     return campaignLeads.filter((lead) => {
       const status = states[lead.id]?.status ?? "pending";
-      if (queueStatusFilter === "queued") return status === "queued";
-      return status === "error";
+      if (queueStatusFilter === "queued" && status !== "queued") return false;
+      if (queueStatusFilter === "error" && status !== "error") return false;
+      if (!query) return true;
+      return (
+        lead.company.toLowerCase().includes(query) ||
+        lead.email.toLowerCase().includes(query) ||
+        (lead.author ?? "").toLowerCase().includes(query) ||
+        (states[lead.id]?.subject ?? "").toLowerCase().includes(query)
+      );
     });
-  }, [campaignLeads, queueStatusFilter, states]);
+  }, [campaignLeads, queueSearch, queueStatusFilter, states]);
 
   useEffect(() => {
     setQueueCurrentPage(1);
     setActivePreviewEmail(null);
-  }, [queueStatusFilter, filteredCampaignLeads.length]);
+  }, [queueStatusFilter, queueSearch, filteredCampaignLeads.length]);
 
   useEffect(() => {
     setActivePreviewEmail(null);
@@ -402,6 +498,135 @@ export function AutopilotSniperView() {
     }
   };
 
+  const handleSaveRecipientEmail = async (leadId: string, nextEmail: string, previousEmail: string) => {
+    const trimmed = nextEmail.trim();
+    if (trimmed.toLowerCase() === previousEmail.trim().toLowerCase()) {
+      return;
+    }
+
+    setSavingEmailLeadId(leadId);
+    try {
+      const result = await updateAutopilotQueueRecipient({
+        leadId,
+        email: trimmed,
+      });
+      if ("error" in result) {
+        toast.error(result.error);
+        setCampaignLeads((prev) =>
+          prev.map((lead) => (lead.id === leadId ? { ...lead, email: previousEmail } : lead)),
+        );
+        return;
+      }
+
+      setCampaignLeads((prev) =>
+        prev.map((lead) => (lead.id === leadId ? { ...lead, email: result.email } : lead)),
+      );
+
+      if (result.requeued) {
+        toast.success("E-mail uložen — položka je znovu ve frontě k odeslání.");
+        await loadQueue();
+      } else {
+        toast.success("Adresa příjemce byla uložena.");
+      }
+    } catch {
+      toast.error("Nepodařilo se uložit e-mail.");
+      setCampaignLeads((prev) =>
+        prev.map((lead) => (lead.id === leadId ? { ...lead, email: previousEmail } : lead)),
+      );
+    } finally {
+      setSavingEmailLeadId(null);
+    }
+  };
+
+  const renderQueueRecipientCell = (
+    lead: AutopilotLead,
+    state: RunState,
+    variant: "mobile" | "desktop",
+  ) => {
+    const canEdit =
+      (state.status === "queued" || state.status === "error") && Boolean(state.queueId);
+    const isSaving = savingEmailLeadId === lead.id;
+
+    if (!canEdit) {
+      return (
+        <p
+          className={cn(
+            "truncate text-muted-foreground",
+            variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
+          )}
+        >
+          {lead.email || "Bez e-mailu"}
+        </p>
+      );
+    }
+
+    return (
+      <input
+        type="email"
+        key={`${lead.id}:${lead.email}`}
+        defaultValue={lead.email}
+        disabled={isSaving}
+        aria-label={`E-mail příjemce pro ${lead.company}`}
+        title="Změňte e-mail a potvrďte Enterem nebo odkliknutím"
+        onBlur={(event) => {
+          void handleSaveRecipientEmail(lead.id, event.target.value, lead.email);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+          if (event.key === "Escape") {
+            event.currentTarget.value = lead.email;
+            event.currentTarget.blur();
+          }
+        }}
+        className={cn(
+          "w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-foreground outline-none transition-colors",
+          "hover:border-border/70 hover:bg-muted/40 focus:border-blue-500/50 focus:bg-background focus:ring-2 focus:ring-blue-600/20",
+          "disabled:opacity-60",
+          variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
+        )}
+      />
+    );
+  };
+
+  const renderQueueStatusCell = (
+    state: RunState,
+    variant: "mobile" | "desktop",
+  ) => {
+    const meta = STATUS_META[state.status];
+    const errorDetail =
+      state.status === "error"
+        ? state.message?.trim() || "Neznámá chyba — zkuste znovu vygenerovat nebo upravit e-mail."
+        : null;
+
+    if (!errorDetail) {
+      return (
+        <span
+          className={cn(
+            "font-semibold",
+            meta.className,
+            variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
+          )}
+        >
+          {meta.label}
+        </span>
+      );
+    }
+
+    return (
+      <QueueErrorStatus
+        label={meta.label}
+        detail={errorDetail}
+        className={cn(
+          meta.className,
+          variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
+        )}
+      />
+    );
+  };
+
   const handleStart = async () => {
     if (selectedIds.length === 0 || isRunning) return;
 
@@ -426,10 +651,9 @@ export function AutopilotSniperView() {
       const now = new Date();
       scheduledTimes = queue.map(() => now);
     } else {
-      const windows = [
-        { start: automationSettings.window1Start, end: automationSettings.window1End },
-        { start: automationSettings.window2Start, end: automationSettings.window2End },
-      ].filter((window) => window.start.trim() && window.end.trim());
+      const windows = getActiveScheduleWindows(automationSettings).filter(
+        (window) => window.start.trim() && window.end.trim(),
+      );
 
       if (windows.length === 0) {
         toast.error("Nastavte alespoň jedno platné časové okno v nastavení automatizace.");
@@ -485,6 +709,18 @@ export function AutopilotSniperView() {
             subject: result.subject,
             htmlBody: result.htmlBody,
           });
+          setCampaignLeads((prev) =>
+            prev.map((item) =>
+              item.id === lead.id
+                ? {
+                    ...item,
+                    author: result.author,
+                    scheduledAt: result.scheduledAt,
+                    createdAt: result.createdAt,
+                  }
+                : item,
+            ),
+          );
         }
       } catch (e) {
         const message = e instanceof Error ? e.message : "Neočekávaná chyba.";
@@ -593,8 +829,572 @@ export function AutopilotSniperView() {
     }
   };
 
+  const renderSelectionTable = (mode: "compact" | "expanded") => {
+    const expanded = mode === "expanded";
+    const viewportClass = expanded
+      ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
+      : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS;
+    return (
+      <div
+        className={cn(
+          AUTOPILOT_TABLE_CARD_CLASS,
+          "relative z-0 mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4",
+          expanded && "mt-0 sm:mt-0",
+        )}
+      >
+        {/* Mobile list */}
+        <div
+          className={cn(
+            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
+            "md:hidden",
+            viewportClass,
+          )}
+        >
+          {paginatedLeads.map((lead) => {
+            const checked = selectedIds.includes(lead.id);
+            return (
+              <div
+                key={`${mode}-m-${lead.id}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleOne(lead.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleOne(lead.id);
+                  }
+                }}
+                className="flex w-full cursor-pointer items-center gap-3 border-b border-border/40 px-3 py-2.5 text-left active:bg-muted/50"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={() => toggleOne(lead.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                    {lead.email || "Bez e-mailu"}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          {paginatedLeads.length === 0 && (
+            <>
+              {isLoading && <AutopilotListEmptyState>Načítám firmy…</AutopilotListEmptyState>}
+              {!isLoading && loadError && (
+                <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
+                  {loadError}
+                </AutopilotListEmptyState>
+              )}
+              {!isLoading && !loadError && leads.length === 0 && (
+                <AutopilotListEmptyState>
+                  Žádné neoslovené firmy. Přidejte leady v Radaru nebo CRM.
+                </AutopilotListEmptyState>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div
+          className={cn(
+            "hidden md:block",
+            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
+            viewportClass,
+          )}
+        >
+          <table className="w-full table-fixed text-sm">
+            <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
+              <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "w-[44px] bg-white text-center dark:bg-zinc-950",
+                  )}
+                >
+                  <div className="flex h-full items-center justify-center">
+                    <Checkbox
+                      checked={
+                        allPageSelected ? true : somePageSelected ? "indeterminate" : false
+                      }
+                      onCheckedChange={toggleAllOnPage}
+                      disabled={paginatedLeads.length === 0}
+                    />
+                  </div>
+                </th>
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "w-[55%] bg-white dark:bg-zinc-950",
+                  )}
+                >
+                  Firma
+                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "bg-white dark:bg-zinc-950")}>
+                  Kontakt
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedLeads.map((lead) => {
+                const web = leadFullWebsiteUrl(lead.url);
+                const checked = selectedIds.includes(lead.id);
+                return (
+                  <tr
+                    key={`${mode}-d-${lead.id}`}
+                    className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40"
+                    onClick={() => toggleOne(lead.id)}
+                  >
+                    <td
+                      className="px-3 py-3 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex justify-center">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleOne(lead.id)}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="break-words font-semibold text-foreground">
+                        {lead.company}
+                      </p>
+                      <span className="flex items-center break-words text-xs text-muted-foreground">
+                        <Globe className="mr-1 h-3 w-3 shrink-0" />
+                        {lead.url || web || "–"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className={cn(
+                          "flex break-words text-sm",
+                          lead.email ? "text-foreground" : "text-muted-foreground",
+                        )}
+                      >
+                        <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                        {lead.email || "Bez e-mailu"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+              {paginatedLeads.length === 0 && (
+                <>
+                  {isLoading && (
+                    <AutopilotTableEmptyState colSpan={3}>Načítám firmy…</AutopilotTableEmptyState>
+                  )}
+                  {!isLoading && loadError && (
+                    <AutopilotTableEmptyState colSpan={3} className="text-rose-600 dark:text-rose-400">
+                      {loadError}
+                    </AutopilotTableEmptyState>
+                  )}
+                  {!isLoading && !loadError && leads.length === 0 && (
+                    <AutopilotTableEmptyState colSpan={3}>
+                      Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo CRM.
+                    </AutopilotTableEmptyState>
+                  )}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <AutopilotTablePagination
+          shownFrom={shownFrom}
+          shownTo={shownTo}
+          totalItems={totalItems}
+          safePage={safePage}
+          totalPages={totalPages}
+          selectedCount={selectedIds.length}
+          onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        />
+      </div>
+    );
+  };
+
+  const renderQueuePanel = (mode: "compact" | "expanded") => {
+    const expanded = mode === "expanded";
+
+    if (isQueueLoading && campaignLeads.length === 0) {
+      return (
+        <div
+          className={cn(
+            "shrink-0 rounded-xl border border-border/60 bg-card shadow-sm",
+            expanded
+              ? "flex min-h-0 flex-1 items-center justify-center"
+              : "mt-3 sm:mt-6 sm:rounded-2xl",
+          )}
+        >
+          <AutopilotListEmptyState>Načítám naplánovanou frontu…</AutopilotListEmptyState>
+        </div>
+      );
+    }
+
+    if (campaignLeads.length === 0) {
+      return (
+        <div
+          className={cn(
+            "shrink-0 rounded-xl border border-border/60 bg-card shadow-sm",
+            expanded
+              ? "flex min-h-0 flex-1 items-center justify-center"
+              : "mt-3 sm:mt-6 sm:rounded-2xl",
+          )}
+        >
+          <AutopilotListEmptyState>
+            Zatím nemáte naplánovanou frontu. Označ firmy a klikni na „Vygenerovat a naplánovat“.
+          </AutopilotListEmptyState>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div
+          className={cn(
+            "shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm",
+            !expanded && "mt-3 sm:mt-6",
+          )}
+        >
+          <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="flex shrink-0 items-center gap-2 text-xs font-semibold leading-none text-foreground sm:text-sm">
+                {isRunning ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                )}
+                {isRunning ? "Generuji…" : "Fronta připravena"}
+              </span>
+              <span className="shrink-0 text-[11px] font-medium leading-none text-emerald-600 sm:text-xs">
+                ✓ {queuedCount}
+              </span>
+              <span className="shrink-0 text-[11px] font-medium leading-none text-rose-600 sm:text-xs">
+                ✕ {errorCount}
+              </span>
+              <span className="text-[11px] leading-none text-muted-foreground sm:text-xs">
+                {processedCount}/{total}
+              </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              {!expanded && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setQueueExpanded(true)}
+                  className="inline-flex h-7 w-fit items-center px-2.5 py-0 text-xs leading-none"
+                >
+                  <Maximize2 className="mr-1 h-3 w-3" />
+                  Zvětšit
+                </Button>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isRunning || isClearingQueue}
+                    className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    {isClearingQueue ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-1 h-3 w-3" />
+                    )}
+                    Vyčistit
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="border bg-white shadow-md dark:bg-zinc-950">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tato akce nenávratně smaže všechny naplánované e-maily čekající na odeslání a
+                      vymaže historii logů.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => void handleClearQueue()}
+                      className="bg-red-600 text-white hover:bg-red-700"
+                    >
+                      Smazat frontu
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+          <Progress value={progressValue} className="h-1 rounded-none" />
+        </div>
+
+        <div
+          className={cn(
+            "rounded-xl border border-border/60 bg-card shadow-sm",
+            expanded
+              ? "mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
+              : "mt-3 shrink-0 overflow-hidden sm:mt-4",
+          )}
+        >
+          <div className="shrink-0 px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3">
+            <div className="mb-2 flex flex-col gap-2 sm:mb-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-semibold text-foreground sm:text-sm">Fronta k odeslání</p>
+              <div className="relative min-w-0 sm:w-56">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={queueSearch}
+                  onChange={(event) => setQueueSearch(event.target.value)}
+                  placeholder="Hledat firmu, e-mail, autora…"
+                  className="h-8 pl-8 text-xs"
+                />
+              </div>
+            </div>
+            <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:flex-wrap sm:items-center sm:gap-4">
+              {queueFilterTabs.map(({ id, label, count }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setQueueStatusFilter(id)}
+                  className={cn(
+                    "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
+                    queueStatusFilter === id
+                      ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                    {count}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+              E-maily ve sloupci Kontakt můžete upravit kliknutím — platí, dokud se zpráva
+              neodešle. U chyby po opravě e-mailu se položka znovu zařadí do fronty.
+            </p>
+          </div>
+
+          <div
+            className={cn(
+              "scrollbar-hide overflow-y-auto md:hidden",
+              expanded ? "min-h-0 flex-1" : "max-h-[min(35dvh,190px)] min-h-[140px]",
+            )}
+          >
+            {paginatedQueueLeads.map((lead) => {
+              const state = states[lead.id] ?? { status: "pending" as RunStatus };
+              const canPreview =
+                state.status === "queued" && Boolean(state.subject && state.queueId);
+
+              return (
+                <div
+                  key={`${mode}-m-${lead.id}`}
+                  className="flex items-center gap-3 border-b border-border/40 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-foreground">
+                      {lead.company}
+                    </p>
+                    {renderQueueRecipientCell(lead, state, "mobile")}
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      {[
+                        lead.author || null,
+                        lead.scheduledAt
+                          ? `odeslat ${formatSchedulePreview(new Date(lead.scheduledAt))}`
+                          : null,
+                        lead.createdAt
+                          ? `vytvořeno ${formatQueueDateTime(lead.createdAt)}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || "—"}
+                    </p>
+                    {renderQueueStatusCell(state, "mobile")}
+                  </div>
+                  {canPreview ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openEmailPreview({
+                          leadId: lead.id,
+                          queueId: state.queueId!,
+                          companyName: lead.company,
+                          subject: state.subject!,
+                          htmlBody: state.htmlBody ?? "",
+                        })
+                      }
+                      className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Náhled
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
+            {paginatedQueueLeads.length === 0 && (
+              <AutopilotListEmptyState className="min-h-[140px] py-6 text-xs">
+                {queueSearch.trim()
+                  ? "Žádné výsledky pro hledaný výraz."
+                  : queueStatusFilter === "all"
+                    ? "Fronta je prázdná."
+                    : queueStatusFilter === "queued"
+                      ? "Zatím žádné potvrzené e-maily ve frontě."
+                      : "Zatím žádné chyby."}
+              </AutopilotListEmptyState>
+            )}
+          </div>
+
+          <div
+            className={cn(
+              "hidden md:block",
+              expanded
+                ? "min-h-0 flex-1 overflow-auto"
+                : cn(
+                    AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
+                    "h-[190px] min-h-[190px] max-h-[190px] overflow-x-auto overflow-y-auto",
+                  ),
+            )}
+          >
+            <table
+              className={cn(
+                "w-full text-sm",
+                expanded ? "min-w-[1100px] table-auto" : "min-w-[980px] table-fixed",
+              )}
+            >
+              <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
+                <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  <th className="sticky top-0 z-10 h-10 min-w-[180px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Firma
+                  </th>
+                  <th
+                    className="sticky top-0 z-10 h-10 min-w-[180px] bg-white px-3 py-2 align-middle dark:bg-zinc-950"
+                    title="E-mail můžete upravit, dokud se zpráva neodešle"
+                  >
+                    Kontakt
+                    <span className="ml-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
+                      (upravit)
+                    </span>
+                  </th>
+                  <th className="sticky top-0 z-10 h-10 min-w-[72px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Autor
+                  </th>
+                  <th className="sticky top-0 z-10 h-10 min-w-[120px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Odeslat
+                  </th>
+                  <th className="sticky top-0 z-10 h-10 min-w-[120px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Vytvořeno
+                  </th>
+                  <th className="sticky top-0 z-10 h-10 min-w-[140px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Stav
+                  </th>
+                  <th className="sticky top-0 z-10 h-10 min-w-[110px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                    Náhled
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedQueueLeads.map((lead) => {
+                  const state = states[lead.id] ?? { status: "pending" as RunStatus };
+                  const canPreview =
+                    state.status === "queued" && Boolean(state.subject && state.queueId);
+
+                  return (
+                    <tr key={`${mode}-d-${lead.id}`} className="border-b border-border/40">
+                      <td className="px-3 py-2.5">
+                        <p className="max-w-[280px] truncate font-semibold text-foreground">
+                          {lead.company}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {renderQueueRecipientCell(lead, state, "desktop")}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p className="whitespace-nowrap text-xs text-foreground">
+                          {lead.author || "—"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p className="whitespace-nowrap text-xs text-muted-foreground">
+                          {lead.scheduledAt
+                            ? formatSchedulePreview(new Date(lead.scheduledAt))
+                            : "—"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p className="whitespace-nowrap text-xs text-muted-foreground">
+                          {formatQueueDateTime(lead.createdAt)}
+                        </p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {renderQueueStatusCell(state, "desktop")}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {canPreview ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openEmailPreview({
+                                leadId: lead.id,
+                                queueId: state.queueId!,
+                                companyName: lead.company,
+                                subject: state.subject!,
+                                htmlBody: state.htmlBody ?? "",
+                              })
+                            }
+                            className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                          >
+                            <Eye className="h-4 w-4 shrink-0" />
+                            Náhled
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {paginatedQueueLeads.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-3 py-6 text-center text-xs text-muted-foreground"
+                    >
+                      {queueSearch.trim()
+                        ? "Žádné výsledky pro hledaný výraz."
+                        : queueStatusFilter === "all"
+                          ? "Fronta je prázdná."
+                          : queueStatusFilter === "queued"
+                            ? "Zatím žádné potvrzené e-maily ve frontě."
+                            : "Zatím žádné chyby."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <AutopilotTablePagination
+            className="shrink-0 rounded-b-xl border-gray-100 bg-white p-4 dark:border-border/60 dark:bg-card sm:flex-row sm:items-center sm:justify-between sm:px-4"
+            shownFrom={queueShownFrom}
+            shownTo={queueShownTo}
+            totalItems={queueTotalItems}
+            safePage={queueSafePage}
+            totalPages={queueTotalPages}
+            onPrevious={() => setQueueCurrentPage((p) => Math.max(1, p - 1))}
+            onNext={() => setQueueCurrentPage((p) => Math.min(queueTotalPages, p + 1))}
+          />
+        </div>
+      </>
+    );
+  };
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden">
       <AutopilotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -638,7 +1438,10 @@ export function AutopilotSniperView() {
       <div className="mt-3 flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 pb-0 sm:mt-6 sm:gap-5">
         <button
           type="button"
-          onClick={() => setActiveSubTab("selection")}
+          onClick={() => {
+            setQueueExpanded(false);
+            setActiveSubTab("selection");
+          }}
           className={cn(
             "-mb-px shrink-0 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:pb-2.5 sm:text-sm",
             activeSubTab === "selection"
@@ -669,50 +1472,51 @@ export function AutopilotSniperView() {
 
       {activeSubTab === "selection" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="mt-3 flex shrink-0 flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 shadow-sm sm:mt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">
-                {selectedIds.length > 0
-                  ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
-                  : "Označ firmy k oslovení"}
-              </p>
-              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
-                Odešlou se jen vybrané. Nejdřív se vygenerují e-maily, odeslání pak podle dnů a
-                oken v nastavení{featureEnabled ? "" : " (zapni cron Zapnout)"}
-                .
-              </p>
-              <label
-                htmlFor="sniper-only-email"
-                className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/30 px-3 py-2 sm:max-w-sm"
-              >
-                <span className="text-[12px] font-medium text-foreground">
-                  Pouze firmy s e-mailem
-                </span>
-                <Switch
-                  id="sniper-only-email"
-                  checked={onlyWithEmail}
-                  onCheckedChange={setOnlyWithEmail}
-                  className="shrink-0 data-[state=checked]:bg-blue-600"
-                />
-              </label>
-            </div>
+          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2.5 shadow-sm sm:mt-4 sm:gap-3 sm:px-4">
+            <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+              {selectedIds.length > 0
+                ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
+                : "Označ firmy k oslovení"}
+            </p>
+            <label
+              htmlFor="sniper-only-email"
+              className="flex shrink-0 cursor-pointer items-center gap-2 text-[11px] font-medium text-muted-foreground"
+            >
+              <span className="hidden sm:inline">Jen s e-mailem</span>
+              <span className="sm:hidden">E-mail</span>
+              <Switch
+                id="sniper-only-email"
+                checked={onlyWithEmail}
+                onCheckedChange={setOnlyWithEmail}
+                className="shrink-0 scale-90 data-[state=checked]:bg-blue-600"
+              />
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectionExpanded(true)}
+              className="h-8 w-8 shrink-0 rounded-lg p-0"
+              title="Zvětšit výběr firem"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
             <Button
               type="button"
               disabled={selectedIds.length === 0 || isRunning}
               onClick={() => void handleStart()}
-              className="h-10 w-full shrink-0 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
+              className="h-8 shrink-0 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
             >
               {isRunning ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                   Generuji…
                 </>
               ) : (
                 <>
-                  <Wand2 className="mr-2 h-4 w-4" />
+                  <Wand2 className="mr-1.5 h-3.5 w-3.5" />
                   {selectedIds.length > 0
-                    ? `Vygenerovat a naplánovat (${selectedIds.length})`
-                    : "Vygenerovat a naplánovat"}
+                    ? `Naplánovat (${selectedIds.length})`
+                    : "Naplánovat"}
                 </>
               )}
             </Button>
@@ -731,436 +1535,89 @@ export function AutopilotSniperView() {
             </div>
           )}
 
-          <div
-            className={cn(
-              AUTOPILOT_TABLE_CARD_CLASS,
-              "relative z-0 mt-3 min-h-0 flex-1 sm:mt-4",
-            )}
-          >
-            {/* Mobile list */}
-            <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto md:hidden">
-              {paginatedLeads.map((lead) => {
-                const checked = selectedIds.includes(lead.id);
-                return (
-                  <div
-                    key={lead.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => toggleOne(lead.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleOne(lead.id);
-                      }
-                    }}
-                    className="flex w-full cursor-pointer items-center gap-3 border-b border-border/40 px-3 py-2.5 text-left active:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={checked}
-                      onCheckedChange={() => toggleOne(lead.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
-                      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                        {lead.email || "Bez e-mailu"}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              {paginatedLeads.length === 0 && (
-                <>
-                  {isLoading && <AutopilotListEmptyState>Načítám firmy…</AutopilotListEmptyState>}
-                  {!isLoading && loadError && (
-                    <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
-                      {loadError}
-                    </AutopilotListEmptyState>
-                  )}
-                  {!isLoading && !loadError && leads.length === 0 && (
-                    <AutopilotListEmptyState>
-                      Žádné neoslovené firmy. Přidejte leady v Radaru nebo CRM.
-                    </AutopilotListEmptyState>
-                  )}
-                </>
-              )}
+          {selectionExpanded ? (
+            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
+              Výběr firem je otevřený ve zvětšeném okně.
             </div>
-
-            {/* Desktop table */}
-            <div
-              className={cn(
-                AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-                "hidden min-h-0 flex-1 overflow-x-auto overflow-y-auto md:block",
-              )}
-            >
-              <table className="w-full table-fixed text-sm">
-                <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-                  <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    <th
-                      className={cn(
-                        AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                        "w-[44px] bg-white text-center dark:bg-zinc-950",
-                      )}
-                    >
-                      <div className="flex h-full items-center justify-center">
-                        <Checkbox
-                          checked={
-                            allPageSelected ? true : somePageSelected ? "indeterminate" : false
-                          }
-                          onCheckedChange={toggleAllOnPage}
-                          disabled={paginatedLeads.length === 0}
-                        />
-                      </div>
-                    </th>
-                    <th
-                      className={cn(
-                        AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                        "w-[55%] bg-white dark:bg-zinc-950",
-                      )}
-                    >
-                      Firma
-                    </th>
-                    <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "bg-white dark:bg-zinc-950")}>
-                      Kontakt
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedLeads.map((lead) => {
-                    const web = leadFullWebsiteUrl(lead.url);
-                    const checked = selectedIds.includes(lead.id);
-                    return (
-                      <tr
-                        key={lead.id}
-                        className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40"
-                        onClick={() => toggleOne(lead.id)}
-                      >
-                        <td
-                          className="px-3 py-3 text-center"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex justify-center">
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={() => toggleOne(lead.id)}
-                            />
-                          </div>
-                        </td>
-                        <td className="px-3 py-3">
-                          <p className="break-words font-semibold text-foreground">
-                            {lead.company}
-                          </p>
-                          <span className="flex items-center break-words text-xs text-muted-foreground">
-                            <Globe className="mr-1 h-3 w-3 shrink-0" />
-                            {lead.url || web || "–"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3">
-                          <span
-                            className={cn(
-                              "flex break-words text-sm",
-                              lead.email ? "text-foreground" : "text-muted-foreground",
-                            )}
-                          >
-                            <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                            {lead.email || "Bez e-mailu"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {paginatedLeads.length === 0 && (
-                    <>
-                      {isLoading && (
-                        <AutopilotTableEmptyState colSpan={3}>Načítám firmy…</AutopilotTableEmptyState>
-                      )}
-                      {!isLoading && loadError && (
-                        <AutopilotTableEmptyState colSpan={3} className="text-rose-600 dark:text-rose-400">
-                          {loadError}
-                        </AutopilotTableEmptyState>
-                      )}
-                      {!isLoading && !loadError && leads.length === 0 && (
-                        <AutopilotTableEmptyState colSpan={3}>
-                          Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo CRM.
-                        </AutopilotTableEmptyState>
-                      )}
-                    </>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <AutopilotTablePagination
-              shownFrom={shownFrom}
-              shownTo={shownTo}
-              totalItems={totalItems}
-              safePage={safePage}
-              totalPages={totalPages}
-              selectedCount={selectedIds.length}
-              onPrevious={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            />
-          </div>
+          ) : (
+            renderSelectionTable("compact")
+          )}
         </div>
       ) : (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {isQueueLoading && campaignLeads.length === 0 ? (
-            <div className="mt-3 shrink-0 rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6 sm:rounded-2xl">
-              <AutopilotListEmptyState>Načítám naplánovanou frontu…</AutopilotListEmptyState>
-            </div>
-          ) : campaignLeads.length === 0 ? (
-            <div className="mt-3 shrink-0 rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6 sm:rounded-2xl">
-              <AutopilotListEmptyState>
-                Zatím nemáte naplánovanou frontu. Označ firmy a klikni na „Vygenerovat a
-                naplánovat“.
-              </AutopilotListEmptyState>
+          {queueExpanded ? (
+            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
+              Fronta je otevřená ve zvětšeném okně.
             </div>
           ) : (
-            <>
-              <div className="mt-3 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-6">
-                <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="flex shrink-0 items-center gap-2 text-xs font-semibold leading-none text-foreground sm:text-sm">
-                      {isRunning ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                      ) : (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                      )}
-                      {isRunning ? "Generuji…" : "Fronta připravena"}
-                    </span>
-                    <span className="shrink-0 text-[11px] font-medium leading-none text-emerald-600 sm:text-xs">
-                      ✓ {queuedCount}
-                    </span>
-                    <span className="shrink-0 text-[11px] font-medium leading-none text-rose-600 sm:text-xs">
-                      ✕ {errorCount}
-                    </span>
-                    <span className="text-[11px] leading-none text-muted-foreground sm:text-xs">
-                      {processedCount}/{total}
-                    </span>
-                  </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={isRunning || isClearingQueue}
-                        className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
-                      >
-                        {isClearingQueue ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="mr-1 h-3 w-3" />
-                        )}
-                        Vyčistit
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="border bg-white shadow-md dark:bg-zinc-950">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tato akce nenávratně smaže všechny naplánované e-maily čekající na odeslání a
-                          vymaže historii logů.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => void handleClearQueue()}
-                          className="bg-red-600 text-white hover:bg-red-700"
-                        >
-                          Smazat frontu
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-                <Progress value={progressValue} className="h-1 rounded-none" />
-              </div>
-
-              <div className="mt-3 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-4">
-                <div className="px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3">
-                  <p className="mb-2 text-xs font-semibold text-foreground sm:mb-3 sm:text-sm">
-                    Fronta k odeslání
-                  </p>
-
-                  <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:flex-wrap sm:items-center sm:gap-4">
-                    {queueFilterTabs.map(({ id, label, count }) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setQueueStatusFilter(id)}
-                        className={cn(
-                          "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
-                          queueStatusFilter === id
-                            ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                            : "border-transparent text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {label}
-                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                          {count}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Mobile list */}
-                <div className="scrollbar-hide max-h-[min(35dvh,190px)] min-h-[140px] overflow-y-auto md:hidden">
-                  {paginatedQueueLeads.map((lead) => {
-                    const state = states[lead.id] ?? { status: "pending" as RunStatus };
-                    const meta = STATUS_META[state.status];
-                    const canPreview =
-                      state.status === "queued" && Boolean(state.subject && state.queueId);
-
-                    return (
-                      <div
-                        key={lead.id}
-                        className="flex items-center gap-3 border-b border-border/40 px-3 py-2.5"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-[14px] font-semibold text-foreground">
-                            {lead.company}
-                          </p>
-                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                            {lead.email || "Bez e-mailu"}
-                          </p>
-                          <p className={cn("mt-0.5 text-[11px] font-semibold", meta.className)}>
-                            {meta.label}
-                          </p>
-                        </div>
-                        {canPreview ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openEmailPreview({
-                                leadId: lead.id,
-                                queueId: state.queueId!,
-                                companyName: lead.company,
-                                subject: state.subject!,
-                                htmlBody: state.htmlBody ?? "",
-                              })
-                            }
-                            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                            Náhled
-                          </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                  {paginatedQueueLeads.length === 0 && (
-                    <AutopilotListEmptyState className="min-h-[140px] py-6 text-xs">
-                      {queueStatusFilter === "all"
-                        ? "Fronta je prázdná."
-                        : queueStatusFilter === "queued"
-                          ? "Zatím žádné potvrzené e-maily ve frontě."
-                          : "Zatím žádné chyby."}
-                    </AutopilotListEmptyState>
-                  )}
-                </div>
-
-                {/* Desktop table */}
-                <div className="hidden h-[190px] min-h-[190px] max-h-[190px] overflow-y-auto md:block [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <table className="w-full table-fixed text-sm">
-                    <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-                      <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                        <th className="sticky top-0 z-10 h-10 w-[34%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
-                          Firma
-                        </th>
-                        <th className="sticky top-0 z-10 h-10 w-[24%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
-                          Kontakt
-                        </th>
-                        <th className="sticky top-0 z-10 h-10 w-[22%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
-                          Stav
-                        </th>
-                        <th className="sticky top-0 z-10 h-10 w-[20%] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
-                          Náhled
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedQueueLeads.map((lead) => {
-                        const state = states[lead.id] ?? { status: "pending" as RunStatus };
-                        const meta = STATUS_META[state.status];
-                        const canPreview =
-                          state.status === "queued" && Boolean(state.subject && state.queueId);
-
-                        return (
-                          <tr key={lead.id} className="border-b border-border/40">
-                            <td className="px-3 py-2.5">
-                              <p className="truncate font-semibold text-foreground">{lead.company}</p>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <p className="truncate text-xs text-muted-foreground">
-                                {lead.email || "Bez e-mailu"}
-                              </p>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <span className={cn("text-xs font-semibold", meta.className)}>
-                                {meta.label}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              {canPreview ? (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openEmailPreview({
-                                      leadId: lead.id,
-                                      queueId: state.queueId!,
-                                      companyName: lead.company,
-                                      subject: state.subject!,
-                                      htmlBody: state.htmlBody ?? "",
-                                    })
-                                  }
-                                  className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                                >
-                                  <Eye className="h-4 w-4 shrink-0" />
-                                  Zobrazit e-mail
-                                </button>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {paginatedQueueLeads.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="px-3 py-6 text-center text-xs text-muted-foreground"
-                          >
-                            {queueStatusFilter === "all"
-                              ? "Fronta je prázdná."
-                              : queueStatusFilter === "queued"
-                                ? "Zatím žádné potvrzené e-maily ve frontě."
-                                : "Zatím žádné chyby."}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                <AutopilotTablePagination
-                  className="rounded-b-xl border-gray-100 bg-white p-4 dark:border-border/60 dark:bg-card sm:flex-row sm:items-center sm:justify-between sm:px-4"
-                  shownFrom={queueShownFrom}
-                  shownTo={queueShownTo}
-                  totalItems={queueTotalItems}
-                  safePage={queueSafePage}
-                  totalPages={queueTotalPages}
-                  onPrevious={() => setQueueCurrentPage((p) => Math.max(1, p - 1))}
-                  onNext={() => setQueueCurrentPage((p) => Math.min(queueTotalPages, p + 1))}
-                />
-              </div>
-            </>
+            renderQueuePanel("compact")
           )}
         </div>
       )}
+
+      <ExpandOverlay
+        open={selectionExpanded}
+        onClose={() => setSelectionExpanded(false)}
+        title="Výběr firem k oslovení"
+        description={
+          selectedIds.length > 0
+            ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
+            : "Označ firmy k oslovení"
+        }
+      >
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+          <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
+            <div className="relative min-w-0 flex-1 sm:min-w-[180px]">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={selectionSearch}
+                onChange={(e) => setSelectionSearch(e.target.value)}
+                placeholder="Hledat firmu…"
+                className="h-9 rounded-lg border-border bg-card py-0 pl-8 text-xs shadow-none"
+              />
+            </div>
+            <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
+              <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[180px]">
+                <SelectValue placeholder="Obor / tag" />
+              </SelectTrigger>
+              <SelectContent className="z-[220]">
+                <SelectItem value="all">Všechny obory</SelectItem>
+                {availableSelectionTags.map(({ tag, label, count }) => (
+                  <SelectItem key={tag} value={tag}>
+                    {label} ({count})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectionDateFilter}
+              onValueChange={(v) =>
+                setSelectionDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")
+              }
+            >
+              <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[170px]">
+                <SelectValue placeholder="Datum" />
+              </SelectTrigger>
+              <SelectContent className="z-[220]">
+                <SelectItem value="all">Všechna data</SelectItem>
+                <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
+                <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
+                <SelectItem value="this_year">Tento rok</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">{renderSelectionTable("expanded")}</div>
+        </div>
+      </ExpandOverlay>
+
+      <ExpandOverlay
+        open={queueExpanded}
+        onClose={() => setQueueExpanded(false)}
+        title="Fronta k odeslání"
+        description="Rozšířený náhled fronty. Po zavření zůstane kompaktní fronta v záložce."
+      >
+        {renderQueuePanel("expanded")}
+      </ExpandOverlay>
 
       <Dialog
         open={activePreviewEmail !== null}
@@ -1237,5 +1694,59 @@ export function AutopilotSniperView() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function QueueErrorStatus({
+  label,
+  detail,
+  className,
+}: {
+  label: string;
+  detail: string;
+  className?: string;
+}) {
+  const [tip, setTip] = useState<{ top: number; left: number } | null>(null);
+
+  return (
+    <>
+      <span
+        className={cn(
+          "inline-flex max-w-full cursor-default items-center gap-1 font-bold",
+          className,
+        )}
+        onMouseEnter={(event) => {
+          const rect = event.currentTarget.getBoundingClientRect();
+          const width = 288;
+          const left = Math.min(
+            Math.max(8, rect.left),
+            window.innerWidth - width - 8,
+          );
+          const top = rect.bottom + 8;
+          setTip({ top, left });
+        }}
+        onMouseLeave={() => setTip(null)}
+      >
+        <span>{label}</span>
+        <Info className="h-3 w-3 shrink-0 opacity-80" />
+      </span>
+      {tip &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{ top: tip.top, left: tip.left }}
+            className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-rose-200 bg-white p-3 text-left shadow-lg dark:border-rose-900/60 dark:bg-zinc-950"
+          >
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400">
+              Důvod chyby
+            </p>
+            <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-normal leading-relaxed text-foreground">
+              {detail}
+            </p>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
