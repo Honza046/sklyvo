@@ -92,7 +92,7 @@ const SNIPER_HELP_SECTIONS = [
   },
   {
     title: "Cílová URL adresa",
-    description: "Web klienta, který AI projde — zjistí obor, nabídku a na co navázat.",
+    description: "Web klienta, který AI projde. Zjistí obor, nabídku a na co navázat.",
   },
   {
     title: "Přidat PDF kontext",
@@ -922,7 +922,7 @@ function SniperContent() {
                         </Select>
                       </div>
                       <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                        Segment (obor klienta) se určí automaticky z webu — už se nevybírá ručně, ať
+                        Segment (obor klienta) se určí automaticky z webu. Už se nevybírá ručně, ať
                         e-mail sedí na reálnou firmu.
                       </p>
                     </div>

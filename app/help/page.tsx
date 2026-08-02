@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/context/LanguageContext";
 import { getHelpFaqs } from "@/lib/i18n/help-faqs";
+import { restartOnboardingTour } from "@/app/actions/onboarding-tour";
+import { toast } from "sonner";
 import { 
   LifeBuoy, 
   Search, 
@@ -17,6 +20,8 @@ import {
   BookOpen,
   X,
   Rocket,
+  PlayCircle,
+  Loader2,
 } from "lucide-react";
 import {
   Accordion,
@@ -27,9 +32,11 @@ import {
 
 export default function HelpCenterPage() {
   const { t, language } = useLanguage();
+  const router = useRouter();
   const allFAQs = getHelpFaqs(language);
   const [activeModal, setActiveModal] = useState<"sniper" | "radar" | "crm" | "autopilot" | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRestartingTour, setIsRestartingTour] = useState(false);
 
   const filteredFAQs = allFAQs.filter(
     (faq) =>
@@ -41,11 +48,32 @@ export default function HelpCenterPage() {
   const displayedFAQs = trimmedSearch === "" ? allFAQs.slice(0, 4) : filteredFAQs;
   const showEmptySearch = trimmedSearch !== "" && filteredFAQs.length === 0;
 
+  const handleRestartTour = async () => {
+    setIsRestartingTour(true);
+    try {
+      const result = await restartOnboardingTour();
+      if ("error" in result && result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("venegard-tour-preview", "1");
+      }
+      toast.success("Spouštím prohlídku…");
+      router.push("/?tour=1");
+    } finally {
+      setIsRestartingTour(false);
+    }
+  };
+
   return (
-      <div className="flex h-full w-full flex-col items-center justify-start pb-8 pt-0 md:pb-12">
+      <div className="flex min-h-full w-full flex-col items-center justify-start pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0 md:pb-12">
         
         {/* HLAVIČKA A VYHLEDÁVÁNÍ */}
-        <div className="mx-auto mb-4 w-full max-w-2xl space-y-3 text-center md:mb-8 md:space-y-6">
+        <div
+          data-tour="onboarding-help-page"
+          className="mx-auto mb-4 w-full max-w-2xl space-y-3 text-center md:mb-8 md:space-y-6"
+        >
           <div className="space-y-1 md:space-y-2">
             <div className="mb-1 flex items-center justify-center gap-2 md:mb-2 md:gap-3">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-blue-600 shadow-sm dark:border-blue-800/50 dark:bg-blue-900/30 dark:text-blue-400 md:rounded-2xl md:p-3">
@@ -207,7 +235,7 @@ export default function HelpCenterPage() {
           </div>
 
           {/* KONTAKT NA PODPORU */}
-          <div className="mt-4 flex flex-col items-center justify-center rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-center dark:border-blue-800/60 dark:bg-blue-900/10 sm:mt-8 sm:rounded-2xl sm:p-8">
+          <div className="mt-4 mb-2 flex flex-col items-center justify-center rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-center dark:border-blue-800/60 dark:bg-blue-900/10 sm:mt-8 sm:mb-0 sm:rounded-2xl sm:p-8">
             <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-800/50 dark:text-blue-400 sm:mb-4 sm:h-12 sm:w-12">
               <MessageCircle className="h-4 w-4 sm:h-6 sm:w-6" />
             </div>
@@ -227,6 +255,20 @@ export default function HelpCenterPage() {
                 </a>
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isRestartingTour}
+              onClick={() => void handleRestartTour()}
+              className="mt-3 h-9 text-xs font-medium text-blue-700 hover:bg-blue-100/80 hover:text-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/40"
+            >
+              {isRestartingTour ? (
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
+              )}
+              Spustit UI prohlídku znovu
+            </Button>
           </div>
 
         </div>

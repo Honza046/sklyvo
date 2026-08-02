@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
@@ -94,6 +94,9 @@ export function DashboardShell({
     subscriptionPeriodEndISO: string | null;
   } | null>(null);
   const [onboardingTourCompleted, setOnboardingTourCompleted] = useState<boolean | null>(null);
+  const [tourPreview, setTourPreview] = useState(false);
+  /** Po zavření křížkem / Hotovo — nespouštět tour znovu v téže session (preview→live). */
+  const [tourSuppressed, setTourSuppressed] = useState(false);
 
   const displayName = sessionUser?.name?.trim();
   const displayEmail = sessionUser?.email?.trim();
@@ -169,6 +172,27 @@ export function DashboardShell({
   }, [loadWorkspaceSession]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncTourPreview = () => {
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get("tour") === "1";
+      const fromStorage =
+        window.sessionStorage.getItem("venegard-tour-preview") === "1";
+      if (fromQuery) {
+        window.sessionStorage.setItem("venegard-tour-preview", "1");
+      }
+      const wantsPreview = fromQuery || fromStorage;
+      if (wantsPreview) {
+        setTourSuppressed(false);
+      }
+      setTourPreview(wantsPreview);
+    };
+    syncTourPreview();
+    window.addEventListener("popstate", syncTourPreview);
+    return () => window.removeEventListener("popstate", syncTourPreview);
+  }, [pathname]);
+
+  useEffect(() => {
     const handleAvatarUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<string>;
       const nextAvatarUrl = customEvent.detail;
@@ -196,6 +220,21 @@ export function DashboardShell({
   const handleOnboardingTourCompleted = useCallback(() => {
     setOnboardingTourCompleted(true);
   }, []);
+
+  const tourPreviewRef = useRef(false);
+  tourPreviewRef.current = tourPreview;
+
+  const handleTourFinished = useCallback(() => {
+    setTourSuppressed(true);
+    if (tourPreviewRef.current) {
+      setTourPreview(false);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem("venegard-tour-preview");
+      }
+      return;
+    }
+    handleOnboardingTourCompleted();
+  }, [handleOnboardingTourCompleted]);
 
   const hasSessionData = !isSessionLoading && !!sessionUser && !!subscriptionState;
 
@@ -286,15 +325,14 @@ export function DashboardShell({
       
       {/* BOČNÍ PANEL */}
       <aside
-        data-tour="onboarding-sidebar"
         className="hidden h-full w-64 flex-shrink-0 overflow-hidden border-r bg-background md:flex md:flex-col"
       >
         
         {/* LOGO → Přehled */}
-        <div className="flex h-16 shrink-0 items-center px-6">
+        <div className="flex h-16 shrink-0 items-center px-4 pl-6">
           <Link
             href="/"
-            className="-mx-2 flex items-center rounded-xl px-2 py-2 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500/30"
+            className="-mx-2 flex min-w-0 items-center rounded-xl px-2 py-2 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500/30"
             aria-label={t("nav.overview")}
           >
             <VenegardWordmark markSize={30} />
@@ -312,6 +350,7 @@ export function DashboardShell({
               <Link
                 key={href}
                 href={href}
+                data-tour="onboarding-overview"
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                   active
@@ -333,6 +372,7 @@ export function DashboardShell({
           <div className="flex flex-col gap-0.5">
             <Link
               href="/autopilot/radar"
+              data-tour="onboarding-autopilot"
               className={cn(
                 "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                 isAutopilotActive
@@ -394,7 +434,9 @@ export function DashboardShell({
                     ? "onboarding-radar"
                     : href === "/sniper"
                       ? "onboarding-sniper"
-                      : undefined
+                      : href === "/crm"
+                        ? "onboarding-crm"
+                        : undefined
                 }
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
@@ -421,6 +463,7 @@ export function DashboardShell({
           {/* Centrum nápovědy */}
           <Link
             href="/help"
+            data-tour="onboarding-help"
             className={cn(
               "flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
               activeHref === "/help" 
@@ -590,6 +633,7 @@ export function DashboardShell({
 
       {/* HLAVNÍ OBSAHOVÁ ČÁST */}
       <div
+        data-dashboard-scroll={!lockMainScroll ? "" : undefined}
         className={cn(
           "relative flex min-w-0 flex-1 flex-col",
           lockMainScroll
@@ -619,9 +663,14 @@ export function DashboardShell({
         <MobileBottomNav activeHref={activeHref} />
       </div>
       <VenegardOnboardingTour
-        active={hasSessionData && onboardingTourCompleted === false}
+        active={
+          hasSessionData &&
+          !tourSuppressed &&
+          (tourPreview || onboardingTourCompleted === false)
+        }
+        preview={tourPreview}
         userId={sessionUser?.id ?? null}
-        onCompleted={handleOnboardingTourCompleted}
+        onCompleted={handleTourFinished}
       />
       {hasSessionData && <AICopilotWidget />}
     </div>

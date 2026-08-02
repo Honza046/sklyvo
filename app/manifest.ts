@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Venegard",
     short_name: "Venegard",
-    description: "Digitální agentura — Sniper, Radar, CRM a Autopilot",
+    description: "Digitální agentura: Sniper, Radar, CRM a Autopilot",
     start_url: "/",
     scope: "/",
     display: "standalone",

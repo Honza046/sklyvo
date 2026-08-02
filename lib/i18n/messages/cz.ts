@@ -130,7 +130,7 @@ export const cz = {
   },
   radar: {
     title: "Radar",
-    subtitle: "Auto Prospector — vyhledávání firem a kontaktů",
+    subtitle: "Auto Prospector: vyhledávání firem a kontaktů",
     searchPlaceholder: "Zadejte obor, klíčová slova nebo lokalitu…",
     deepScan: "Deep Scan",
     deepScanHelp: "Prohledá i podstránky pro skryté emaily.",
@@ -286,13 +286,13 @@ export const cz = {
       back: "Zpět do nastavení",
       preparing: "Integrace pro {provider} se připravuje.",
       smtpTitle: "Vlastní SMTP / IMAP",
-      smtpPlaceholder: "SMTP host, port, uživatelské jméno a heslo — připravujeme.",
+      smtpPlaceholder: "SMTP host, port, uživatelské jméno a heslo. Připravujeme.",
     },
     emailIntegration: {
       description:
-        "Připojte svůj venegard e-mail, ze kterého budete odesílat outreach. Každý člen týmu má vlastní schránku — Autopilot a Sniper posílají z vašeho účtu.",
-      statusConnected: "✅ Připojeno — Autopilot je aktivní",
-      statusDisconnected: "⚠️ Nepřipojeno — Autopilot je neaktivní",
+        "Připojte svůj venegard e-mail, ze kterého budete odesílat outreach. Každý člen týmu má vlastní schránku. Autopilot a Sniper posílají z vašeho účtu.",
+      statusConnected: "✅ Připojeno. Autopilot je aktivní",
+      statusDisconnected: "⚠️ Nepřipojeno. Autopilot je neaktivní",
       disconnect: "Odpojit",
       connectedGoogle: "Google Workspace byl úspěšně propojen.",
       connectedSmtp: "SMTP připojení bylo uloženo.",
@@ -328,7 +328,7 @@ export const cz = {
     online: "Online",
     open: "Otevřít AI asistenta",
     send: "Odeslat dotaz",
-    welcome: "Zeptej se na cokoliv ve Venegardu — Sniper, Radar, Autopilot, kredity, e-mail…",
+    welcome: "Zeptej se na cokoliv ve Venegardu: Sniper, Radar, Autopilot, kredity, e-mail…",
     placeholder: "Zeptej se na cokoliv...",
     analyzing: "AI Asistent analyzuje váš dotaz...",
     prompt1: "Jak správně propojit firemní e-mail pro Autopilota?",
@@ -373,7 +373,7 @@ export const cz = {
       autopilotPage:
         "Než spustíte kampaň, ověřte propojení firemního e-mailu. Poté v Autopilotu vyberte segment, šablonu a potvrďte spuštění.",
       workspacePage:
-        "V Pracovním prostoru nastavíte firemní profil, e-mail, služby a integrace. Zeptejte se na konkrétní sekci — např. propojení e-mailu nebo API klíče.",
+        "V Pracovním prostoru nastavíte firemní profil, e-mail, služby a integrace. Zeptejte se na konkrétní sekci, například propojení e-mailu nebo API klíče.",
     },
     actions: {
       openIntegrations: "⚙️ Otevřít integrace",
@@ -381,7 +381,7 @@ export const cz = {
       openAutopilot: "🚀 Otevřít Autopilot",
     },
     fallback:
-      "Rád pomohu s Venegard. Zeptejte se na propojení e-mailu, Autopilot nebo nastavení pracovního prostoru — nebo použijte rychlé návrhy níže.",
+      "Rád pomohu s Venegard. Zeptejte se na propojení e-mailu, Autopilot nebo nastavení pracovního prostoru, nebo použijte rychlé návrhy níže.",
     openEmailSettings: "⚙️ Otevřít nastavení e-mailu",
     sendHint:
       "Pište a odesílejte zprávy zde. Pro zavření použijte X v záhlaví.",

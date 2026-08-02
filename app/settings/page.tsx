@@ -5,7 +5,7 @@ import { getEmailConnectionState } from "@/app/actions/email-connection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase, Mail
+  Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase, Mail, CreditCard, Shield
 } from "lucide-react";
 import {
   AccordionContent,
@@ -149,38 +149,70 @@ export default async function SettingsPage() {
       <SettingsSaveProvider>
       <div className="flex w-full max-w-3xl flex-col gap-2.5 px-0 sm:gap-6 sm:px-4">
         
-        {/* PŮVODNÍ HLAVIČKA S PŘEDPLATNÝM */}
-        <div className="flex flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:rounded-2xl sm:p-5">
+        {/* PŘEDPLATNÉ */}
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:rounded-2xl">
           {isWorkspaceReady ? (
-            <>
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Předplatné</p>
-                {workspace?.subscriptionStatus === "FREE" ? (
-                  <p className="text-base font-semibold sm:text-lg">Bez aktivního tarifu (Free verze)</p>
-                ) : (
-                  <p className="text-base font-semibold sm:text-lg">
-                    {isFreePlanTier ? "Free verze" : workspace?.planTier}
+            <div className="flex flex-col gap-4 p-3.5 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
+              <div className="flex min-w-0 flex-1 gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm shadow-blue-600/20 sm:h-12 sm:w-12">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Předplatné
                   </p>
-                )}
-                {subscriptionDateLine && (
-                  <p className="text-xs text-muted-foreground">{subscriptionDateLine}</p>
-                )}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                    <p className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+                      {workspace?.subscriptionStatus === "FREE" || isFreePlanTier
+                        ? "Free verze"
+                        : workspace?.planTier}
+                    </p>
+                    {workspace?.subscriptionStatus === "FREE" || isFreePlanTier ? (
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Zkušební
+                      </span>
+                    ) : (
+                      <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        Aktivní
+                      </span>
+                    )}
+                    {isAgencyPlan ? (
+                      <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50/80 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
+                        <Shield className="h-3 w-3 shrink-0" />
+                        <span className="truncate">
+                          Správce: {billingManagerName?.trim() || "vlastník"}
+                        </span>
+                      </span>
+                    ) : null}
+                  </div>
+                  {subscriptionDateLine ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{subscriptionDateLine}</p>
+                  ) : workspace?.subscriptionStatus === "FREE" ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Bez aktivního placeného tarifu
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              <SubscriptionBillingButton
-                showChoosePlan={workspace?.subscriptionStatus === "FREE"}
-                isAgency={isAgencyPlan}
-                billingManagerName={billingManagerName}
-              />
-            </>
+
+              <div className="flex shrink-0 items-end sm:items-center">
+                <SubscriptionBillingButton
+                  showChoosePlan={workspace?.subscriptionStatus === "FREE"}
+                />
+              </div>
+            </div>
           ) : (
-            <>
-              <div className="space-y-2">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-6 w-56" />
-                <Skeleton className="h-3 w-32" />
+            <div className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex gap-3">
+                <Skeleton className="h-11 w-11 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
               </div>
-              <Skeleton className="h-10 w-32 rounded-xl" />
-            </>
+              <Skeleton className="h-10 w-36 rounded-xl" />
+            </div>
           )}
         </div>
 

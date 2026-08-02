@@ -147,7 +147,7 @@ body::-webkit-scrollbar {
 .driver-popover.venegard-driver-popover {
   box-sizing: border-box !important;
   margin: 0;
-  padding: 1rem 1.125rem !important;
+  padding: 1rem 2.5rem 1rem 1.125rem !important;
   border-radius: 0.875rem !important;
   min-width: 260px !important;
   max-width: 22rem !important;
@@ -156,9 +156,9 @@ body::-webkit-scrollbar {
   border: 1px solid hsl(var(--border)) !important;
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 0.08),
-    0 4px 6px -4px rgb(0 0 0 / 0.06),
-    0 0 0 1px rgb(0 0 0 / 0.04) !important;
+    0 4px 6px -4px rgb(0 0 0 / 0.06) !important;
   font-family: inherit !important;
+  overflow: visible !important;
 }
 .driver-popover.venegard-driver-popover * {
   font-family: inherit !important;
@@ -168,6 +168,7 @@ body::-webkit-scrollbar {
   font-weight: 600 !important;
   color: hsl(var(--foreground)) !important;
   line-height: 1.4 !important;
+  padding-right: 0.25rem !important;
 }
 .driver-popover.venegard-driver-popover .driver-popover-description {
   font-size: 0.875rem !important;
@@ -182,6 +183,39 @@ body::-webkit-scrollbar {
 .driver-popover.venegard-driver-popover .driver-popover-footer {
   margin-top: 1rem !important;
 }
+
+/* Křížek — uvnitř karty, ne jako modré CTA */
+.driver-popover.venegard-driver-popover .driver-popover-close-btn {
+  all: unset !important;
+  box-sizing: border-box !important;
+  position: absolute !important;
+  top: 0.65rem !important;
+  right: 0.65rem !important;
+  z-index: 2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  color: hsl(var(--muted-foreground)) !important;
+  font-size: 1.125rem !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+}
+.driver-popover.venegard-driver-popover .driver-popover-close-btn:hover,
+.driver-popover.venegard-driver-popover .driver-popover-close-btn:focus {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  opacity: 1 !important;
+}
+
 .driver-popover.venegard-driver-popover .driver-popover-footer button {
   display: inline-flex !important;
   align-items: center;
@@ -197,14 +231,12 @@ body::-webkit-scrollbar {
   border: 1px solid transparent !important;
   transition: background-color 0.15s ease, opacity 0.15s ease;
 }
-.driver-popover.venegard-driver-popover .driver-popover-next-btn,
-.driver-popover.venegard-driver-popover .driver-popover-close-btn {
-  background-color: hsl(var(--primary)) !important;
-  color: hsl(var(--primary-foreground)) !important;
-  border-color: hsl(var(--primary)) !important;
+.driver-popover.venegard-driver-popover .driver-popover-next-btn {
+  background-color: hsl(217 91% 50%) !important;
+  color: #fff !important;
+  border-color: hsl(217 91% 50%) !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-next-btn:hover,
-.driver-popover.venegard-driver-popover .driver-popover-close-btn:hover {
+.driver-popover.venegard-driver-popover .driver-popover-next-btn:hover {
   opacity: 0.92;
 }
 .driver-popover.venegard-driver-popover .driver-popover-prev-btn {
@@ -212,15 +244,52 @@ body::-webkit-scrollbar {
   color: hsl(var(--foreground)) !important;
   border-color: hsl(var(--border)) !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-arrow-side-right {
-  border-left-color: hsl(var(--card)) !important;
+
+/* Šipky — čisté, bez dvojitého obrysu / stínu */
+.driver-popover.venegard-driver-popover .driver-popover-arrow {
+  border: 8px solid transparent !important;
+  filter: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 .driver-popover.venegard-driver-popover .driver-popover-arrow-side-left {
+  border-left-color: hsl(var(--card)) !important;
+  border-right-color: transparent !important;
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+.driver-popover.venegard-driver-popover .driver-popover-arrow-side-right {
   border-right-color: hsl(var(--card)) !important;
+  border-left-color: transparent !important;
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
 }
 .driver-popover.venegard-driver-popover .driver-popover-arrow-side-top {
-  border-bottom-color: hsl(var(--card)) !important;
+  border-top-color: hsl(var(--card)) !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: transparent !important;
 }
 .driver-popover.venegard-driver-popover .driver-popover-arrow-side-bottom {
-  border-top-color: hsl(var(--card)) !important;
+  border-bottom-color: hsl(var(--card)) !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-top-color: transparent !important;
+}
+
+/* Highlight stage — bez viditelného stroke / „čáry“ */
+.driver-overlay,
+.driver-overlay *,
+.driver-overlay path {
+  outline: none !important;
+  stroke: none !important;
+}
+.driver-active-element {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Levý sidebar: při tour skrýt border-r (dvojitá čára s výřezem overlay) */
+body.driver-active .flex.h-dvh > aside {
+  border-right-color: transparent !important;
 }

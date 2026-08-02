@@ -165,34 +165,37 @@ export function AutopilotSettingsDialog({
           "left-0 top-0 h-[100dvh] max-h-[100dvh] max-w-none translate-x-0 translate-y-0 rounded-none",
           "data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-bottom-2",
           // Desktop: centered modal (not fullscreen)
-          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-h-[min(90vh,720px)] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
+          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
           section === "radar"
-            ? "sm:max-w-3xl"
+            ? "sm:max-h-[min(90vh,720px)] sm:max-w-3xl"
             : section === "sniper"
-              ? "sm:max-w-xl sm:max-h-[min(92vh,640px)]"
-              : "sm:max-w-lg sm:max-h-[min(90vh,560px)]",
+              ? "sm:max-h-none sm:max-w-2xl"
+              : "sm:max-h-[min(90vh,560px)] sm:max-w-lg",
         )}
       >
         <div
           className={cn(
             "min-h-0 flex-1 space-y-2.5 px-4 pb-3 pt-8 sm:px-6 sm:pb-4 sm:pt-9",
             section === "sniper"
-              ? "space-y-2 overflow-y-auto overscroll-contain sm:space-y-2"
-              : "overflow-y-auto overscroll-contain",
+              ? "scrollbar-hide space-y-1.5 overflow-y-auto overscroll-contain sm:space-y-1.5 sm:overflow-visible sm:pt-7 sm:pb-3"
+              : "scrollbar-hide overflow-y-auto overscroll-contain",
           )}
         >
-          <DialogHeader className="space-y-1 text-left">
+          <DialogHeader className={cn("space-y-1 text-left", section === "sniper" && "space-y-0.5")}>
             <DialogTitle className="flex items-center gap-2 pr-10 text-base">
               <SectionIcon className={cn("h-5 w-5 shrink-0", meta.iconClass)} />
               {meta.title}
             </DialogTitle>
-            <DialogDescription className="text-xs">{meta.description}</DialogDescription>
+            {section === "sniper" ? null : (
+              <DialogDescription className="text-xs">{meta.description}</DialogDescription>
+            )}
           </DialogHeader>
 
           {featureEnabled != null && onFeatureEnabledChange ? (
             <div
               className={cn(
-                "flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5",
+                "flex items-center justify-between gap-3 rounded-xl border px-3",
+                section === "sniper" ? "py-1.5" : "py-2.5",
                 featureEnabled
                   ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900 dark:bg-emerald-950/30"
                   : "border-border/60 bg-muted/20",
@@ -202,13 +205,13 @@ export function AutopilotSettingsDialog({
                 <p className="text-sm font-semibold text-foreground">
                   {featureEnabled ? "Automatika zapnutá" : "Automatika vypnutá"}
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {section === "radar"
-                    ? "Vypnuto = noční cron firmy nehledá (ruční sběr funguje dál)."
-                    : section === "sniper"
-                      ? "Vypnuto = cron maily neposílá, i když jsou ve frontě."
+                {section === "sniper" ? null : (
+                  <p className="text-[11px] text-muted-foreground">
+                    {section === "radar"
+                      ? "Vypnuto = noční cron firmy nehledá (ruční sběr funguje dál)."
                       : "Vypnuto = Full Auto cron neběží."}
-                </p>
+                  </p>
+                )}
               </div>
               <Switch
                 checked={featureEnabled}
@@ -469,14 +472,9 @@ export function AutopilotSettingsDialog({
         )}
 
         {section === "sniper" && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  1 · Jak odesílat
-                </p>
-              </div>
-              <div className="grid gap-1.5 p-2 sm:grid-cols-2">
+              <div className="grid gap-1 p-1.5 sm:grid-cols-2">
                 {(
                   [
                     {
@@ -524,16 +522,11 @@ export function AutopilotSettingsDialog({
 
             <label
               htmlFor="settings-sniper-only-email"
-              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/15 px-3 py-2"
+              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/15 px-3 py-1.5"
             >
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-foreground">
-                  Pouze firmy s e-mailem
-                </p>
-                <p className="text-[10px] leading-snug text-muted-foreground">
-                  Bez e-mailu se ve výběru nezobrazí.
-                </p>
-              </div>
+              <p className="text-[13px] font-semibold text-foreground">
+                Pouze firmy s e-mailem
+              </p>
               <Switch
                 id="settings-sniper-only-email"
                 checked={Boolean(settings.onlyWithEmail)}
@@ -544,11 +537,11 @@ export function AutopilotSettingsDialog({
             </label>
 
             {settings.sendingStrategy === "batch" ? (
-              <div className="space-y-2">
-                <section className="rounded-xl border border-border/60 bg-muted/15">
-                  <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-1.5">
+              <div className="space-y-2.5">
+                <section className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      2 · Dny (pracovní)
+                      Dny · Tempo
                     </p>
                     <button
                       type="button"
@@ -564,8 +557,8 @@ export function AutopilotSettingsDialog({
                       Po–Pá
                     </button>
                   </div>
-                  <div className="p-2">
-                    <div className="flex rounded-lg bg-muted/60 p-0.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 flex-1 rounded-lg bg-muted/60 p-0.5">
                       {SEND_WEEKDAYS.map(({ value, label }) => {
                         const active = sendDays.includes(value);
                         return (
@@ -587,71 +580,9 @@ export function AutopilotSettingsDialog({
                         );
                       })}
                     </div>
-                  </div>
-                </section>
-
-                <section className="rounded-xl border border-border/60 bg-muted/15">
-                  <div className="border-b border-border/50 px-3 py-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      3 · Časová okna
-                    </p>
-                  </div>
-                  <div className="space-y-2 p-2.5">
-                    <TimeWindowRow
-                      label="Základní okno"
-                      start={settings.window1Start}
-                      end={settings.window1End}
-                      disabled={disabled}
-                      onStartChange={(value) => patch({ window1Start: value })}
-                      onEndChange={(value) => patch({ window1End: value })}
-                    />
-
-                    <OptionalWindowToggle
-                      label="2. okno"
-                      enabled={Boolean(settings.window2Enabled)}
-                      disabled={disabled}
-                      onEnabledChange={(enabled) => patch({ window2Enabled: enabled })}
-                    />
-                    {settings.window2Enabled ? (
-                      <TimeWindowRow
-                        label="2. okno"
-                        start={settings.window2Start}
-                        end={settings.window2End}
-                        disabled={disabled}
-                        onStartChange={(value) => patch({ window2Start: value })}
-                        onEndChange={(value) => patch({ window2End: value })}
-                      />
-                    ) : null}
-
-                    <OptionalWindowToggle
-                      label="3. okno"
-                      enabled={Boolean(settings.window3Enabled)}
-                      disabled={disabled}
-                      onEnabledChange={(enabled) => patch({ window3Enabled: enabled })}
-                    />
-                    {settings.window3Enabled ? (
-                      <TimeWindowRow
-                        label="3. okno"
-                        start={settings.window3Start}
-                        end={settings.window3End}
-                        disabled={disabled}
-                        onStartChange={(value) => patch({ window3Start: value })}
-                        onEndChange={(value) => patch({ window3End: value })}
-                      />
-                    ) : null}
-                  </div>
-                </section>
-
-                <section className="rounded-xl border border-border/60 bg-muted/15">
-                  <div className="border-b border-border/50 px-3 py-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      4 · Tempo
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-end gap-3 p-2.5">
-                    <div className="w-28 space-y-0.5">
-                      <Label htmlFor="modal-max-batch" className="text-[10px]">
-                        Max. na dávku
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor="modal-max-batch" className="whitespace-nowrap text-[10px]">
+                        Max / dávka
                       </Label>
                       <Input
                         id="modal-max-batch"
@@ -665,17 +596,74 @@ export function AutopilotSettingsDialog({
                           })
                         }
                         disabled={disabled}
-                        className="h-8 text-sm"
+                        className="h-7 w-16 text-sm"
                       />
                     </div>
-                    <p className="min-w-0 flex-1 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
-                      {sendDayLabels || "žádný den"} ·{" "}
-                      {getActiveScheduleWindows(settings)
-                        .map((w) => `${w.start}–${w.end}`)
-                        .join(", ")}{" "}
-                      · ≤{settings.maxEmailsPerBatch}
-                    </p>
                   </div>
+                </section>
+
+                <section className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                  <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Časová okna
+                  </p>
+                  <div className="space-y-2.5">
+                    <TimeWindowRow
+                      label="Základní"
+                      start={settings.window1Start}
+                      end={settings.window1End}
+                      disabled={disabled}
+                      compact
+                      onStartChange={(value) => patch({ window1Start: value })}
+                      onEndChange={(value) => patch({ window1End: value })}
+                    />
+
+                    {settings.window2Enabled ? (
+                      <TimeWindowRow
+                        label="2. okno"
+                        start={settings.window2Start}
+                        end={settings.window2End}
+                        disabled={disabled}
+                        compact
+                        onRemove={() => patch({ window2Enabled: false })}
+                        onStartChange={(value) => patch({ window2Start: value })}
+                        onEndChange={(value) => patch({ window2End: value })}
+                      />
+                    ) : (
+                      <OptionalWindowToggle
+                        label="2. okno"
+                        enabled={false}
+                        disabled={disabled}
+                        onEnabledChange={(enabled) => patch({ window2Enabled: enabled })}
+                      />
+                    )}
+
+                    {settings.window3Enabled ? (
+                      <TimeWindowRow
+                        label="3. okno"
+                        start={settings.window3Start}
+                        end={settings.window3End}
+                        disabled={disabled}
+                        compact
+                        onRemove={() => patch({ window3Enabled: false })}
+                        onStartChange={(value) => patch({ window3Start: value })}
+                        onEndChange={(value) => patch({ window3End: value })}
+                      />
+                    ) : (
+                      <OptionalWindowToggle
+                        label="3. okno"
+                        enabled={false}
+                        disabled={disabled}
+                        onEnabledChange={(enabled) => patch({ window3Enabled: enabled })}
+                      />
+                    )}
+                  </div>
+                  <p className="mt-2.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+                    {sendDayLabels || "žádný den"} ·{" "}
+                    {getActiveScheduleWindows(settings)
+                      .map((w) => `${w.start}–${w.end}`)
+                      .join(", ")}{" "}
+                    · ≤{settings.maxEmailsPerBatch}
+                  </p>
                 </section>
               </div>
             ) : (
@@ -817,26 +805,28 @@ function OptionalWindowToggle({
   onEnabledChange: (enabled: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 px-0.5 py-0.5">
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={enabled}
-        disabled={disabled}
-        onClick={() => onEnabledChange(!enabled)}
+    <button
+      type="button"
+      disabled={disabled}
+      aria-pressed={enabled}
+      onClick={() => onEnabledChange(!enabled)}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-lg border border-dashed border-border/70 bg-background/60 px-2.5 py-2 text-left transition-colors disabled:opacity-50",
+        "hover:border-blue-400 hover:bg-blue-50/50 dark:hover:border-blue-700 dark:hover:bg-blue-950/20",
+      )}
+    >
+      <span
         className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors disabled:opacity-50",
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border",
           enabled
             ? "border-blue-600 bg-blue-600 text-white"
             : "border-zinc-400 bg-white dark:border-zinc-500 dark:bg-zinc-900",
         )}
       >
         {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
-      </button>
-      <span className="text-[12px] font-medium text-foreground">
-        Přidat {label.toLowerCase()}
       </span>
-    </label>
+      <span className="text-[12px] font-medium text-foreground">Přidat {label.toLowerCase()}</span>
+    </button>
   );
 }
 
@@ -873,6 +863,8 @@ function TimeWindowRow({
   start,
   end,
   disabled,
+  compact,
+  onRemove,
   onStartChange,
   onEndChange,
 }: {
@@ -880,9 +872,34 @@ function TimeWindowRow({
   start: string;
   end: string;
   disabled?: boolean;
+  compact?: boolean;
+  onRemove?: () => void;
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
 }) {
+  if (compact) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-background/80 px-2.5 py-2">
+        <span className="w-16 shrink-0 text-[10px] font-semibold text-muted-foreground">
+          {label}
+        </span>
+        <TimeSelect value={start} disabled={disabled} onChange={onStartChange} />
+        <span className="text-xs text-muted-foreground">–</span>
+        <TimeSelect value={end} disabled={disabled} onChange={onEndChange} />
+        {onRemove ? (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onRemove}
+            className="ml-auto text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+          >
+            Odebrat
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-border/40 bg-background/80 px-2.5 py-2">
       <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">{label}</p>

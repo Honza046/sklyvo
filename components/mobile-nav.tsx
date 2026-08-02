@@ -45,6 +45,14 @@ export const MAIN_NAV = [
   { href: "/generator", labelKey: "nav.generator", icon: FileText },
 ] as const;
 
+/** Spodní mobilní lišta — jen 4 hlavní záložky (víc by se lámalo). */
+export const MOBILE_BOTTOM_NAV = [
+  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard },
+  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair },
+  { href: "/radar", labelKey: "nav.radar", icon: Radio },
+  { href: "/crm", labelKey: "nav.crm", icon: Users },
+] as const;
+
 export const AUTOPILOT_SUB_NAV = [
   { href: "/autopilot/radar", labelKey: "nav.autopilotCollect" },
   { href: "/autopilot/sniper", labelKey: "nav.autopilotSend" },
@@ -116,6 +124,7 @@ export function MobileTopBar({
           variant="ghost"
           className="h-8 w-8 shrink-0 rounded-full border border-border/50 bg-blue-600 p-0 text-white hover:bg-blue-700 hover:text-white"
           aria-label={t("copilot.open")}
+          data-tour="onboarding-copilot-mobile"
           onClick={() => setCopilotOpen(true)}
         >
           <AiMaskIcon size={18} className="text-white" />
@@ -162,95 +171,124 @@ export function MobileTopBar({
             </div>
           </SheetHeader>
 
-          <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-3">
-            <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-              {t("nav.autopilot")}
-            </p>
-            <SheetClose asChild>
-              <Link
-                href="/autopilot/radar"
-                className={cn(
-                  "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
-                  isAutopilotActive
-                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Rocket className="size-5 shrink-0" />
-                {t("nav.autopilot")}
-              </Link>
-            </SheetClose>
-            <div className="mb-3 ml-3 flex flex-col gap-0.5 border-l border-border/50 pl-3">
-              {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
-                const subActive = pathname === href || pathname.startsWith(`${href}/`);
+          <nav className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                {t("nav.tools")}
+              </p>
+              {MAIN_NAV.filter(
+                ({ href }) => href === "/uloziste" || href === "/generator",
+              ).map(({ href, labelKey, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(`${href}/`);
                 return (
                   <SheetClose asChild key={href}>
                     <Link
                       href={href}
                       className={cn(
-                        "rounded-xl px-2 py-2 text-xs font-medium",
-                        subActive
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
+                        "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
+                        active
+                          ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
+                      <Icon className="size-5 shrink-0" />
                       {t(labelKey)}
                     </Link>
                   </SheetClose>
                 );
               })}
+
+              <p className="px-2 pb-2 pt-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                {t("nav.autopilot")}
+              </p>
+              <SheetClose asChild>
+                <Link
+                  href="/autopilot/radar"
+                  className={cn(
+                    "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
+                    isAutopilotActive
+                      ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Rocket className="size-5 shrink-0" />
+                  {t("nav.autopilot")}
+                </Link>
+              </SheetClose>
+              <div className="mb-1 ml-3 flex flex-col gap-0.5 border-l border-border/50 pl-3">
+                {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
+                  const subActive = pathname === href || pathname.startsWith(`${href}/`);
+                  return (
+                    <SheetClose asChild key={href}>
+                      <Link
+                        href={href}
+                        className={cn(
+                          "rounded-xl px-2 py-2 text-xs font-medium",
+                          subActive
+                            ? "text-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {t(labelKey)}
+                      </Link>
+                    </SheetClose>
+                  );
+                })}
+              </div>
             </div>
 
-            <p className="px-2 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-              {t("nav.myProfile")}
-            </p>
-            <SheetClose asChild>
-              <Link
-                href="/help"
-                className={cn(
-                  "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
-                  pathname === "/help"
-                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <LifeBuoy className="size-4 shrink-0" />
-                {t("nav.help")}
-              </Link>
-            </SheetClose>
-            <SheetClose asChild>
-              <Link
-                href="/settings"
-                data-tour="onboarding-settings"
-                className={cn(
-                  "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
-                  isSettingsActive
-                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Settings className="size-4 shrink-0" />
-                {t("nav.workspace")}
-              </Link>
-            </SheetClose>
-            <SheetClose asChild>
-              <Link
-                href="/account"
-                className="mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <User className="size-4 shrink-0" />
-                {t("nav.accountSettings")}
-              </Link>
-            </SheetClose>
+            <div className="mt-auto shrink-0 border-t border-border/50 pt-3">
+              <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                {t("nav.myProfile")}
+              </p>
+              <SheetClose asChild>
+                <Link
+                  href="/help"
+                  className={cn(
+                    "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
+                    pathname === "/help"
+                      ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <LifeBuoy className="size-4 shrink-0" />
+                  {t("nav.help")}
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
+                  href="/settings"
+                  data-tour="onboarding-settings"
+                  className={cn(
+                    "mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium",
+                    isSettingsActive
+                      ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Settings className="size-4 shrink-0" />
+                  {t("nav.workspace")}
+                </Link>
+              </SheetClose>
+              <SheetClose asChild>
+                <Link
+                  href="/account"
+                  className="mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <User className="size-4 shrink-0" />
+                  {t("nav.accountSettings")}
+                </Link>
+              </SheetClose>
 
-            <button
-              type="button"
-              className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-950/40"
-              onClick={onLogout}
-            >
-              <LogOut className="size-4 shrink-0" />
-              {t("nav.logout")}
-            </button>
+              <button
+                type="button"
+                className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-950/40"
+                onClick={onLogout}
+              >
+                <LogOut className="size-4 shrink-0" />
+                {t("nav.logout")}
+              </button>
+            </div>
           </nav>
         </SheetContent>
       </Sheet>
@@ -269,32 +307,39 @@ export function MobileBottomNav({ activeHref }: MobileBottomNavProps) {
   return (
     <nav
       data-tour="onboarding-mobile-tabs"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid h-14 grid-cols-4">
-        {MAIN_NAV.map(({ href, labelKey, icon: Icon }) => {
-          const active = href === activeHref;
+      <div className="mx-auto grid h-14 max-w-lg grid-cols-4">
+        {MOBILE_BOTTOM_NAV.map(({ href, labelKey, icon: Icon }) => {
+          const active =
+            href === "/"
+              ? activeHref === "/"
+              : activeHref === href || activeHref.startsWith(`${href}/`);
           return (
             <Link
               key={href}
               href={href}
               data-tour={
-                href === "/radar"
-                  ? "onboarding-radar"
-                  : href === "/sniper"
-                    ? "onboarding-sniper"
-                    : undefined
+                href === "/"
+                  ? "onboarding-overview"
+                  : href === "/radar"
+                    ? "onboarding-radar"
+                    : href === "/sniper"
+                      ? "onboarding-sniper"
+                      : href === "/crm"
+                        ? "onboarding-crm"
+                        : undefined
               }
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                "flex min-w-0 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors",
                 active
                   ? "text-blue-600 dark:text-blue-400"
                   : "text-muted-foreground",
               )}
             >
-              <Icon className={cn("h-5 w-5", active && "text-blue-600 dark:text-blue-400")} />
-              <span className="truncate px-0.5">{t(labelKey)}</span>
+              <Icon className={cn("h-5 w-5 shrink-0", active && "text-blue-600 dark:text-blue-400")} />
+              <span className="max-w-full truncate leading-none">{t(labelKey)}</span>
             </Link>
           );
         })}

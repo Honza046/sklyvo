@@ -2,10 +2,71 @@
 
 import Stripe from "stripe";
 import { getSessionUser } from "@/app/actions/auth";
+import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2026-04-22.dahlia",
 });
+
+export type WorkspaceInvoiceRow = {
+  id: string;
+  number: string | null;
+  status: string | null;
+  amountPaid: number;
+  currency: string;
+  createdAt: string;
+  pdfUrl: string | null;
+  hostedUrl: string | null;
+};
+
+export async function listWorkspaceInvoices(): Promise<
+  { invoices: WorkspaceInvoiceRow[] } | { error: string }
+> {
+  const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: session.user.workspaceId },
+    select: { stripeCustomerId: true },
+  });
+
+  const customerId = workspace?.stripeCustomerId?.trim();
+  if (!customerId) {
+    return { invoices: [] };
+  }
+
+  try {
+    const result = await stripe.invoices.list({
+      customer: customerId,
+      limit: 24,
+    });
+
+    const invoices: WorkspaceInvoiceRow[] = result.data
+      .filter((inv) => inv.status !== "draft" && inv.status !== "void")
+      .map((inv) => ({
+        id: inv.id,
+        number: inv.number,
+        status: inv.status,
+        amountPaid: inv.amount_paid ?? inv.amount_due ?? 0,
+        currency: (inv.currency || "czk").toUpperCase(),
+        createdAt: new Date((inv.created ?? 0) * 1000).toISOString(),
+        pdfUrl: inv.invoice_pdf ?? null,
+        hostedUrl: inv.hosted_invoice_url ?? null,
+      }));
+
+    return { invoices };
+  } catch (error) {
+    console.error("listWorkspaceInvoices:", error);
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se načíst faktury ze Stripe.",
+    };
+  }
+}
 
 export async function startTrialCheckout(planTier: string, priceId: string) {
   const auth = await getSessionUser();

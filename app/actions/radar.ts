@@ -387,6 +387,7 @@ async function persistAutomatedRadarLeads(
   countryCode?: string | null,
   author?: string | null,
   searchQuery?: string | null,
+  leadSource: "AUTOPILOT" | "FULL_AUTO" = "AUTOPILOT",
 ): Promise<{ created: number; skipped: number; createdLeadIds: string[] }> {
   let created = 0;
   let skipped = 0;
@@ -403,7 +404,7 @@ async function persistAutomatedRadarLeads(
     contactPhone: string | null;
     contactEmail: string | null;
     status: "NEW";
-    source: "AUTOPILOT";
+    source: "AUTOPILOT" | "FULL_AUTO";
     author: string | null;
     workspaceId: string;
     industry: null;
@@ -457,7 +458,7 @@ async function persistAutomatedRadarLeads(
       contactPhone,
       contactEmail: email,
       status: "NEW",
-      source: "AUTOPILOT",
+      source: leadSource,
       author: resolvedAuthor,
       workspaceId,
       industry: null,
@@ -531,7 +532,12 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
 
 export async function runAutomatedRadarForWorkspace(
   workspaceId: string,
-  options?: { forceAutoStartOutreach?: boolean; internalToken?: string },
+  options?: {
+    forceAutoStartOutreach?: boolean;
+    internalToken?: string;
+    /** AUTOPILOT = noční Sběr; FULL_AUTO = Full Auto pipeline */
+    leadSource?: "AUTOPILOT" | "FULL_AUTO";
+  },
 ): Promise<(AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }> {
   const { verifyInternalWorkspaceToken } = await import("@/lib/internal-auth");
   if (!verifyInternalWorkspaceToken(workspaceId, options?.internalToken)) {
@@ -619,6 +625,7 @@ export async function runAutomatedRadarForWorkspace(
         regionCode,
         autopilotAuthor,
         search.query,
+        options?.leadSource === "FULL_AUTO" ? "FULL_AUTO" : "AUTOPILOT",
       );
       createdCount += persist.created;
       skippedCount += persist.skipped;
@@ -822,6 +829,7 @@ export async function processScheduledFullAutoRuns(): Promise<{
     const wsToken = createInternalWorkspaceToken(row.workspaceId);
     const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
       forceAutoStartOutreach: true,
+      leadSource: "FULL_AUTO",
       internalToken: wsToken,
     });
     if ("error" in run) {

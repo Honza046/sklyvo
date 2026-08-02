@@ -15,7 +15,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Mohu používat vlastní klíč k OpenAI (BYOK)?",
       answer:
-        "Z důvodu optimalizace našich modelů a kvality výstupů nepodporujeme vkládání vlastních API klíčů. Celý systém běží na našich serverech — kupujete balíčky kreditů bez skrytých poplatků u OpenAI nebo Googlu.",
+        "Z důvodu optimalizace našich modelů a kvality výstupů nepodporujeme vkládání vlastních API klíčů. Celý systém běží na našich serverech. Kupujete balíčky kreditů bez skrytých poplatků u OpenAI nebo Googlu.",
     },
     {
       question: "Jak napojím svůj Google Workspace nebo Outlook?",
@@ -25,7 +25,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Kde najdu svoje měsíční faktury za předplatné?",
       answer:
-        "Faktury a správu platební karty najdete v Osobním profilu v sekci Fakturace a předplatné. Faktury si stáhněte jako PDF — generují se první den zúčtovacího období.",
+        "Faktury a správu platební karty najdete v Osobním profilu v sekci Fakturace a předplatné. Faktury si stáhněte jako PDF. Generují se první den zúčtovacího období.",
     },
     {
       question: "Jak importovat vlastní kontakty (CSV)?",
@@ -45,7 +45,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Lze propojit CRM s Pipedrive?",
       answer:
-        "Ano, typicky přes webhooky nebo Make.com/Zapier. Nové leady a změny stavů mohou odejít do Pipedrive — mapování nastavíte v Integracích.",
+        "Ano, typicky přes webhooky nebo Make.com/Zapier. Nové leady a změny stavů mohou odejít do Pipedrive. Mapování nastavíte v Integracích.",
     },
     {
       question: "Kde nastavím podpis do e-mailu?",

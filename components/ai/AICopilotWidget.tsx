@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { ArrowUp, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -146,6 +147,39 @@ export function AICopilotWidget() {
     setSlashActiveIndex(0);
   }, [slashQuery]);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Zamknout scroll stránky pod otevřeným chatem (viewport overlay, ne konec dokumentu)
+  useEffect(() => {
+    if (!open) return;
+
+    const scrollRoots = [
+      document.body,
+      document.documentElement,
+      ...Array.from(document.querySelectorAll<HTMLElement>("[data-dashboard-scroll]")),
+    ];
+    const previous = scrollRoots.map((el) => ({
+      el,
+      overflow: el.style.overflow,
+      overscroll: el.style.overscrollBehavior,
+    }));
+
+    for (const el of scrollRoots) {
+      el.style.overflow = "hidden";
+      el.style.overscrollBehavior = "none";
+    }
+
+    return () => {
+      for (const item of previous) {
+        item.el.style.overflow = item.overflow;
+        item.el.style.overscrollBehavior = item.overscroll;
+      }
+    };
+  }, [open]);
+
   const handleSubmit = () => {
     if (slashMenuOpen) {
       const command = filteredSlashCommands[slashActiveIndex];
@@ -165,12 +199,8 @@ export function AICopilotWidget() {
     setOpen(false);
   }, [setOpen]);
 
-  const handleMorphButtonClick = () => {
-    if (open) {
-      handleSubmit();
-      return;
-    }
-    setOpen(true);
+  const handleSendClick = () => {
+    handleSubmit();
   };
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -295,7 +325,7 @@ export function AICopilotWidget() {
           />
           <Button
             type="button"
-            onClick={handleMorphButtonClick}
+            onClick={handleSendClick}
             disabled={(!input.trim() && !slashMenuOpen) || isThinking}
             aria-label={t("copilot.send")}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 p-0 text-white shadow-sm transition-all duration-200 hover:bg-blue-700 disabled:opacity-50"
@@ -307,60 +337,74 @@ export function AICopilotWidget() {
     </>
   );
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       <div
         className={cn(
-          "fixed inset-0 z-50 transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
-          open ? "pointer-events-auto opacity-100 bg-black/40 md:bg-transparent" : "pointer-events-none opacity-0",
+          "fixed inset-0 z-[100] transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
+          open
+            ? "pointer-events-auto opacity-100 bg-black/40 md:bg-black/20"
+            : "pointer-events-none opacity-0",
         )}
         onClick={handleClose}
+        onWheel={(event) => event.preventDefault()}
+        onTouchMove={(event) => event.preventDefault()}
         aria-hidden={!open}
       />
 
-      {/* Mobile bottom sheet — otevření z headeru, ne floating FAB */}
+      {/* Mobile — panel nad spodní navigací */}
       <div
         role="dialog"
         aria-modal={open}
         aria-label={t("copilot.title")}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-x-3 z-[51] mx-auto flex h-[min(78dvh,520px)] w-auto max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:hidden",
+          "fixed inset-x-3 z-[101] mx-auto flex h-[min(78dvh,520px)] w-auto max-w-lg flex-col overflow-hidden rounded-2xl bg-card shadow-xl transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:hidden",
           "bottom-[calc(3.75rem+env(safe-area-inset-bottom))]",
-          open ? "pointer-events-auto translate-y-0" : "pointer-events-none translate-y-[110%]",
+          open
+            ? "pointer-events-auto translate-y-0"
+            : "pointer-events-none invisible translate-y-[110%]",
         )}
       >
         {renderPanelBody("mobile")}
       </div>
 
-      {/* Desktop FAB */}
-      <div className="fixed bottom-6 right-6 z-[51] hidden md:block">
-        <div
-          role="dialog"
-          aria-modal={open}
-          aria-label={t("copilot.title")}
-          aria-hidden={!open}
-          className={cn(
-            "absolute bottom-full right-0 mb-3 flex w-[360px] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-xl bg-card shadow-xl transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] will-change-transform",
-            open
-              ? "pointer-events-auto h-[452px] translate-y-0 opacity-100"
-              : "pointer-events-none h-[452px] translate-y-16 opacity-0",
-          )}
-        >
-          {renderPanelBody("desktop")}
-        </div>
-
-        {!open && (
-          <Button
-            type="button"
-            onClick={handleMorphButtonClick}
-            aria-label={t("copilot.open")}
-            className="h-11 w-11 shrink-0 rounded-full bg-blue-600 p-0 text-white shadow-md shadow-blue-600/25 transition-all duration-200 hover:bg-blue-700"
-          >
-            <AiMaskIcon size={26} className="text-white" />
-          </Button>
+      {/* Desktop — přímo v pravém dolním rohu viewportu */}
+      <div
+        role="dialog"
+        aria-modal={open}
+        aria-label={t("copilot.title")}
+        aria-hidden={!open}
+        className={cn(
+          "fixed bottom-6 right-6 z-[101] hidden w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-2xl transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:flex",
+          "h-[min(560px,calc(100dvh-3rem))] max-h-[calc(100dvh-3rem)] origin-bottom-right",
+          open
+            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none invisible translate-y-2 scale-[0.98] opacity-0",
         )}
+      >
+        {renderPanelBody("desktop")}
       </div>
-    </>
+
+      {/* Desktop FAB — stejný portal / viewport */}
+      <Button
+        type="button"
+        variant="ghost"
+        className={cn(
+          "fixed bottom-6 right-6 z-[99] hidden h-12 w-12 rounded-full border border-border/50 bg-blue-600 p-0 text-white shadow-lg hover:bg-blue-700 hover:text-white md:flex",
+          open && "pointer-events-none opacity-0",
+        )}
+        aria-label={t("copilot.open")}
+        aria-hidden={open}
+        tabIndex={open ? -1 : 0}
+        data-tour="onboarding-copilot"
+        onClick={() => setOpen(true)}
+      >
+        <AiMaskIcon size={22} className="text-white" />
+      </Button>
+    </>,
+    document.body,
   );
 }

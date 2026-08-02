@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ProfilePageSkeleton } from "@/components/profile-loading";
+import { AccountInvoiceHistory } from "@/components/account-invoice-history";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -566,9 +567,7 @@ export default function AccountPage() {
 
                     <div className="space-y-3">
                       <h4 className="text-sm font-semibold">Historie faktur</h4>
-                      <div className="p-4 rounded-xl border border-border/60 bg-background text-sm text-muted-foreground">
-                        Faktury se zobrazí v zákaznickém portálu po provedení první platby.
-                      </div>
+                      <AccountInvoiceHistory />
                     </div>
                   </>
                 ) : (

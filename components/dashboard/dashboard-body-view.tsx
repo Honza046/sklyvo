@@ -114,7 +114,7 @@ export function DashboardBodyView({
     status === "NEW" ? t("dashboard.attentionNewLead") : t("dashboard.attentionReplied");
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden sm:gap-3">
+    <div className="scrollbar-hide flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto sm:gap-3 lg:overflow-hidden">
       <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
@@ -172,11 +172,13 @@ export function DashboardBodyView({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 items-stretch gap-3 lg:grid-cols-3 lg:gap-4">
-        <div className="flex h-full min-h-0 flex-col gap-3 lg:col-span-2">
-          <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 pb-1 lg:grid-cols-3 lg:gap-4 lg:overflow-hidden lg:pb-0">
+        <div className="contents lg:col-span-2 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-3">
+          <div className="order-1 shrink-0 lg:order-none">
+            <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
+          </div>
 
-          <div className={DASHBOARD_PANEL_CARD}>
+          <div className={`order-3 max-h-[260px] lg:order-none lg:max-h-none ${DASHBOARD_PANEL_CARD}`}>
             <div className="flex shrink-0 items-center justify-between gap-3">
               <h3 className="m-0 shrink-0 font-semibold text-foreground">{t("dashboard.activityTitle")}</h3>
               <span className="shrink-0 text-xs text-muted-foreground">
@@ -220,8 +222,8 @@ export function DashboardBodyView({
           </div>
         </div>
 
-        <div className="flex h-full min-h-0 flex-col gap-3">
-          <div className="flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm md:p-4">
+        <div className="contents lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-3">
+          <div className="order-2 flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm md:p-4 lg:order-none">
             <h2 className="mb-2 shrink-0 text-base font-bold">{t("dashboard.quickActions")}</h2>
 
             <div className="flex shrink-0 flex-col gap-2">
@@ -263,7 +265,7 @@ export function DashboardBodyView({
             </div>
           </div>
 
-          <div className={DASHBOARD_PANEL_CARD}>
+          <div className={`order-4 mb-1 max-h-[280px] lg:order-none lg:mb-0 lg:max-h-none ${DASHBOARD_PANEL_CARD}`}>
             <h3 className="shrink-0 font-semibold text-foreground">{t("dashboard.attentionTitle")}</h3>
             <div className={DASHBOARD_PANEL_LIST_SCROLL}>
               {attentionRows.length === 0 ? (

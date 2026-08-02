@@ -109,7 +109,7 @@ export async function getFullAutoProcessHistory(): Promise<
   }
 
   const leads = await prisma.lead.findMany({
-    where: { workspaceId },
+    where: { workspaceId, source: "FULL_AUTO" },
     orderBy: { updatedAt: "desc" },
     take: 250,
     select: {

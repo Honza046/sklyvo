@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const connectionString = process.env.DATABASE_URL;
 
   // Bump when schema changes require a fresh client
-  const PRISMA_SCHEMA_FINGERPRINT = "outreach-workspace-document-v2";
+  const PRISMA_SCHEMA_FINGERPRINT = "outreach-fakturoid-v2";
 
 type PrismaSingleton = PrismaClient & {
   __fingerprint?: string;
@@ -60,16 +60,28 @@ function disposePrismaClient(client: PrismaClient | undefined) {
 }
 
 const prismaClientSingleton = (): PrismaClient => {
-  disposePrismaClient(globalThis.prisma);
-  if (globalThis.__prismaPool) {
-    void globalThis.__prismaPool.end().catch(() => undefined);
-  }
+  const prevClient = globalThis.prisma;
+  const prevPool = globalThis.__prismaPool;
 
+  // Nejdřív nový pool + client, teprve pak úklid starého
+  // (jinak in-flight requesty dostanou "Cannot use a pool after calling end")
   const pool = new Pool({ connectionString });
-  globalThis.__prismaPool = pool;
   const adapter = new PrismaPg(pool);
   const client = new PrismaClient({ adapter }) as PrismaSingleton;
   client.__fingerprint = PRISMA_SCHEMA_FINGERPRINT;
+
+  globalThis.__prismaPool = pool;
+  globalThis.prisma = client;
+
+  if (prevClient || prevPool) {
+    setTimeout(() => {
+      disposePrismaClient(prevClient);
+      if (prevPool && prevPool !== globalThis.__prismaPool) {
+        void prevPool.end().catch(() => undefined);
+      }
+    }, 2_000);
+  }
+
   return client;
 };
 
@@ -127,6 +139,7 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
     !runtimeHasModelDelegate(client, "workspaceEmailConnection") ||
     !runtimeHasModelDelegate(client, "workspaceGoogleSheetsConnection") ||
     !runtimeHasModelDelegate(client, "workspaceMicrosoftConnection") ||
+    !runtimeHasModelDelegate(client, "workspaceFakturoidConnection") ||
     !runtimeHasModelDelegate(client, "workspaceDocument")
   );
 }

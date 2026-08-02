@@ -103,7 +103,7 @@ export async function sendOutreachEmailNow(input: {
     select: { id: true },
   });
   if (existingPending) {
-    return { error: "Lead už má e-mail ve frontě Autopilota — nejdřív ho vyřeš." };
+    return { error: "Lead už má e-mail ve frontě Autopilota. Nejdřív ho vyřeš." };
   }
 
   const generated = await generateEmailForLead(leadId, {

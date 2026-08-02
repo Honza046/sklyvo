@@ -55,17 +55,17 @@ export function ExpandOverlay({
         />
 
         {/*
-          Same horizontal bounds as Autopilot content (max-w-5xl + px-6).
-          Top starts under title / tabs / status card — where the compact table sits.
+          Wide popup in the content column (sidebar stays clear).
+          Sized to fit queue columns without horizontal scroll and show more rows.
         */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 top-0 flex items-center justify-center px-5 py-8 sm:px-8 sm:py-10 md:px-10 md:py-12">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 top-0 flex items-center justify-center px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="expand-overlay-title"
             className={cn(
-              "pointer-events-auto flex w-full max-w-5xl flex-col overflow-hidden",
-              "h-[min(78vh,820px)] max-h-[calc(100%-4rem)] sm:max-h-[calc(100%-5rem)]",
+              "pointer-events-auto flex w-full max-w-7xl flex-col overflow-hidden",
+              "h-[min(92vh,980px)] max-h-[calc(100%-1.5rem)] sm:max-h-[calc(100%-2rem)]",
               "rounded-2xl border border-border/60 bg-background shadow-2xl",
             )}
           >

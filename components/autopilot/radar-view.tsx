@@ -460,7 +460,7 @@ export function AutopilotRadarView() {
         description={
           featureEnabled
             ? "Cron hledá firmy podle nastavení (~3:00 Praha)."
-            : "Cron vypnutý — ruční hledání je v sekci Radar."
+            : "Cron vypnutý. Ruční hledání je v sekci Radar."
         }
         actions={
           <>

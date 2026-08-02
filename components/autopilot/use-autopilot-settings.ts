@@ -206,8 +206,8 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
 
         toast.success(
           radarCronEnabled
-            ? "Nastavení Radaru uloženo — automatický sběr je zapnutý."
-            : "Nastavení Radaru uloženo — automatický sběr je vypnutý.",
+            ? "Nastavení Radaru uloženo. Automatický sběr je zapnutý."
+            : "Nastavení Radaru uloženo. Automatický sběr je vypnutý.",
         );
         setSettingsOpen(false);
         return;
@@ -236,8 +236,8 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
         }
         toast.success(
           emailSendCronEnabled
-            ? "Odesílání uloženo — automatický cron je zapnutý."
-            : "Odesílání uloženo — automatický cron je vypnutý.",
+            ? "Odesílání uloženo. Automatický cron je zapnutý."
+            : "Odesílání uloženo. Automatický cron je vypnutý.",
         );
         setSettingsOpen(false);
         return;
@@ -266,7 +266,7 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
       toast.success(
         fullAutoEnabled
           ? "Full Auto uloženo a zapnuté."
-          : "Full Auto uloženo — zůstává vypnuté.",
+          : "Full Auto uloženo. Zůstává vypnuté.",
       );
       setSettingsOpen(false);
     } finally {

@@ -12,6 +12,7 @@ import {
 import {
   WORKSPACE_DOCS_BUCKET,
   buildDocumentStoragePath,
+  buildThumbnailStoragePath,
   createSupabaseAdmin,
   sanitizeFileName,
 } from "@/lib/workspace-docs";
@@ -33,9 +34,13 @@ export type WorkspaceDocumentRow = {
   /** Odkaz do Google Docs / OneDrive Word, pokud je dokument propojený. */
   externalUrl: string | null;
   externalLabel: string | null;
-  /** Podepsaná URL pro náhled (obrázky). */
+  /** URL malého náhledu v seznamu (obrázky) — ne originál. */
   previewUrl: string | null;
 };
+
+function imageThumbUrl(documentId: string): string {
+  return `/uloziste/thumb/${documentId}`;
+}
 
 function isImageDocument(mimeType: string, fileName: string): boolean {
   if (mimeType.startsWith("image/")) return true;
@@ -60,11 +65,18 @@ function parseExternalLink(metaJson: string | null): {
     const googleDocUrl =
       typeof meta.googleDocUrl === "string" ? meta.googleDocUrl.trim() : "";
     const wordUrl = typeof meta.wordUrl === "string" ? meta.wordUrl.trim() : "";
+    const fakturoidUrl =
+      typeof meta.htmlUrl === "string" && meta.source === "fakturoid"
+        ? meta.htmlUrl.trim()
+        : "";
     if (googleDocUrl) {
       return { externalUrl: googleDocUrl, externalLabel: "Google Docs" };
     }
     if (wordUrl) {
       return { externalUrl: wordUrl, externalLabel: "Word / OneDrive" };
+    }
+    if (fakturoidUrl) {
+      return { externalUrl: fakturoidUrl, externalLabel: "Fakturoid" };
     }
   } catch {
     // ignore
@@ -135,23 +147,15 @@ export async function listWorkspaceDocuments(
       },
     });
 
-    const supabase = createSupabaseAdmin();
-    const previewById = new Map<string, string>();
-    if (!("error" in supabase)) {
-      const imageRows = rows.filter((row) => isImageDocument(row.mimeType, row.fileName));
-      await Promise.all(
-        imageRows.map(async (row) => {
-          const { data } = await supabase.storage
-            .from(WORKSPACE_DOCS_BUCKET)
-            .createSignedUrl(row.storagePath, 60 * 30);
-          if (data?.signedUrl) previewById.set(row.id, data.signedUrl);
-        }),
-      );
-    }
-
     return {
       documents: rows.map((row) =>
-        mapDocument(row, session.user.id, previewById.get(row.id) ?? null),
+        mapDocument(
+          row,
+          session.user.id,
+          isImageDocument(row.mimeType, row.fileName)
+            ? imageThumbUrl(row.id)
+            : null,
+        ),
       ),
     };
   } catch (error) {
@@ -237,13 +241,10 @@ export async function uploadWorkspaceDocument(formData: FormData) {
     revalidatePath("/uloziste");
     revalidatePath("/generator");
 
-    let previewUrl: string | null = null;
-    if (isImageDocument(mimeType, fileName)) {
-      const { data } = await supabase.storage
-        .from(WORKSPACE_DOCS_BUCKET)
-        .createSignedUrl(storagePath, 60 * 30);
-      previewUrl = data?.signedUrl ?? null;
-    }
+    // Náhled se vygeneruje lazy v /uloziste/thumb (sharp jen v Node route, ne v SSR).
+    const previewUrl = isImageDocument(mimeType, fileName)
+      ? imageThumbUrl(created.id)
+      : null;
 
     return { document: mapDocument(created, session.user.id, previewUrl) };
   } catch (error) {
@@ -295,6 +296,41 @@ export async function getWorkspaceDocumentDownloadUrl(documentId: string) {
   return { url: data.signedUrl, fileName: doc.fileName, external: false as const };
 }
 
+/** Podepsaná URL plného obrázku pro dialog náhledu (ne miniaturu ze seznamu). */
+export async function getWorkspaceDocumentFullPreviewUrl(documentId: string) {
+  const session = await requireSession();
+  if (!session) return { error: "Nejste přihlášen." };
+
+  const doc = await prisma.workspaceDocument.findFirst({
+    where: {
+      id: documentId,
+      workspaceId: session.workspace.id,
+      OR: [
+        { scope: "SHARED" },
+        { scope: "PERSONAL", ownerUserId: session.user.id },
+      ],
+    },
+  });
+
+  if (!doc) return { error: "Soubor nenalezen." };
+  if (!isImageDocument(doc.mimeType, doc.fileName)) {
+    return { error: "Náhled není k dispozici." };
+  }
+
+  const supabase = createSupabaseAdmin();
+  if ("error" in supabase) return supabase;
+
+  const { data, error } = await supabase.storage
+    .from(WORKSPACE_DOCS_BUCKET)
+    .createSignedUrl(doc.storagePath, 60 * 30);
+
+  if (error || !data?.signedUrl) {
+    return { error: error?.message || "Nepodařilo se vytvořit odkaz k náhledu." };
+  }
+
+  return { url: data.signedUrl };
+}
+
 export async function deleteWorkspaceDocument(documentId: string) {
   const session = await requireSession();
   if (!session) return { error: "Nejste přihlášen." };
@@ -314,7 +350,9 @@ export async function deleteWorkspaceDocument(documentId: string) {
   const supabase = createSupabaseAdmin();
   if ("error" in supabase) return supabase;
 
-  await supabase.storage.from(WORKSPACE_DOCS_BUCKET).remove([doc.storagePath]);
+  await supabase.storage
+    .from(WORKSPACE_DOCS_BUCKET)
+    .remove([doc.storagePath, buildThumbnailStoragePath(doc.storagePath)]);
   await prisma.workspaceDocument.delete({ where: { id: doc.id } });
 
   revalidatePath("/uloziste");

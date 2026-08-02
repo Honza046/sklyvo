@@ -88,7 +88,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
   const attentionRows = dashboardData.attentionTasks;
 
   return (
-    <div className="flex min-h-0 w-full flex-1 flex-col gap-2 md:gap-3">
+    <div className="scrollbar-hide flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto lg:overflow-hidden md:gap-3">
       <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
@@ -146,12 +146,17 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 lg:grid-cols-3 lg:gap-4">
-        <div className="flex h-full min-h-0 flex-col gap-2.5 lg:col-span-2 lg:gap-4">
-          <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
+      {/*
+        Mobil: contents + order → Trychtýř → Rychlé akce → Aktivita → K řešení (scrollovatelný stack).
+        Desktop: 2 sloupce se sdílenou výškou.
+      */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2.5 pb-1 lg:grid-cols-3 lg:gap-4 lg:overflow-hidden lg:pb-0">
+        <div className="contents lg:col-span-2 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-4">
+          <div className="order-1 shrink-0 lg:order-none">
+            <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
+          </div>
 
-          {/* ZDE ZAČÍNÁ BLOK NEDÁVNÉ AKTIVITY */}
-          <div className="flex min-h-0 w-full flex-1 flex-col rounded-xl border border-border/60 bg-card p-3 shadow-sm sm:p-6">
+          <div className="order-3 flex max-h-[260px] w-full flex-col rounded-xl border border-border/60 bg-card p-3 shadow-sm sm:p-6 lg:order-none lg:max-h-none lg:min-h-0 lg:flex-1">
             <div className="mb-2 flex shrink-0 items-center justify-between sm:mb-4">
               <h3 className="m-0 text-sm font-bold text-foreground sm:text-lg">Nedávná aktivita</h3>
               <span className="text-[10px] text-muted-foreground sm:text-xs">
@@ -162,16 +167,18 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
             </div>
 
             {recentActivity.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-border/40 bg-muted/30 p-6 text-center dark:bg-muted/20">
-                <h4 className="mb-2 m-0 text-base font-semibold text-foreground">Zatím žádná aktivita</h4>
-                <p className="m-0 text-sm text-muted-foreground">
+              <div className="flex flex-1 flex-col items-center justify-center rounded-lg border border-border/40 bg-muted/30 px-4 py-5 text-center dark:bg-muted/20">
+                <h4 className="mb-1 m-0 text-sm font-semibold text-foreground sm:mb-2 sm:text-base">
+                  Zatím žádná aktivita
+                </h4>
+                <p className="m-0 text-xs text-muted-foreground sm:text-sm">
                   Jakmile spustíte první akci, objeví se tady chronologie.
                 </p>
               </div>
             ) : (
-              <ul className="custom-scrollbar min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
+              <ul className="scrollbar-hide min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
                 {recentActivity.map((item) => (
-                  <li key={item.id} className="px-4 py-3">
+                  <li key={item.id} className="px-3 py-2.5 sm:px-4 sm:py-3">
                     <p className="text-sm font-medium leading-snug text-foreground">
                       Přidán nový lead:{" "}
                       <Link
@@ -181,17 +188,18 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                         {item.companyName}
                       </Link>
                     </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatActivityTime(item.createdAt)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatActivityTime(item.createdAt)}
+                    </p>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          {/* ZDE KONČÍ BLOK NEDÁVNÉ AKTIVITY */}
-        </div> {/* <--- TADY JE TEN CHYBĚJÍCÍ DIV PRO LEVÝ SLOUPEC! */}
-        
-        <div className="flex h-full min-h-0 flex-col gap-2.5 lg:gap-4">
-          <div className="flex shrink-0 flex-col rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:rounded-2xl md:p-4">
+        </div>
+
+        <div className="contents lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-4">
+          <div className="order-2 flex shrink-0 flex-col rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:rounded-2xl md:p-4 lg:order-none">
             <h2 className="mb-1.5 shrink-0 text-sm font-bold sm:mb-2 sm:text-base">Rychlé akce</h2>
 
             <div className="flex shrink-0 flex-col gap-1.5 sm:gap-2">
@@ -233,16 +241,18 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:gap-4 sm:rounded-2xl sm:p-4">
+          <div className="order-4 mb-1 flex max-h-[280px] flex-col gap-2.5 rounded-xl border border-border/60 bg-card p-2.5 shadow-sm sm:gap-4 sm:rounded-2xl sm:p-4 lg:order-none lg:mb-0 lg:max-h-none lg:min-h-0 lg:flex-1">
             <h3 className="shrink-0 text-sm font-semibold text-foreground sm:text-base">K řešení</h3>
-            <div className="custom-scrollbar flex-1 overflow-y-auto pr-1 sm:pr-2">
+            <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto pr-1 sm:pr-2">
               {attentionRows.length === 0 ? (
-                <div className="flex min-h-[140px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-6 text-center sm:min-h-[200px] sm:gap-3 sm:px-4 sm:py-10">
+                <div className="flex min-h-[120px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 px-3 py-5 text-center sm:min-h-[160px] sm:gap-3 sm:px-4 sm:py-8">
                   <div className="rounded-full bg-muted p-3 text-muted-foreground sm:p-4">
                     <ClipboardList className="h-6 w-6 sm:h-8 sm:w-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-foreground sm:text-sm">Zatím žádné úkoly k řešení</p>
+                    <p className="text-xs font-semibold text-foreground sm:text-sm">
+                      Zatím žádné úkoly k řešení
+                    </p>
                     <p className="max-w-[260px] text-[10px] text-muted-foreground sm:text-xs">
                       Jakmile se objeví nové firmy, uvidíte je zde.
                     </p>
@@ -258,7 +268,9 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         <AttentionTaskIcon status={task.status} />
                         <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate text-xs font-medium sm:text-sm">{task.companyName}</span>
+                          <span className="truncate text-xs font-medium sm:text-sm">
+                            {task.companyName}
+                          </span>
                           <span className="text-[9px] text-muted-foreground sm:text-[10px]">
                             {attentionTaskSubtitle(task.status)}
                           </span>

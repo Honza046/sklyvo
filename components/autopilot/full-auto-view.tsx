@@ -257,7 +257,10 @@ export function AutopilotFullAutoView() {
           </AutopilotListEmptyState>
         )}
         {!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0 && (
-          <AutopilotListEmptyState>Zatím žádná historie Full Auto.</AutopilotListEmptyState>
+          <AutopilotListEmptyState>
+            Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady ukážou jen firmy, které Full
+            Auto najde a pošle (ne ze Sběru / Odesílání).
+          </AutopilotListEmptyState>
         )}
         {!isFullAutoHistoryLoading &&
           !fullAutoHistoryError &&
@@ -370,7 +373,8 @@ export function AutopilotFullAutoView() {
                   )}
                   {!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0 && (
                     <AutopilotTableEmptyState colSpan={4}>
-                      Zatím žádná historie Full Auto.
+                      Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady ukážou jen firmy,
+                      které Full Auto najde a pošle (ne ze Sběru / Odesílání).
                     </AutopilotTableEmptyState>
                   )}
                   {!isFullAutoHistoryLoading &&
@@ -422,7 +426,7 @@ export function AutopilotFullAutoView() {
         description={
           featureEnabled
             ? "Cron kolem 8:00 najde firmy a pošle maily."
-            : "Cron neběží — zapni, až budeš chtít celou smyčku."
+            : "Cron neběží. Zapni, až budeš chtít celou smyčku."
         }
         actions={
           <>

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
         <Suspense
           fallback={
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-3">
+            <div className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:overflow-hidden md:gap-3">
               <DashboardLoadingSubtitle />
               <DashboardBodySkeleton />
             </div>

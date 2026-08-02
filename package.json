@@ -52,6 +52,7 @@
     "react-textarea-autosize": "^8.5.9",
     "resend": "^6.14.0",
     "serwist": "^9.5.12",
+    "sharp": "^0.35.3",
     "sonner": "^2.0.7",
     "stripe": "^22.1.0",
     "tailwind-merge": "^2.5.4",

@@ -7,18 +7,9 @@ import { Button } from "@/components/ui/button";
 
 export function SubscriptionBillingButton({
   showChoosePlan,
-  isAgency = false,
-  billingManagerName,
 }: {
   showChoosePlan: boolean;
-  isAgency?: boolean;
-  /** Jméno vlastníka workspace (Agency billing). */
-  billingManagerName?: string | null;
 }) {
-  const agencyHint = billingManagerName?.trim()
-    ? `Předplatné spravuje ${billingManagerName.trim()}`
-    : "Předplatné spravuje vlastník workspace";
-
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
@@ -44,33 +35,22 @@ export function SubscriptionBillingButton({
 
   if (showChoosePlan) {
     return (
-      <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
-        <Button asChild className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700">
-          <Link href="/settings/billing">Vybrat tarif</Link>
-        </Button>
-        {isAgency && (
-          <p className="whitespace-nowrap text-right text-[11px] text-muted-foreground">
-            {agencyHint}
-          </p>
-        )}
-      </div>
+      <Button
+        asChild
+        className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+      >
+        <Link href="/settings/billing">Vybrat tarif</Link>
+      </Button>
     );
   }
 
   return (
-    <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
-      <Button
-        type="button"
-        className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700"
-        onClick={(e) => void handleBillingPortal(e)}
-      >
-        Spravovat billing
-      </Button>
-      {isAgency && (
-        <p className="whitespace-nowrap text-right text-[11px] text-muted-foreground">
-          {agencyHint}
-        </p>
-      )}
-    </div>
+    <Button
+      type="button"
+      className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+      onClick={(e) => void handleBillingPortal(e)}
+    >
+      Spravovat billing
+    </Button>
   );
 }

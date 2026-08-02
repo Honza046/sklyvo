@@ -10,6 +10,7 @@ import {
   Loader2,
   Mail,
   Maximize2,
+  Phone,
   Search,
   Send,
   Trash2,
@@ -77,6 +78,7 @@ import {
   ITEMS_PER_PAGE,
   SNIPER_SETTINGS_STORAGE_KEY,
   STATUS_META,
+  formatFoundDate,
   formatQueueDateTime,
   leadFullWebsiteUrl,
   type AutopilotLead,
@@ -86,11 +88,11 @@ import {
 } from "@/components/autopilot/shared";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 
-/** Kompaktní tabulka — vyplní zbývající výšku, paginace vždy vidět. */
+/** Kompaktní / expanded — absolutní viewport uvnitř flex-1 parenta (spolehlivý scroll). */
 const SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS =
-  "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
+  "absolute inset-0 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 const SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS =
-  "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
+  "absolute inset-0 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 type ActivePreviewEmail = {
   leadId: string;
@@ -315,7 +317,14 @@ export function AutopilotSniperView() {
           (lead.tags ?? []).some((tag) => leadTagLabel(tag).toLowerCase().includes(q) || tag.includes(q))
         );
       })
-      .map(({ id, company, url, email }) => ({ id, company, url, email }));
+      .map(({ id, company, url, email, phone, createdAt }) => ({
+        id,
+        company,
+        url,
+        email,
+        phone,
+        createdAt,
+      }));
   }, [
     workspaceLeads,
     onlyWithEmail,
@@ -523,7 +532,7 @@ export function AutopilotSniperView() {
       );
 
       if (result.requeued) {
-        toast.success("E-mail uložen — položka je znovu ve frontě k odeslání.");
+        toast.success("E-mail uložen. Položka je znovu ve frontě k odeslání.");
         await loadQueue();
       } else {
         toast.success("Adresa příjemce byla uložena.");
@@ -598,7 +607,7 @@ export function AutopilotSniperView() {
     const meta = STATUS_META[state.status];
     const errorDetail =
       state.status === "error"
-        ? state.message?.trim() || "Neznámá chyba — zkuste znovu vygenerovat nebo upravit e-mail."
+        ? state.message?.trim() || "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail."
         : null;
 
     if (!errorDetail) {
@@ -831,9 +840,6 @@ export function AutopilotSniperView() {
 
   const renderSelectionTable = (mode: "compact" | "expanded") => {
     const expanded = mode === "expanded";
-    const viewportClass = expanded
-      ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
-      : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS;
     return (
       <div
         className={cn(
@@ -846,10 +852,16 @@ export function AutopilotSniperView() {
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "md:hidden",
-            viewportClass,
+            "relative min-h-0 flex-1 md:hidden",
           )}
         >
+          <div
+            className={cn(
+              expanded
+                ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
+                : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS,
+            )}
+          >
           {paginatedLeads.map((lead) => {
             const checked = selectedIds.includes(lead.id);
             return (
@@ -876,6 +888,7 @@ export function AutopilotSniperView() {
                   <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
                   <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                     {lead.email || "Bez e-mailu"}
+                    {lead.phone ? ` · ${lead.phone}` : ""}
                   </p>
                 </div>
               </div>
@@ -896,16 +909,23 @@ export function AutopilotSniperView() {
               )}
             </>
           )}
+          </div>
         </div>
 
         {/* Desktop table */}
         <div
           className={cn(
-            "hidden md:block",
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            viewportClass,
+            "relative hidden min-h-0 flex-1 md:block",
           )}
         >
+          <div
+            className={cn(
+              expanded
+                ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
+                : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS,
+            )}
+          >
           <table className="w-full table-fixed text-sm">
             <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
               <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -928,13 +948,37 @@ export function AutopilotSniperView() {
                 <th
                   className={cn(
                     AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[55%] bg-white dark:bg-zinc-950",
+                    "w-[28%] bg-white dark:bg-zinc-950",
                   )}
                 >
                   Firma
                 </th>
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "w-[52px] bg-white text-center dark:bg-zinc-950",
+                  )}
+                >
+                  Web
+                </th>
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "w-[26%] bg-white dark:bg-zinc-950",
+                  )}
+                >
+                  E-mail
+                </th>
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "w-[16%] bg-white dark:bg-zinc-950",
+                  )}
+                >
+                  Telefon
+                </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "bg-white dark:bg-zinc-950")}>
-                  Kontakt
+                  Nalezeno
                 </th>
               </tr>
             </thead>
@@ -963,21 +1007,58 @@ export function AutopilotSniperView() {
                       <p className="break-words font-semibold text-foreground">
                         {lead.company}
                       </p>
-                      <span className="flex items-center break-words text-xs text-muted-foreground">
-                        <Globe className="mr-1 h-3 w-3 shrink-0" />
-                        {lead.url || web || "–"}
-                      </span>
+                    </td>
+                    <td
+                      className="px-2 py-3 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {web ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="h-8 w-8 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                        >
+                          <a
+                            href={web}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Otevřít web ${lead.company}`}
+                            title={lead.url || web}
+                          >
+                            <Globe className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : (
+                        <span className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground/40">
+                          <Globe className="h-4 w-4" />
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-3">
                       <span
                         className={cn(
-                          "flex break-words text-sm",
+                          "flex min-w-0 items-center break-words text-sm",
                           lead.email ? "text-foreground" : "text-muted-foreground",
                         )}
                       >
                         <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                        {lead.email || "Bez e-mailu"}
+                        <span className="truncate">{lead.email || "Bez e-mailu"}</span>
                       </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      {lead.phone ? (
+                        <span className="flex min-w-0 items-center text-sm text-foreground">
+                          <Phone className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{lead.phone}</span>
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3 text-sm text-muted-foreground">
+                      {formatFoundDate(lead.createdAt ?? "")}
                     </td>
                   </tr>
                 );
@@ -985,15 +1066,15 @@ export function AutopilotSniperView() {
               {paginatedLeads.length === 0 && (
                 <>
                   {isLoading && (
-                    <AutopilotTableEmptyState colSpan={3}>Načítám firmy…</AutopilotTableEmptyState>
+                    <AutopilotTableEmptyState colSpan={6}>Načítám firmy…</AutopilotTableEmptyState>
                   )}
                   {!isLoading && loadError && (
-                    <AutopilotTableEmptyState colSpan={3} className="text-rose-600 dark:text-rose-400">
+                    <AutopilotTableEmptyState colSpan={6} className="text-rose-600 dark:text-rose-400">
                       {loadError}
                     </AutopilotTableEmptyState>
                   )}
                   {!isLoading && !loadError && leads.length === 0 && (
-                    <AutopilotTableEmptyState colSpan={3}>
+                    <AutopilotTableEmptyState colSpan={6}>
                       Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo CRM.
                     </AutopilotTableEmptyState>
                   )}
@@ -1001,6 +1082,7 @@ export function AutopilotSniperView() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         <AutopilotTablePagination
@@ -1253,7 +1335,7 @@ export function AutopilotSniperView() {
             className={cn(
               "hidden md:block",
               expanded
-                ? "min-h-0 flex-1 overflow-auto"
+                ? "min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 : cn(
                     AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
                     "h-[190px] min-h-[190px] max-h-[190px] overflow-x-auto overflow-y-auto",
@@ -1263,16 +1345,24 @@ export function AutopilotSniperView() {
             <table
               className={cn(
                 "w-full text-sm",
-                expanded ? "min-w-[1100px] table-auto" : "min-w-[980px] table-fixed",
+                expanded ? "table-auto" : "min-w-[980px] table-fixed",
               )}
             >
               <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
                 <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  <th className="sticky top-0 z-10 h-10 min-w-[180px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[18%]" : "min-w-[180px]",
+                    )}
+                  >
                     Firma
                   </th>
                   <th
-                    className="sticky top-0 z-10 h-10 min-w-[180px] bg-white px-3 py-2 align-middle dark:bg-zinc-950"
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[22%]" : "min-w-[180px]",
+                    )}
                     title="E-mail můžete upravit, dokud se zpráva neodešle"
                   >
                     Kontakt
@@ -1280,19 +1370,44 @@ export function AutopilotSniperView() {
                       (upravit)
                     </span>
                   </th>
-                  <th className="sticky top-0 z-10 h-10 min-w-[72px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[10%]" : "min-w-[72px]",
+                    )}
+                  >
                     Autor
                   </th>
-                  <th className="sticky top-0 z-10 h-10 min-w-[120px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[12%]" : "min-w-[120px]",
+                    )}
+                  >
                     Odeslat
                   </th>
-                  <th className="sticky top-0 z-10 h-10 min-w-[120px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[12%]" : "min-w-[120px]",
+                    )}
+                  >
                     Vytvořeno
                   </th>
-                  <th className="sticky top-0 z-10 h-10 min-w-[140px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[16%]" : "min-w-[140px]",
+                    )}
+                  >
                     Stav
                   </th>
-                  <th className="sticky top-0 z-10 h-10 min-w-[110px] bg-white px-3 py-2 align-middle dark:bg-zinc-950">
+                  <th
+                    className={cn(
+                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      expanded ? "w-[10%]" : "min-w-[110px]",
+                    )}
+                  >
                     Náhled
                   </th>
                 </tr>
@@ -1416,7 +1531,7 @@ export function AutopilotSniperView() {
         description={
           featureEnabled
             ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
-            : "Cron vypnutý — maily z fronty se neodešlou, dokud nezapneš."
+            : "Cron vypnutý. Maily z fronty se neodešlou, dokud nezapneš."
         }
         actions={
           <>
@@ -1566,45 +1681,47 @@ export function AutopilotSniperView() {
         }
       >
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-          <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
-            <div className="relative min-w-0 flex-1 sm:min-w-[180px]">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={selectionSearch}
-                onChange={(e) => setSelectionSearch(e.target.value)}
-                placeholder="Hledat firmu…"
-                className="h-9 rounded-lg border-border bg-card py-0 pl-8 text-xs shadow-none"
-              />
+          <div className="shrink-0 overflow-visible p-0.5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="relative min-w-0 flex-1 sm:min-w-[180px]">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={selectionSearch}
+                  onChange={(e) => setSelectionSearch(e.target.value)}
+                  placeholder="Hledat firmu…"
+                  className="h-9 rounded-lg border-border bg-card py-0 pl-8 text-xs shadow-none"
+                />
+              </div>
+              <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
+                <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[180px]">
+                  <SelectValue placeholder="Obor / tag" />
+                </SelectTrigger>
+                <SelectContent className="z-[220]">
+                  <SelectItem value="all">Všechny obory</SelectItem>
+                  {availableSelectionTags.map(({ tag, label, count }) => (
+                    <SelectItem key={tag} value={tag}>
+                      {label} ({count})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={selectionDateFilter}
+                onValueChange={(v) =>
+                  setSelectionDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")
+                }
+              >
+                <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[170px]">
+                  <SelectValue placeholder="Datum" />
+                </SelectTrigger>
+                <SelectContent className="z-[220]">
+                  <SelectItem value="all">Všechna data</SelectItem>
+                  <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
+                  <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
+                  <SelectItem value="this_year">Tento rok</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
-              <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[180px]">
-                <SelectValue placeholder="Obor / tag" />
-              </SelectTrigger>
-              <SelectContent className="z-[220]">
-                <SelectItem value="all">Všechny obory</SelectItem>
-                {availableSelectionTags.map(({ tag, label, count }) => (
-                  <SelectItem key={tag} value={tag}>
-                    {label} ({count})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectionDateFilter}
-              onValueChange={(v) =>
-                setSelectionDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")
-              }
-            >
-              <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[170px]">
-                <SelectValue placeholder="Datum" />
-              </SelectTrigger>
-              <SelectContent className="z-[220]">
-                <SelectItem value="all">Všechna data</SelectItem>
-                <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-                <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
-                <SelectItem value="this_year">Tento rok</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <div className="min-h-0 flex-1 overflow-hidden">{renderSelectionTable("expanded")}</div>
         </div>

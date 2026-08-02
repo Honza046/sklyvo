@@ -19,6 +19,7 @@ export type AutopilotLead = {
   company: string;
   url: string;
   email: string;
+  phone?: string;
   author?: string;
   scheduledAt?: string;
   createdAt?: string;
@@ -116,7 +117,13 @@ export function leadFullWebsiteUrl(domainOrUrl: string): string {
 }
 
 export function formatFoundDate(iso: string, locale = "cs-CZ"): string {
-  return new Date(iso).toLocaleDateString(locale, {
+  if (!iso?.trim()) return "—";
+  const raw = iso.trim();
+  // Už lokalizovaný český formát z CRM (`31. 7. 2026`)
+  if (/^\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/.test(raw)) return raw;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString(locale, {
     day: "numeric",
     month: "numeric",
     year: "numeric",
@@ -274,13 +281,13 @@ export function AutopilotControlPanel({
 }) {
   return (
     <>
-      <div className="relative flex min-h-12 shrink-0 items-center rounded-xl border border-border/60 bg-card px-2.5 py-2 shadow-sm sm:h-[4.25rem] sm:min-h-16 sm:rounded-2xl sm:px-5 sm:py-0">
-        <div className="flex w-full flex-row items-center justify-between gap-1.5 sm:gap-4">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
-            <div className={cn("shrink-0 rounded-lg p-1.5 sm:rounded-xl sm:p-2", iconWrapClassName)}>{icon}</div>
-            <div className="min-w-0 text-left">
+      <div className="relative flex min-h-12 shrink-0 items-start rounded-xl border border-border/60 bg-card px-2.5 py-2.5 shadow-sm sm:min-h-16 sm:items-center sm:rounded-2xl sm:px-5 sm:py-3">
+        <div className="flex w-full flex-row items-start justify-between gap-1.5 sm:items-center sm:gap-4">
+          <div className="flex min-w-0 flex-1 items-start gap-1.5 sm:items-center sm:gap-3">
+            <div className={cn("mt-0.5 shrink-0 rounded-lg p-1.5 sm:mt-0 sm:rounded-xl sm:p-2", iconWrapClassName)}>{icon}</div>
+            <div className="min-w-0 flex-1 text-left">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <h2 className="truncate text-xs font-semibold leading-none text-foreground sm:text-base">
+                <h2 className="text-xs font-semibold leading-snug text-foreground sm:text-base">
                   {title}
                 </h2>
                 {powerEnabled != null ? (
@@ -289,7 +296,7 @@ export function AutopilotControlPanel({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-1 line-clamp-1 text-[10px] leading-snug text-muted-foreground sm:mt-1.5 sm:line-clamp-2 sm:truncate sm:text-xs sm:leading-none">
+              <p className="mt-1 text-[10px] leading-snug text-muted-foreground sm:mt-1.5 sm:text-xs">
                 {description}
               </p>
             </div>

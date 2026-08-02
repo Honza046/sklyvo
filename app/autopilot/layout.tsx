@@ -9,7 +9,10 @@ export default async function AutopilotLayout({ children }: { children: React.Re
   return (
     <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
       <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden px-0 py-1 sm:px-6 sm:py-4">
-        <header className="mb-2 shrink-0 space-y-0.5 px-1 text-center sm:mb-4 sm:space-y-1">
+        <header
+          data-tour="onboarding-autopilot-page"
+          className="mb-2 shrink-0 space-y-0.5 px-1 text-center sm:mb-4 sm:space-y-1"
+        >
           <div className="mb-1 flex items-center justify-center sm:mb-2">
             <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-2xl sm:p-3">
               <Rocket className="h-5 w-5 sm:h-8 sm:w-8" />

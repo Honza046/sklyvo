@@ -1,6 +1,6 @@
 import { normalizeLeadAuthor } from "@/lib/lead-author";
 
-export type LeadSourceValue = "RADAR" | "SNIPER" | "MANUAL" | "AUTOPILOT";
+export type LeadSourceValue = "RADAR" | "SNIPER" | "MANUAL" | "AUTOPILOT" | "FULL_AUTO";
 export type ContactedViaValue = "SNIPER" | "AUTOPILOT_SNIPER";
 
 const SOURCE_LABEL: Record<LeadSourceValue, string> = {
@@ -8,6 +8,7 @@ const SOURCE_LABEL: Record<LeadSourceValue, string> = {
   SNIPER: "Sniper",
   MANUAL: "Manuálně",
   AUTOPILOT: "Autopilot Radar",
+  FULL_AUTO: "Full Auto",
 };
 
 const CONTACTED_VIA_LABEL: Record<ContactedViaValue, string> = {
@@ -27,7 +28,13 @@ export function shortLeadAuthorName(raw: string | null | undefined): string {
 }
 
 export function leadSourceLabel(source: string | null | undefined): string {
-  if (source === "RADAR" || source === "SNIPER" || source === "MANUAL" || source === "AUTOPILOT") {
+  if (
+    source === "RADAR" ||
+    source === "SNIPER" ||
+    source === "MANUAL" ||
+    source === "AUTOPILOT" ||
+    source === "FULL_AUTO"
+  ) {
     return SOURCE_LABEL[source];
   }
   return SOURCE_LABEL.MANUAL;

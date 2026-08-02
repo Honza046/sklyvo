@@ -141,23 +141,23 @@ export function buildEmailSetupGuide(language: "cz" | "en" | "es" | "de"): Copil
       "Aby Autopilot odesílal kampaně z vaší firemní schránky, nejdříve propojte Google Workspace nebo Outlook/SMTP v nastavení pracovního prostoru.",
     steps: [
       {
-        title: "Krok 1 — Otevřete Pracovní prostor",
+        title: "Krok 1: Otevřete Pracovní prostor",
         body: 'V postranním menu klikněte na „Pracovní prostor“ (Settings). Najděte sekci „Propojení firemního e-mailu“.',
       },
       {
-        title: "Krok 2 — Vyberte poskytovatele",
+        title: "Krok 2: Vyberte poskytovatele",
         body:
           "Google: tlačítko „Propojit přes Google OAuth“ (doporučeno). Outlook/vlastní doména: vyplňte jméno odesílatele, firemní e-mail, SMTP server, port a heslo aplikace.",
       },
       {
-        title: "Krok 3 — Google heslo aplikace (bez OAuth)",
+        title: "Krok 3: Google heslo aplikace (bez OAuth)",
         body:
           "V Google účtu → Zabezpečení zapněte dvoufázové ověření a v části „Hesla aplikací“ vytvořte nové heslo pro Venegard.",
       },
       {
-        title: "Krok 4 — Ověřte stav připojení",
+        title: "Krok 4: Ověřte stav připojení",
         body:
-          "Po úspěchu uvidíte „✅ Připojeno — Autopilot je aktivní“. Poté se vraťte do Autopilota a spusťte kampaň.",
+          "Po úspěchu uvidíte „✅ Připojeno. Autopilot je aktivní“. Poté se vraťte do Autopilota a spusťte kampaň.",
       },
     ],
     footer: "Otevřít panel propojení:",

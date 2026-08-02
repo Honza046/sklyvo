@@ -30,6 +30,8 @@ enum LeadSource {
   SNIPER
   MANUAL
   AUTOPILOT
+  /** Firmý nalezené a zpracované Full Auto (ne Sběr / Odesílání). */
+  FULL_AUTO
 }
 
 /** Jak byl lead osloven e-mailem (CRM zobrazí místo zdroje nalezení). */
@@ -137,6 +139,7 @@ model Workspace {
   emailConnection WorkspaceEmailConnection?
   googleSheetsConnection WorkspaceGoogleSheetsConnection?
   microsoftConnection WorkspaceMicrosoftConnection?
+  fakturoidConnection WorkspaceFakturoidConnection?
   documents     WorkspaceDocument[]
   
   createdAt     DateTime  @default(now())
@@ -412,6 +415,32 @@ model WorkspaceMicrosoftConnection {
   updatedAt DateTime @updatedAt
 }
 
+/** Fakturoid — faktury z Generátoru (OAuth Client Credentials z účtu uživatele). */
+model WorkspaceFakturoidConnection {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status EmailConnectionStatus @default(DISCONNECTED)
+
+  /** Client ID z Fakturoid → Nastavení → Uživatelský účet */
+  clientId           String?
+  /** AES-GCM šifrovaný Client Secret */
+  clientSecretEnc    String?   @db.Text
+  accessToken        String?   @db.Text
+  tokenExpiresAt     DateTime?
+  /** Account slug v URL Fakturoidu (např. moje-firma) */
+  accountSlug        String?
+  accountName        String?
+  accountEmail       String?
+
+  lastError   String?
+  connectedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum DocumentScope {
   PERSONAL
   SHARED
@@ -421,6 +450,7 @@ enum DocumentKind {
   UPLOAD
   OFFER
   CONTRACT
+  INVOICE
 }
 
 /** Soubory v Úložišti — osobní (jen owner) nebo společné (celý workspace). */

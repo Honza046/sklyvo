@@ -40,3 +40,8 @@ export function buildDocumentStoragePath(params: {
   }
   return `${params.workspaceId}/shared/${params.documentId}-${safeName}`;
 }
+
+/** Cesta k malému náhledu vedle originálu (rychlé načtení v seznamu). */
+export function buildThumbnailStoragePath(storagePath: string): string {
+  return `${storagePath}.thumb.webp`;
+}

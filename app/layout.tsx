@@ -18,7 +18,7 @@ const jetbrains = JetBrains_Mono({
 const APP_NAME = "Venegard";
 const APP_DEFAULT_TITLE = "Venegard";
 const APP_TITLE_TEMPLATE = "%s · Venegard";
-const APP_DESCRIPTION = "Digitální agentura — Sniper, Radar, CRM a Autopilot";
+const APP_DESCRIPTION = "Digitální agentura: Sniper, Radar, CRM a Autopilot";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,

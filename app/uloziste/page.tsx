@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import {
   deleteWorkspaceDocument,
   getWorkspaceDocumentDownloadUrl,
+  getWorkspaceDocumentFullPreviewUrl,
   listWorkspaceDocuments,
   uploadWorkspaceDocument,
   type WorkspaceDocumentRow,
@@ -86,6 +87,7 @@ function formatDate(iso: string) {
 function kindLabel(kind: WorkspaceDocumentRow["kind"]) {
   if (kind === "OFFER") return "Nabídka";
   if (kind === "CONTRACT") return "Smlouva";
+  if (kind === "INVOICE") return "Faktura";
   return "Soubor";
 }
 
@@ -186,6 +188,8 @@ export default function StoragePage() {
   const [oneDriveImportingId, setOneDriveImportingId] = useState<string | null>(null);
 
   const [previewDoc, setPreviewDoc] = useState<WorkspaceDocumentRow | null>(null);
+  const [fullPreviewUrl, setFullPreviewUrl] = useState<string | null>(null);
+  const [fullPreviewLoading, setFullPreviewLoading] = useState(false);
 
   const loadDocuments = useCallback(async (scope: "PERSONAL" | "SHARED") => {
     setIsLoading(true);
@@ -256,6 +260,33 @@ export default function StoragePage() {
       window.history.replaceState({}, "", next);
     }
   }, [refreshDriveConnection, refreshOneDriveConnection]);
+
+  useEffect(() => {
+    if (!previewDoc?.previewUrl) {
+      setFullPreviewUrl(null);
+      setFullPreviewLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setFullPreviewLoading(true);
+    setFullPreviewUrl(null);
+
+    void getWorkspaceDocumentFullPreviewUrl(previewDoc.id).then((result) => {
+      if (cancelled) return;
+      if ("error" in result) {
+        toast.error(result.error);
+        setFullPreviewUrl(null);
+      } else {
+        setFullPreviewUrl(result.url);
+      }
+      setFullPreviewLoading(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewDoc?.id, previewDoc?.previewUrl]);
 
   const tabs = useMemo(
     () =>
@@ -550,10 +581,10 @@ export default function StoragePage() {
           <div className="mb-3 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground sm:text-sm">
               {tab === "personal"
-                ? "Soubory vidíte jen vy — ostatní členové týmu k nim nemají přístup."
+                ? "Soubory vidíte jen vy. Ostatní členové týmu k nim nemají přístup."
                 : "Sdílené soubory vidí všichni členové pracovního prostoru."}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -562,17 +593,38 @@ export default function StoragePage() {
               />
               <Button
                 type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="h-9 min-w-0 rounded-xl bg-amber-600 px-1.5 text-xs font-semibold text-white hover:bg-amber-700 sm:px-3 sm:text-sm"
+              >
+                {isUploading ? (
+                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
+                ) : (
+                  <Upload className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
+                )}
+                <span className="truncate">
+                  <span className="sm:hidden">Nahrát</span>
+                  <span className="hidden sm:inline">Nahrát soubor</span>
+                </span>
+              </Button>
+              <Button
+                type="button"
                 variant="outline"
                 disabled={!driveOauthConfigured || driveConnecting}
                 onClick={() => void (driveConnected ? openDrivePicker() : connectGoogleDrive())}
-                className="h-9 rounded-xl px-3 text-sm"
+                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
               >
                 {driveConnecting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
                 ) : (
-                  <HardDrive className="mr-2 h-4 w-4" />
+                  <HardDrive className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
                 )}
-                {driveConnected ? "Google Drive" : "Připojit Drive"}
+                <span className="truncate">
+                  <span className="sm:hidden">Drive</span>
+                  <span className="hidden sm:inline">
+                    {driveConnected ? "Google Drive" : "Připojit Drive"}
+                  </span>
+                </span>
               </Button>
               <Button
                 type="button"
@@ -581,27 +633,19 @@ export default function StoragePage() {
                 onClick={() =>
                   void (oneDriveConnected ? openOneDrivePicker() : connectOneDrive())
                 }
-                className="h-9 rounded-xl px-3 text-sm"
+                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
               >
                 {oneDriveConnecting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
                 ) : (
-                  <HardDrive className="mr-2 h-4 w-4" />
+                  <HardDrive className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
                 )}
-                {oneDriveConnected ? "OneDrive" : "Připojit OneDrive"}
-              </Button>
-              <Button
-                type="button"
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="h-9 rounded-xl bg-amber-600 px-3 text-sm font-semibold text-white hover:bg-amber-700"
-              >
-                {isUploading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                Nahrát soubor
+                <span className="truncate">
+                  <span className="sm:hidden">OneDrive</span>
+                  <span className="hidden sm:inline">
+                    {oneDriveConnected ? "OneDrive" : "Připojit OneDrive"}
+                  </span>
+                </span>
               </Button>
             </div>
           </div>
@@ -640,6 +684,8 @@ export default function StoragePage() {
                           <img
                             src={doc.previewUrl}
                             alt={doc.name}
+                            loading="lazy"
+                            decoding="async"
                             className="h-full w-full object-cover"
                           />
                         </button>
@@ -659,7 +705,7 @@ export default function StoragePage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:justify-end">
                       {doc.previewUrl ? (
                         <Button
                           type="button"
@@ -719,7 +765,15 @@ export default function StoragePage() {
         </div>
       </div>
 
-      <Dialog open={Boolean(previewDoc)} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+      <Dialog
+        open={Boolean(previewDoc)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewDoc(null);
+            setFullPreviewUrl(null);
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle className="truncate pr-6">{previewDoc?.name || "Náhled"}</DialogTitle>
@@ -730,13 +784,19 @@ export default function StoragePage() {
             </DialogDescription>
           </DialogHeader>
           {previewDoc?.previewUrl ? (
-            <div className="flex max-h-[70vh] items-center justify-center overflow-auto rounded-xl bg-muted/30 p-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={previewDoc.previewUrl}
-                alt={previewDoc.name}
-                className="max-h-[65vh] w-auto max-w-full rounded-lg object-contain"
-              />
+            <div className="flex max-h-[70vh] min-h-[200px] items-center justify-center overflow-auto rounded-xl bg-muted/30 p-2">
+              {fullPreviewLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              ) : fullPreviewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fullPreviewUrl}
+                  alt={previewDoc.name}
+                  className="max-h-[65vh] w-auto max-w-full rounded-lg object-contain"
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Náhled se nepodařilo načíst.</p>
+              )}
             </div>
           ) : null}
           <div className="flex justify-end gap-2">

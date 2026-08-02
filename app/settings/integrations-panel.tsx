@@ -22,6 +22,12 @@ import {
   getMicrosoftOAuthUrl,
   type MicrosoftConnectionState,
 } from "@/app/actions/microsoft";
+import {
+  connectFakturoid,
+  disconnectFakturoid,
+  getFakturoidConnectionState,
+  type FakturoidConnectionState,
+} from "@/app/actions/fakturoid";
 import { ExternalLink, RefreshCw, Unplug, Download } from "lucide-react";
 
 const integrations = [
@@ -76,6 +82,10 @@ export function IntegrationsPanel() {
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(null);
   const [microsoft, setMicrosoft] = useState<MicrosoftConnectionState | null>(null);
+  const [fakturoid, setFakturoid] = useState<FakturoidConnectionState | null>(null);
+  const [fakturoidClientId, setFakturoidClientId] = useState("");
+  const [fakturoidClientSecret, setFakturoidClientSecret] = useState("");
+  const [fakturoidSlug, setFakturoidSlug] = useState("");
   const [isPending, startTransition] = useTransition();
   const [historySheetUrl, setHistorySheetUrl] = useState(
     "https://docs.google.com/spreadsheets/d/1KAoCo7_HHpleIs5eAKVhlsQLQuIkke-dAg-dQsYE7xs/edit",
@@ -96,9 +106,17 @@ export function IntegrationsPanel() {
     });
   };
 
+  const refreshFakturoidState = () => {
+    startTransition(async () => {
+      const state = await getFakturoidConnectionState();
+      setFakturoid(state);
+    });
+  };
+
   useEffect(() => {
     refreshSheetsState();
     refreshMicrosoftState();
+    refreshFakturoidState();
   }, []);
 
   useEffect(() => {
@@ -154,7 +172,7 @@ export function IntegrationsPanel() {
     if (!opened) {
       window.location.href = href;
     } else {
-      toast.message("Otevřel se Google v novém okně — ideálně v Chrome. Po povolení se vrátíš sem.");
+      toast.message("Otevřel se Google v novém okně (ideálně v Chrome). Po povolení se vrátíš sem.");
     }
   };
 
@@ -263,6 +281,8 @@ export function IntegrationsPanel() {
   const sheetsExpanded = expandedIntegration === "google-sheets";
   const msActive = Boolean(microsoft?.connected);
   const msExpanded = expandedIntegration === "microsoft";
+  const fakturoidActive = Boolean(fakturoid?.connected);
+  const fakturoidExpanded = expandedIntegration === "fakturoid";
 
   const handleConnectMicrosoft = () => {
     startTransition(async () => {
@@ -284,6 +304,39 @@ export function IntegrationsPanel() {
       }
       toast.success("Microsoft 365 odpojeno.");
       refreshMicrosoftState();
+    });
+  };
+
+  const handleConnectFakturoid = () => {
+    startTransition(async () => {
+      const result = await connectFakturoid({
+        clientId: fakturoidClientId,
+        clientSecret: fakturoidClientSecret,
+        accountSlug: fakturoidSlug || undefined,
+      });
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        result.accountName
+          ? `Fakturoid připojen (${result.accountName}).`
+          : "Fakturoid připojen.",
+      );
+      setFakturoidClientSecret("");
+      refreshFakturoidState();
+    });
+  };
+
+  const handleDisconnectFakturoid = () => {
+    startTransition(async () => {
+      const result = await disconnectFakturoid();
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Fakturoid odpojen.");
+      refreshFakturoidState();
     });
   };
 
@@ -558,7 +611,7 @@ export function IntegrationsPanel() {
                 Microsoft 365
               </h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
-                OneDrive, Excel a Word — pro týmy, které nepoužívají Google. Import souborů,
+                OneDrive, Excel a Word. Pro týmy, které nepoužívají Google. Import souborů,
                 export CRM do Excelu a generování smluv do Wordu.
               </p>
             </div>
@@ -640,6 +693,156 @@ export function IntegrationsPanel() {
                     onClick={handleConnectMicrosoft}
                   >
                     Připojit Microsoft 365
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div
+          role="button"
+          tabIndex={0}
+          className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600 md:col-span-2"
+          onClick={() => toggleCard("fakturoid")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleCard("fakturoid");
+            }
+          }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 dark:text-foreground">
+                Fakturoid
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
+                Vystavujte faktury přímo z Generátoru. Klient a částka se přenesou do Fakturoidu.
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              <span
+                className={`h-2 w-2 rounded-full ${fakturoidActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                aria-hidden
+              />
+              <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+                {fakturoidActive ? "Připojeno" : "Nepřipojeno"}
+              </span>
+            </div>
+          </div>
+
+          {fakturoidExpanded && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-border/60"
+            >
+              {fakturoidActive ? (
+                <>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/20">
+                    <p className="font-medium text-emerald-900 dark:text-emerald-200">
+                      {fakturoid?.accountName || "Fakturoid"}
+                    </p>
+                    {fakturoid?.accountSlug && (
+                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
+                        Účet: {fakturoid.accountSlug}
+                      </p>
+                    )}
+                    {fakturoid?.accountEmail && (
+                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
+                        {fakturoid.accountEmail}
+                      </p>
+                    )}
+                    {fakturoid?.lastError && (
+                      <p className="mt-2 text-rose-700 dark:text-rose-300">
+                        Chyba: {fakturoid.lastError}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={handleDisconnectFakturoid}
+                    >
+                      <Unplug className="mr-2 h-4 w-4" />
+                      Odpojit
+                    </Button>
+                    <Button type="button" variant="outline" asChild>
+                      <a
+                        href={
+                          fakturoid?.accountSlug
+                            ? `https://app.fakturoid.cz/${fakturoid.accountSlug}`
+                            : "https://app.fakturoid.cz"
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Otevřít Fakturoid
+                      </a>
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    V Fakturoidu otevřete Nastavení → Uživatelský účet a vytvořte Client ID + Client
+                    Secret (Client Credentials). Pak je sem vložte.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Client ID
+                      </label>
+                      <input
+                        type="text"
+                        autoComplete="off"
+                        className={`${inputClass} font-mono`}
+                        value={fakturoidClientId}
+                        onChange={(e) => setFakturoidClientId(e.target.value)}
+                        placeholder="xxxxxxxx-xxxx-…"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                        Client Secret
+                      </label>
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        className={`${inputClass} font-mono`}
+                        value={fakturoidClientSecret}
+                        onChange={(e) => setFakturoidClientSecret(e.target.value)}
+                        placeholder="••••••••"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Account slug (volitelné)
+                    </label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      className={`${inputClass} font-mono`}
+                      value={fakturoidSlug}
+                      onChange={(e) => setFakturoidSlug(e.target.value)}
+                      placeholder="moje-firma (pokud máte víc účtů)"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                    disabled={
+                      isPending ||
+                      !fakturoidClientId.trim() ||
+                      !fakturoidClientSecret.trim()
+                    }
+                    onClick={handleConnectFakturoid}
+                  >
+                    Připojit Fakturoid
                   </Button>
                 </div>
               )}
