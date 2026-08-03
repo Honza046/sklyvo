@@ -28,6 +28,42 @@ const google = createGoogleGenerativeAI({
 const SNIPER_GEMINI_MODEL =
   process.env.SNIPER_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 
+function isGeminiQuotaError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as { statusCode?: number; message?: string; data?: unknown };
+  if (e.statusCode === 429) return true;
+  const msg = String(e.message ?? error).toLowerCase();
+  return (
+    msg.includes("resource_exhausted") ||
+    msg.includes("exceeded your current quota") ||
+    msg.includes("quota exceeded") ||
+    msg.includes("rate-limits")
+  );
+}
+
+function geminiQuotaUserMessage(error: unknown): string {
+  const raw = error && typeof error === "object" ? String((error as { message?: string }).message ?? "") : "";
+  const retryMatch = /retry in\s+(\d+(?:\.\d+)?)\s*s/i.exec(raw);
+  const waitSec = retryMatch ? Math.ceil(Number(retryMatch[1])) : null;
+  const waitHint = waitSec && waitSec > 0 ? ` Zkus to znovu za cca ${waitSec} s.` : "";
+  return `Vyčerpaná denní kvóta Gemini API (free tier, model ${SNIPER_GEMINI_MODEL}).${waitHint} Na localu běžně pomůže zapnout billing u Google AI Studio, nebo v .env nastavit placený GOOGLE_API_KEY / SNIPER_GEMINI_MODEL.`;
+}
+
+function sniperUserFacingError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    const m = error.message.trim();
+    if (
+      m.startsWith("Generování") ||
+      m.startsWith("Vyčerpaná") ||
+      m.includes("GOOGLE_API_KEY")
+    ) {
+      return m;
+    }
+  }
+  if (isGeminiQuotaError(error)) return geminiQuotaUserMessage(error);
+  return "Generování e-mailu selhalo. Zkuste to prosím znovu.";
+}
+
 /** Maximální velikost dekódovaného PDF pro Sniper (ochrana API a server action). */
 const SNIPER_PDF_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -98,6 +134,8 @@ const BANNED_CHEESY_PHRASES = [
   "u podobných firem často vidíme",
   "bez zbytečné vaty",
   "stačí napsat, co vám sedí",
+  "deset minut na krátký hovor",
+  "příští týden deset minut",
   "my v venegardu",
   "my ve venegardu",
   "my v venegard",
@@ -554,57 +592,15 @@ function finalizeSniperEmailOutput(
     vygenerovane_predmety,
     vygenerovany_email: (() => {
       const x = scrubForbiddenLexiconPreservingParagraphs(base.vygenerovany_email);
-      return x.length > 0
-        ? x
-        : [
-            "Na webu jasně ukazujete, komu pomáháte, a právě to mě přimělo napsat.",
-            `U podobných firem často pomáháme s tím, aby se k vám dostali dřív relevantní zájemci kolem ${nabizenaSluzba.trim() || "naší práce"}.`,
-            "Měli byste příští týden deset minut na krátký hovor? Stačí napsat, co vám sedí.",
-            `S pozdravem,\n${authorFullName.trim() || "Váš kontakt"}`,
-          ].join("\n\n");
+      if (x.length > 0) return x;
+      const sign = authorFullName.trim() || "Váš kontakt";
+      return [
+        "Procházel jsem váš web a napadla mě jedna konkrétní věc k tomu, jak online prezentujete svoji práci.",
+        "Rád bych vám krátce ukázal, kde by šlo stránky zjednodušit, aby z nich bylo snazší přejít k poptávce.",
+        "Máte příští týden chvíli na krátký hovor?",
+        `S pozdravem,\n${sign}`,
+      ].join("\n\n");
     })(),
-  };
-}
-
-function minimalFallbackSniperEmail(
-  clientSiteLabel: string,
-  nabizenaSluzba: string,
-  authorFullName: string,
-): z.infer<typeof sniperEmailOutputSchema> {
-  const nab = nabizenaSluzba.trim() || "vaše online nabídka";
-  const sign = authorFullName.trim() || "Váš kontakt";
-  return {
-    contact_email: null,
-    contact_phone: null,
-    osloveni: "Dobrý den,",
-    analyza_klienta: `Firma ${clientSiteLabel} z outreachu.`,
-    vygenerovane_predmety: ensureVygenerovanePredmetyCount(
-      [
-        lowercaseFirstLetterSubject(
-          truncateToMaxWords("dotaz k tomu co píšete na webu", SNIPER_SUBJECT_MAX_WORDS),
-        ),
-        lowercaseFirstLetterSubject(
-          truncateToMaxWords("rychlý dotaz k vaší praxi online", SNIPER_SUBJECT_MAX_WORDS),
-        ),
-        lowercaseFirstLetterSubject(
-          truncateToMaxWords(`rychlý dotaz k ${nab} podle toho co píšete na webu`, SNIPER_SUBJECT_MAX_WORDS),
-        ),
-        lowercaseFirstLetterSubject(
-          truncateToMaxWords(
-            `měl bych krátký dotaz k vašim službám zobrazeným online`,
-            SNIPER_SUBJECT_MAX_WORDS,
-          ),
-        ),
-      ],
-      nabizenaSluzba,
-    ),
-    vygenerovany_email: [
-      "Na webu jasně ukazujete, komu pomáháte a jak u vás péče vypadá, a právě to mě přimělo napsat.",
-      "U podobných firem často vidíme, že web nebo e-shop nepřevádí zájem do poptávek tak, jak by mohl, hlavně na mobilu.",
-      `U nás stavíme weby a e-shopy na míru (včetně Shopify) a pomáháme právě s ${nab}, bez zbytečné vaty.`,
-      "Měli byste příští týden deset minut na krátký hovor? Stačí napsat, co vám sedí.",
-      `S pozdravem,\n${sign}`,
-    ].join("\n\n"),
   };
 }
 
@@ -903,7 +899,7 @@ function buildSniperSystemPrompt(
     ...knowledgeBase,
     "",
     "POZICE AGENTURY (kontext nabídky — NIKDY to nekopíruj do e-mailu jako firemní pitch):",
-    "Venegard = digitální agentura. Nejčastěji redesign a tvorba webů / e-shopů (včetně Shopify). AI a automatizace jen když to z webu klienta dává smysl.",
+    "Venegard = digitální agentura. Nejčastěji redesign a tvorba webů. E-shop / Shopify jen když klient už prodává online nebo z webu plyne jasná e-shop příležitost. AI a automatizace jen při jasných důkazech z webu.",
     "V těle e-mailu piš v 1. osobě jednotného čísla (já): „dělám weby…“, „můžu vám pomoct…“, „napadlo mě…“. Název Venegard patří do podpisu (web), ne do věty „My v Venegardu…“.",
     "",
     personaIntro,
@@ -944,7 +940,7 @@ function buildSniperSystemPrompt(
     isAutodetect
       ? "3) Nabídka: 1 až 2 věty v 1. osobě. Co konkrétně můžu nabídnout právě jim (redesign / Shopify / migrace / AI asistent jen pokud to sedí). Bez „My v Venegardu…“ a bez výčtu funkcí."
       : `3) Nabídka: 1 až 2 věty v 1. osobě. Co můžu nabídnout v návaznosti na „${nab}“ a bod 2 — konkrétně pro jejich firmu. Bez „My v Venegardu…“ a bez obecného marketingového pitchování.`,
-    "4) CTA: jen krátká otázka (např. jestli mají příští týden deset minut na krátký hovor). BEZ podpisu v tomto odstavci.",
+    "4) CTA: jen krátká lidská otázka (např. jestli mají příští týden chvíli na krátký hovor). NEPIŠ „deset minut“ ani „Stačí napsat, co vám sedí.“ BEZ podpisu v tomto odstavci.",
     "5) Podpis VŽDY jako samostatný odstavec (před ním prázdný řádek), formát jako v mailu/Seznamu. Jen JEDNOU:",
     "   S pozdravem,   NEBO   S úctou,",
     `   ${author.fullName}`,
@@ -1042,10 +1038,14 @@ async function generateWithValidation<T>(args: {
   /** Úprava výstupu před validací (např. odstranění pomlček). */
   normalize?: (obj: T) => T;
   violates: (obj: T) => boolean;
-  /** Po vyčerpání pokusů bez validního výstupu — nesmí házet, vrátí použitelná data. */
-  buildFallback: (lastNormalized: T | null) => T;
+  /**
+   * Když model vrátil JSON, ale neprošel interní kontrolou (fráze / odstavce).
+   * Nikdy nevolat s null — bez AI výstupu radši vyhodíme chybu, ať UI neukáže fake e-mail.
+   */
+  buildFallback: (lastNormalized: T) => T;
 }) {
   let lastNormalized: T | null = null;
+  let lastError: unknown = null;
 
   const generateArgs =
     args.userInput.mode === "prompt"
@@ -1074,11 +1074,23 @@ async function generateWithValidation<T>(args: {
         return obj;
       }
     } catch (error) {
+      lastError = error;
       console.error("SNIPER ERROR:", error);
+      // 429 / quota — další pokusy jen spálí limit a nic neopraví.
+      if (isGeminiQuotaError(error)) {
+        throw new Error(geminiQuotaUserMessage(error));
+      }
     }
   }
 
-  return args.buildFallback(lastNormalized);
+  if (lastNormalized) {
+    return args.buildFallback(lastNormalized);
+  }
+
+  console.error("SNIPER FATAL: žádný platný výstup modelu po 3 pokusech", lastError);
+  throw new Error(
+    "Generování e-mailu selhalo (model nevrátil použitelný výstup). Zkuste to prosím znovu.",
+  );
 }
 
 type SniperGenerationInput = {
@@ -1275,10 +1287,7 @@ async function runSniperEmailGeneration(
     userInput,
     normalize: (obj) => normalizeSniperEmailOutput(obj, offerForPrompts),
     violates: sniperOutputViolatesForbiddenOnly,
-    buildFallback: (last) =>
-      last
-        ? finalizeSniperEmailOutput(last, offerForPrompts, author.fullName)
-        : minimalFallbackSniperEmail(clientSiteLabel, offerForPrompts, author.fullName),
+    buildFallback: (last) => finalizeSniperEmailOutput(last, offerForPrompts, author.fullName),
   }).then((object) => ({
     ...object,
     detekovany_segment: resolveDetectedSegment(
@@ -1372,7 +1381,7 @@ export async function generateEmailContent(params: GenerateEmailParams) {
     return { success: true as const, data: object };
   } catch (error) {
     console.error("SNIPER ERROR:", error);
-    return { error: "Generování e-mailu selhalo. Zkuste to prosím znovu." };
+    return { error: sniperUserFacingError(error) };
   }
 }
 
@@ -1555,7 +1564,7 @@ export async function generateEmailForLead(
     };
   } catch (error) {
     console.error("GENERATE LEAD EMAIL ERROR:", error);
-    return { error: "Generování e-mailu selhalo (chyba serveru nebo nedostupný web)." };
+    return { error: sniperUserFacingError(error) };
   }
 }
 
@@ -1710,32 +1719,12 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
       userInput: { mode: "prompt", prompt },
       normalize: normalizeEmailSubjectsOutput,
       violates: subjectsViolateForbiddenOnly,
-      buildFallback: (last) =>
-        last
-          ? finalizeEmailSubjectsOutput(last)
-          : {
-              subjects: [
-                lowercaseFirstLetterSubject(
-                  truncateToMaxWords("dotaz k tomu co píšete na webu", SNIPER_SUBJECT_MAX_WORDS),
-                ),
-                lowercaseFirstLetterSubject(
-                  truncateToMaxWords("rychlý dotaz k vaší praxi online", SNIPER_SUBJECT_MAX_WORDS),
-                ),
-                lowercaseFirstLetterSubject(
-                  truncateToMaxWords(
-                    offerForPrompts
-                      ? `rychlý dotaz k ${offerForPrompts} podle vašeho webu`
-                      : "rychlý dotaz k vašim službám z webu",
-                    SNIPER_SUBJECT_MAX_WORDS,
-                  ),
-                ),
-              ],
-            },
+      buildFallback: (last) => finalizeEmailSubjectsOutput(last),
     });
 
     return { success: true as const, data: object };
   } catch (error) {
     console.error("SNIPER ERROR:", error);
-    return { error: "Generování předmětů selhalo. Zkuste to prosím znovu." };
+    return { error: sniperUserFacingError(error) };
   }
 }
