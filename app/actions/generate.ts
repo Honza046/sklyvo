@@ -45,8 +45,8 @@ function geminiQuotaUserMessage(error: unknown): string {
   const raw = error && typeof error === "object" ? String((error as { message?: string }).message ?? "") : "";
   const retryMatch = /retry in\s+(\d+(?:\.\d+)?)\s*s/i.exec(raw);
   const waitSec = retryMatch ? Math.ceil(Number(retryMatch[1])) : null;
-  const waitHint = waitSec && waitSec > 0 ? ` Zkus to znovu za cca ${waitSec} s.` : "";
-  return `Vyčerpaná denní kvóta Gemini API (free tier, model ${SNIPER_GEMINI_MODEL}).${waitHint} Na localu běžně pomůže zapnout billing u Google AI Studio, nebo v .env nastavit placený GOOGLE_API_KEY / SNIPER_GEMINI_MODEL.`;
+  const waitHint = waitSec && waitSec > 0 ? ` Zkus to znovu za cca ${waitSec} s.` : " Zkus to za chvíli znovu.";
+  return `AI generování je teď dočasně nedostupné (limit Gemini API).${waitHint}`;
 }
 
 function sniperUserFacingError(error: unknown): string {
