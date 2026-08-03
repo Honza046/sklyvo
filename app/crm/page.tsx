@@ -470,13 +470,23 @@ function CrmPageContent() {
       return matchText && matchStatus && matchSource && matchDate && matchTag;
     });
 
+    const byId = (a: Lead, b: Lead) => (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
+
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "oldest") {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        return diff !== 0 ? diff : byId(a, b);
       }
-      if (sortBy === "value_high") return b.value - a.value;
-      if (sortBy === "value_low") return a.value - b.value;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === "value_high") {
+        const diff = b.value - a.value;
+        return diff !== 0 ? diff : byId(a, b);
+      }
+      if (sortBy === "value_low") {
+        const diff = a.value - b.value;
+        return diff !== 0 ? diff : byId(a, b);
+      }
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return diff !== 0 ? diff : byId(a, b);
     });
 
     return sorted;
@@ -688,7 +698,8 @@ function CrmPageContent() {
   const executeDelete = async () => {
     if (!leadsToDelete || leadsToDelete.length === 0 || isBulkRunning) return;
     setIsBulkRunning(true);
-    const result = await bulkDeleteLeads(leadsToDelete);
+    const idsToRemove = [...leadsToDelete];
+    const result = await bulkDeleteLeads(idsToRemove);
     setIsBulkRunning(false);
     setLeadsToDelete(null);
 
@@ -697,8 +708,9 @@ function CrmPageContent() {
       return;
     }
     toast.success(`Odstraněno ${result.deletedCount} leadů.`);
-    setSelectedLeads([]);
-    await loadLeads();
+    const removed = new Set(idsToRemove);
+    setSelectedLeads((prev) => prev.filter((id) => !removed.has(id)));
+    setLeads((prev) => prev.filter((lead) => !removed.has(lead.id)));
   };
 
   const handleOpenEdit = useCallback((lead: Lead) => {
@@ -1096,7 +1108,7 @@ function CrmPageContent() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <Label>Obor (neviditelný tag)</Label>
+                          <Label>Obor</Label>
                           <Select value={tagFilter} onValueChange={setTagFilter}>
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Obor" />
