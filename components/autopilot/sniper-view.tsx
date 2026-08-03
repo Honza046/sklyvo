@@ -88,11 +88,11 @@ import {
 } from "@/components/autopilot/shared";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 
-/** Kompaktní / expanded — absolutní viewport uvnitř flex-1 parenta (spolehlivý scroll). */
+/** Kompaktní: absolute viewport (spolehlivý scroll v omezené kartě). Expanded: flex-1 overflow (výška z overlay). */
 const SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS =
   "absolute inset-0 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 const SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS =
-  "absolute inset-0 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+  "min-h-0 flex-1 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 type ActivePreviewEmail = {
   leadId: string;
@@ -844,15 +844,16 @@ export function AutopilotSniperView() {
       <div
         className={cn(
           AUTOPILOT_TABLE_CARD_CLASS,
-          "relative z-0 mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4",
-          expanded && "mt-0 sm:mt-0",
+          "relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden",
+          expanded ? "mt-0 h-full min-h-0 sm:mt-0" : "mt-3 sm:mt-4",
         )}
       >
         {/* Mobile list */}
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "relative min-h-0 flex-1 md:hidden",
+            "min-h-0 flex-1 md:hidden",
+            expanded ? "flex flex-col overflow-hidden" : "relative",
           )}
         >
           <div
@@ -916,7 +917,10 @@ export function AutopilotSniperView() {
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "relative hidden min-h-0 flex-1 md:block",
+            "hidden min-h-0 flex-1",
+            expanded
+              ? "md:flex md:flex-col md:overflow-hidden"
+              : "relative md:block",
           )}
         >
           <div
@@ -1723,7 +1727,9 @@ export function AutopilotSniperView() {
               </Select>
             </div>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden">{renderSelectionTable("expanded")}</div>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            {renderSelectionTable("expanded")}
+          </div>
         </div>
       </ExpandOverlay>
 
