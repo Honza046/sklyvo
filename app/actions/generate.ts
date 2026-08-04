@@ -16,6 +16,10 @@ import {
 } from "@/lib/ai-behavior-settings";
 import { plainTextToHtml, plainTextToMimeText, appendEmailSignatureIfMissing, personalizeEmailSignature } from "@/lib/email-format";
 import { sendEmail } from "@/app/actions/email";
+import {
+  buildGoldEmailFewShotBlock,
+  buildGoldQuotaFallbackDraft,
+} from "@/lib/sniper-gold-emails";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_API_KEY,
@@ -49,6 +53,13 @@ function geminiQuotaUserMessage(error: unknown): string {
   return `AI generování je teď dočasně nedostupné (limit Gemini API).${waitHint}`;
 }
 
+function isQuotaExhaustedUserError(error: unknown): boolean {
+  if (isGeminiQuotaError(error)) return true;
+  if (!(error instanceof Error)) return false;
+  const m = error.message.toLowerCase();
+  return m.includes("limit gemini api") || m.includes("dočasně nedostupné");
+}
+
 function sniperUserFacingError(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     const m = error.message.trim();
@@ -60,7 +71,9 @@ function sniperUserFacingError(error: unknown): string {
       return m;
     }
   }
-  if (isGeminiQuotaError(error)) return geminiQuotaUserMessage(error);
+  if (isGeminiQuotaError(error) || isQuotaExhaustedUserError(error)) {
+    return geminiQuotaUserMessage(error);
+  }
   return "Generování e-mailu selhalo. Zkuste to prosím znovu.";
 }
 
@@ -745,7 +758,85 @@ function clientSiteLabelFromUrl(urlRaw: string): string {
   }
 }
 
-/** Heuristika segmentu z textu webu — přebije špatnou LLM detekci (např. SaaS u ordinace). */
+type PriorOutreachEmail = {
+  kind: string;
+  subject: string;
+  body: string;
+  sentAt: string;
+};
+
+/**
+ * Prompt blok pro INITIAL / FOLLOW_UP / BREAKUP.
+ * Follow-up a breakup musí explicitně navazovat na první (INITIAL) mail.
+ */
+function buildOutreachSequencePromptBlock(
+  kind: "INITIAL" | "FOLLOW_UP" | "BREAKUP",
+  prior: PriorOutreachEmail[],
+): string[] {
+  if (kind === "INITIAL") {
+    return [
+      "",
+      "TYP ZPRÁVY: první cold outreach. Piš jako první kontakt, krátce, konkrétně, bez zmínky o předchozí komunikaci.",
+    ];
+  }
+
+  const initial =
+    prior.find((m) => m.kind.toUpperCase() === "INITIAL") ?? prior[0] ?? null;
+  const rest = prior.filter((m) => m !== initial);
+
+  const historyParts: string[] = [];
+  if (initial) {
+    historyParts.push(
+      "PRVNÍ ODESLANÝ E-MAIL (INITIAL) — na ten MUSÍŠ navázat (téma, postřeh, nabídka):",
+      `Předmět: ${initial.subject}`,
+      `Odesláno: ${initial.sentAt}`,
+      initial.body.slice(0, 1800),
+    );
+  }
+  if (rest.length > 0) {
+    historyParts.push(
+      "",
+      "DALŠÍ ODESLANÉ MAILY V SEKVENCI (od nejstaršího):",
+      ...rest.map(
+        (m, i) =>
+          `--- #${i + 1} [${m.kind}] ${m.sentAt} | předmět: ${m.subject}\n${m.body.slice(0, 1000)}`,
+      ),
+    );
+  }
+
+  if (kind === "FOLLOW_UP") {
+    return [
+      "",
+      "TYP ZPRÁVY: FOLLOW-UP (navázání na první cold mail, na který neodpověděli).",
+      "POVINNÉ: Vycházej z PRVNÍHO ODESLANÉHO E-MAILU níže. Připomeň stejné téma / postřeh / nabídku vlastními slovy.",
+      "Nepřepisuj stejný cold pitch. Buď kratší (2 až 3 odstavce + podpis). Jemně urgovat, jedno konkrétní CTA.",
+      "Nepiš „posílám follow-up“ ani „připomínám se podruhé“. Piš jako člověk, co se přirozeně ozývá k tématu z prvního mailu.",
+      "Předměty: navazující na první mail (ne nový cold pitch z nuly).",
+      "",
+      ...(historyParts.length > 0
+        ? historyParts
+        : [
+            "POZOR: Historie mailů chybí. Piš velmi krátký follow-up obecně a přiznej, že navazuješ na předchozí zprávu o webu.",
+          ]),
+    ];
+  }
+
+  return [
+    "",
+    "TYP ZPRÁVY: BREAKUP (poslední mail v sekvenci, zdvořile uzavíráme).",
+    "POVINNÉ: Naváž na PRVNÍ ODESLANÝ E-MAIL (a případný follow-up) níže. Zmiň stejné téma jen jednou větou.",
+    "Buď velmi krátký (max 2 odstavce + podpis), lidský, bez nátlaku. Dej prostor se ozvat později. Žádná vina, žádné drama.",
+    "Nepiš nový sales pitch. Předměty: klidné uzavření / poslední zpráva k tématu z prvního mailu.",
+    "",
+    ...(historyParts.length > 0
+      ? historyParts
+      : [
+          "POZOR: Historie mailů chybí. Piš velmi krátké zdvořilé uzavření bez nového pitchování.",
+        ]),
+  ];
+}
+
+/** Heuristika segmentu z textu webu, přebije špatnou LLM detekci (např. SaaS u ordinace). */
 function inferSegmentFromWebsiteText(
   text: string,
 ): (typeof SNIPER_DETECTED_SEGMENTS)[number] | null {
@@ -1180,42 +1271,19 @@ async function runSniperEmailGeneration(
 
   const kind = input.outreachKind ?? "INITIAL";
   const prior = input.priorEmails ?? [];
-  const outreachBlock =
+
+  const inferredSegmentForGold = inferSegmentFromWebsiteText(clientWebsiteData);
+  const goldFewShotBlock =
     kind === "INITIAL"
-      ? [
-          "",
-          "TYP ZPRÁVY: první cold outreach. Piš jako první kontakt — krátce, konkrétně, bez zmínky o předchozí komunikaci.",
-        ]
-      : kind === "FOLLOW_UP"
-        ? [
-            "",
-            "TYP ZPRÁVY: FOLLOW-UP (navázání na předchozí mail, na který neodpověděli).",
-            "Naváž na to, co jsi už psal — nepřepisuj stejný cold pitch. Buď kratší, jemně urgovat, nabídni konkrétní další krok.",
-            "Nepiš „posílám follow-up“ ani „připomínám se podruhé“ — piš jako člověk, co se přirozeně ozývá.",
-            prior.length
-              ? [
-                  "HISTORIE NAŠICH ODESLANÝCH MAILŮ (od nejstaršího):",
-                  ...prior.map(
-                    (m, i) =>
-                      `--- #${i + 1} [${m.kind}] ${m.sentAt} | předmět: ${m.subject}\n${m.body.slice(0, 1200)}`,
-                  ),
-                ].join("\n")
-              : "Historie mailů chybí — piš krátký follow-up obecně.",
-          ]
-        : [
-            "",
-            "TYP ZPRÁVY: BREAKUP (poslední mail v sekvenci — zdvořile uzavíráme, pokud nemají zájem).",
-            "Buď velmi krátký, lidský, bez nátlaku. Dej jim prostor se ozvat, pokud se situace změní. Žádná vina, žádný drama.",
-            prior.length
-              ? [
-                  "HISTORIE NAŠICH ODESLANÝCH MAILŮ:",
-                  ...prior.map(
-                    (m, i) =>
-                      `--- #${i + 1} [${m.kind}] ${m.sentAt} | předmět: ${m.subject}\n${m.body.slice(0, 800)}`,
-                  ),
-                ].join("\n")
-              : "",
-          ];
+      ? buildGoldEmailFewShotBlock({
+          websiteText: clientWebsiteData,
+          companyLabel: clientSiteLabel,
+          segment: inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
+          limit: 2,
+        })
+      : "";
+
+  const outreachBlock = buildOutreachSequencePromptBlock(kind, prior);
 
   const userPrompt = [
     `Doména / web klienta (pouze kontext pro tělo a analýzu, do předmětů ji nekopíruj): ${clientSiteLabel}`,
@@ -1224,6 +1292,7 @@ async function runSniperEmailGeneration(
     isAutodetect ? "" : null,
     "Zde jsou data z webu potenciálního klienta:",
     clientWebsiteData,
+    goldFewShotBlock || null,
     "",
     buildLanguageToneSegmentBlock({
       ...params,
@@ -1257,11 +1326,18 @@ async function runSniperEmailGeneration(
     "",
     "Důležité k vygenerovane_predmety:",
     `- Pole musí obsahovat ${SNIPER_SUBJECT_VARIANTS_MIN} až ${SNIPER_SUBJECT_VARIANTS_MAX} různých předmětů.`,
-    `Každý předmět: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov, začátek malým písmenem, tón zvědavého člověka co web opravdu četl (ne suchá klíčová slova).`,
+    `Každý předmět: ${SNIPER_SUBJECT_MIN_WORDS} až ${SNIPER_SUBJECT_MAX_WORDS} slov, začátek malým písmenem.`,
+    kind === "FOLLOW_UP" || kind === "BREAKUP"
+      ? "Předměty musí navazovat na první odeslaný mail (stejné téma / postřeh), ne nový cold pitch."
+      : "Tón zvědavého člověka co web opravdu četl (ne suchá klíčová slova).",
     isAutodetect
       ? `Službu v e-mailu drž u doporučení z heuristiky: „${autodectOffer}“. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.).`
       : `Tvoje nabízená služba v tomto e-mailu (propojení světů): „${offerForPrompts}“. Doménu ani hostitele z URL nikdy nevkládej do vygenerovane_predmety (viz system prompt: pouze „váš web“, „vaše firma“ apod.).`,
-    "Čtyři varianty předmětu dodrž psychologické vzorce ze system promptu (1 osobní postřeh + web, 2 konkrétní dotaz na jejich službu z webu, 3 propojení jejich světa s naší nabídkou, 4 neformální přímý dotaz).",
+    kind === "INITIAL"
+      ? "Čtyři varianty předmětu dodrž psychologické vzorce ze system promptu (1 osobní postřeh + web, 2 konkrétní dotaz na jejich službu z webu, 3 propojení jejich světa s naší nabídkou, 4 neformální přímý dotaz)."
+      : kind === "FOLLOW_UP"
+        ? "Předměty: krátké navázání (např. ještě k tomu co jsem psal / jedna myšlenka k vašemu webu), bez „follow-up“ ve znění."
+        : "Předměty: klidné uzavření k tématu z prvního mailu, bez nátlaku.",
   ]
     .filter((line): line is string => line != null)
     .join("\n");
@@ -1281,20 +1357,63 @@ async function runSniperEmailGeneration(
       }
     : { mode: "prompt", prompt: userPrompt };
 
-  return generateWithValidation({
-    schema: sniperEmailOutputSchema,
-    system,
-    userInput,
-    normalize: (obj) => normalizeSniperEmailOutput(obj, offerForPrompts),
-    violates: sniperOutputViolatesForbiddenOnly,
-    buildFallback: (last) => finalizeSniperEmailOutput(last, offerForPrompts, author.fullName),
-  }).then((object) => ({
+  const withDetectedSegment = (object: z.infer<typeof sniperEmailOutputSchema>) => ({
     ...object,
     detekovany_segment: resolveDetectedSegment(
       clientWebsiteData,
       object.detekovany_segment,
     ),
-  }));
+  });
+
+  try {
+    const object = await generateWithValidation({
+      schema: sniperEmailOutputSchema,
+      system,
+      userInput,
+      normalize: (obj) => normalizeSniperEmailOutput(obj, offerForPrompts),
+      violates: sniperOutputViolatesForbiddenOnly,
+      buildFallback: (last) => finalizeSniperEmailOutput(last, offerForPrompts, author.fullName),
+    });
+    return withDetectedSegment(object);
+  } catch (error) {
+    // Free-tier kvóta: místo hard failu INITIAL draft z gold banky (oborový styl).
+    if (kind === "INITIAL" && isQuotaExhaustedUserError(error)) {
+      console.warn(
+        "SNIPER: Gemini kvóta vyčerpána — používám gold e-mail jako offline fallback.",
+      );
+      const gold = buildGoldQuotaFallbackDraft({
+        websiteText: clientWebsiteData,
+        companyLabel: clientSiteLabel,
+        segment: inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
+      });
+      const signedBody = appendEmailSignatureIfMissing(
+        gold.body,
+        ctx.emailSignature || author.fullName,
+      );
+      const draft = finalizeSniperEmailOutput(
+        {
+          contact_email: null,
+          contact_phone: null,
+          osloveni: gold.osloveni,
+          analyza_klienta: gold.analysis,
+          vygenerovane_predmety: [
+            gold.subject,
+            "rychlý dotaz k vašemu webu",
+            "jedna věc co mě na webu zaujala",
+            "měl bych krátký tip k prezentaci",
+          ],
+          vygenerovany_email: signedBody,
+          detekovany_segment: null,
+          detekovany_ton: null,
+          detekovany_jazyk: language?.startsWith("cs") ? "cs" : null,
+        },
+        offerForPrompts || autodectOffer || "web",
+        author.fullName,
+      );
+      return withDetectedSegment(draft);
+    }
+    throw error;
+  }
 }
 
 export async function generateEmailContent(params: GenerateEmailParams) {
@@ -1496,6 +1615,18 @@ export async function generateEmailForLead(
       body: stripHtmlToText(row.htmlBody).slice(0, 1500),
       sentAt: (row.sentAt ?? row.createdAt).toISOString().slice(0, 10),
     }));
+
+    if (kind === "FOLLOW_UP" || kind === "BREAKUP") {
+      const hasInitial = priorEmails.some((m) => m.kind.toUpperCase() === "INITIAL");
+      if (!hasInitial && priorEmails.length === 0) {
+        return {
+          error:
+            kind === "FOLLOW_UP"
+              ? "Nejdřív musí být odeslaný první (INITIAL) e-mail. Follow-up z něj vychází."
+              : "Nejdřív musí být odeslaný první (INITIAL) e-mail. Breakup z něj vychází.",
+        };
+      }
+    }
 
     const author = session
       ? getAuthorFromSession(session)
