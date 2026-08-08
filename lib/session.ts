@@ -1,4 +1,6 @@
-import { SignJWT, jwtVerify } from "jose";
+// Subpath imports stay Edge-compatible (main `jose` entry pulls JWE/deflate).
+import { SignJWT } from "jose/jwt/sign";
+import { jwtVerify } from "jose/jwt/verify";
 
 export const SESSION_COOKIE = "session_user_id";
 export const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 30;
