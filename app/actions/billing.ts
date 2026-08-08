@@ -1,12 +1,8 @@
 "use server";
 
-import Stripe from "stripe";
 import { getSessionUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2026-04-22.dahlia",
-});
+import { stripe } from "@/lib/stripe";
 
 export type WorkspaceInvoiceRow = {
   id: string;

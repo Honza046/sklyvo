@@ -1,14 +1,9 @@
 "use server";
 
-import Stripe from "stripe";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
-
-// Inicializace Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-04-10" as any, 
-});
+import { stripe } from "@/lib/stripe";
 
 const PRICE_IDS: Record<string, string | undefined> = {
   STARTER: process.env.STRIPE_PRICE_STARTER,

@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import {
   creditsForPlanTier,
   resolvePlanTierFromSubscription,
@@ -9,13 +9,10 @@ import {
   resolvePlanTierFromStripePriceIds,
 } from "@/lib/stripe-plan-tiers";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2026-04-22.dahlia",
-});
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
