@@ -334,7 +334,7 @@ function leadToRow(lead: {
 }
 
 /** Stavy CRM boardu — přímo jako spodní listy (hned po ruce). */
-export const VENEGARD_STATUS_TABS = [
+export const SKLYVO_STATUS_TABS = [
   { title: "Nový lead", status: "NEW" },
   { title: "Kontaktováno", status: "CONTACTED" },
   { title: "Follow up", status: "REPLIED" },
@@ -347,13 +347,13 @@ export const VENEGARD_STATUS_TABS = [
 const ALL_TAB = "Vše" as const;
 
 /** Spodní listy = stavy + kompletní přehled. */
-export const VENEGARD_CRM_TABS = [
-  ...VENEGARD_STATUS_TABS.map((t) => t.title),
+export const SKLYVO_CRM_TABS = [
+  ...SKLYVO_STATUS_TABS.map((t) => t.title),
   ALL_TAB,
 ] as const;
 
 /** Zdroje (Radar / Sniper / …) — filtrované pohledy na listu Vše. */
-export const VENEGARD_SOURCE_VIEWS = [
+export const SKLYVO_SOURCE_VIEWS = [
   { title: "Radar", value: "Radar" },
   { title: "Sniper", value: "Sniper" },
   { title: "Manuální", value: "Manuální" },
@@ -385,7 +385,7 @@ export async function createCrmSpreadsheet(
     },
     body: JSON.stringify({
       properties: { title },
-      sheets: VENEGARD_CRM_TABS.map((tabTitle, index) => ({
+      sheets: SKLYVO_CRM_TABS.map((tabTitle, index) => ({
         properties: {
           title: tabTitle,
           index,
@@ -451,8 +451,8 @@ async function fetchSheetProperties(accessToken: string, spreadsheetId: string) 
   return meta.sheets ?? [];
 }
 
-async function ensureVenegardCrmTabs(accessToken: string, spreadsheetId: string) {
-  const desired = VENEGARD_CRM_TABS as readonly string[];
+async function ensureSklyvoCrmTabs(accessToken: string, spreadsheetId: string) {
+  const desired = SKLYVO_CRM_TABS as readonly string[];
   const desiredSet = new Set<string>(desired);
 
   // ── 1) Přejmenovat legacy přehled → Vše (pokud Vše chybí) ──
@@ -579,7 +579,7 @@ async function syncSourceFilterViews(input: {
   const sheetId = sheet.properties.sheetId;
 
   const managedTitles = new Set<string>([
-    ...VENEGARD_SOURCE_VIEWS.map((v) => v.title as string),
+    ...SKLYVO_SOURCE_VIEWS.map((v) => v.title as string),
     // staré statusové pohledy uklidit
     "Nový lead",
     "Kontaktováno",
@@ -600,7 +600,7 @@ async function syncSourceFilterViews(input: {
   const endRow = Math.max(input.rowCount, 2);
   const endCol = CRM_SHEET_HEADERS.length;
 
-  for (const view of VENEGARD_SOURCE_VIEWS) {
+  for (const view of SKLYVO_SOURCE_VIEWS) {
     requests.push({
       addFilterView: {
         filter: {
@@ -728,13 +728,13 @@ export async function writeCrmLeadsToSheet(input: {
   return { rowCount: leads.length };
 }
 
-/** Venegard CRM: listy podle stavů (board) + Vše; zdroje jako filtrované pohledy. */
-export async function writeVenegardCrmWorkbook(input: {
+/** Sklyvo CRM: listy podle stavů (board) + Vše; zdroje jako filtrované pohledy. */
+export async function writeSklyvoCrmWorkbook(input: {
   accessToken: string;
   spreadsheetId: string;
   workspaceId: string;
 }) {
-  await ensureVenegardCrmTabs(input.accessToken, input.spreadsheetId);
+  await ensureSklyvoCrmTabs(input.accessToken, input.spreadsheetId);
 
   const leads = await prisma.lead.findMany({
     where: { workspaceId: input.workspaceId },
@@ -761,11 +761,11 @@ export async function writeVenegardCrmWorkbook(input: {
   const byTab: Record<string, typeof leads> = {
     [ALL_TAB]: leads,
   };
-  for (const { title, status } of VENEGARD_STATUS_TABS) {
+  for (const { title, status } of SKLYVO_STATUS_TABS) {
     byTab[title] = leads.filter((l) => l.status === status);
   }
 
-  for (const tab of VENEGARD_CRM_TABS) {
+  for (const tab of SKLYVO_CRM_TABS) {
     const tabLeads = byTab[tab] ?? [];
     const values: string[][] = [
       [...CRM_SHEET_HEADERS],
@@ -870,7 +870,7 @@ export async function writeSplitOutreachSheets(input: {
   workspaceId: string;
   authorName?: string;
 }) {
-  const author = (input.authorName ?? "Venegard").trim() || "Venegard";
+  const author = (input.authorName ?? "Sklyvo").trim() || "Sklyvo";
   const leads = await prisma.lead.findMany({
     where: { workspaceId: input.workspaceId },
     orderBy: { createdAt: "desc" },
@@ -1165,7 +1165,7 @@ async function applyCrmSheetFormatting(input: {
   }
 }
 
-async function spreadsheetLooksLikeVenegardCrm(
+async function spreadsheetLooksLikeSklyvoCrm(
   accessToken: string,
   spreadsheetId: string,
 ): Promise<boolean> {
@@ -1189,6 +1189,7 @@ async function spreadsheetLooksLikeVenegardCrm(
       t === "Nový lead" ||
       t === "Kontaktováno" ||
       t === "Domluveno" ||
+      /^sklyvo/i.test(t) ||
       /^venegard/i.test(t),
   );
 }
@@ -1199,16 +1200,16 @@ export async function syncWorkspaceCrmToSheets(workspaceId: string) {
     if (!auth) return { skipped: true as const };
 
     const title = auth.connection.spreadsheetTitle ?? "";
-    const looksVenegard =
-      /venegard\s*crm/i.test(title) ||
-      (await spreadsheetLooksLikeVenegardCrm(
+    const looksSklyvo =
+      /(?:sklyvo|venegard)\s*crm/i.test(title) ||
+      (await spreadsheetLooksLikeSklyvoCrm(
         auth.accessToken,
         auth.connection.spreadsheetId!,
       ));
 
-    // Historická outreach DB jen když sync není na Venegard CRM sheet.
+    // Historická outreach DB jen když sync není na Sklyvo CRM sheet.
     const useOutreachSplit =
-      Boolean(auth.connection.splitBySource) && !looksVenegard;
+      Boolean(auth.connection.splitBySource) && !looksSklyvo;
 
     const result = useOutreachSplit
       ? await writeSplitOutreachSheets({
@@ -1216,7 +1217,7 @@ export async function syncWorkspaceCrmToSheets(workspaceId: string) {
           spreadsheetId: auth.connection.spreadsheetId!,
           workspaceId,
         })
-      : await writeVenegardCrmWorkbook({
+      : await writeSklyvoCrmWorkbook({
           accessToken: auth.accessToken,
           spreadsheetId: auth.connection.spreadsheetId!,
           workspaceId,

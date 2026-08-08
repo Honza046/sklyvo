@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils";
 
-const MARK_MASK_SRC = "/brand/venegard-mark-mask.png";
+const MARK_MASK_SRC = "/brand/sklyvo-mark-mask.png";
 const AI_MASK_SRC = "/brand/ai-mask.png";
 
 /** Logo značka — jen geometrie, barva přes `text-*` / currentColor. */
-export function VenegardMark({
+export function SklyvoBrandMark({
   className,
   size = 28,
 }: {
@@ -33,7 +33,7 @@ export function VenegardMark({
   );
 }
 
-export function VenegardWordmark({
+export function SklyvoWordmark({
   className,
   markSize = 28,
   showText = true,
@@ -48,7 +48,7 @@ export function VenegardWordmark({
 }) {
   return (
     <div className={cn("flex min-w-0 items-center gap-2.5", className)}>
-      <VenegardMark size={markSize} className={cn("text-blue-600", markClassName)} />
+      <SklyvoBrandMark size={markSize} className={cn("text-blue-600", markClassName)} />
       {showText ? (
         <span
           className={cn(
@@ -56,7 +56,7 @@ export function VenegardWordmark({
             textClassName,
           )}
         >
-          VENEGARD
+          SKLYVO
         </span>
       ) : null}
     </div>

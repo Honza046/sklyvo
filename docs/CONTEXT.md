@@ -1,4 +1,4 @@
-# Venegard (outreachagent_V2) — Context / architektonická mapa
+# Sklyvo (outreachagent_V2) — Context / architektonická mapa
 
 Tento dokument shrnuje **aktuální stav** repozitáře pro předání dalšímu asistentovi: tech stack, Prisma schéma, adresáře, klíčové vazby a nedávné směry úprav. **Neobsahuje plné zdrojové kódy**, jen strukturu a účel.
 
@@ -21,7 +21,7 @@ Tento dokument shrnuje **aktuální stav** repozitáře pro předání dalšímu
 | Notifikace | **sonner** |
 | Témata | **next-themes** |
 
-**Název balíčku v `package.json`:** `venegard`.
+**Název balíčku v `package.json`:** `sklyvo`.
 
 ---
 

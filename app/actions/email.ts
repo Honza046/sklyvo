@@ -1,11 +1,16 @@
 "use server";
 
-import { Resend } from "resend";
-import { getSessionUser } from "@/app/actions/auth";
 import type { SendEmailResult } from "@/lib/email-types";
-import { getResendFromAddress, mapResendSendError } from "@/lib/resend-system-mail";
+import { sendSystemEmail } from "@/lib/emails/send-system";
+import {
+  emailCodeBlock,
+  emailMuted,
+  emailParagraph,
+  renderSystemEmail,
+} from "@/lib/emails/layout";
 import { sendWorkspaceEmail } from "@/lib/workspace-mailer";
 import { verifyInternalWorkspaceToken } from "@/lib/internal-auth";
+import { getSessionUser } from "@/app/actions/auth";
 
 export type { SendEmailResult } from "@/lib/email-types";
 
@@ -73,54 +78,26 @@ export async function sendVerificationCodeEmail(
   to: string,
   code: string,
 ): Promise<SendEmailResult> {
-  const resend = new Resend(process.env.RESEND_API_KEY || "fallback_aby_to_nepadlo");
+  const html = renderSystemEmail({
+    preview: `Váš ověřovací kód: ${code}`,
+    title: "Ověření změny e-mailu",
+    bodyHtml: [
+      emailParagraph("Dobrý den,"),
+      emailParagraph(
+        "pro dokončení změny e-mailové adresy ve vašem účtu Sklyvo zadejte následující ověřovací kód:",
+      ),
+      emailCodeBlock(code),
+      emailMuted(
+        "Kód je platný <strong>15 minut</strong>. Pokud jste o změnu nežádali, tento e-mail ignorujte.",
+      ),
+    ].join(""),
+  });
 
-  if (!process.env.RESEND_API_KEY?.trim()) {
-    console.error("Chybí RESEND_API_KEY v .env souboru");
-    return { success: false, error: "Chybí konfigurační klíč pro odesílání e-mailů." };
-  }
-
-  const recipient = to?.trim();
-  if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
-    return { success: false, error: "Neplatná e-mailová adresa příjemce." };
-  }
-
-  const html = `
-    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
-      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Ověření změny e-mailu</h2>
-      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 16px;">
-        Dobrý den,<br />
-        pro dokončení změny e-mailové adresy ve vašem účtu zadejte následující ověřovací kód:
-      </p>
-      <div style="font-size: 34px; font-weight: 800; letter-spacing: 10px; text-align: center; background: #f1f5f9; border-radius: 12px; padding: 18px 0; margin: 0 0 16px; color: #2563eb;">
-        ${code}
-      </div>
-      <p style="font-size: 14px; line-height: 1.6; color: #6b7280; margin: 0 0 8px;">
-        Kód je platný <strong>15 minut</strong>. Pokud jste o změnu nežádali, tento e-mail ignorujte.
-      </p>
-    </div>
-  `;
-
-  try {
-    const { data, error } = await resend.emails.send({
-      from: getResendFromAddress(),
-      to: recipient,
-      subject: "Bezpečnostní kód pro změnu e-mailu",
-      html,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: mapResendSendError(error.message || "Resend odmítl odeslání."),
-      };
-    }
-
-    return { success: true, id: data?.id ?? null };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Neznámá chyba při odesílání.";
-    return { success: false, error: mapResendSendError(message) };
-  }
+  return sendSystemEmail({
+    to,
+    subject: "Bezpečnostní kód pro změnu e-mailu — Sklyvo",
+    html,
+  });
 }
 
 /**
@@ -131,59 +108,29 @@ export async function sendPasswordResetEmail(
   to: string,
   resetLink: string,
 ): Promise<SendEmailResult> {
-  const resend = new Resend(process.env.RESEND_API_KEY || "fallback_aby_to_nepadlo");
-
-  if (!process.env.RESEND_API_KEY?.trim()) {
-    console.error("Chybí RESEND_API_KEY v .env souboru");
-    return { success: false, error: "Chybí konfigurační klíč pro odesílání e-mailů." };
-  }
-
-  const recipient = to?.trim();
-  if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
-    return { success: false, error: "Neplatná e-mailová adresa příjemce." };
-  }
-
   const safeLink = resetLink.trim();
-  const html = `
-    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
-      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Obnova hesla</h2>
-      <p style="font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
-        Dobrý den,<br />
-        kliknutím na odkaz níže si nastavíte nové heslo. Pokud jste o změnu nežádali, tento e-mail ignorujte.
-      </p>
-      <div style="text-align: center; margin: 0 0 20px;">
-        <a href="${safeLink}" style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: 12px;">
-          Nastavit nové heslo
-        </a>
-      </div>
-      <p style="font-size: 13px; line-height: 1.6; color: #6b7280; margin: 0 0 8px;">
-        Pokud tlačítko nefunguje, zkopírujte si tento odkaz do prohlížeče:<br />
-        <a href="${safeLink}" style="color: #2563eb; word-break: break-all;">${safeLink}</a>
-      </p>
-      <p style="font-size: 13px; line-height: 1.6; color: #6b7280; margin: 0;">
-        Odkaz je platný <strong>60 minut</strong>.
-      </p>
-    </div>
-  `;
+  const html = renderSystemEmail({
+    preview: "Nastavte si nové heslo do Sklyvo",
+    title: "Obnova hesla",
+    bodyHtml: [
+      emailParagraph("Dobrý den,"),
+      emailParagraph(
+        "kliknutím na tlačítko níže si nastavíte nové heslo. Pokud jste o změnu nežádali, tento e-mail ignorujte.",
+      ),
+      emailMuted(
+        `Pokud tlačítko nefunguje, zkopírujte odkaz do prohlížeče:<br /><a href="${safeLink}" style="color:#02a7ff;word-break:break-all;">${safeLink}</a>`,
+      ),
+      emailMuted("Odkaz je platný <strong>60 minut</strong>."),
+    ].join(""),
+    cta: {
+      label: "Nastavit nové heslo",
+      href: safeLink,
+    },
+  });
 
-  try {
-    const { data, error } = await resend.emails.send({
-      from: getResendFromAddress(),
-      to: recipient,
-      subject: "Obnova zapomenutého hesla",
-      html,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: mapResendSendError(error.message || "Resend odmítl odeslání."),
-      };
-    }
-
-    return { success: true, id: data?.id ?? null };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Neznámá chyba při odesílání.";
-    return { success: false, error: mapResendSendError(message) };
-  }
+  return sendSystemEmail({
+    to,
+    subject: "Obnova zapomenutého hesla — Sklyvo",
+    html,
+  });
 }

@@ -2,6 +2,8 @@
 
 import {
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Loader2,
   Settings,
@@ -50,7 +52,7 @@ export type RunState = {
 export const ITEMS_PER_PAGE = 50;
 
 export const AUTOPILOT_TABLE_CARD_CLASS =
-  "mt-2 flex flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:mt-8 sm:rounded-2xl sm:overflow-x-hidden";
+  "sk-data-panel mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-white shadow-sm sm:rounded-2xl";
 
 export const AUTOPILOT_TABLE_SCROLL_CLASS =
   "max-h-[min(42dvh,280px)] min-h-[160px] overflow-x-auto overflow-y-auto sm:h-[350px] sm:min-h-[350px] sm:max-h-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
@@ -68,10 +70,10 @@ export const SNIPER_QUEUE_TABLE_SCROLL_CLASS =
   "max-h-[min(35dvh,190px)] min-h-[140px] overflow-x-auto overflow-y-auto sm:h-[190px] sm:min-h-[190px] sm:max-h-[190px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 export const AUTOPILOT_TABLE_HEAD_CELL_CLASS =
-  "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950";
+  "h-8 bg-transparent px-3 py-1.5 align-middle text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
 
-export const SNIPER_SETTINGS_STORAGE_KEY = "venegard-autopilot-sniper-settings";
-export const FULL_AUTO_SETTINGS_STORAGE_KEY = "venegard-autopilot-full-auto-settings";
+export const SNIPER_SETTINGS_STORAGE_KEY = "sklyvo-autopilot-sniper-settings";
+export const FULL_AUTO_SETTINGS_STORAGE_KEY = "sklyvo-autopilot-full-auto-settings";
 
 export const FULL_AUTO_STATUS_BADGES: Record<
   FullAutoAutomationStatus,
@@ -91,7 +93,7 @@ export const FULL_AUTO_STATUS_BADGES: Record<
   },
   sent: {
     label: "Odesláno",
-    className: "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+    className: "bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
   },
   failed: {
     label: "Chyba",
@@ -183,7 +185,7 @@ export function leadStatusLabel(status: WorkspaceLead["leadStatus"]): string {
 export function leadStatusClassName(status: WorkspaceLead["leadStatus"]): string {
   if (status === "NEW") return "text-emerald-700 dark:text-emerald-400";
   if (status === "CONTACTED" || status === "REPLIED") return "text-blue-700 dark:text-blue-400";
-  if (status === "MEETING_SET" || status === "CLOSED_WON") return "text-violet-700 dark:text-violet-400";
+  if (status === "MEETING_SET" || status === "CLOSED_WON") return "text-sky-700 dark:text-sky-400";
   if (status === "BREAK_UP") return "text-amber-700 dark:text-amber-400";
   return "text-muted-foreground";
 }
@@ -210,17 +212,19 @@ export function useAutopilotLabels() {
   return { leadStatusLabel: localizedLeadStatusLabel, dateLocale };
 }
 
-export function AutopilotPowerBadge({ enabled }: { enabled: boolean }) {
+export function AutopilotPowerBadge({ enabled }: { enabled: boolean | null }) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-        enabled
-          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-          : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+        enabled === null
+          ? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"
+          : enabled
+            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+            : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
       )}
     >
-      {enabled ? "Zapnuto" : "Vypnuto"}
+      {enabled === null ? "…" : enabled ? "Zapnuto" : "Vypnuto"}
     </span>
   );
 }
@@ -231,7 +235,7 @@ export function AutopilotPowerButton({
   disabled,
   accent = "emerald",
 }: {
-  enabled: boolean;
+  enabled: boolean | null;
   onClick: () => void;
   disabled?: boolean;
   accent?: "emerald" | "blue" | "violet";
@@ -239,24 +243,29 @@ export function AutopilotPowerButton({
   const onClass = {
     emerald: "bg-emerald-600 text-white hover:bg-emerald-700",
     blue: "bg-blue-600 text-white hover:bg-blue-700",
-    violet: "bg-violet-600 text-white hover:bg-violet-700",
+    violet: "bg-blue-600 text-white hover:bg-blue-700",
   }[accent];
   const offClass = {
     emerald:
-      "border border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-zinc-950 dark:text-emerald-300",
-    blue: "border border-blue-300 bg-white text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
+      "border border-emerald-300 bg-card text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-zinc-950 dark:text-emerald-300",
+    blue: "border border-blue-300 bg-card text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
     violet:
-      "border border-violet-300 bg-white text-violet-800 hover:bg-violet-50 dark:border-violet-700 dark:bg-zinc-950 dark:text-violet-300",
+      "border border-blue-300 bg-card text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
   }[accent];
+
+  const loading = enabled === null || disabled;
 
   return (
     <Button
       type="button"
-      disabled={disabled}
+      disabled={loading}
       onClick={onClick}
-      className={cn("h-8 shrink-0 px-3 text-xs font-semibold sm:h-9 sm:px-5 sm:text-sm", enabled ? offClass : onClass)}
+      className={cn(
+        "h-8 shrink-0 px-3 text-xs font-semibold sm:h-9 sm:px-5 sm:text-sm",
+        enabled === null ? "border border-border/60 bg-card text-muted-foreground" : enabled ? offClass : onClass,
+      )}
     >
-      {disabled ? "Ukládám…" : enabled ? "Vypnout" : "Zapnout"}
+      {disabled ? "Ukládám…" : enabled === null ? "…" : enabled ? "Vypnout" : "Zapnout"}
     </Button>
   );
 }
@@ -277,7 +286,7 @@ export function AutopilotControlPanel({
   extra?: React.ReactNode;
   actions: React.ReactNode;
   /** Pokud je předáno, zobrazí badge Zapnuto/Vypnuto u názvu. */
-  powerEnabled?: boolean;
+  powerEnabled?: boolean | null;
 }) {
   return (
     <>
@@ -333,12 +342,12 @@ export function AutopilotTablePagination({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 sm:gap-3 sm:border-border/60 sm:bg-muted/30 sm:px-6 sm:py-4",
+        "sk-pager flex shrink-0 items-center justify-between gap-2 border-0 bg-transparent px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5",
         className,
       )}
     >
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground sm:text-xs">
+        <p className="text-[11px] leading-none text-muted-foreground sm:text-xs">
           <span className="sm:hidden">
             {shownFrom}–{shownTo} / {totalItems}
           </span>
@@ -347,39 +356,43 @@ export function AutopilotTablePagination({
           </span>
         </p>
         {selectedCount != null && selectedCount > 0 && (
-          <p className="text-[10px] text-muted-foreground sm:text-xs">Vybráno: {selectedCount}</p>
+          <p className="mt-1 text-[10px] leading-none text-muted-foreground sm:text-[11px]">
+            Vybráno: {selectedCount}
+          </p>
         )}
       </div>
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <Button
-          variant="outline"
+          type="button"
+          variant="ghost"
           size="sm"
-          className="h-8 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-sm"
+          className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground sm:px-2 sm:text-xs"
           onClick={onPrevious}
           disabled={safePage <= 1}
         >
-          <span className="sm:hidden">←</span>
+          <ChevronLeft className="!size-3.5 shrink-0" />
           <span className="hidden sm:inline">Předchozí</span>
         </Button>
-        <span className="text-[11px] text-muted-foreground sm:text-xs">
+        <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground sm:text-xs">
           {safePage}/{totalPages}
         </span>
         <Button
-          variant="outline"
+          type="button"
+          variant="ghost"
           size="sm"
-          className="h-8 px-2 text-[11px] sm:h-9 sm:px-3 sm:text-sm"
+          className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground sm:px-2 sm:text-xs"
           onClick={onNext}
           disabled={safePage >= totalPages}
         >
-          <span className="sm:hidden">→</span>
           <span className="hidden sm:inline">Následující</span>
+          <ChevronRight className="!size-3.5 shrink-0" />
         </Button>
       </div>
     </div>
   );
 }
 
-/** Prázdný / loading stav uvnitř široké tabulky — sticky left, ať je na mobilu uprostřed viewportu. */
+/** Prázdný / loading stav uvnitř široké tabulky — vycentrováno ve viewportu karty. */
 export function AutopilotTableEmptyState({
   colSpan,
   children,
@@ -390,11 +403,11 @@ export function AutopilotTableEmptyState({
   className?: string;
 }) {
   return (
-    <tr>
+    <tr className="sk-table-empty">
       <td colSpan={colSpan} className="p-0 align-middle">
         <div
           className={cn(
-            "sticky left-0 flex h-[min(42dvh,240px)] w-full max-w-full flex-col items-center justify-center px-4 text-center text-sm text-muted-foreground",
+            "sticky left-0 flex h-full min-h-[min(36dvh,260px)] w-full max-w-full flex-col items-center justify-center px-6 py-10 text-center text-sm text-muted-foreground",
             className,
           )}
         >
@@ -437,12 +450,13 @@ export function AutopilotSettingsIconButton({
   return (
     <Button
       type="button"
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={onClick}
       aria-label={label}
+      title={label}
       className={cn(
-        "h-8 w-8 shrink-0 p-0 text-gray-400 hover:bg-transparent hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 sm:h-9 sm:w-9",
+        "h-9 w-9 shrink-0 rounded-lg p-0 text-muted-foreground",
         className,
       )}
     >

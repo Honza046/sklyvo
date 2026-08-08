@@ -1,1 +1,1 @@
-"""VENEGARD serverless API (Vercel Python runtime)."""
+"""SKLYVO serverless API (Vercel Python runtime)."""

@@ -34,31 +34,39 @@ const integrations = [
   {
     id: "make",
     name: "Make.com",
-    description: "Odesílejte data do Make.com pro pokročilou automatizaci.",
+    description: "Webhook do Make.com.",
     fields: [{ label: "Webhook URL", placeholder: "https://hook.eu1.make.com/..." }],
   },
   {
     id: "zapier",
     name: "Zapier",
-    description: "Propojte systém se stovkami aplikací přes Zapier.",
+    description: "Propojení přes Zapier.",
     fields: [{ label: "Webhook URL", placeholder: "https://hooks.zapier.com/..." }],
   },
   {
     id: "pipedrive",
     name: "Pipedrive",
-    description: "Synchronizujte domluvené schůzky rovnou do vaší pipeline.",
-    fields: [{ label: "API Klíč", placeholder: "Váš Pipedrive API klíč" }],
+    description: "Schůzky do pipeline.",
+    fields: [{ label: "API Klíč", placeholder: "Pipedrive API klíč" }],
   },
   {
     id: "hubspot",
     name: "HubSpot",
-    description: "Obousměrná synchronizace kontaktů s HubSpot CRM.",
-    fields: [{ label: "Access Token", placeholder: "HubSpot Private App Token" }],
+    description: "Sync kontaktů s HubSpot.",
+    fields: [{ label: "Access Token", placeholder: "HubSpot token" }],
   },
 ] as const;
 
 const inputClass =
-  "w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500";
+  "h-9 w-full max-w-xl rounded-xl border border-[color:var(--sk-panel-edge)] bg-[image:var(--sk-sunken)] px-3 text-sm text-[color:var(--sk-ink)] outline-none placeholder:text-[color:var(--sk-muted)] shadow-[var(--sk-sunken-shadow)] focus:ring-2 focus:ring-[color:var(--sk-brand)]/30";
+
+const cardClass =
+  "w-full cursor-pointer rounded-2xl border border-[color:var(--sk-panel-edge)] bg-[image:var(--sk-raised)] p-4 text-left text-[color:var(--sk-ink)] shadow-[var(--sk-raised-shadow)] transition-all hover:-translate-y-px hover:shadow-[var(--sk-shadow-raised-hover)]";
+
+const statusBoxClass =
+  "rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2.5 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100";
+
+const btnSm = "h-8 rounded-xl px-3 text-xs";
 
 function formatSyncedAt(iso: string | null) {
   if (!iso) return null;
@@ -353,17 +361,16 @@ export function IntegrationsPanel() {
   };
 
   return (
-    <div className="pb-2 pt-2">
-      <p className="mb-4 text-sm text-muted-foreground">
-        Live Venegard Sheet zrcadlí CRM v appce (jen nové leady). Stará outreach DB zůstává
-        archivem — Radar z ní vylučuje firmy, i když v appce už nejsou.
+    <div className="max-w-3xl pb-2 pt-1">
+      <p className="mb-3 text-xs text-muted-foreground">
+        Live sheet zrcadlí CRM. Starý outreach sheet slouží jako archiv pro Radar.
       </p>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div
           role="button"
           tabIndex={0}
-          className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600 md:col-span-2"
+          className={`${cardClass} sm:col-span-2`}
           onClick={() => toggleCard("google-sheets")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -373,13 +380,10 @@ export function IntegrationsPanel() {
           }}
         >
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-foreground">
-                Google Sheets
-              </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
-                Live zrcadlo CRM: listy podle stavů (jako board) + Vše. Radar / Sniper ve filtrovaných
-                pohledech. Změny v appce se propsí do tabulky.
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-foreground">Google Sheets</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Live zrcadlo CRM podle stavů + list Vše.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
@@ -387,7 +391,7 @@ export function IntegrationsPanel() {
                 className={`h-2 w-2 rounded-full ${sheetsActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
                 aria-hidden
               />
-              <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {sheetsActive ? "Připojeno" : "Nepřipojeno"}
               </span>
             </div>
@@ -396,100 +400,93 @@ export function IntegrationsPanel() {
           {sheetsExpanded && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-border/60"
+              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
             >
               {!sheets?.oauthConfigured && (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                  Na serveru chybí Google OAuth (GOOGLE_SHEETS_CLIENT_ID / SECRET). Stejný Google Cloud
-                  projekt jako pro Gmail stačí — přidej redirect URI na{" "}
-                  <code className="text-xs">/api/integrations/google-sheets/callback</code> a zapni
-                  Google Sheets API + Google Drive API + Google Docs API.
-                  Po rozšíření oprávnění znovu připojte účet (souhlas s Drive / Docs).
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Chybí Google OAuth (CLIENT_ID / SECRET). Redirect:{" "}
+                  <code className="text-[10px]">/api/integrations/google-sheets/callback</code>
                 </p>
               )}
 
               {sheetsActive ? (
                 <>
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/20">
-                    <p className="font-medium text-emerald-900 dark:text-emerald-200">
-                      {sheets?.spreadsheetTitle ?? "Venegard CRM"}
+                  <div className={statusBoxClass}>
+                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                      {sheets?.spreadsheetTitle ?? "Sklyvo CRM"}
                     </p>
                     {sheets?.accountEmail && (
-                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
-                        Účet: {sheets.accountEmail}
+                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                        {sheets.accountEmail}
                       </p>
                     )}
                     {formatSyncedAt(sheets?.lastSyncedAt ?? null) && (
-                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
-                        Poslední sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
+                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                        Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
                       </p>
                     )}
                     {sheets?.lastError && (
-                      <p className="mt-2 text-rose-700 dark:text-rose-300">Chyba: {sheets.lastError}</p>
+                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
+                        Chyba: {sheets.lastError}
+                      </p>
                     )}
                   </div>
 
-                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-foreground">
+                  <label className="flex items-center gap-2 text-xs text-foreground">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-3.5 w-3.5 rounded border-gray-300"
                       checked={Boolean(sheets?.syncEnabled)}
                       disabled={isPending}
                       onChange={(e) => handleToggleSync(e.target.checked)}
                     />
-                    Automaticky synchronizovat při změnách v CRM
+                    Auto-sync při změnách v CRM
                   </label>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {sheets?.spreadsheetUrl && (
-                      <Button type="button" variant="outline" className="rounded-lg" asChild>
+                      <Button type="button" variant="outline" className={btnSm} asChild>
                         <a href={sheets.spreadsheetUrl} target="_blank" rel="noreferrer">
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Otevřít tabulku
+                          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                          Otevřít
                         </a>
                       </Button>
                     )}
                     <Button
                       type="button"
-                      className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                      className={btnSm}
                       disabled={isPending}
                       onClick={handleSyncNow}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Synchronizovat teď
+                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                      Sync teď
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      className="rounded-lg"
+                      className={btnSm}
                       disabled={isPending}
                       onClick={handleDisconnectSheets}
                     >
-                      <Unplug className="mr-2 h-4 w-4" />
+                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
                       Odpojit
                     </Button>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">
-                    Sloupce: Firma, Web, E-mail, Telefon, Stav… ID je schované. Dole stavy jako v
-                    appce: <strong>Nový lead</strong> → <strong>Domluveno</strong> /{" "}
-                    <strong>Nedomluveno</strong> + <strong>Vše</strong>. Radar / Sniper:{" "}
-                    <strong>Data → Filtrované pohledy</strong> na listu Vše. Zdroj pravdy je CRM v
-                    appce.
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    Sloupce: Firma, Web, E-mail, Telefon, Stav… Listy podle CRM + Vše.
                   </p>
 
-                  <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-3">
-                    <p className="text-sm font-medium text-foreground">
-                      Archiv outreach DB (staré leady)
+                  <div className="sk-data-row flex-col gap-2.5">
+                    <p className="text-xs font-semibold text-foreground">
+                      Archiv outreach DB
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      Staré leady necháváme jen v Google Sheets. App CRM drží jen nové. Radar
-                      vylučuje firmy z archivu (Master / Radar / Sniper), i když v appce nejsou.
-                      Live Venegard sheet se archivem nepřepisuje.
+                    <p className="text-[11px] leading-snug text-muted-foreground">
+                      Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
                     </p>
                     {sheets?.archiveSpreadsheetUrl && (
-                      <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                        Archiv aktivní:{" "}
+                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                        Archiv:{" "}
                         <a
                           href={sheets.archiveSpreadsheetUrl}
                           target="_blank"
@@ -499,55 +496,54 @@ export function IntegrationsPanel() {
                           otevřít
                         </a>
                         {sheets.crmLeadCount > 0
-                          ? ` · v app CRM teď ${sheets.crmLeadCount} leadů`
-                          : " · app CRM prázdné"}
+                          ? ` · CRM ${sheets.crmLeadCount} leadů`
+                          : " · CRM prázdné"}
                       </p>
                     )}
                     <input
                       type="url"
-                      className={`${inputClass} font-mono text-xs dark:border-border dark:bg-background dark:text-foreground`}
+                      className={`${inputClass} font-mono text-[11px]`}
                       value={historySheetUrl}
                       onChange={(e) => setHistorySheetUrl(e.target.value)}
                       placeholder="https://docs.google.com/spreadsheets/d/…"
                     />
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       <Button
                         type="button"
-                        className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                        className={btnSm}
                         disabled={isPending || !historySheetUrl.trim()}
                         onClick={handleSetArchive}
                       >
-                        Nastavit jako archiv pro Radar
+                        Nastavit archiv
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-lg"
+                        className={btnSm}
                         disabled={isPending || !historySheetUrl.trim()}
                         onClick={handleImportHistory}
                       >
-                        <Download className="mr-2 h-4 w-4" />
-                        Import do CRM (volitelné)
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Import do CRM
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-lg"
+                        className={btnSm}
                         disabled={isPending || !historySheetUrl.trim()}
                         onClick={handleBackfillAuthors}
                       >
-                        Doplnit Autory z Master
+                        Doplnit Autory
                       </Button>
                     </div>
-                    <div className="space-y-2 border-t border-border/50 pt-3">
-                      <p className="text-xs text-muted-foreground">
-                        Vyčistit app CRM a nechat staré jen v Sheets. Napiš{" "}
-                        <strong>SMAZAT</strong> pro potvrzení.
+                    <div className="space-y-2 border-t border-[color:var(--sk-panel-edge)] pt-2.5">
+                      <p className="text-[11px] text-muted-foreground">
+                        Vyčistit CRM v appce — napiš <strong>SMAZAT</strong>.
                       </p>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5">
                         <input
                           type="text"
-                          className={`${inputClass} max-w-[10rem] font-mono text-xs dark:border-border dark:bg-background dark:text-foreground`}
+                          className={`${inputClass} max-w-[8rem] font-mono text-[11px]`}
                           value={clearConfirm}
                           onChange={(e) => setClearConfirm(e.target.value)}
                           placeholder="SMAZAT"
@@ -556,32 +552,30 @@ export function IntegrationsPanel() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-lg border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300"
+                          className={`${btnSm} border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300`}
                           disabled={isPending || clearConfirm.trim().toUpperCase() !== "SMAZAT"}
                           onClick={handleClearCrm}
                         >
-                          Vyčistit CRM v appce
+                          Vyčistit CRM
                         </Button>
                       </div>
                     </div>
                     {sheets?.splitBySource &&
-                      !/venegard\s*crm/i.test(sheets.spreadsheetTitle ?? "") && (
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        Sync míří do historické outreach tabulky. Pro Venegard CRM (listy podle stavů)
-                        odpoj a znovu připoj Google Sheets.
+                      !/(?:sklyvo|venegard)\s*crm/i.test(sheets.spreadsheetTitle ?? "") && (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                        Sync míří do staré tabulky. Odpoj a znovu připoj Sheets.
                       </p>
                     )}
                   </div>
                 </>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Po připojení Venegard vytvoří Sheet s listy podle stavů CRM (barevné jako board) +
-                    Vše. Nic v Sheets předem připravovat nemusíš.
+                <div className="space-y-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    Po připojení vznikne sheet s listy podle stavů CRM.
                   </p>
                   <Button
                     type="button"
-                    className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                    className={btnSm}
                     disabled={!sheets?.oauthConfigured || isPending}
                     onClick={handleConnectSheets}
                   >
@@ -596,7 +590,7 @@ export function IntegrationsPanel() {
         <div
           role="button"
           tabIndex={0}
-          className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600 md:col-span-2"
+          className={`${cardClass} sm:col-span-2`}
           onClick={() => toggleCard("microsoft")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -606,13 +600,10 @@ export function IntegrationsPanel() {
           }}
         >
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-foreground">
-                Microsoft 365
-              </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
-                OneDrive, Excel a Word. Pro týmy, které nepoužívají Google. Import souborů,
-                export CRM do Excelu a generování smluv do Wordu.
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-foreground">Microsoft 365</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                OneDrive, Excel a Word.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
@@ -620,7 +611,7 @@ export function IntegrationsPanel() {
                 className={`h-2 w-2 rounded-full ${msActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
                 aria-hidden
               />
-              <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {msActive ? "Připojeno" : "Nepřipojeno"}
               </span>
             </div>
@@ -629,66 +620,63 @@ export function IntegrationsPanel() {
           {msExpanded && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-border/60"
+              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
             >
               {!microsoft?.oauthConfigured && (
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                  Na serveru chybí Microsoft OAuth. Přidej{" "}
-                  <code className="text-xs">MICROSOFT_CLIENT_ID</code> a{" "}
-                  <code className="text-xs">MICROSOFT_CLIENT_SECRET</code> (Azure App Registration),
-                  redirect URI{" "}
-                  <code className="text-xs">/api/integrations/microsoft/callback</code> a oprávnění
-                  Files.ReadWrite + Files.Read.All + offline_access + User.Read.
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Chybí Microsoft OAuth (CLIENT_ID / SECRET). Redirect:{" "}
+                  <code className="text-[10px]">/api/integrations/microsoft/callback</code>
                 </p>
               )}
 
               {msActive ? (
                 <>
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/20">
-                    <p className="font-medium text-emerald-900 dark:text-emerald-200">
+                  <div className={statusBoxClass}>
+                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
                       {microsoft?.displayName || "Microsoft 365"}
                     </p>
                     {microsoft?.accountEmail && (
-                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
-                        Účet: {microsoft.accountEmail}
+                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                        {microsoft.accountEmail}
                       </p>
                     )}
                     {microsoft?.lastError && (
-                      <p className="mt-2 text-rose-700 dark:text-rose-300">
+                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
                         Chyba: {microsoft.lastError}
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
+                      className={btnSm}
                       disabled={isPending}
                       onClick={handleExportExcel}
                     >
-                      <Download className="mr-2 h-4 w-4" />
-                      Exportovat CRM do Excelu
+                      <Download className="mr-1.5 h-3.5 w-3.5" />
+                      Export CRM
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
+                      className={btnSm}
                       disabled={isPending}
                       onClick={handleDisconnectMicrosoft}
                     >
-                      <Unplug className="mr-2 h-4 w-4" />
+                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
                       Odpojit
                     </Button>
                   </div>
                 </>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Po připojení půjde importovat z OneDrive, tvořit Word dokumenty v Generátoru a
-                    exportovat CRM jako Excel (.csv) do OneDrive.
+                <div className="space-y-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    Import z OneDrive, Word v Generátoru, Excel export.
                   </p>
                   <Button
                     type="button"
-                    className="rounded-lg bg-[#2F2F2F] font-semibold text-white hover:bg-black"
+                    className={`${btnSm} bg-[#2F2F2F] text-white hover:bg-black`}
                     disabled={!microsoft?.oauthConfigured || isPending}
                     onClick={handleConnectMicrosoft}
                   >
@@ -703,7 +691,7 @@ export function IntegrationsPanel() {
         <div
           role="button"
           tabIndex={0}
-          className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600 md:col-span-2"
+          className={`${cardClass} sm:col-span-2`}
           onClick={() => toggleCard("fakturoid")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
@@ -713,12 +701,10 @@ export function IntegrationsPanel() {
           }}
         >
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="text-base font-bold text-gray-900 dark:text-foreground">
-                Fakturoid
-              </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">
-                Vystavujte faktury přímo z Generátoru. Klient a částka se přenesou do Fakturoidu.
+            <div className="min-w-0">
+              <h3 className="text-sm font-bold text-foreground">Fakturoid</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Faktury z Generátoru.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
@@ -726,7 +712,7 @@ export function IntegrationsPanel() {
                 className={`h-2 w-2 rounded-full ${fakturoidActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
                 aria-hidden
               />
-              <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 {fakturoidActive ? "Připojeno" : "Nepřipojeno"}
               </span>
             </div>
@@ -735,41 +721,42 @@ export function IntegrationsPanel() {
           {fakturoidExpanded && (
             <div
               onClick={(e) => e.stopPropagation()}
-              className="mt-4 space-y-4 border-t border-gray-100 pt-4 dark:border-border/60"
+              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
             >
               {fakturoidActive ? (
                 <>
-                  <div className="rounded-lg border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/20">
-                    <p className="font-medium text-emerald-900 dark:text-emerald-200">
+                  <div className={statusBoxClass}>
+                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
                       {fakturoid?.accountName || "Fakturoid"}
                     </p>
                     {fakturoid?.accountSlug && (
-                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
-                        Účet: {fakturoid.accountSlug}
+                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                        {fakturoid.accountSlug}
                       </p>
                     )}
                     {fakturoid?.accountEmail && (
-                      <p className="mt-1 text-emerald-800/80 dark:text-emerald-300/80">
+                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
                         {fakturoid.accountEmail}
                       </p>
                     )}
                     {fakturoid?.lastError && (
-                      <p className="mt-2 text-rose-700 dark:text-rose-300">
+                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
                         Chyba: {fakturoid.lastError}
                       </p>
                     )}
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     <Button
                       type="button"
                       variant="outline"
+                      className={btnSm}
                       disabled={isPending}
                       onClick={handleDisconnectFakturoid}
                     >
-                      <Unplug className="mr-2 h-4 w-4" />
+                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
                       Odpojit
                     </Button>
-                    <Button type="button" variant="outline" asChild>
+                    <Button type="button" variant="outline" className={btnSm} asChild>
                       <a
                         href={
                           fakturoid?.accountSlug
@@ -779,62 +766,61 @@ export function IntegrationsPanel() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Otevřít Fakturoid
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                        Otevřít
                       </a>
                     </Button>
                   </div>
                 </>
               ) : (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    V Fakturoidu otevřete Nastavení → Uživatelský účet a vytvořte Client ID + Client
-                    Secret (Client Credentials). Pak je sem vložte.
+                <div className="space-y-2.5">
+                  <p className="text-xs text-muted-foreground">
+                    Ve Fakturoidu vytvoř Client ID + Secret a vlož je sem.
                   </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid max-w-xl gap-2 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
                         Client ID
                       </label>
                       <input
                         type="text"
                         autoComplete="off"
-                        className={`${inputClass} font-mono`}
+                        className={`${inputClass} font-mono text-[11px]`}
                         value={fakturoidClientId}
                         onChange={(e) => setFakturoidClientId(e.target.value)}
-                        placeholder="xxxxxxxx-xxxx-…"
+                        placeholder="xxxxxxxx-…"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                      <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
                         Client Secret
                       </label>
                       <input
                         type="password"
                         autoComplete="off"
-                        className={`${inputClass} font-mono`}
+                        className={`${inputClass} font-mono text-[11px]`}
                         value={fakturoidClientSecret}
                         onChange={(e) => setFakturoidClientSecret(e.target.value)}
                         placeholder="••••••••"
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  <div className="max-w-xs">
+                    <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
                       Account slug (volitelné)
                     </label>
                     <input
                       type="text"
                       autoComplete="off"
-                      className={`${inputClass} font-mono`}
+                      className={`${inputClass} font-mono text-[11px]`}
                       value={fakturoidSlug}
                       onChange={(e) => setFakturoidSlug(e.target.value)}
-                      placeholder="moje-firma (pokud máte víc účtů)"
+                      placeholder="moje-firma"
                     />
                   </div>
                   <Button
                     type="button"
-                    className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                    className={btnSm}
                     disabled={
                       isPending ||
                       !fakturoidClientId.trim() ||
@@ -860,7 +846,7 @@ export function IntegrationsPanel() {
               key={item.id}
               role="button"
               tabIndex={0}
-              className="w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 text-left transition-all hover:border-blue-300 dark:border-gray-700 dark:bg-card dark:hover:border-blue-600"
+              className={cardClass}
               onClick={() => toggleCard(item.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -870,23 +856,23 @@ export function IntegrationsPanel() {
               }}
             >
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-base font-bold text-gray-900 dark:text-foreground">{item.name}</h3>
+                <h3 className="text-sm font-bold text-foreground">{item.name}</h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <span
                     className={`h-2 w-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
                     aria-hidden
                   />
-                  <span className="text-xs font-medium text-gray-600 dark:text-muted-foreground">
+                  <span className="text-[11px] font-medium text-muted-foreground">
                     {isActive ? "Aktivní" : "Nepřipojeno"}
                   </span>
                 </div>
               </div>
-              <p className="mt-2 text-sm text-gray-500 dark:text-muted-foreground">{item.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
 
               {isExpanded && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="border-t border-gray-100 pt-1 dark:border-border/60"
+                  className="border-t border-border/50 pt-1"
                 >
                   {item.fields.map((field) => (
                     <div key={field.label}>
@@ -897,7 +883,7 @@ export function IntegrationsPanel() {
                         id={`${item.id}-${field.label}`}
                         type={item.id === "pipedrive" || item.id === "hubspot" ? "password" : "text"}
                         placeholder={field.placeholder}
-                        className={`${inputClass} mt-4 font-mono`}
+                        className={`${inputClass} mt-3 font-mono text-[11px]`}
                         autoComplete="off"
                         value={integrationValues[item.id] || ""}
                         onChange={(e) =>
@@ -906,10 +892,10 @@ export function IntegrationsPanel() {
                       />
                     </div>
                   ))}
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-1.5">
                     <Button
                       type="button"
-                      className="rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                      className={btnSm}
                       onClick={handleSave}
                     >
                       Uložit
@@ -917,11 +903,11 @@ export function IntegrationsPanel() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="rounded-lg border-gray-200 font-semibold text-gray-700 hover:bg-gray-50 dark:border-border dark:text-foreground dark:hover:bg-muted"
+                      className={btnSm}
                       disabled={isTesting === item.id}
                       onClick={(e) => handleTestConnection(item.id, e)}
                     >
-                      {isTesting === item.id ? "Testuji…" : "Otestovat spojení"}
+                      {isTesting === item.id ? "Testuji…" : "Otestovat"}
                     </Button>
                   </div>
                 </div>

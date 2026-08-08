@@ -1,13 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import "@/components/sklyvo/app-ui.css";
 import { AppProviders } from "@/components/app-providers";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-geist-sans",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-jakarta",
 });
 
 const jetbrains = JetBrains_Mono({
@@ -15,9 +17,9 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-geist-mono",
 });
 
-const APP_NAME = "Venegard";
-const APP_DEFAULT_TITLE = "Venegard";
-const APP_TITLE_TEMPLATE = "%s · Venegard";
+const APP_NAME = "Sklyvo";
+const APP_DEFAULT_TITLE = "Sklyvo";
+const APP_TITLE_TEMPLATE = "%s · Sklyvo";
 const APP_DESCRIPTION = "Digitální agentura: Sniper, Radar, CRM a Autopilot";
 
 export const metadata: Metadata = {
@@ -38,11 +40,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/brand/sklyvo-mark.png", type: "image/png" },
       { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
+    shortcut: [{ url: "/brand/sklyvo-mark.png", type: "image/png" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
@@ -58,8 +62,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2563EB" },
-    { media: "(prefers-color-scheme: dark)", color: "#1e3a8a" },
+    { media: "(prefers-color-scheme: light)", color: "#02a7ff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0288d4" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -74,7 +78,8 @@ export default function RootLayout({
   return (
     <html lang="cs" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${jetbrains.variable} min-h-dvh font-sans`}
+        className={`${jakarta.variable} ${jetbrains.variable} min-h-dvh font-sans`}
+        style={{ fontFamily: "var(--font-jakarta), Helvetica, Arial, sans-serif" }}
       >
         <AppProviders>
           <AppShell>{children}</AppShell>

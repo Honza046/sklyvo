@@ -36,7 +36,7 @@ export function CopilotSlashMenu({
     <div
       ref={listRef}
       role="listbox"
-      className="absolute bottom-full left-4 right-4 z-20 mb-2 max-h-36 overflow-y-auto rounded-xl border border-border/60 bg-popover p-1 shadow-lg"
+      className="absolute bottom-full left-4 right-4 z-20 mb-2 max-h-36 overflow-y-auto rounded-xl border border-[color:var(--sk-border-soft)] bg-[image:var(--sk-glass)] p-1 text-[color:var(--sk-ink)] shadow-[var(--sk-popover-shadow)]"
     >
       {filtered.map((command, index) => (
         <button

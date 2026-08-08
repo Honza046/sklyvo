@@ -6,7 +6,7 @@ import { driver, type DriveStep, type Driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { completeOnboardingTour } from "@/app/actions/onboarding-tour";
 
-const TOUR_POPOVER_CLASS = "venegard-driver-popover";
+const TOUR_POPOVER_CLASS = "sklyvo-driver-popover";
 
 /** Cílová stránka pro každý krok (desktop i mobile, stejné pořadí). */
 const TOUR_STEP_HREFS = [
@@ -258,7 +258,7 @@ function missingTourSelectors(): string[] {
     .filter((s) => !document.querySelector(s));
 }
 
-export function VenegardOnboardingTour({
+export function SklyvoOnboardingTour({
   active,
   userId,
   onCompleted,
@@ -310,7 +310,7 @@ export function VenegardOnboardingTour({
 
       if (previewRef.current) {
         if (typeof window !== "undefined") {
-          window.sessionStorage.removeItem("venegard-tour-preview");
+          window.sessionStorage.removeItem("sklyvo-tour-preview");
           const url = new URL(window.location.href);
           if (url.searchParams.has("tour")) {
             url.searchParams.delete("tour");
@@ -379,7 +379,7 @@ export function VenegardOnboardingTour({
         smoothScroll: true,
         allowClose: true,
         popoverClass: TOUR_POPOVER_CLASS,
-        overlayOpacity: 0.55,
+        overlayOpacity: 0.45,
         stagePadding: 0,
         stageRadius: 16,
         steps: tourSteps(),

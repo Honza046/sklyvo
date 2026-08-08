@@ -64,9 +64,9 @@ export function ExpandOverlay({
             aria-modal="true"
             aria-labelledby="expand-overlay-title"
             className={cn(
-              "pointer-events-auto flex w-full max-w-7xl flex-col overflow-hidden",
+              "sklyvo-app pointer-events-auto flex w-full max-w-7xl flex-col overflow-hidden",
               "h-[min(92vh,980px)] max-h-[calc(100%-1.5rem)] sm:max-h-[calc(100%-2rem)]",
-              "rounded-2xl border border-border/60 bg-background shadow-2xl",
+              "rounded-2xl border border-border/60 bg-white shadow-2xl",
             )}
           >
             <div className="relative flex shrink-0 items-start justify-between gap-3 border-b border-border/60 px-5 py-4 pr-12 sm:px-6 sm:py-5">
@@ -90,7 +90,7 @@ export function ExpandOverlay({
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-3 sm:px-5 sm:pb-5 sm:pt-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
               <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
             </div>
           </div>

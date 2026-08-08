@@ -75,7 +75,7 @@ async function cancelStripeSubscriptions() {
 }
 
 async function main() {
-  console.log("=== Venegard full workspace wipe ===");
+  console.log("=== Sklyvo full workspace wipe ===");
 
   const before = {
     users: await prisma.user.count(),

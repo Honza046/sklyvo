@@ -311,7 +311,7 @@ export async function sendWorkspaceEmail({
     return {
       success: false,
       error:
-        "E-mail není propojen. Každý člen si v Pracovním prostoru připojí svůj venegard e-mail (Google nebo SMTP).",
+        "E-mail není propojen. Každý člen si v Pracovním prostoru připojí svůj firemní e-mail (Google nebo SMTP).",
     };
   }
 

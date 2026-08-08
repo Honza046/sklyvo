@@ -1,0 +1,704 @@
+/* Scoped Sklyvo login styles — soft-UI tokens inherit from :root / .dark. */
+
+.sklyvo-login {
+  --sk-glass: linear-gradient(
+    165deg,
+    rgba(228, 246, 250, 0.92) 0%,
+    rgba(255, 255, 255, 0.96) 55%,
+    rgba(255, 255, 255, 0.98) 100%
+  );
+  --sk-glass-border: var(--sk-border, rgba(255, 255, 255, 0.9));
+  --sk-glass-shadow:
+    0 40px 70px -24px rgba(30, 70, 110, 0.34),
+    0 12px 24px -14px rgba(30, 70, 110, 0.22),
+    inset 0 1.5px 0 var(--sk-border-strong, rgba(255, 255, 255, 0.95)),
+    inset 0 -1.5px 2px rgba(120, 160, 190, 0.18);
+  --sk-ease-pop: cubic-bezier(0.3, 0.9, 0.3, 1);
+
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--sk-ink);
+  background: linear-gradient(
+    180deg,
+    oklch(0.8 0.09 235) 0%,
+    oklch(0.87 0.065 232) 32%,
+    oklch(0.93 0.035 230) 62%,
+    oklch(0.97 0.012 235) 100%
+  );
+}
+
+.dark .sklyvo-login {
+  --sk-glass: linear-gradient(
+    165deg,
+    oklch(0.26 0.02 240 / 0.92) 0%,
+    oklch(0.22 0.016 250 / 0.97) 55%,
+    oklch(0.2 0.014 250) 100%
+  );
+  --sk-glass-shadow:
+    0 40px 70px -24px rgba(0, 0, 0, 0.55),
+    0 12px 24px -14px rgba(0, 0, 0, 0.4),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(
+    180deg,
+    oklch(0.16 0.04 250) 0%,
+    oklch(0.14 0.03 245) 40%,
+    oklch(0.12 0.02 250) 100%
+  );
+}
+
+.sklyvo-login a {
+  color: oklch(0.45 0.02 250);
+  text-decoration: none;
+}
+
+.sklyvo-login a:hover {
+  color: oklch(0.28 0.02 250);
+}
+
+.dark .sklyvo-login a {
+  color: oklch(0.78 0.03 230);
+}
+
+.dark .sklyvo-login a:hover {
+  color: oklch(0.9 0.02 230);
+}
+
+.sklyvo-login input {
+  font-family: inherit;
+}
+
+.sklyvo-login input::placeholder {
+  color: var(--sk-muted-soft);
+}
+
+.sklyvo-login input:focus {
+  outline: none;
+}
+
+.sklyvo-login .scene__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sklyvo-login .scene__layer--high {
+  filter: blur(6px);
+  background:
+    radial-gradient(
+      46% 30% at 78% 6%,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      30% 18% at 12% 30%,
+      rgba(255, 255, 255, 0.34) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    radial-gradient(
+      26% 14% at 88% 44%,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0) 74%
+    );
+}
+
+.sklyvo-login .scene__layer--mid {
+  filter: blur(5px);
+  background:
+    radial-gradient(
+      22% 12% at 20% 62%,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    radial-gradient(
+      26% 13% at 62% 66%,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0) 74%
+    ),
+    radial-gradient(
+      20% 11% at 92% 60%,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0) 74%
+    );
+}
+
+.sklyvo-login .scene__layer--low {
+  filter: blur(2px);
+  background:
+    radial-gradient(
+      60% 38% at 18% 92%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      48% 32% at 48% 100%,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    radial-gradient(
+      55% 34% at 82% 95%,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      38% 22% at 68% 82%,
+      rgba(255, 255, 255, 0.75) 0%,
+      rgba(255, 255, 255, 0) 72%
+    ),
+    radial-gradient(
+      34% 20% at 30% 78%,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0) 74%
+    ),
+    radial-gradient(
+      30% 18% at 8% 74%,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0) 74%
+    ),
+    radial-gradient(
+      28% 16% at 92% 78%,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0) 74%
+    );
+}
+
+.sklyvo-login .scene__haze {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.5) 55%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+}
+
+.sklyvo-login .sklyvo-brand {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sklyvo-login .sklyvo-brand__word {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sk-ink-soft);
+}
+
+.sklyvo-login .sklyvo-lang {
+  position: absolute;
+  top: 26px;
+  right: 32px;
+  z-index: 20;
+  display: flex;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  box-shadow:
+    inset 0 2px 5px rgba(30, 70, 110, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.sklyvo-login .sklyvo-lang__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: 42px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(248, 252, 255, 0.88) 100%
+  );
+  box-shadow:
+    0 6px 12px -7px rgba(30, 70, 110, 0.42),
+    inset 0 1.5px 0 #fff;
+  transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1);
+}
+
+.sklyvo-login .sklyvo-lang__btn {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  color: oklch(0.42 0.03 245);
+}
+
+.sklyvo-login .sklyvo-lang__btn[aria-pressed="true"] {
+  color: var(--sk-ink);
+}
+
+.sklyvo-login .sklyvo-lang__btn:disabled,
+.sklyvo-login .sklyvo-lang__btn[aria-disabled="true"] {
+  opacity: 0.38;
+  cursor: not-allowed;
+  color: oklch(0.52 0.02 245);
+}
+
+.sklyvo-login .sklyvo-auth {
+  position: relative;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 24px;
+  margin: 96px 32px 48px;
+}
+
+.sklyvo-login .sklyvo-card {
+  position: relative;
+  box-sizing: border-box;
+  border-radius: 26px;
+  background: var(--sk-glass);
+  border: 1px solid var(--sk-glass-border);
+  box-shadow: var(--sk-glass-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.sklyvo-login .sklyvo-card--form {
+  width: 452px;
+  padding: 30px 34px 26px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sklyvo-login .sklyvo-auth[data-animating="true"] .sklyvo-card--form,
+.sklyvo-login .sklyvo-auth[data-animating="true"] .sklyvo-card--globe {
+  will-change: height;
+}
+
+.sklyvo-login .sklyvo-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* Recovery: keep card height, vertically center crest + form; footer stays at bottom. */
+.sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-card--form {
+  justify-content: center;
+  padding-bottom: 56px;
+}
+
+.sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-card__body {
+  flex: 0 0 auto;
+}
+
+.sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-form__aside {
+  /* Same 10px as .sklyvo-fields gap (email ↔ password on login). */
+  display: block;
+  height: 10px;
+  margin: 0;
+  padding: 0;
+  min-height: 10px;
+  pointer-events: none;
+}
+
+.sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-btn-primary {
+  margin-top: 0;
+}
+
+.sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-form__footer {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  bottom: 26px;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.sklyvo-login .sklyvo-card--globe {
+  width: 356px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sklyvo-login .sklyvo-card__crest {
+  display: flex;
+  justify-content: center;
+}
+
+.sklyvo-login .sklyvo-crest {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, oklch(0.955 0.006 240) 100%);
+  box-shadow:
+    0 10px 18px -8px rgba(30, 70, 110, 0.45),
+    0 2px 4px rgba(30, 70, 110, 0.12),
+    inset 0 1.5px 0 #fff,
+    inset 0 -2px 3px rgba(120, 160, 190, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sklyvo-login .sklyvo-card__title {
+  margin: 18px 0 8px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sk-ink);
+}
+
+.sklyvo-login .sklyvo-card__sub {
+  margin: 0 auto 22px;
+  max-width: 268px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+  color: var(--sk-muted);
+}
+
+.sklyvo-login .sklyvo-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sklyvo-login .sklyvo-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--sk-sunken);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--sk-sunken-shadow);
+}
+
+.sklyvo-login .sklyvo-field__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: var(--sk-ink);
+}
+
+.sklyvo-login .sklyvo-field__reveal {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.sklyvo-login .sklyvo-field__slash {
+  stroke-dasharray: 26;
+  transition:
+    stroke-dashoffset 0.28s ease,
+    opacity 0.2s ease;
+}
+
+.sklyvo-login .sklyvo-form__aside {
+  display: flex;
+  justify-content: flex-end;
+  margin: 9px 0 16px;
+}
+
+.sklyvo-login .sklyvo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sk-link);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.16s var(--sk-ease-pop),
+    color 0.16s ease;
+}
+
+.sklyvo-login .sklyvo-link:hover {
+  color: var(--sk-ink-soft);
+}
+
+.sklyvo-login .sklyvo-link:active {
+  transform: translateY(1px);
+  color: var(--sk-ink-press);
+}
+
+.sklyvo-login .sklyvo-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(220, 80, 80, 0.28);
+  background: rgba(255, 236, 236, 0.9);
+  color: #b42318;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sklyvo-login .sklyvo-success {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(46, 160, 100, 0.28);
+  background: rgba(232, 250, 240, 0.95);
+  color: #0f6b3d;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.sklyvo-login .sklyvo-btn-primary {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 13px;
+  background: linear-gradient(
+    180deg,
+    oklch(0.36 0.018 250) 0%,
+    oklch(0.24 0.015 250) 52%,
+    oklch(0.18 0.012 250) 100%
+  );
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 12px 22px -10px rgba(20, 32, 50, 0.65),
+    0 3px 6px -2px rgba(20, 32, 50, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.16s var(--sk-ease-pop),
+    background 0.18s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.sklyvo-login .sklyvo-btn-primary:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  box-shadow:
+    0 16px 28px -12px rgba(20, 32, 50, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.sklyvo-login .sklyvo-btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.sklyvo-login .sklyvo-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.sklyvo-login .sklyvo-divider {
+  display: flex;
+  justify-content: center;
+  margin: 18px 0;
+}
+
+.sklyvo-login .sklyvo-divider__label {
+  font-size: 11px;
+  color: var(--sk-muted-soft);
+}
+
+.sklyvo-login .sklyvo-providers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.sklyvo-login .sklyvo-btn-provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--sk-raised);
+  box-shadow: var(--sk-raised-shadow);
+  transition:
+    transform 0.16s var(--sk-ease-pop),
+    background 0.18s ease,
+    box-shadow 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.sklyvo-login .sklyvo-btn-provider:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+}
+
+.sklyvo-login .sklyvo-btn-provider:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--sk-sunken);
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.38),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.sklyvo-login .sklyvo-btn-provider:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sklyvo-login .sklyvo-form__footer {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 20px;
+  font-size: 12.5px;
+  color: var(--sk-muted);
+}
+
+.sklyvo-login .sklyvo-form__footer .sklyvo-link {
+  font-size: 12.5px;
+  color: oklch(0.26 0.015 250);
+}
+
+.sklyvo-login .globe-card__head {
+  padding: 30px 30px 0;
+}
+
+.sklyvo-login .globe-card__title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-wrap: pretty;
+  color: var(--sk-ink);
+}
+
+.sklyvo-login .globe-card__body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  text-wrap: pretty;
+  color: var(--sk-muted);
+}
+
+.sklyvo-login .globe-card__stage {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+}
+
+.sklyvo-login .globe-card__canvas {
+  position: absolute;
+  left: 50%;
+  bottom: -104px;
+  transform: translateX(-62%) rotate(-12deg);
+}
+
+.sklyvo-login .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .sklyvo-login .sklyvo-auth {
+    flex-direction: column;
+    align-items: center;
+    margin: 92px 20px 40px;
+  }
+
+  .sklyvo-login .sklyvo-card--form,
+  .sklyvo-login .sklyvo-card--globe {
+    width: 100%;
+    max-width: 452px;
+  }
+
+  .sklyvo-login .sklyvo-card--globe {
+    min-height: 380px;
+  }
+
+  .sklyvo-login .sklyvo-brand {
+    top: 20px;
+    left: 20px;
+  }
+
+  .sklyvo-login .sklyvo-lang {
+    top: 18px;
+    right: 20px;
+  }
+}
+
+@media (max-width: 460px) {
+  .sklyvo-login .sklyvo-card--form {
+    padding: 26px 22px 22px;
+  }
+
+  .sklyvo-login .globe-card__head {
+    padding: 24px 22px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sklyvo-login .sklyvo-card--form,
+  .sklyvo-login .sklyvo-card--globe {
+    transition: none;
+  }
+
+  .sklyvo-login .sklyvo-lang__thumb,
+  .sklyvo-login .sklyvo-btn-primary,
+  .sklyvo-login .sklyvo-btn-provider,
+  .sklyvo-login .sklyvo-link,
+  .sklyvo-login .sklyvo-field__slash {
+    transition-duration: 0.01ms;
+  }
+
+  .sklyvo-login .sklyvo-btn-primary:hover:not(:disabled),
+  .sklyvo-login .sklyvo-btn-provider:hover:not(:disabled) {
+    transform: none;
+  }
+}

@@ -1,5 +1,5 @@
 """
-VENEGARD Sniper — streamovaný endpoint pro generování e-mailu.
+SKLYVO Sniper — streamovaný endpoint pro generování e-mailu.
 
 Na Vercelu je tento soubor dostupný jako POST /api/sniper (FastAPI aplikace v `app`).
 """
@@ -18,7 +18,7 @@ from starlette.concurrency import iterate_in_threadpool
 
 # --- Placeholders pro tvé know-how (doplň vlastní texty / logiku) -----------------
 
-VENEGARD_KNOW_HOW = ""  # TODO: Zde vlož firemní DNA
+SKLYVO_KNOW_HOW = ""  # TODO: Zde vlož firemní DNA
 
 # TODO: Zde případně upřesni model (např. gemini-2.0-flash, gemini-1.5-pro, …)
 GEMINI_MODEL_NAME = "gemini-2.5-flash"
@@ -32,17 +32,17 @@ async def scrape_target_page(url: str) -> str:
     return ""
 
 
-# TODO: Zde vlož finální prompt pro vygenerování emailu (slož z VENEGARD_KNOW_HOW,
+# TODO: Zde vlož finální prompt pro vygenerování emailu (slož z SKLYVO_KNOW_HOW,
 #       scrapnutého textu, URL a e-mailu kontaktu). Dokud nevracíš smysluplný prompt,
 #       Gemini větev se nespustí (kvůli prázdnému řetězci níže).
 def build_email_generation_prompt(*, url: str, email: str, scraped_text: str) -> str:
-    _ = (VENEGARD_KNOW_HOW, scraped_text, url, email)
+    _ = (SKLYVO_KNOW_HOW, scraped_text, url, email)
     return ""
 
 
 # ---------------------------------------------------------------------------------
 
-app = FastAPI(title="VENEGARD Sniper API")
+app = FastAPI(title="SKLYVO Sniper API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -83,7 +83,7 @@ async def _stub_stream(message: str) -> AsyncIterator[bytes]:
 @app.get("/")
 async def health():
     """GET pro rychlou kontrolu, že je funkce nahoře."""
-    return {"ok": True, "service": "venegard-sniper"}
+    return {"ok": True, "service": "sklyvo-sniper"}
 
 
 @app.post("/api/sniper")
@@ -103,10 +103,10 @@ async def sniper_analyze(body: SniperRequest):
         )
 
     stub = (
-        "[VENEGARD · Sniper — placeholder stream]\n\n"
+        "[SKLYVO · Sniper — placeholder stream]\n\n"
         "Tento výstup ukazuje, že Next.js frontend správně přijímá chunked stream.\n\n"
         f"URL: {body.url}\nE-mail: {body.email}\n\n"
-        "Až doplníš `build_email_generation_prompt()` a `VENEGARD_KNOW_HOW`, "
+        "Až doplníš `build_email_generation_prompt()` a `SKLYVO_KNOW_HOW`, "
         "nastav na Vercelu proměnnou GEMINI_API_KEY a endpoint začne volat Gemini.\n\n"
         f"Délka scrapu: {len(scraped_text)} znaků\n"
         "TODO: scrape v scrape_target_page(), prompt v build_email_generation_prompt().\n"

@@ -100,3 +100,22 @@ export const PREDEFINED_AUDIENCES = [
   "Provozní ředitelé (COO)",
   "IT ředitelé (CIO)",
 ];
+
+/**
+ * Krátký výběr služeb pro onboarding (bez scrollu).
+ * Plný katalog zůstává v PREDEFINED_SERVICES / nastavení.
+ */
+export const ONBOARDING_SERVICES = [
+  "Redesign a tvorba webů",
+  "E-shopy",
+  "Marketing a reklama",
+  "SEO a online viditelnost",
+  "Automatizace procesů",
+  "Účetnictví a daně",
+  "Právní služby",
+  "Reality a nemovitosti",
+  "Stavebnictví a řemesla",
+  "Konzultace a poradenství",
+  "Výroba a průmysl",
+  "Zdravotní a estetická péče",
+] as const;

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Venegard",
-    short_name: "Venegard",
+    name: "Sklyvo",
+    short_name: "Sklyvo",
     description: "Digitální agentura: Sniper, Radar, CRM a Autopilot",
     start_url: "/",
     scope: "/",
@@ -12,6 +12,12 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#ffffff",
     theme_color: "#2563EB",
     icons: [
+      {
+        src: "/brand/sklyvo-mark.png",
+        sizes: "500x500",
+        type: "image/png",
+        purpose: "any",
+      },
       {
         src: "/icons/icon-192.png",
         sizes: "192x192",

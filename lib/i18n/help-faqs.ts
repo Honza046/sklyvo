@@ -20,7 +20,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Jak napojím svůj Google Workspace nebo Outlook?",
       answer:
-        "Přejděte do Osobního profilu a sekce Propojené e-mailové účty. Tam můžete přes OAuth propojit firemní schránku. Venegard získá oprávnění pouze k odesílání e-mailů.",
+        "Přejděte do Osobního profilu a sekce Propojené e-mailové účty. Tam můžete přes OAuth propojit firemní schránku. Sklyvo získá oprávnění pouze k odesílání e-mailů.",
     },
     {
       question: "Kde najdu svoje měsíční faktury za předplatné?",
@@ -67,7 +67,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "How do I connect Google Workspace or Outlook?",
       answer:
-        "Go to your profile → Connected email accounts and connect via OAuth. Venegard only gets permission to send emails.",
+        "Go to your profile → Connected email accounts and connect via OAuth. Sklyvo only gets permission to send emails.",
     },
     {
       question: "Where are my monthly invoices?",
@@ -114,7 +114,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "¿Cómo conecto Google Workspace u Outlook?",
       answer:
-        "Ve a tu perfil → Cuentas de email conectadas y conecta vía OAuth. Venegard solo obtiene permiso para enviar emails.",
+        "Ve a tu perfil → Cuentas de email conectadas y conecta vía OAuth. Sklyvo solo obtiene permiso para enviar emails.",
     },
     {
       question: "¿Dónde están mis facturas mensuales?",
@@ -161,7 +161,7 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
     {
       question: "Wie verbinde ich Google Workspace oder Outlook?",
       answer:
-        "Profil → Verbundene E-Mail-Konten → per OAuth verbinden. Venegard erhält nur Sendeberechtigung.",
+        "Profil → Verbundene E-Mail-Konten → per OAuth verbinden. Sklyvo erhält nur Sendeberechtigung.",
     },
     {
       question: "Wo finde ich monatliche Rechnungen?",

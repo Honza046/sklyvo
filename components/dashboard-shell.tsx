@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   Settings,
   LogOut,
-  Moon,
-  Sun,
   User,
   LifeBuoy,
   Zap,
   Rocket,
+  CreditCard,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isPremiumToolsLocked } from "@/components/plan-feature-gate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clearSession, getWorkspaceAccessState } from "@/app/actions/auth";
@@ -26,24 +26,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { VenegardOnboardingTour } from "@/components/venegard-onboarding-tour";
+import { ThemeToggleMenuItem } from "@/components/theme-toggle";
+import { SklyvoOnboardingTour } from "@/components/sklyvo-onboarding-tour";
 import { AICopilotWidget } from "@/components/ai/AICopilotWidget";
-import { VenegardWordmark } from "@/components/brand-marks";
+import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
+import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
 import {
   AUTOPILOT_SUB_NAV,
   MAIN_NAV,
+  TOOL_NAV_HREFS,
+  WORK_NAV_HREFS,
   MobileBottomNav,
   MobileTopBar,
 } from "@/components/mobile-nav";
+import { normalizeActiveHref } from "@/lib/nav-active-href";
+import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 
-function isWorkspaceSettingsRoute(pathname: string) {
-  return (
-    pathname === "/settings" ||
-    pathname === "/settings/billing" ||
-    pathname.startsWith("/settings/billing/")
-  );
+function navItemClass(active: boolean, locked = false) {
+  return cn("sk-nav-item", active && "is-active", locked && "is-locked");
+}
+
+const PREMIUM_NAV_HREFS = new Set(["/uloziste"]);
+
+function navMatches(active: string, href: string) {
+  if (href === "/") return active === "/";
+  return active === href || active.startsWith(`${href}/`);
 }
 
 export function DashboardShell({
@@ -61,15 +70,71 @@ export function DashboardShell({
     image?: string | null;
   };
 }) {
-  // Načtení aktuálního tématu
-  const { theme, setTheme } = useTheme();
   const { t, dayWord, language } = useLanguage();
   const dateLocale = DATE_LOCALE[language];
   const router = useRouter();
   const pathname = usePathname();
 
-  const isAutopilotActive = pathname.startsWith("/autopilot");
-  const isWorkspaceSettingsActive = isWorkspaceSettingsRoute(pathname);
+  /** Instant active state on click — don't wait for the route to finish loading */
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pendingHref) return;
+    if (pendingHref === "/autopilot") {
+      if (pathname.startsWith("/autopilot")) setPendingHref(null);
+      return;
+    }
+    if (activeHref === pendingHref) setPendingHref(null);
+  }, [activeHref, pathname, pendingHref]);
+
+  const markNavPending = useCallback((href: string) => {
+    setPendingHref(normalizeActiveHref(href));
+  }, []);
+
+  /** Fire on pointerdown so the icon turns blue before navigation starts */
+  const navPendingProps = useCallback(
+    (href: string) => ({
+      onPointerDown: (event: ReactPointerEvent<HTMLAnchorElement>) => {
+        if (event.button !== 0) return;
+        markNavPending(href);
+      },
+      onClick: () => markNavPending(href),
+    }),
+    [markNavPending],
+  );
+
+  const navActiveHref = pendingHref ?? activeHref;
+  const isAutopilotActive = navActiveHref === "/autopilot";
+  const isWorkspaceSettingsActive = navActiveHref === "/settings";
+
+  /** Flat order of [data-slide-item]: Overview → Autopilot → Sniper → Radar → CRM → Úložiště */
+  const sidebarSlideIndex = useMemo(() => {
+    if (navActiveHref === "/") return 0;
+    if (isAutopilotActive) return 1;
+    const ordered = [
+      ...MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)),
+      ...MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)),
+    ];
+    const i = ordered.findIndex(({ href }) => navMatches(navActiveHref, href));
+    return i >= 0 ? i + 2 : -1;
+  }, [navActiveHref, isAutopilotActive]);
+  const { trackRef: sidebarNavRef, thumbStyle: sidebarThumbStyle } = useSlidingThumb(
+    sidebarSlideIndex,
+    [navActiveHref, isAutopilotActive],
+    { axis: "y" },
+  );
+
+  /** Footer nav: Help → Workspace */
+  const footerSlideIndex = useMemo(() => {
+    if (navActiveHref === "/help" || pathname.startsWith("/help/")) return 0;
+    if (isWorkspaceSettingsActive) return 1;
+    return -1;
+  }, [navActiveHref, pathname, isWorkspaceSettingsActive]);
+  const { trackRef: footerNavRef, thumbStyle: footerThumbStyle } = useSlidingThumb(
+    footerSlideIndex,
+    [navActiveHref, isWorkspaceSettingsActive],
+    { axis: "y" },
+  );
+
   const lockMainScroll =
     pathname.startsWith("/autopilot") ||
     pathname === "/" ||
@@ -94,6 +159,8 @@ export function DashboardShell({
     subscriptionPeriodEndISO: string | null;
   } | null>(null);
   const [onboardingTourCompleted, setOnboardingTourCompleted] = useState<boolean | null>(null);
+  /** Firma ještě nemá companyName — nejdřív formulář, teprve potom tour. */
+  const [companyOnboardingPending, setCompanyOnboardingPending] = useState(true);
   const [tourPreview, setTourPreview] = useState(false);
   /** Po zavření křížkem / Hotovo — nespouštět tour znovu v téže session (preview→live). */
   const [tourSuppressed, setTourSuppressed] = useState(false);
@@ -143,6 +210,7 @@ export function DashboardShell({
       subscriptionPeriodEndISO: toISO(w.subscriptionPeriodEnd),
     });
     setOnboardingTourCompleted(session.user.onboardingTourCompleted ?? false);
+    setCompanyOnboardingPending(!(session.workspace.companyName ?? "").trim());
   }, [router]);
 
   // Při každé navigaci / návratu na tab znovu načteme workspace z DB (žádný zastaralý stav po ruční úpravě v Supabase)
@@ -171,15 +239,25 @@ export function DashboardShell({
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [loadWorkspaceSession]);
 
+  // Po dokončení firemního onboardingu (modal) znovu načti session → pusť tour.
+  useEffect(() => {
+    const onCompanyOnboardingDone = () => {
+      void loadWorkspaceSession();
+    };
+    window.addEventListener("sklyvo-company-onboarding-done", onCompanyOnboardingDone);
+    return () =>
+      window.removeEventListener("sklyvo-company-onboarding-done", onCompanyOnboardingDone);
+  }, [loadWorkspaceSession]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const syncTourPreview = () => {
       const params = new URLSearchParams(window.location.search);
       const fromQuery = params.get("tour") === "1";
       const fromStorage =
-        window.sessionStorage.getItem("venegard-tour-preview") === "1";
+        window.sessionStorage.getItem("sklyvo-tour-preview") === "1";
       if (fromQuery) {
-        window.sessionStorage.setItem("venegard-tour-preview", "1");
+        window.sessionStorage.setItem("sklyvo-tour-preview", "1");
       }
       const wantsPreview = fromQuery || fromStorage;
       if (wantsPreview) {
@@ -229,7 +307,7 @@ export function DashboardShell({
     if (tourPreviewRef.current) {
       setTourPreview(false);
       if (typeof window !== "undefined") {
-        window.sessionStorage.removeItem("venegard-tour-preview");
+        window.sessionStorage.removeItem("sklyvo-tour-preview");
       }
       return;
     }
@@ -249,13 +327,8 @@ export function DashboardShell({
     planTier && planTier !== "NONE" && planTier !== "FREE",
   );
 
-  /** Stejný význam jako u štítku tarifu (`displayPlan` pro placené řádně vychází z `planTier`). */
-  const creditsWidgetHref = useMemo(() => {
-    if (!hasSessionData) return "/pricing";
-    const t = typeof planTier === "string" ? planTier.trim() : "";
-    if (!t || t === "FREE" || t === "NONE") return "/pricing";
-    return "/settings/billing";
-  }, [hasSessionData, planTier]);
+  /** Kredity i placené tarify vedou na výběr předplatného. */
+  const creditsWidgetHref = "/pricing";
 
   const dbCreditsTotal = subscriptionState?.creditsTotal ?? 10;
   const dbCreditsUsed = subscriptionState?.creditsUsed ?? 0;
@@ -266,6 +339,15 @@ export function DashboardShell({
     (Boolean(subscriptionState?.isTrial) && trialDays > 0);
 
   const displayCreditsTotal = hasFullCreditAllowance ? dbCreditsTotal : 10;
+
+  const premiumToolsLocked =
+    hasSessionData &&
+    isPremiumToolsLocked({
+      planTier,
+      subscriptionStatus,
+      isTrial: Boolean(subscriptionState?.isTrial),
+      trialRemainingDays: trialDays,
+    });
 
   const isTrialExpired =
     Boolean(subscriptionState?.isTrial) &&
@@ -321,78 +403,74 @@ export function DashboardShell({
     : null;
 
   return (
-    <div className="flex h-dvh max-h-dvh w-full overflow-hidden bg-background">
+    <div className="sklyvo-app flex h-dvh max-h-dvh w-full overflow-hidden">
       
       {/* BOČNÍ PANEL */}
       <aside
-        className="hidden h-full w-64 flex-shrink-0 overflow-hidden border-r bg-background md:flex md:flex-col"
+        className="sk-sidebar hidden h-full w-64 flex-shrink-0 md:flex md:flex-col"
       >
         
-        {/* LOGO → Přehled */}
-        <div className="flex h-16 shrink-0 items-center px-4 pl-6">
+        {/* LOGO */}
+        <div className="flex h-14 shrink-0 items-center px-4 pl-5">
           <Link
             href="/"
-            className="-mx-2 flex min-w-0 items-center rounded-xl px-2 py-2 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500/30"
+            className="sk-lockup outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[color:var(--sk-brand)]/30"
             aria-label={t("nav.overview")}
+            {...navPendingProps("/")}
           >
-            <VenegardWordmark markSize={30} />
+            <SklyvoMark size={30} />
+            <span className="sk-lockup__word">Sklyvo</span>
           </Link>
         </div>
         
-        {/* HLAVNÍ NAVIGACE — scrolluje jen střed; profil dole zůstane vždy vidět */}
-        <nav className="scrollbar-hide mt-4 flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-4">
-          <span className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            {t("nav.tools")}
-          </span>
-          {MAIN_NAV.filter(({ href }) => href === "/").map(({ href, labelKey, icon: Icon }) => {
-            const active = href === activeHref;
-            return (
-              <Link
-                key={href}
-                href={href}
-                data-tour="onboarding-overview"
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "size-5 shrink-0 transition-colors",
-                    active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70",
-                  )}
-                />
-                {t(labelKey)}
-              </Link>
-            );
-          })}
+        {/* NAV — Přehled stays outside overflow so active glow isn't clipped under the logo */}
+        <nav
+          ref={sidebarNavRef as RefObject<HTMLElement>}
+          className="sk-nav-track relative flex min-h-0 flex-1 flex-col overflow-visible"
+        >
+          <span className="sk-nav-thumb" style={sidebarThumbStyle} aria-hidden />
 
+          <div className="relative z-[1] shrink-0 px-3 pb-1 pt-1">
+            {MAIN_NAV.filter(({ href }) => href === "/").map(({ href, labelKey, icon: Icon }) => {
+              const active = navMatches(navActiveHref, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  data-slide-item
+                  data-tour="onboarding-overview"
+                  className={navItemClass(active)}
+                  aria-current={active ? "page" : undefined}
+                  {...navPendingProps(href)}
+                >
+                  <Icon className="sk-nav-icon" aria-hidden />
+                  {t(labelKey)}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div
+            data-nav-scroll
+            className="scrollbar-hide relative z-[1] flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 pb-2"
+          >
+          <span className="sk-nav-label">{t("nav.tools")}</span>
           <div className="flex flex-col gap-0.5">
             <Link
               href="/autopilot/radar"
+              data-slide-item
               data-tour="onboarding-autopilot"
-              className={cn(
-                "flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                isAutopilotActive
-                  ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
+              className={navItemClass(isAutopilotActive, premiumToolsLocked)}
+              aria-current={isAutopilotActive ? "page" : undefined}
+              {...navPendingProps("/autopilot/radar")}
             >
-              <Rocket
-                className={cn(
-                  "size-5 shrink-0 transition-colors",
-                  isAutopilotActive
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-muted-foreground/70",
-                )}
-              />
+              <Rocket className="sk-nav-icon" aria-hidden />
               {t("nav.autopilot")}
+              {premiumToolsLocked ? <Lock className="sk-nav-lock" aria-hidden /> : null}
             </Link>
 
             {isAutopilotActive && (
-              <div className="flex flex-col gap-0.5 pl-6">
+              <div className="flex flex-col gap-0.5 pl-5">
                 {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
                   const subActive =
                     pathname === href || pathname.startsWith(`${href}/`);
@@ -401,20 +479,12 @@ export function DashboardShell({
                       key={href}
                       href={href}
                       className={cn(
-                        "flex items-center gap-2 rounded-xl py-2 pl-2 pr-3 text-xs font-medium transition-colors",
-                        subActive
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground",
+                        "sk-nav-sub",
+                        subActive && "is-active",
+                        premiumToolsLocked && "opacity-50",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 shrink-0 rounded-full transition-colors",
-                          subActive
-                            ? "bg-blue-600 dark:bg-blue-400"
-                            : "bg-transparent",
-                        )}
-                      />
+                      <span className="sk-nav-dot" />
                       {t(labelKey)}
                     </Link>
                   );
@@ -423,78 +493,87 @@ export function DashboardShell({
             )}
           </div>
 
-          {MAIN_NAV.filter(({ href }) => href !== "/").map(({ href, labelKey, icon: Icon }) => {
-            const active = href === activeHref;
-            return (
-              <Link
-                key={href}
-                href={href}
-                data-tour={
-                  href === "/radar"
-                    ? "onboarding-radar"
-                    : href === "/sniper"
-                      ? "onboarding-sniper"
-                      : href === "/crm"
-                        ? "onboarding-crm"
+          {MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)).map(
+            ({ href, labelKey, icon: Icon }) => {
+              const active = navMatches(navActiveHref, href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  data-slide-item
+                  data-tour={
+                    href === "/radar"
+                      ? "onboarding-radar"
+                      : href === "/sniper"
+                        ? "onboarding-sniper"
                         : undefined
-                }
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "size-5 shrink-0 transition-colors",
-                    active ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70",
-                  )}
-                />
-                {t(labelKey)}
-              </Link>
-            );
-          })}
+                  }
+                  className={navItemClass(active)}
+                  aria-current={active ? "page" : undefined}
+                  {...navPendingProps(href)}
+                >
+                  <Icon className="sk-nav-icon" aria-hidden />
+                  {t(labelKey)}
+                </Link>
+              );
+            },
+          )}
+
+          <span className="sk-nav-label">{t("nav.work")}</span>
+          {MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)).map(
+            ({ href, labelKey, icon: Icon }) => {
+              const active = navMatches(navActiveHref, href);
+              const locked = premiumToolsLocked && PREMIUM_NAV_HREFS.has(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  data-slide-item
+                  data-tour={href === "/crm" ? "onboarding-crm" : undefined}
+                  className={navItemClass(active, locked)}
+                  aria-current={active ? "page" : undefined}
+                  {...navPendingProps(href)}
+                >
+                  <Icon className="sk-nav-icon" aria-hidden />
+                  {t(labelKey)}
+                  {locked ? <Lock className="sk-nav-lock" aria-hidden /> : null}
+                </Link>
+              );
+            },
+          )}
+          </div>
         </nav>
 
         {/* SPODNÍ ČÁST S NASTAVENÍM A PROFILEM — vždy pinned dole */}
-        <div className="flex shrink-0 flex-col gap-2 border-t border-border/40 px-4 pb-6 pt-3">
-          
-          {/* Centrum nápovědy */}
-          <Link
-            href="/help"
-            data-tour="onboarding-help"
-            className={cn(
-              "flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200",
-              activeHref === "/help" 
-                ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
+        <div className="flex shrink-0 flex-col gap-1.5 px-3 pb-5 pt-3">
+          <nav
+            ref={footerNavRef as RefObject<HTMLElement>}
+            className="sk-nav-track sk-nav-track--flush relative flex flex-col gap-1"
           >
-            <LifeBuoy className={cn(
-              "size-4 shrink-0 transition-colors",
-              activeHref === "/help" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
-            )} />
-            {t("nav.help")}
-          </Link>
-          
-          {/* Nastavení Agentury */}
-          <Link
-            href="/settings"
-            data-tour="onboarding-settings"
-            className={cn(
-              "flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200 mb-2",
-              isWorkspaceSettingsActive
-                ? "bg-blue-50/50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Settings className={cn(
-              "size-4 shrink-0 transition-colors",
-              isWorkspaceSettingsActive ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground/70"
-            )} />
-            {t("nav.workspace")}
-          </Link>
+            <span className="sk-nav-thumb" style={footerThumbStyle} aria-hidden />
+            <Link
+              href="/help"
+              data-slide-item
+              data-tour="onboarding-help"
+              className={navItemClass(navMatches(navActiveHref, "/help"))}
+              aria-current={navMatches(navActiveHref, "/help") ? "page" : undefined}
+              {...navPendingProps("/help")}
+            >
+              <LifeBuoy className="sk-nav-icon size-4" aria-hidden />
+              {t("nav.help")}
+            </Link>
+            <Link
+              href="/settings"
+              data-slide-item
+              data-tour="onboarding-settings"
+              className={navItemClass(isWorkspaceSettingsActive)}
+              aria-current={isWorkspaceSettingsActive ? "page" : undefined}
+              {...navPendingProps("/settings")}
+            >
+              <Settings className="sk-nav-icon size-4" aria-hidden />
+              {t("nav.workspace")}
+            </Link>
+          </nav>
 
           <div className="mb-2 flex flex-col gap-2">
             {hasSessionData && isTrialActive && isFreePlanTier && (
@@ -511,33 +590,29 @@ export function DashboardShell({
 
             <Link
               href={creditsWidgetHref}
-              className={cn(
-                "block cursor-pointer rounded-xl border border-border/40 bg-muted/50 p-3 transition-all",
-                "hover:bg-muted/80 hover:shadow-sm",
-                "ring-offset-background focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
-              )}
+              className="sk-credits ring-offset-background focus-visible:outline-none"
             >
               {hasSessionData ? (
                 <>
                   <div className="mb-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Zap className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      <Zap className="h-3 w-3 text-[color:var(--sk-brand)]" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--sk-muted)]">
                         {t("nav.credits")}
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-foreground">
+                    <span className="text-[10px] font-bold text-[color:var(--sk-ink)]">
                       {creditsRemaining.toLocaleString(dateLocale)} / {displayCreditsTotal.toLocaleString(dateLocale)}
                     </span>
                   </div>
-                  <div className="h-1 w-full overflow-hidden rounded-full bg-border/60">
-                    <div className="h-full rounded-full bg-blue-600" style={{ width: `${creditsPercentage}%` }} />
+                  <div className="sk-meter__track">
+                    <div className="sk-meter__fill" style={{ width: `${creditsPercentage}%` }} />
                   </div>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--sk-muted)]">
                     {t("nav.plan")}: {displayPlan}
                   </p>
                   {subscriptionDateLabel && (
-                    <p className="mt-1 text-[9px] leading-snug text-muted-foreground/90">
+                    <p className="mt-1 text-[9px] leading-snug text-[color:var(--sk-muted-soft)]">
                       {subscriptionDateLabel}
                     </p>
                   )}
@@ -553,80 +628,77 @@ export function DashboardShell({
                 </>
               )}
             </Link>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="sk-user outline-none focus:outline-none focus-visible:ring-0">
+                  {hasSessionData ? (
+                    <>
+                      <Avatar className="h-9 w-9 rounded-xl border border-white/80 shadow-sm">
+                        <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
+                        <AvatarFallback className="rounded-xl bg-[color-mix(in_oklab,var(--sk-brand)_14%,white)] text-sm font-bold text-[color:var(--sk-brand)]">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-1 flex-col overflow-hidden">
+                        <span className="truncate text-sm font-semibold text-[color:var(--sk-ink)]">
+                          {displayName}
+                        </span>
+                        <span className="truncate text-[10px] text-[color:var(--sk-muted)]">
+                          {displayEmail?.toLowerCase()}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Skeleton className="h-9 w-9 rounded-xl" />
+                      <div className="flex flex-1 flex-col gap-1.5">
+                        <Skeleton className="h-3 w-24 rounded" />
+                        <Skeleton className="h-3 w-32 rounded" />
+                      </div>
+                    </>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                className="w-60 rounded-xl border-border/60 bg-card p-2 shadow-xl"
+                align="start"
+                side="top"
+                sideOffset={12}
+              >
+                <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                  {t("nav.myProfile")}
+                </DropdownMenuLabel>
+
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
+                  <Link href="/account">
+                    <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>{t("nav.accountSettings")}</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
+                  <Link href="/pricing">
+                    <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
+                    <span>{t("nav.plansAndBilling")}</span>
+                  </Link>
+                </DropdownMenuItem>
+
+                <ThemeToggleMenuItem />
+
+                <DropdownMenuSeparator className="my-1 border-border/60 opacity-50" />
+
+                <DropdownMenuItem
+                  onClick={() => void handleLogout()}
+                  className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 transition-colors focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-950/50"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{t("nav.logout")}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex w-full items-center gap-3 rounded-2xl border border-transparent p-2 text-left transition-colors hover:border-border/50 hover:bg-muted outline-none focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0">
-                {hasSessionData ? (
-                  <>
-                    <Avatar className="h-9 w-9 rounded-xl border border-border/50">
-                      <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
-                      <AvatarFallback className="rounded-xl bg-blue-50 text-sm font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-1 flex-col overflow-hidden">
-                      <span className="truncate text-sm font-semibold text-foreground">
-                        {displayName}
-                      </span>
-                      <span className="truncate text-[10px] text-muted-foreground">
-                        {displayEmail?.toLowerCase()}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <Skeleton className="h-9 w-9 rounded-xl" />
-                    <div className="flex flex-1 flex-col gap-1.5">
-                      <Skeleton className="h-3 w-24 rounded" />
-                      <Skeleton className="h-3 w-32 rounded" />
-                    </div>
-                  </>
-                )}
-              </button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent
-              className="w-60 rounded-xl border-border/60 bg-card p-2 shadow-xl"
-              align="start"
-              side="top"
-              sideOffset={12}
-            >
-              <DropdownMenuLabel className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                {t("nav.myProfile")}
-              </DropdownMenuLabel>
-
-              <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
-                <Link href="/account">
-                  <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span>{t("nav.accountSettings")}</span>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? (
-                  <Sun className="mr-2 h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <Moon className="mr-2 h-4 w-4 text-muted-foreground" />
-                )}
-                <span>{theme === "dark" ? t("nav.lightMode") : t("nav.darkMode")}</span>
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1 border-border/60 opacity-50" />
-
-              <DropdownMenuItem
-                onClick={() => void handleLogout()}
-                className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 transition-colors focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-950/50"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>{t("nav.logout")}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
         </div>
       </aside>
@@ -635,7 +707,7 @@ export function DashboardShell({
       <div
         data-dashboard-scroll={!lockMainScroll ? "" : undefined}
         className={cn(
-          "relative flex min-w-0 flex-1 flex-col",
+          "sk-main relative flex min-w-0 flex-1 flex-col",
           lockMainScroll
             ? "h-dvh max-h-dvh overflow-hidden"
             : "scrollbar-hide h-full overflow-y-auto",
@@ -649,23 +721,29 @@ export function DashboardShell({
           avatarSrc={avatarSrc}
           initials={initials}
           onLogout={() => void handleLogout()}
+          premiumToolsLocked={premiumToolsLocked}
         />
         <main
           className={cn(
-            "pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0",
+            pathname === "/"
+              ? "pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-[1.15rem]"
+              : "pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0",
             lockMainScroll
-              ? "flex min-h-0 flex-1 flex-col overflow-hidden p-3 sm:p-4 md:px-6 md:py-4"
-              : "min-h-full flex-1 p-3 sm:p-4 md:p-6",
+              ? pathname === "/"
+                ? "flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-visible"
+                : "flex min-h-0 flex-1 flex-col overflow-hidden"
+              : "min-h-full flex-1",
           )}
         >
           {children}
         </main>
-        <MobileBottomNav activeHref={activeHref} />
+        <MobileBottomNav activeHref={navActiveHref} onNavigate={markNavPending} />
       </div>
-      <VenegardOnboardingTour
+      <SklyvoOnboardingTour
         active={
           hasSessionData &&
           !tourSuppressed &&
+          !companyOnboardingPending &&
           (tourPreview || onboardingTourCompleted === false)
         }
         preview={tourPreview}

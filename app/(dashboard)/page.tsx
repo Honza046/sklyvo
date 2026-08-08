@@ -4,7 +4,6 @@ import { DashboardBody } from "@/app/dashboard-body";
 import { DashboardBodySkeleton } from "@/components/dashboard-loading";
 import {
   DashboardLoadingSubtitle,
-  DashboardSubtitle,
 } from "@/components/dashboard/dashboard-loading-client";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardOnboardingGate } from "@/components/dashboard-onboarding-gate";
@@ -20,21 +19,18 @@ export default async function DashboardPage() {
 
   return (
     <DashboardOnboardingGate needsOnboarding={needsOnboarding}>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 overflow-hidden p-0 md:gap-3 md:p-6">
+      <div className="sk-dashboard-frame mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 md:gap-3">
         <DashboardPageHeader firstName={firstName} />
 
         <Suspense
           fallback={
-            <div className="scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto lg:overflow-hidden md:gap-3">
+            <div className="sk-dashboard-scroll scrollbar-hide flex min-h-0 flex-1 flex-col gap-2 md:gap-3">
               <DashboardLoadingSubtitle />
               <DashboardBodySkeleton />
             </div>
           }
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-3">
-            <DashboardSubtitle />
-            <DashboardBody emailsSent={emailsSent} />
-          </div>
+          <DashboardBody emailsSent={emailsSent} />
         </Suspense>
       </div>
     </DashboardOnboardingGate>

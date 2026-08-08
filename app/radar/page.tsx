@@ -33,7 +33,7 @@ import {
   normalizeCountryCode,
 } from "@/lib/country-language";
 
-const RADAR_RECENT_STORAGE_KEY = "venegard-radar-recent-searches";
+const RADAR_RECENT_STORAGE_KEY = "sklyvo-radar-recent-searches";
 const RADAR_RECENT_MAX = 4;
 
 function loadRecentSearches(): string[] {
@@ -423,7 +423,6 @@ export default function RadarPage() {
                   id="deep-scan-m"
                   checked={deepScan}
                   onCheckedChange={setDeepScan}
-                  className="data-[state=checked]:bg-blue-600"
                 />
               </label>
               <label htmlFor="exclude-crm-m" className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3">
@@ -432,7 +431,7 @@ export default function RadarPage() {
                   id="exclude-crm-m"
                   checked={excludeCrm}
                   onCheckedChange={setExcludeCrm}
-                  className="shrink-0 data-[state=checked]:bg-blue-600"
+                  className="shrink-0"
                 />
               </label>
               <label htmlFor="only-email-m" className="flex cursor-pointer items-center justify-between px-4 py-3">
@@ -441,7 +440,6 @@ export default function RadarPage() {
                   id="only-email-m"
                   checked={onlyEmail}
                   onCheckedChange={setOnlyEmail}
-                  className="data-[state=checked]:bg-blue-600"
                 />
               </label>
             </div>
@@ -565,11 +563,10 @@ export default function RadarPage() {
 
             <div className="flex flex-wrap items-center gap-x-10 gap-y-4 border-t border-border/40 pt-4">
               <div className="flex items-center space-x-3">
-                <Switch 
-                  id="deep-scan" 
-                  checked={deepScan} 
-                  onCheckedChange={setDeepScan} 
-                  className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
+                <Switch
+                  id="deep-scan"
+                  checked={deepScan}
+                  onCheckedChange={setDeepScan}
                 />
                 <Label htmlFor="deep-scan" className="flex cursor-pointer items-center gap-1.5 text-sm font-semibold">
                   <Zap className={cn("h-3.5 w-3.5", deepScan ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
@@ -578,11 +575,10 @@ export default function RadarPage() {
               </div>
 
               <div className="flex items-center space-x-3">
-                <Switch 
-                  id="exclude-crm" 
-                  checked={excludeCrm} 
-                  onCheckedChange={setExcludeCrm} 
-                  className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
+                <Switch
+                  id="exclude-crm"
+                  checked={excludeCrm}
+                  onCheckedChange={setExcludeCrm}
                 />
                 <Label htmlFor="exclude-crm" className="cursor-pointer text-sm font-semibold">
                   Vyloučit firmy v CRM / Sheets archivu
@@ -590,11 +586,10 @@ export default function RadarPage() {
               </div>
 
               <div className="flex items-center space-x-3">
-                <Switch 
-                  id="only-email" 
-                  checked={onlyEmail} 
-                  onCheckedChange={setOnlyEmail} 
-                  className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700"
+                <Switch
+                  id="only-email"
+                  checked={onlyEmail}
+                  onCheckedChange={setOnlyEmail}
                 />
                 <Label htmlFor="only-email" className="cursor-pointer text-sm font-semibold">
                   Pouze s e-mailem

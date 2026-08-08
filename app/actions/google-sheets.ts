@@ -205,7 +205,7 @@ export async function disconnectGoogleSheets() {
 
 /**
  * Nastaví historickou outreach tabulku jako archiv pro Radar (vyloučení firem).
- * Nepřepisuje live Venegard CRM sheet.
+ * Nepřepisuje live Sklyvo CRM sheet.
  */
 export async function setSheetsArchiveSpreadsheet(spreadsheetUrlOrId: string) {
   const session = await getSessionUser();
@@ -266,7 +266,7 @@ export async function setSheetsArchiveSpreadsheet(spreadsheetUrlOrId: string) {
 
 /**
  * Smaže všechny leady z app CRM. Historický Google Sheet (archiv) zůstane.
- * Live Venegard sheet se při syncu přepíše jen novými leady (po smazání = prázdný).
+ * Live Sklyvo sheet se při syncu přepíše jen novými leady (po smazání = prázdný).
  * Radar dál vylučuje firmy z archivu.
  */
 export async function clearCrmLeadsKeepSheetsArchive(confirm: string) {
@@ -511,7 +511,7 @@ export async function importHistoricalOutreachSheet(input: {
     await prisma.lead.createMany({ data: toCreate.slice(i, i + BATCH) });
   }
 
-  // Import jen doplní leady do CRM — nepřepisuje napojený Venegard Sheet.
+  // Import jen doplní leady do CRM — nepřepisuje napojený Sklyvo Sheet.
   if (toCreate.length > 0) {
     scheduleCrmSheetsSync(workspaceId);
   }
@@ -620,7 +620,7 @@ export async function backfillAuthorsFromOutreachSheet(input: {
       const companyName = (row[idx.firma] ?? "").trim();
       if (!companyName) continue;
       const author = normalizeLeadAuthor(row[idx.autor] ?? "");
-      if (!author || author === "Venegard") continue;
+      if (!author || author === "Sklyvo" || author === "Venegard") continue;
       withAuthor += 1;
 
       const email =

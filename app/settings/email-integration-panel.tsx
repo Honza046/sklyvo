@@ -219,9 +219,9 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-border/60 bg-background p-5">
+        <div className="rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-red-100 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-red-100 bg-card dark:border-slate-700 dark:bg-slate-900">
               <span className="text-lg font-bold leading-none">
                 <span className="text-[#4285F4]">G</span>
               </span>
@@ -236,15 +236,15 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
           <Button
             type="button"
             onClick={handleGoogleConnect}
-            className="w-full rounded-xl bg-white font-semibold text-[#4285F4] shadow-sm ring-1 ring-border hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800"
+            className="w-full rounded-xl bg-card font-semibold text-[#4285F4] shadow-sm ring-1 ring-border hover:bg-muted/40 dark:bg-slate-900 dark:hover:bg-slate-800"
           >
             {t("settings.emailIntegration.googleButton")}
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-border/60 bg-background p-5">
+        <div className="rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
+            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
               <Mail className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -292,7 +292,7 @@ export function EmailIntegrationPanel({ initialState }: EmailIntegrationPanelPro
 
           {form.smtpHost.includes("seznam") && (
             <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-              Seznam: heslo k vašemu venegard e-mailu (nebo heslo aplikace ze Seznam účtu). Host{" "}
+              Seznam: heslo k vašemu firemnímu e-mailu (nebo heslo aplikace ze Seznam účtu). Host{" "}
               <code className="font-mono">smtp.seznam.cz</code>, port <code className="font-mono">465</code>.
               Každý člen týmu si připojuje <strong>svůj</strong> účet — maily pak odcházejí z něj.
             </p>

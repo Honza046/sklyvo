@@ -11,7 +11,7 @@
  * Pravidla při použití v generování:
  * - NIKDY neposílej text doslova, vždy nahraď konkrétními fakty z webu klienta.
  * - „Fakta“ v ukázkách jsou fiktivní příklady stylu (rozvrh, ceník, specializace…).
- * - Podpis: v ukázkách „Jan Sedlář za tým Venegard“; v appce nahradí podpis uživatele / workspace.
+ * - Podpis: v ukázkách „Jan Sedlář za tým Sklyvo“; v appce nahradí podpis uživatele / workspace.
  * - Piš v 1. osobě jednotného čísla (já), ne „modernizujeme / my v …“.
  * - Placeholder [Název firmy] nahraď jménem firmy NEBO „váš web“ (bez syrové domény).
  * - Žádné pomlčky (-, –, —) v těle ukázky.
@@ -44,7 +44,7 @@ Dělám weby pro fitness místa, hlavně aby rozvrh, permanentky a první návš
 Kdyby se vám to hodilo, rád se na to podívám spolu s vámi. Stačí napsat, jestli Vám dává smysl krátký hovor.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 2,
@@ -60,7 +60,7 @@ Umím weby pro wellness a masáže postavit tak, aby první dojem seděl s úrov
 Máte čas se na to společně podívat? Napište, jestli si můžeme příští týden zavolat.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 3,
@@ -76,7 +76,7 @@ Pomáhám ordinacím a klinikám s weby, které působí klidně a důvěryhodn�
 Když budete chtít, pošlu vám 2 konkrétní návrhy jen k vašemu webu, případně si můžeme domluvit i krátký hovor.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 4,
@@ -92,7 +92,7 @@ Dělám weby pro kanceláře tak, aby autorita byla zřejmá hned a poptávka š
 Hodilo by se vám to probrat napřímo? Klidně jen krátký hovor, konkrétně k vašemu webu.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 5,
@@ -108,7 +108,7 @@ Pomáhám účetním a daňovým poradcům s weby, které vysvětlí přínos li
 Když budete mít zájem, rád to s vámi projdu, napište zda by Vám dával smysl krátký hovor příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 6,
@@ -124,7 +124,7 @@ Dělám weby pro reality tak, aby nemovitosti vypadaly silně a zároveň bylo j
 Chcete, abych vám napsal 2 konkrétní věci, co bych na vašem webu upravil jako první? Případně si můžeme domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 7,
@@ -140,7 +140,7 @@ Stavím eshopy (i redesigny), kde je cesta od katalogu k objednávce krátká  a
 Kdybychom se na to podívali spolu, ukážu vám to přímo na vašich stránkách. Vyhovoval by vám krátký hovor příští týden?
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 8,
@@ -156,7 +156,7 @@ Umím eshopy srovnat tak, aby se ve velké nabídce dalo vyznat a to předevší
 Máte prostor to krátce projít? Napište datum a čas příští týden, kdy by vám dával smysl krátký hovor.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 9,
@@ -172,7 +172,7 @@ Dělám weby pro restaurace a kavárny, aby menu, otevíračka a rezervace fungo
 Když budete chtít, podívám se na to s vámi. Vyhovoval by vám krátký hovor příští týden?
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 10,
@@ -188,7 +188,7 @@ Pomáhám hotelům a penzionům s weby, které tahají víc přímých rezervac�
 Dává vám smysl to probrat? Klidně napište jen „ano“ a domluvíme krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 11,
@@ -204,7 +204,7 @@ Dělám weby pro salony tak, aby fotky prodávaly a objednání bylo hned vedle 
 Kdybyste chtěli tipy přímo k vašemu webu, napište, ozvu se s konkrétními body. Případně si můžeme domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 12,
@@ -220,7 +220,7 @@ Umím weby pro servisy udělat tak, aby působily důvěryhodně a rezervace šl
 Máte chuť se na to podívat? Případně si můžeme domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 13,
@@ -236,7 +236,7 @@ Pomáhám řemeslníkům a stavebním firmám s weby, kde práce mluví sama a p
 Když budete chtít, sepíšu vám 2 konkrétní úpravy jen podle vašeho webu. Případně si můžeme domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 14,
@@ -252,7 +252,7 @@ Dělám weby pro výrobní a B2B firmy tak, aby působily odborně a partnerovi 
 Hodilo by se vám to krátce projít? Napište, kdy se vám to hodí a můžeme se spojit na hovoru.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 15,
@@ -268,7 +268,7 @@ Umím logistické weby zjednodušit tak, aby kapacity byly jasné a specifikace 
 Chcete to spočítat na vašem webu? Ozvěte se a podívám se na to s vámi, případně si můžeme zavolat příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 16,
@@ -284,7 +284,7 @@ Pomáhám agenturám s weby, které ukazují práci napřed a poptávku nechají
 Když budete mít zájem, rád to s vámi projdu na konkrétních stránkách u vás.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 17,
@@ -300,7 +300,7 @@ Dělám prezentace pro IT týmy tak, aby technologie a reference seděly vedle s
 Dává smysl krátký hovor? Napište, co vám vyhovuje.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 18,
@@ -316,7 +316,7 @@ Pomáhám školám a kurzům s weby, kde je výběr i zápis stejně jednoduchý
 Když budete chtít, pošlu tipy přímo k vašemu webu, bez obecné omáčky. Případně si můžeme domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 19,
@@ -332,7 +332,7 @@ Dělám weby pro developery tak, aby vizuál prodával a zároveň bylo jasné, 
 Máte chuť to krátce projít? Stačí odpovědět a domluvíme se na krátkém hovoru příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 20,
@@ -348,7 +348,7 @@ Umím weby pro poradce postavit tak, aby osobní značka seděla a první kontak
 Když budete mít zájem, rád se na to podívám s vámi. Vyhovoval by vám krátký hovor příští týden?
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 21,
@@ -364,7 +364,7 @@ Pomáhám optikám a odborným provozovnám s weby, které usnadní objednání 
 Chcete tipy přímo k vašemu webu? Napište a ozvu se, případně si můžeme příští týden zavolat.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 22,
@@ -380,7 +380,7 @@ Dělám weby pro veteriny tak, aby působily klidně a zároveň v krizovém mom
 Když budete chtít, projdu to s vámi konkrétně, napište jen, jestli máte zájem a můžeme si domluvit krátký hovor na příští týden.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 23,
@@ -396,7 +396,7 @@ Umím weby pro fotografy a eventy udělat tak, aby práce vynikla a termín šel
 Hodilo by se vám to? Ozvěte se a podíváme se na to spolu.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 24,
@@ -412,7 +412,7 @@ Pomáhám úklidovým firmám s weby, které ukážou zkušenost a zároveň zkr
 Když budete mít chuť, napište, připravím 2 konkrétní body k vašemu webu.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
   {
     id: 25,
@@ -428,7 +428,7 @@ Dělám weby pro retail a showroomy tak, aby sortiment seděl a cesta na pobočk
 Máte chuť to krátce projít? Stačí odpovědět a domluvíme se.
 
 S pozdravem,
-Jan Sedlář za tým Venegard`,
+Jan Sedlář za tým Sklyvo`,
   },
 ];
 
@@ -533,10 +533,23 @@ function stripExampleSignature(body: string): string {
     .trim();
 }
 
+/** Placeholder firmy → přirozená čeština (ne „na webu váš web“). */
+function replaceFirmPlaceholder(body: string): string {
+  return body
+    .replace(/\bna webu \[Název firmy\]/gi, "na vašem webu")
+    .replace(/\bprocházel jsem web \[Název firmy\]/gi, "procházel jsem váš web")
+    .replace(/\bprocházel jsem \[Název firmy\]/gi, "procházel jsem váš web")
+    .replace(/\bdíval jsem se na eshop \[Název firmy\]/gi, "díval jsem se na váš eshop")
+    .replace(/\bu eshopu \[Název firmy\]/gi, "u vašeho eshopu")
+    .replace(/\bweb \[Název firmy\]/gi, "váš web")
+    .replace(/\bu \[Název firmy\]/gi, "u vás")
+    .replace(/\b\[Název firmy\]/gi, "váš web");
+}
+
 /**
  * Nouzový draft při nedostupné Gemini API (kvóta / 429).
  * Bere nejbližší gold ukázku podle oboru — styl OK, bez AI faktů z webu.
- * Placeholder firmy → „váš web“ (nikdy syrová doména).
+ * Bez podpisu a bez doplňovaného druhého CTA (podpis doplní generate z nastavení).
  */
 export function buildGoldQuotaFallbackDraft(opts: {
   websiteText?: string | null;
@@ -561,8 +574,7 @@ export function buildGoldQuotaFallbackDraft(opts: {
   const picked = pickGoldEmailsForPrompt({ tags, limit: 1 });
   const ex = picked[0] ?? SNIPER_GOLD_EMAIL_EXAMPLES[0]!;
 
-  const firmLabel = "váš web";
-  let raw = ex.body.replace(/\[Název firmy\]/gi, firmLabel);
+  let raw = replaceFirmPlaceholder(ex.body);
 
   let osloveni = "Dobrý den,";
   const greet = /^(Dobrý den[^\n]*),?\s*\n+/i.exec(raw);
@@ -571,18 +583,7 @@ export function buildGoldQuotaFallbackDraft(opts: {
     raw = raw.slice(greet[0].length);
   }
 
-  let body = stripExampleSignature(raw);
-  // Sniper UI očekává 4–5 krátkých odstavců; gold ukázky mají často 3.
-  const paras = body
-    .split(/\n\s*\n+/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  while (paras.length < 4) {
-    paras.push(
-      "Když budete chtít, pošlu vám 2 konkrétní tipy jen k vašemu webu, případně si krátce zavoláme.",
-    );
-  }
-  body = paras.slice(0, 5).join("\n\n");
+  const body = stripExampleSignature(raw);
 
   const tagHint = tags.length > 0 ? tags.join(", ") : "obecný B2B";
   return {
@@ -623,7 +624,7 @@ export function buildGoldEmailFewShotBlock(opts: {
     "Inspiruj se tónem, strukturou a konkrétností. NEKOPÍRUJ věty ani fiktivní detaily.",
     "Přepiš podle REÁLNÝCH faktů z webu klienta výše. Žádné pomlčky. 1. osoba jednotného čísla.",
     "Předměty v ukázkách jsou jen tón — vygeneruj vlastní 3 až 4 předměty podle schématu.",
-    "Podpis v ukázkách ignoruj — použij podpis odesílatele ze system promptu.",
+    "Podpis v ukázkách ignoruj — do těla ho nevkládej (systém připojí podpis z nastavení).",
   ];
 
   examples.forEach((ex, i) => {

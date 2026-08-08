@@ -255,7 +255,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                   <Briefcase className="h-5 w-5" />
                 </div>
                 <h2 className="text-sm font-bold sm:text-lg">Nabízené služby</h2>
@@ -339,16 +339,18 @@ export default async function SettingsPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/50 p-4 dark:border-blue-800 dark:bg-blue-900/10">
+              <div className="sk-billing-card flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="flex items-center gap-3">
-                  <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <Zap className="h-5 w-5 shrink-0 text-[color:var(--sk-brand)]" />
                   <div>
-                    <p className="text-sm font-semibold">Potřebujete více výkonu?</p>
-                    <p className="text-xs text-muted-foreground">Přejděte na vyšší tarif nebo si dokupte jednorázový balíček.</p>
+                    <p className="sk-billing-card__title text-sm font-semibold">Potřebujete více výkonu?</p>
+                    <p className="sk-billing-card__meta text-xs">
+                      Přejděte na vyšší tarif nebo si dokupte jednorázový balíček.
+                    </p>
                   </div>
                 </div>
-                <Button asChild className="rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700">
-                  <Link href="/settings/billing">Navýšit limit</Link>
+                <Button asChild className="h-9 rounded-xl px-4 text-sm font-semibold">
+                  <Link href="/pricing">Vybrat tarif</Link>
                 </Button>
               </div>
             </AccordionContent>

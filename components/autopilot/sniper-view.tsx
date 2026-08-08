@@ -8,7 +8,6 @@ import {
   Globe,
   Info,
   Loader2,
-  Mail,
   Maximize2,
   Phone,
   Search,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
+import { CopyEmailButton } from "@/components/copy-email-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,6 +52,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   clearAutopilotEmailQueue,
+  forceSendAutopilotQueueItem,
   getAutopilotEmailQueue,
   queueAutopilotLead,
   updateAutopilotEmailQueueItem,
@@ -88,10 +89,8 @@ import {
 } from "@/components/autopilot/shared";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 
-/** Kompaktní: absolute viewport (spolehlivý scroll v omezené kartě). Expanded: flex-1 overflow (výška z overlay). */
-const SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS =
-  "absolute inset-0 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
-const SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS =
+/** Stejný scroll model jako Sběr firem — flex overflow, ne absolute (rozbíjel zarovnání thead/td). */
+const SNIPER_SELECTION_VIEWPORT_CLASS =
   "min-h-0 flex-1 overflow-x-auto overflow-y-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 type ActivePreviewEmail = {
@@ -120,6 +119,7 @@ export function AutopilotSniperView() {
   const [isRunning, setIsRunning] = useState(false);
   const [isClearingQueue, setIsClearingQueue] = useState(false);
   const [isForceSending, setIsForceSending] = useState(false);
+  const [forceSendingQueueId, setForceSendingQueueId] = useState<string | null>(null);
   const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [states, setStates] = useState<Record<string, RunState>>({});
   const [queueStatusFilter, setQueueStatusFilter] = useState<"all" | "queued" | "error">("all");
@@ -268,10 +268,30 @@ export function AutopilotSniperView() {
     setCurrentPage(1);
   }, [workspaceLeads.length, selectionDateFilter, selectionTagFilter, selectionSearch, onlyWithEmail]);
 
+  /** Stejný základ jako tabulka (NEW + e-mail + datum), bez tagu a hledání — počty ve filtru = co uvidíš. */
+  const selectionBaseLeads = useMemo(() => {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(now.getDate() - 7);
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+    return workspaceLeads.filter((lead) => {
+      if (lead.leadStatus !== "NEW") return false;
+      if (onlyWithEmail && !lead.email?.trim()) return false;
+      const created = new Date(lead.createdAt);
+      if (selectionDateFilter === "last_7_days") return created >= sevenDaysAgo;
+      if (selectionDateFilter === "last_30_days") return created >= thirtyDaysAgo;
+      if (selectionDateFilter === "this_year") {
+        return created.getFullYear() === now.getFullYear();
+      }
+      return true;
+    });
+  }, [workspaceLeads, onlyWithEmail, selectionDateFilter]);
+
   const availableSelectionTags = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const lead of workspaceLeads) {
-      if (lead.leadStatus !== "NEW") continue;
+    for (const lead of selectionBaseLeads) {
       for (const tag of lead.tags ?? []) {
         counts.set(tag, (counts.get(tag) ?? 0) + 1);
       }
@@ -281,32 +301,15 @@ export function AutopilotSniperView() {
       count: counts.get(tag) ?? 0,
       label: leadTagLabel(tag),
     }));
-  }, [workspaceLeads]);
+  }, [selectionBaseLeads]);
 
   const leads = useMemo<AutopilotLead[]>(() => {
-    const now = new Date();
-    const sevenDaysAgo = new Date(now);
-    sevenDaysAgo.setDate(now.getDate() - 7);
-    const thirtyDaysAgo = new Date(now);
-    thirtyDaysAgo.setDate(now.getDate() - 30);
     const q = selectionSearch.trim().toLowerCase();
 
-    return workspaceLeads
-      .filter((lead) => lead.leadStatus === "NEW")
-      .filter((lead) => !onlyWithEmail || Boolean(lead.email?.trim()))
+    return selectionBaseLeads
       .filter((lead) => {
         if (selectionTagFilter === "all") return true;
         return (lead.tags ?? []).includes(selectionTagFilter);
-      })
-      .filter((lead) => {
-        const created = new Date(lead.createdAt);
-        if (selectionDateFilter === "all") return true;
-        if (selectionDateFilter === "last_7_days") return created >= sevenDaysAgo;
-        if (selectionDateFilter === "last_30_days") return created >= thirtyDaysAgo;
-        if (selectionDateFilter === "this_year") {
-          return created.getFullYear() === now.getFullYear();
-        }
-        return true;
       })
       .filter((lead) => {
         if (!q) return true;
@@ -325,13 +328,7 @@ export function AutopilotSniperView() {
         phone,
         createdAt,
       }));
-  }, [
-    workspaceLeads,
-    onlyWithEmail,
-    selectionDateFilter,
-    selectionTagFilter,
-    selectionSearch,
-  ]);
+  }, [selectionBaseLeads, selectionTagFilter, selectionSearch]);
 
   useEffect(() => {
     const allowed = new Set(leads.map((lead) => lead.id));
@@ -591,8 +588,9 @@ export function AutopilotSniperView() {
           }
         }}
         className={cn(
-          "w-full rounded-md border border-transparent bg-transparent px-1.5 py-1 text-foreground outline-none transition-colors",
-          "hover:border-border/70 hover:bg-muted/40 focus:border-blue-500/50 focus:bg-background focus:ring-2 focus:ring-blue-600/20",
+          "sk-plain-field w-full max-w-[260px] truncate border-0 bg-transparent p-0 text-foreground shadow-none outline-none ring-0 transition-colors",
+          "underline decoration-transparent underline-offset-2 hover:text-[color:var(--sk-brand)] hover:decoration-[color:var(--sk-brand)]/40",
+          "focus:text-[color:var(--sk-brand)] focus:decoration-[color:var(--sk-brand)]/50",
           "disabled:opacity-60",
           variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
         )}
@@ -653,10 +651,14 @@ export function AutopilotSniperView() {
       return;
     }
 
-    const isImmediate = automationSettings.sendingStrategy === "immediate";
+    const strategy = automationSettings.sendingStrategy;
+    const isImmediate = strategy === "immediate";
+    const isQueueOnly = strategy === "queue";
+    // Okamžité odeslání jen při Zapnout + režim „hned“. Jinak jen fronta.
+    const shouldForceSendNow = isImmediate && featureEnabled;
     let scheduledTimes: Date[];
 
-    if (isImmediate) {
+    if (isImmediate || isQueueOnly) {
       const now = new Date();
       scheduledTimes = queue.map(() => now);
     } else {
@@ -740,7 +742,7 @@ export function AutopilotSniperView() {
     setIsRunning(false);
     setSelectedIds([]);
 
-    if (isImmediate) {
+    if (shouldForceSendNow) {
       try {
         const response = await fetch("/api/autopilot/force-send", { method: "POST" });
         const result = (await response.json()) as {
@@ -769,6 +771,18 @@ export function AutopilotSniperView() {
       } catch {
         toast.error("E-maily jsou ve frontě, ale okamžité odeslání selhalo.");
       }
+      return;
+    }
+
+    if (isImmediate && !featureEnabled) {
+      toast.success(
+        "E-maily jsou ve frontě. Automatika je vypnutá — neodeslaly se. Zapni odesílání nebo pošli ručně z fronty.",
+      );
+      return;
+    }
+
+    if (isQueueOnly) {
+      toast.success("E-maily byly napsány a jsou ve frontě (bez odeslání).");
       return;
     }
 
@@ -815,21 +829,85 @@ export function AutopilotSniperView() {
     }
   };
 
-  const handleClearQueue = async () => {
-    if (isRunning || isClearingQueue) return;
+  const handleForceSendOne = async (queueId: string, leadId: string) => {
+    if (!queueId || isRunning || forceSendingQueueId || isForceSending) return;
 
-    setIsClearingQueue(true);
+    setForceSendingQueueId(queueId);
     try {
-      const result = await clearAutopilotEmailQueue();
+      const result = await forceSendAutopilotQueueItem(queueId);
       if ("error" in result) {
         toast.error(result.error);
         return;
       }
 
-      setCampaignLeads([]);
-      setStates({});
-      setQueueStatusFilter("all");
-      toast.success("Fronta byla vyčištěna.");
+      if ((result.sent ?? 0) > 0) {
+        toast.success("E-mail byl odeslán.");
+        setCampaignLeads((prev) => prev.filter((lead) => lead.id !== leadId));
+        setStates((prev) => {
+          const next = { ...prev };
+          delete next[leadId];
+          return next;
+        });
+        await loadQueue();
+        return;
+      }
+
+      if ((result.failed ?? 0) > 0) {
+        toast.error(result.errors?.[0] ?? "E-mail se nepodařilo odeslat.");
+        await loadQueue();
+        return;
+      }
+
+      toast.info("Položka už nebyla ve frontě k odeslání.");
+      await loadQueue();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Nepodařilo se odeslat e-mail.";
+      toast.error(message);
+    } finally {
+      setForceSendingQueueId(null);
+    }
+  };
+
+  const handleClearQueue = async (scope: "all" | "failed" = "all") => {
+    if (isRunning || isClearingQueue) return;
+
+    setIsClearingQueue(true);
+    try {
+      const result = await clearAutopilotEmailQueue(scope);
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
+
+      if (scope === "failed") {
+        const errorLeadIds = new Set(
+          campaignLeads
+            .filter((lead) => (states[lead.id]?.status ?? "pending") === "error")
+            .map((lead) => lead.id),
+        );
+        setCampaignLeads((prev) => prev.filter((lead) => !errorLeadIds.has(lead.id)));
+        setStates((prev) => {
+          const next = { ...prev };
+          for (const id of errorLeadIds) delete next[id];
+          return next;
+        });
+        toast.success(
+          result.deletedCount > 0
+            ? `Smazáno ${result.deletedCount} chyb z fronty.`
+            : "Žádné chyby ke smazání.",
+        );
+      } else {
+        setCampaignLeads([]);
+        setStates({});
+        setQueueStatusFilter("all");
+        toast.success(
+          result.deletedCount > 0
+            ? `Fronta vyčištěna (${result.deletedCount}).`
+            : "Fronta už byla prázdná.",
+        );
+      }
+
+      await loadQueue();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Nepodařilo se vyčistit frontu.";
       toast.error(message);
@@ -852,17 +930,10 @@ export function AutopilotSniperView() {
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "min-h-0 flex-1 md:hidden",
-            expanded ? "flex flex-col overflow-hidden" : "relative",
+            "sk-data-panel__scroll--mobile min-h-0 flex-1 flex-col gap-2 overflow-y-auto md:hidden",
+            SNIPER_SELECTION_VIEWPORT_CLASS,
           )}
         >
-          <div
-            className={cn(
-              expanded
-                ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
-                : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS,
-            )}
-          >
           {paginatedLeads.map((lead) => {
             const checked = selectedIds.includes(lead.id);
             return (
@@ -877,7 +948,7 @@ export function AutopilotSniperView() {
                     toggleOne(lead.id);
                   }
                 }}
-                className="flex w-full cursor-pointer items-center gap-3 border-b border-border/40 px-3 py-2.5 text-left active:bg-muted/50"
+                className="sk-data-row w-full cursor-pointer text-left"
               >
                 <Checkbox
                   checked={checked}
@@ -910,33 +981,31 @@ export function AutopilotSniperView() {
               )}
             </>
           )}
-          </div>
         </div>
 
         {/* Desktop table */}
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "hidden min-h-0 flex-1",
-            expanded
-              ? "md:flex md:flex-col md:overflow-hidden"
-              : "relative md:block",
+            "sk-data-panel__scroll hidden md:block",
+            SNIPER_SELECTION_VIEWPORT_CLASS,
           )}
         >
-          <div
-            className={cn(
-              expanded
-                ? SNIPER_SELECTION_EXPANDED_VIEWPORT_CLASS
-                : SNIPER_SELECTION_COMPACT_VIEWPORT_CLASS,
-            )}
-          >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-              <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <colgroup>
+              <col className="w-11" />
+              <col className="w-[28%]" />
+              <col className="w-12" />
+              <col className="w-[30%]" />
+              <col className="w-[22%]" />
+              <col className="w-[7rem]" />
+            </colgroup>
+            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+              <tr className="text-left">
                 <th
                   className={cn(
                     AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[44px] bg-white text-center dark:bg-zinc-950",
+                    "w-11 px-2 text-center",
                   )}
                 >
                   <div className="flex h-full items-center justify-center">
@@ -949,41 +1018,13 @@ export function AutopilotSniperView() {
                     />
                   </div>
                 </th>
-                <th
-                  className={cn(
-                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[28%] bg-white dark:bg-zinc-950",
-                  )}
-                >
-                  Firma
-                </th>
-                <th
-                  className={cn(
-                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[52px] bg-white text-center dark:bg-zinc-950",
-                  )}
-                >
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Firma</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "px-2 text-center")}>
                   Web
                 </th>
-                <th
-                  className={cn(
-                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[26%] bg-white dark:bg-zinc-950",
-                  )}
-                >
-                  E-mail
-                </th>
-                <th
-                  className={cn(
-                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
-                    "w-[16%] bg-white dark:bg-zinc-950",
-                  )}
-                >
-                  Telefon
-                </th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "bg-white dark:bg-zinc-950")}>
-                  Nalezeno
-                </th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>E-mail</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Telefon</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Nalezeno</th>
               </tr>
             </thead>
             <tbody>
@@ -993,11 +1034,11 @@ export function AutopilotSniperView() {
                 return (
                   <tr
                     key={`${mode}-d-${lead.id}`}
-                    className="cursor-pointer border-b border-border/40 transition-colors hover:bg-muted/40"
+                    className="cursor-pointer"
                     onClick={() => toggleOne(lead.id)}
                   >
                     <td
-                      className="px-3 py-3 text-center"
+                      className="px-2 py-2.5 text-center"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex justify-center">
@@ -1007,61 +1048,62 @@ export function AutopilotSniperView() {
                         />
                       </div>
                     </td>
-                    <td className="px-3 py-3">
-                      <p className="break-words font-semibold text-foreground">
+                    <td className="min-w-0 px-3 py-2.5">
+                      <p className="truncate font-semibold text-foreground" title={lead.company}>
                         {lead.company}
                       </p>
                     </td>
                     <td
-                      className="px-2 py-3 text-center"
+                      className="px-2 py-2.5 text-center"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {web ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          asChild
-                          className="h-8 w-8 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                        <a
+                          href={web}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Otevřít web ${lead.company}`}
+                          title={lead.url || web}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-black/[0.04] hover:text-foreground"
                         >
-                          <a
-                            href={web}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Otevřít web ${lead.company}`}
-                            title={lead.url || web}
-                          >
-                            <Globe className="h-4 w-4" />
-                          </a>
-                        </Button>
+                          <Globe className="h-4 w-4" />
+                        </a>
                       ) : (
                         <span className="inline-flex h-8 w-8 items-center justify-center text-muted-foreground/40">
                           <Globe className="h-4 w-4" />
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          "flex min-w-0 items-center break-words text-sm",
-                          lead.email ? "text-foreground" : "text-muted-foreground",
-                        )}
-                      >
-                        <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{lead.email || "Bez e-mailu"}</span>
-                      </span>
+                    <td
+                      className="min-w-0 overflow-hidden px-3 py-2.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {lead.email ? (
+                        <div className="flex min-w-0 items-center gap-0.5">
+                          <CopyEmailButton email={lead.email} size="sm" variant="ghost" />
+                          <span className="min-w-0 truncate text-sm text-foreground" title={lead.email}>
+                            {lead.email}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="flex items-center text-sm text-muted-foreground">
+                          Bez e-mailu
+                        </span>
+                      )}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="min-w-0 overflow-hidden px-3 py-2.5">
                       {lead.phone ? (
                         <span className="flex min-w-0 items-center text-sm text-foreground">
                           <Phone className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{lead.phone}</span>
+                          <span className="truncate tabular-nums" title={lead.phone}>
+                            {lead.phone}
+                          </span>
                         </span>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-sm text-muted-foreground">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-sm text-muted-foreground tabular-nums">
                       {formatFoundDate(lead.createdAt ?? "")}
                     </td>
                   </tr>
@@ -1086,7 +1128,6 @@ export function AutopilotSniperView() {
               )}
             </tbody>
           </table>
-          </div>
         </div>
 
         <AutopilotTablePagination
@@ -1110,10 +1151,11 @@ export function AutopilotSniperView() {
       return (
         <div
           className={cn(
-            "shrink-0 rounded-xl border border-border/60 bg-card shadow-sm",
+            AUTOPILOT_TABLE_CARD_CLASS,
+            "shrink-0",
             expanded
               ? "flex min-h-0 flex-1 items-center justify-center"
-              : "mt-3 sm:mt-6 sm:rounded-2xl",
+              : "mt-3 sm:mt-6",
           )}
         >
           <AutopilotListEmptyState>Načítám naplánovanou frontu…</AutopilotListEmptyState>
@@ -1125,10 +1167,11 @@ export function AutopilotSniperView() {
       return (
         <div
           className={cn(
-            "shrink-0 rounded-xl border border-border/60 bg-card shadow-sm",
+            AUTOPILOT_TABLE_CARD_CLASS,
+            "shrink-0",
             expanded
               ? "flex min-h-0 flex-1 items-center justify-center"
-              : "mt-3 sm:mt-6 sm:rounded-2xl",
+              : "mt-3 sm:mt-6",
           )}
         >
           <AutopilotListEmptyState>
@@ -1142,7 +1185,7 @@ export function AutopilotSniperView() {
       <>
         <div
           className={cn(
-            "shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm",
+            "shrink-0 overflow-hidden rounded-xl border border-border/60 bg-white shadow-sm sm:rounded-2xl",
             !expanded && "mt-3 sm:mt-6",
           )}
         >
@@ -1178,12 +1221,66 @@ export function AutopilotSniperView() {
                   Zvětšit
                 </Button>
               )}
+              {queuedCount > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isRunning || isForceSending || forceSendingQueueId !== null}
+                  onClick={() => void handleForceSendQueue()}
+                  className="inline-flex h-7 w-fit shrink-0 items-center border-emerald-200 px-2.5 py-0 text-xs leading-none text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                >
+                  {isForceSending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Send className="mr-1 h-3 w-3" />
+                  )}
+                  Odeslat vše
+                </Button>
+              )}
+              {errorCount > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isRunning || isClearingQueue}
+                      className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    >
+                      {isClearingQueue ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-1 h-3 w-3" />
+                      )}
+                      Smazat chyby
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border bg-card shadow-md dark:bg-zinc-950">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Smazat všechny chyby ve frontě?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Odstraní se {errorCount}{" "}
+                        {errorCount === 1 ? "položka se stavem Chyba" : "položek se stavem Chyba"}.
+                        Potvrzené e-maily ve frontě zůstanou.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => void handleClearQueue("failed")}
+                        className="bg-red-600 text-white hover:bg-red-700"
+                      >
+                        Smazat chyby
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={isRunning || isClearingQueue}
+                    disabled={isRunning || isClearingQueue || campaignLeads.length === 0}
                     className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
                   >
                     {isClearingQueue ? (
@@ -1194,18 +1291,18 @@ export function AutopilotSniperView() {
                     Vyčistit
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="border bg-white shadow-md dark:bg-zinc-950">
+                <AlertDialogContent className="border bg-card shadow-md dark:bg-zinc-950">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Tato akce nenávratně smaže všechny naplánované e-maily čekající na odeslání a
-                      vymaže historii logů.
+                      Smažou se všechny položky ve frontě včetně chyb ({campaignLeads.length}).
+                      Tuto akci nelze vrátit.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Zrušit</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => void handleClearQueue()}
+                      onClick={() => void handleClearQueue("all")}
                       className="bg-red-600 text-white hover:bg-red-700"
                     >
                       Smazat frontu
@@ -1215,12 +1312,14 @@ export function AutopilotSniperView() {
               </AlertDialog>
             </div>
           </div>
-          <Progress value={progressValue} className="h-1 rounded-none" />
+          {(isRunning || isForceSending) && (
+            <Progress value={progressValue} className="h-1 rounded-none" />
+          )}
         </div>
 
         <div
           className={cn(
-            "rounded-xl border border-border/60 bg-card shadow-sm",
+            AUTOPILOT_TABLE_CARD_CLASS,
             expanded
               ? "mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
               : "mt-3 shrink-0 overflow-hidden sm:mt-4",
@@ -1246,16 +1345,14 @@ export function AutopilotSniperView() {
                   type="button"
                   onClick={() => setQueueStatusFilter(id)}
                   className={cn(
-                    "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
+                    "-mb-px flex shrink-0 items-baseline gap-1.5 border-b-2 px-2 pb-2 text-xs font-semibold transition-colors sm:px-0 sm:text-sm",
                     queueStatusFilter === id
-                      ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                      ? "border-[color:var(--sk-brand)] text-[color:var(--sk-brand)]"
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {label}
-                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    {count}
-                  </span>
+                  <span>{label}</span>
+                  <span className="tabular-nums opacity-80">{count}</span>
                 </button>
               ))}
             </div>
@@ -1267,7 +1364,7 @@ export function AutopilotSniperView() {
 
           <div
             className={cn(
-              "scrollbar-hide overflow-y-auto md:hidden",
+              "sk-data-panel__scroll--mobile flex flex-col overflow-y-auto scrollbar-hide md:hidden",
               expanded ? "min-h-0 flex-1" : "max-h-[min(35dvh,190px)] min-h-[140px]",
             )}
           >
@@ -1279,7 +1376,7 @@ export function AutopilotSniperView() {
               return (
                 <div
                   key={`${mode}-m-${lead.id}`}
-                  className="flex items-center gap-3 border-b border-border/40 px-3 py-2.5"
+                  className="sk-data-row"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[14px] font-semibold text-foreground">
@@ -1289,7 +1386,7 @@ export function AutopilotSniperView() {
                     <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                       {[
                         lead.author || null,
-                        lead.scheduledAt
+                        featureEnabled && lead.scheduledAt
                           ? `odeslat ${formatSchedulePreview(new Date(lead.scheduledAt))}`
                           : null,
                         lead.createdAt
@@ -1301,24 +1398,45 @@ export function AutopilotSniperView() {
                     </p>
                     {renderQueueStatusCell(state, "mobile")}
                   </div>
-                  {canPreview ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openEmailPreview({
-                          leadId: lead.id,
-                          queueId: state.queueId!,
-                          companyName: lead.company,
-                          subject: state.subject!,
-                          htmlBody: state.htmlBody ?? "",
-                        })
-                      }
-                      className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Náhled
-                    </button>
-                  ) : null}
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    {canPreview ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openEmailPreview({
+                            leadId: lead.id,
+                            queueId: state.queueId!,
+                            companyName: lead.company,
+                            subject: state.subject!,
+                            htmlBody: state.htmlBody ?? "",
+                          })
+                        }
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        Náhled
+                      </button>
+                    ) : null}
+                    {canPreview ? (
+                      <button
+                        type="button"
+                        disabled={
+                          isRunning ||
+                          isForceSending ||
+                          forceSendingQueueId === state.queueId
+                        }
+                        onClick={() => void handleForceSendOne(state.queueId!, lead.id)}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1.5 text-[11px] font-medium text-emerald-700 disabled:opacity-60 dark:bg-emerald-900/30 dark:text-emerald-300"
+                      >
+                        {forceSendingQueueId === state.queueId ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Send className="h-3.5 w-3.5" />
+                        )}
+                        Odeslat
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
@@ -1337,7 +1455,7 @@ export function AutopilotSniperView() {
 
           <div
             className={cn(
-              "hidden md:block",
+              "sk-data-panel__scroll hidden md:block",
               expanded
                 ? "min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 : cn(
@@ -1352,11 +1470,11 @@ export function AutopilotSniperView() {
                 expanded ? "table-auto" : "min-w-[980px] table-fixed",
               )}
             >
-              <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-                <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+                <tr className="text-left">
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[18%]" : "min-w-[180px]",
                     )}
                   >
@@ -1364,7 +1482,7 @@ export function AutopilotSniperView() {
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[22%]" : "min-w-[180px]",
                     )}
                     title="E-mail můžete upravit, dokud se zpráva neodešle"
@@ -1376,7 +1494,7 @@ export function AutopilotSniperView() {
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[10%]" : "min-w-[72px]",
                     )}
                   >
@@ -1384,15 +1502,20 @@ export function AutopilotSniperView() {
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[12%]" : "min-w-[120px]",
                     )}
+                    title={
+                      featureEnabled
+                        ? "Plánovaný čas odeslání (automatický cron)"
+                        : "Automatické odesílání je vypnuté — použij Odeslat u řádku"
+                    }
                   >
                     Odeslat
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[12%]" : "min-w-[120px]",
                     )}
                   >
@@ -1400,7 +1523,7 @@ export function AutopilotSniperView() {
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
                       expanded ? "w-[16%]" : "min-w-[140px]",
                     )}
                   >
@@ -1408,11 +1531,11 @@ export function AutopilotSniperView() {
                   </th>
                   <th
                     className={cn(
-                      "sticky top-0 z-10 h-10 bg-white px-3 py-2 align-middle dark:bg-zinc-950",
-                      expanded ? "w-[10%]" : "min-w-[110px]",
+                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
+                      expanded ? "w-[14%]" : "min-w-[150px]",
                     )}
                   >
-                    Náhled
+                    Akce
                   </th>
                 </tr>
               </thead>
@@ -1421,9 +1544,11 @@ export function AutopilotSniperView() {
                   const state = states[lead.id] ?? { status: "pending" as RunStatus };
                   const canPreview =
                     state.status === "queued" && Boolean(state.subject && state.queueId);
+                  const isSendingThis =
+                    Boolean(state.queueId) && forceSendingQueueId === state.queueId;
 
                   return (
-                    <tr key={`${mode}-d-${lead.id}`} className="border-b border-border/40">
+                    <tr key={`${mode}-d-${lead.id}`}>
                       <td className="px-3 py-2.5">
                         <p className="max-w-[280px] truncate font-semibold text-foreground">
                           {lead.company}
@@ -1439,7 +1564,7 @@ export function AutopilotSniperView() {
                       </td>
                       <td className="px-3 py-2.5">
                         <p className="whitespace-nowrap text-xs text-muted-foreground">
-                          {lead.scheduledAt
+                          {featureEnabled && lead.scheduledAt
                             ? formatSchedulePreview(new Date(lead.scheduledAt))
                             : "—"}
                         </p>
@@ -1454,22 +1579,37 @@ export function AutopilotSniperView() {
                       </td>
                       <td className="px-3 py-2.5">
                         {canPreview ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openEmailPreview({
-                                leadId: lead.id,
-                                queueId: state.queueId!,
-                                companyName: lead.company,
-                                subject: state.subject!,
-                                htmlBody: state.htmlBody ?? "",
-                              })
-                            }
-                            className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
-                          >
-                            <Eye className="h-4 w-4 shrink-0" />
-                            Náhled
-                          </button>
+                          <div className="flex flex-col items-start gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                openEmailPreview({
+                                  leadId: lead.id,
+                                  queueId: state.queueId!,
+                                  companyName: lead.company,
+                                  subject: state.subject!,
+                                  htmlBody: state.htmlBody ?? "",
+                                })
+                              }
+                              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              <Eye className="h-4 w-4 shrink-0" />
+                              Náhled
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isRunning || isForceSending || isSendingThis}
+                              onClick={() => void handleForceSendOne(state.queueId!, lead.id)}
+                              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-800 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-400 dark:hover:text-emerald-300"
+                            >
+                              {isSendingThis ? (
+                                <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                              ) : (
+                                <Send className="h-4 w-4 shrink-0" />
+                              )}
+                              Odeslat
+                            </button>
+                          </div>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
@@ -1498,7 +1638,7 @@ export function AutopilotSniperView() {
           </div>
 
           <AutopilotTablePagination
-            className="shrink-0 rounded-b-xl border-gray-100 bg-white p-4 dark:border-border/60 dark:bg-card sm:flex-row sm:items-center sm:justify-between sm:px-4"
+            className="shrink-0"
             shownFrom={queueShownFrom}
             shownTo={queueShownTo}
             totalItems={queueTotalItems}
@@ -1513,7 +1653,7 @@ export function AutopilotSniperView() {
   };
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden">
+    <div className="sk-autopilot__stack">
       <AutopilotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -1527,6 +1667,7 @@ export function AutopilotSniperView() {
         onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
+      <div className="sk-autopilot__panel">
       <AutopilotControlPanel
         icon={<Send className="h-5 w-5" />}
         iconWrapClassName="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
@@ -1548,13 +1689,14 @@ export function AutopilotSniperView() {
             <AutopilotSettingsIconButton
               label="Nastavení odesílání"
               onClick={openSettings}
-              className="h-9 w-9 rounded-lg border border-border/50 bg-background/90 text-muted-foreground shadow-sm hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:bg-zinc-900/90 dark:hover:border-blue-800 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
             />
           </>
         }
       />
+      </div>
 
-      <div className="mt-3 flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 pb-0 sm:mt-6 sm:gap-5">
+      <div className="sk-autopilot__table mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="mt-0 flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 pb-0 sm:gap-5">
         <button
           type="button"
           onClick={() => {
@@ -1591,7 +1733,7 @@ export function AutopilotSniperView() {
 
       {activeSubTab === "selection" ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2.5 shadow-sm sm:mt-4 sm:gap-3 sm:px-4">
+          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2.5 shadow-sm sm:mt-4 sm:gap-3 sm:px-4">
             <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
               {selectedIds.length > 0
                 ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
@@ -1599,7 +1741,7 @@ export function AutopilotSniperView() {
             </p>
             <label
               htmlFor="sniper-only-email"
-              className="flex shrink-0 cursor-pointer items-center gap-2 text-[11px] font-medium text-muted-foreground"
+              className="sk-filter-chip shrink-0"
             >
               <span className="hidden sm:inline">Jen s e-mailem</span>
               <span className="sm:hidden">E-mail</span>
@@ -1607,7 +1749,7 @@ export function AutopilotSniperView() {
                 id="sniper-only-email"
                 checked={onlyWithEmail}
                 onCheckedChange={setOnlyWithEmail}
-                className="shrink-0 scale-90 data-[state=checked]:bg-blue-600"
+                className="shrink-0"
               />
             </label>
             <Button
@@ -1634,8 +1776,16 @@ export function AutopilotSniperView() {
                 <>
                   <Wand2 className="mr-1.5 h-3.5 w-3.5" />
                   {selectedIds.length > 0
-                    ? `Naplánovat (${selectedIds.length})`
-                    : "Naplánovat"}
+                    ? automationSettings.sendingStrategy === "queue"
+                      ? `Do fronty (${selectedIds.length})`
+                      : automationSettings.sendingStrategy === "immediate"
+                        ? `Vygenerovat (${selectedIds.length})`
+                        : `Naplánovat (${selectedIds.length})`
+                    : automationSettings.sendingStrategy === "queue"
+                      ? "Do fronty"
+                      : automationSettings.sendingStrategy === "immediate"
+                        ? "Vygenerovat"
+                        : "Naplánovat"}
                 </>
               )}
             </Button>
@@ -1674,6 +1824,8 @@ export function AutopilotSniperView() {
         </div>
       )}
 
+      </div>
+
       <ExpandOverlay
         open={selectionExpanded}
         onClose={() => setSelectionExpanded(false)}
@@ -1693,11 +1845,11 @@ export function AutopilotSniperView() {
                   value={selectionSearch}
                   onChange={(e) => setSelectionSearch(e.target.value)}
                   placeholder="Hledat firmu…"
-                  className="h-9 rounded-lg border-border bg-card py-0 pl-8 text-xs shadow-none"
+                  className="sk-filter-chip h-9 w-full py-0 pl-8 text-xs shadow-none"
                 />
               </div>
               <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
-                <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[180px]">
+                <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[180px]">
                   <SelectValue placeholder="Obor / tag" />
                 </SelectTrigger>
                 <SelectContent className="z-[220]">
@@ -1715,7 +1867,7 @@ export function AutopilotSniperView() {
                   setSelectionDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")
                 }
               >
-                <SelectTrigger className="h-9 w-full shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none sm:w-[170px]">
+                <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[170px]">
                   <SelectValue placeholder="Datum" />
                 </SelectTrigger>
                 <SelectContent className="z-[220]">

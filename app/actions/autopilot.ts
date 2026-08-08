@@ -293,6 +293,8 @@ export async function queueAutopilotCampaign(
 export type ProcessEmailQueueOptions = {
   workspaceId?: string;
   ignoreSchedule?: boolean;
+  /** Omezí zpracování na jednu položku fronty (okamžité odeslání z UI). */
+  queueId?: string;
   /** Povinné pro jakékoli volání — HMAC z CRON_SECRET (cron) nebo workspace token. */
   internalToken?: string;
 };
@@ -331,6 +333,7 @@ export async function processEmailQueue(
   const pending = await prisma.emailQueue.findMany({
     where: {
       status: "PENDING",
+      ...(options?.queueId ? { id: options.queueId } : {}),
       ...(options?.ignoreSchedule ? {} : { scheduledAt: { lte: now } }),
       ...(options?.workspaceId
         ? { lead: { workspaceId: options.workspaceId } }
@@ -472,18 +475,61 @@ export async function forceSendAutopilotEmailQueue(): Promise<
   });
 }
 
-export async function clearAutopilotEmailQueue(): Promise<
-  { ok: true; deletedCount: number } | { error: string }
-> {
+/** Okamžitě odešle jednu položku fronty (i když je automatický cron vypnutý). */
+export async function forceSendAutopilotQueueItem(
+  queueId: string,
+): Promise<ProcessEmailQueueResult | { error: string }> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
   }
 
+  const id = queueId.trim();
+  if (!id) {
+    return { error: "Chybí ID položky fronty." };
+  }
+
+  const item = await prisma.emailQueue.findFirst({
+    where: {
+      id,
+      status: "PENDING",
+      lead: { workspaceId },
+    },
+    select: { id: true },
+  });
+
+  if (!item) {
+    return { error: "Položka fronty nebyla nalezena, nebo už není k odeslání." };
+  }
+
+  return processEmailQueue(1, {
+    workspaceId,
+    queueId: item.id,
+    ignoreSchedule: true,
+    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
+  });
+}
+
+export async function clearAutopilotEmailQueue(
+  scope: "all" | "pending" | "failed" = "all",
+): Promise<{ ok: true; deletedCount: number } | { error: string }> {
+  const session = await getSessionUser();
+  const workspaceId = session.workspace?.id;
+  if (!workspaceId) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const statusFilter =
+    scope === "failed"
+      ? (["FAILED"] as const)
+      : scope === "pending"
+        ? (["PENDING"] as const)
+        : (["PENDING", "FAILED"] as const);
+
   const result = await prisma.emailQueue.deleteMany({
     where: {
-      status: "PENDING",
+      status: { in: [...statusFilter] },
       lead: { workspaceId },
     },
   });

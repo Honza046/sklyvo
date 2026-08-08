@@ -1,6 +1,6 @@
 export type FullAutoFrequency = "once_weekly" | "twice_weekly" | "daily";
 
-export type SendingStrategy = "batch" | "immediate";
+export type SendingStrategy = "batch" | "immediate" | "queue";
 
 export type RadarCompanySize = "any" | "micro" | "small" | "medium" | "large";
 
@@ -69,7 +69,7 @@ export const DEFAULT_AUTOPILOT_SETTINGS: AutopilotAutomationSettings = {
   window3Enabled: false,
   maxEmailsPerBatch: 20,
   sendDays: [1, 2, 3, 4, 5],
-  sendingStrategy: "batch",
+  sendingStrategy: "queue",
   onlyWithEmail: false,
   fullAutoFrequency: "twice_weekly",
   fullAutoRunTime: "08:00",

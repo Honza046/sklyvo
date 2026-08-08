@@ -8,6 +8,37 @@ import { inferLeadTags } from "@/lib/lead-tags";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import {
+  leadStatusLabel,
+  notifyCampaignReply,
+  notifyCrmActivity,
+} from "@/lib/emails/notifications";
+
+async function dispatchLeadStatusNotification(input: {
+  workspaceId: string;
+  leadId: string;
+  companyName: string;
+  status: string;
+}) {
+  try {
+    if (input.status === "REPLIED") {
+      await notifyCampaignReply({
+        workspaceId: input.workspaceId,
+        companyName: input.companyName,
+        leadId: input.leadId,
+      });
+      return;
+    }
+    await notifyCrmActivity({
+      workspaceId: input.workspaceId,
+      companyName: input.companyName,
+      statusLabel: leadStatusLabel(input.status),
+      leadId: input.leadId,
+    });
+  } catch (err) {
+    console.error("[notifications] lead status notify failed", err);
+  }
+}
 
 type CrmLead = {
   id: string;
@@ -112,7 +143,7 @@ export async function getLeads() {
     try {
       leadsRaw = await prisma.lead.findMany({
         where: { workspaceId },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ lastContactedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
         select: {
           id: true,
           companyName: true,
@@ -141,7 +172,7 @@ export async function getLeads() {
       // Stale Prisma client / schema drift — načti bez contactedVia / tags
       const fallback = await prisma.lead.findMany({
         where: { workspaceId },
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ lastContactedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
         select: {
           id: true,
           companyName: true,
@@ -545,6 +576,14 @@ export async function bulkUpdateLeads(
     return { updatedCount: 0 };
   }
 
+  const before =
+    data.status != null
+      ? await prisma.lead.findMany({
+          where: { workspaceId: session.workspace.id, id: { in: uniqueIds } },
+          select: { id: true, status: true, companyName: true },
+        })
+      : [];
+
   const result = await prisma.lead.updateMany({
     where: { workspaceId: session.workspace.id, id: { in: uniqueIds } },
     data: payload as any,
@@ -553,6 +592,17 @@ export async function bulkUpdateLeads(
   revalidatePath("/crm");
   if (result.count > 0) {
     scheduleCrmSheetsSync(session.workspace.id);
+    if (data.status) {
+      for (const lead of before) {
+        if (lead.status === data.status) continue;
+        void dispatchLeadStatusNotification({
+          workspaceId: session.workspace.id,
+          leadId: lead.id,
+          companyName: lead.companyName,
+          status: data.status,
+        });
+      }
+    }
   }
   return { updatedCount: result.count };
 }
@@ -692,6 +742,14 @@ export async function updateSingleLeadStatus(id: string, status: LeadStatusInput
     return { error: "Chybí ID leadu." };
   }
 
+  const existing = await prisma.lead.findFirst({
+    where: { id: leadId, workspaceId: session.workspace.id },
+    select: { id: true, status: true, companyName: true },
+  });
+  if (!existing) {
+    return { error: "Firma v CRM nebyla nalezena." };
+  }
+
   const result = await prisma.lead.updateMany({
     where: { id: leadId, workspaceId: session.workspace.id },
     data: { status } as any,
@@ -700,6 +758,14 @@ export async function updateSingleLeadStatus(id: string, status: LeadStatusInput
   revalidatePath("/crm");
   if (result.count > 0) {
     scheduleCrmSheetsSync(session.workspace.id);
+    if (existing.status !== status) {
+      void dispatchLeadStatusNotification({
+        workspaceId: session.workspace.id,
+        leadId: existing.id,
+        companyName: existing.companyName,
+        status,
+      });
+    }
   }
   return { success: true as const, updatedCount: result.count };
 }

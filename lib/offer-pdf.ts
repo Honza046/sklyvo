@@ -1,4 +1,7 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { readFile } from "fs/promises";
+import path from "path";
+import { PDFDocument, rgb } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 
 export type OfferDocumentType = "offer" | "contract";
 
@@ -34,13 +37,26 @@ function wrapText(text: string, maxChars: number): string[] {
   return lines.length > 0 ? lines : [""];
 }
 
+async function loadNotoFonts() {
+  const fontsDir = path.join(process.cwd(), "lib", "fonts");
+  const [regular, bold] = await Promise.all([
+    readFile(path.join(fontsDir, "NotoSans-Regular.ttf")),
+    readFile(path.join(fontsDir, "NotoSans-Bold.ttf")),
+  ]);
+  return { regular, bold };
+}
+
 export async function buildOfferOrContractPdf(
   input: OfferGeneratorInput,
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
+  pdf.registerFontkit(fontkit);
+
+  const { regular, bold } = await loadNotoFonts();
+  const font = await pdf.embedFont(regular, { subset: true });
+  const fontBold = await pdf.embedFont(bold, { subset: true });
+
   const page = pdf.addPage([595.28, 841.89]); // A4
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
   const margin = 56;
   let y = 780;
@@ -140,7 +156,7 @@ export async function buildOfferOrContractPdf(
   }
 
   page.drawText(
-    "Vygenerováno ve Venegard · dokument slouží jako pracovní podklad.",
+    "Vygenerováno ve Sklyvo · dokument slouží jako pracovní podklad.",
     {
       x: margin,
       y: 48,

@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Check, Zap } from "lucide-react";
 import { startTrialCheckout } from "@/app/actions/billing";
+import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
 import { cn } from "@/lib/utils";
 
 type BillingCycle = "monthly" | "yearly";
@@ -101,6 +103,9 @@ export default function PricingPage() {
   const [accountType, setAccountType] = useState<AccountType>("single");
   const plans = useMemo(() => (accountType === "single" ? singlePlans : agencyPlans), [accountType]);
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
+  const accountTypeIndex = accountType === "single" ? 0 : 1;
+  const { trackRef: accountTabsRef, thumbStyle: accountThumbStyle } =
+    useSlidingThumb(accountTypeIndex, [accountType]);
 
   const handleActivate = async (planTier: string, priceId: string) => {
     setLoadingTier(planTier);
@@ -118,134 +123,140 @@ export default function PricingPage() {
   };
 
   return (
-      <div className="flex w-full flex-col items-center justify-start py-4">
-        
-        <div className="mb-6 text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Vyberte tarif podle typu účtu
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            Aktivace vyžaduje platební kartu. První platba proběhne až po 3 dnech trialu.
-          </p>
-        </div>
+    <div className="sk-pricing flex w-full flex-col items-center justify-start py-4">
+      <div className="mb-6 space-y-2 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-[color:var(--sk-ink)] md:text-4xl">
+          Vyberte tarif podle typu účtu
+        </h1>
+        <p className="mx-auto max-w-xl text-sm text-muted-foreground">
+          Aktivace vyžaduje platební kartu. První platba proběhne až po 3 dnech trialu.
+        </p>
+      </div>
 
-        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3">
-          <span className={cn("text-sm font-semibold", billingCycle === "monthly" ? "text-foreground" : "text-muted-foreground")}>
-            Měsíčně
-          </span>
-          <button
-            type="button"
-            onClick={() => setBillingCycle((prev) => (prev === "monthly" ? "yearly" : "monthly"))}
-            className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors"
-            aria-label="Přepnout fakturaci"
-          >
-            <span
-              className={cn(
-                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                billingCycle === "yearly" ? "translate-x-6" : "translate-x-1",
-              )}
-            />
-          </button>
-          <span className={cn("text-sm font-semibold", billingCycle === "yearly" ? "text-foreground" : "text-muted-foreground")}>
-            Ročně (Sleva 20%)
-          </span>
-        </div>
+      <div className="sk-pricing__cycle mb-5">
+        <span
+          className={cn(
+            "text-sm font-semibold",
+            billingCycle === "monthly" ? "text-[color:var(--sk-ink)]" : "text-muted-foreground",
+          )}
+        >
+          Měsíčně
+        </span>
+        <Switch
+          checked={billingCycle === "yearly"}
+          onCheckedChange={(checked) => setBillingCycle(checked ? "yearly" : "monthly")}
+          aria-label="Přepnout fakturaci"
+        />
+        <span
+          className={cn(
+            "text-sm font-semibold",
+            billingCycle === "yearly" ? "text-[color:var(--sk-ink)]" : "text-muted-foreground",
+          )}
+        >
+          Ročně (Sleva 20%)
+        </span>
+      </div>
 
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAccountType("single")}
-            className={cn(
-              "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
-              accountType === "single"
-                ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                : "border-border/60 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            SINGLE ACCOUNT
-          </button>
-          <button
-            type="button"
-            onClick={() => setAccountType("agency")}
-            className={cn(
-              "rounded-xl border px-4 py-2 text-sm font-semibold transition-colors",
-              accountType === "agency"
-                ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                : "border-border/60 text-muted-foreground hover:text-foreground",
-            )}
-          >
-            AGENCY ACCOUNT
-          </button>
-        </div>
+      <div
+        ref={accountTabsRef as React.RefObject<HTMLDivElement>}
+        className="sk-view-toggle sk-pricing__tabs mb-4"
+      >
+        <span className="sk-view-toggle__thumb" style={accountThumbStyle} aria-hidden />
+        <button
+          type="button"
+          data-slide-item
+          onClick={() => setAccountType("single")}
+          className={cn(
+            "sk-view-toggle__item sk-pricing__tab",
+            accountType === "single" && "sk-view-toggle__item--active",
+          )}
+        >
+          Single account
+        </button>
+        <button
+          type="button"
+          data-slide-item
+          onClick={() => setAccountType("agency")}
+          className={cn(
+            "sk-view-toggle__item sk-pricing__tab",
+            accountType === "agency" && "sk-view-toggle__item--active",
+          )}
+        >
+          Agency account
+        </button>
+      </div>
 
-        <div className="mb-6 max-w-5xl px-4 text-center text-sm text-muted-foreground">
-          {accountType === "single"
-            ? "1 uživatel, 1 aktivní účet, vlastní databáze kontaktů"
-            : "Tým pod jednou značkou, sdílený pool akcí, až 10 účtů"}
-        </div>
+      <p className="mb-6 max-w-5xl px-4 text-center text-sm text-muted-foreground">
+        {accountType === "single"
+          ? "1 uživatel, 1 aktivní účet, vlastní databáze kontaktů"
+          : "Tým pod jednou značkou, sdílený pool akcí, až 10 účtů"}
+      </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl px-4">
-          {plans.map((plan) => {
-            const currentPriceId =
-              billingCycle === "monthly" ? plan.stripePriceIdMonthly : plan.stripePriceIdYearly;
-            return (
+      <div className="grid w-full max-w-5xl grid-cols-1 gap-5 px-4 md:grid-cols-3 md:items-stretch">
+        {plans.map((plan) => {
+          const currentPriceId =
+            billingCycle === "monthly" ? plan.stripePriceIdMonthly : plan.stripePriceIdYearly;
+          return (
             <div
               key={plan.tier}
-              className={cn(
-                "rounded-3xl p-6 flex flex-col relative transition-all duration-300",
-                plan.isPopular
-                  ? "border-2 border-blue-600 bg-card shadow-xl scale-105 z-10"
-                  : "border border-border/60 bg-card shadow-sm hover:border-blue-300 dark:hover:border-blue-800",
-              )}
+              className={cn("sk-pricing__card", plan.isPopular && "sk-pricing__card--popular")}
             >
               {plan.isPopular && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest flex items-center shadow-md">
-                  <Zap className="mr-1 h-3 w-3" /> Nejčastější volba
+                <div className="sk-pricing__badge">
+                  <Zap className="h-3 w-3" />
+                  Nejčastější volba
                 </div>
               )}
 
-              <h3 className={cn("text-lg font-bold mb-1", plan.isPopular ? "text-blue-600 dark:text-blue-400" : "")}>
+              <h3
+                className={cn(
+                  "mb-1 text-lg font-bold",
+                  plan.isPopular ? "text-[color:var(--sk-brand)]" : "text-[color:var(--sk-ink)]",
+                )}
+              >
                 {plan.name}
               </h3>
-              <p className="text-xs text-muted-foreground mb-4 min-h-[36px]">{plan.subtitle}</p>
+              <p className="mb-4 min-h-[36px] text-xs text-muted-foreground">{plan.subtitle}</p>
 
               <div className="mb-4">
-                <span className="text-3xl font-extrabold">
+                <span className="text-3xl font-extrabold tracking-tight text-[color:var(--sk-ink)]">
                   {billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly}
                 </span>
               </div>
 
-              <div className="bg-blue-50/50 dark:bg-blue-900/10 rounded-xl p-3 mb-5 border border-blue-100 dark:border-blue-800/50 text-center">
-                <span className="text-sm font-extrabold tracking-tight text-foreground">{plan.credits}</span>
+              <div className="sk-pricing__credits mb-5">
+                <span className="text-sm font-extrabold tracking-tight text-[color:var(--sk-ink)]">
+                  {plan.credits}
+                </span>
               </div>
 
-              <ul className="space-y-2 mb-6 flex-1">
-                {plan.features.map((feature, i) => (
-                  <li key={i} className="flex items-center text-xs font-medium">
-                    <Check className={cn("mr-2 h-4 w-4", plan.isPopular ? "text-blue-600 dark:text-blue-400" : "text-emerald-500")} />
+              <ul className="mb-6 flex-1 space-y-2.5">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start text-xs font-medium text-[color:var(--sk-ink)]">
+                    <Check
+                      className={cn(
+                        "mr-2 mt-0.5 h-4 w-4 shrink-0",
+                        plan.isPopular ? "text-[color:var(--sk-brand)]" : "text-emerald-500",
+                      )}
+                    />
                     {feature}
                   </li>
                 ))}
               </ul>
 
               <Button
-                  type="button"
-                  onClick={() => void handleActivate(plan.tier, currentPriceId)}
-                  disabled={loadingTier === plan.tier}
-                  variant={plan.isPopular ? "default" : "outline"}
-                  className={cn(
-                    "w-full h-10 rounded-xl text-sm font-bold shadow-sm transition-all",
-                    plan.isPopular
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "border-border/60 hover:bg-muted",
-                  )}
-                >
-                  {loadingTier === plan.tier ? "Aktivuji..." : "Aktivovat"}
-                </Button>
+                type="button"
+                onClick={() => void handleActivate(plan.tier, currentPriceId)}
+                disabled={loadingTier === plan.tier}
+                variant={plan.isPopular ? "default" : "outline"}
+                className="h-10 w-full rounded-xl text-sm font-bold"
+              >
+                {loadingTier === plan.tier ? "Aktivuji…" : "Aktivovat"}
+              </Button>
             </div>
-            );
-          })}
-        </div>
+          );
+        })}
       </div>
+    </div>
   );
 }

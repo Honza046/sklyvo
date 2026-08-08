@@ -118,23 +118,21 @@ function DroppableStatusPill({
       ref={setNodeRef}
       type="button"
       onClick={onSelect}
+      data-status={column.id}
       className={cn(
-        "flex min-w-0 w-full flex-col rounded-xl border px-2.5 py-2 text-left transition-all",
-        "shadow-sm outline-none",
-        column.color,
-        active && "z-10 border-blue-500 ring-2 ring-blue-500/40",
-        isOver && "z-10 scale-[1.02] border-blue-600 ring-2 ring-blue-600/50",
-        !active && !isOver && "hover:border-foreground/30",
+        "sk-crm-status",
+        active && "sk-crm-status--active",
+        isOver && "sk-crm-status--over",
       )}
     >
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <span className={cn("h-2 w-2 shrink-0 rounded-full", column.dot)} />
-          <span className="truncate text-[10px] font-bold uppercase tracking-wide">{column.title}</span>
+      <div className="sk-crm-status__top">
+        <div className="sk-crm-status__label">
+          <span className={cn("sk-crm-status__dot", column.dot)} aria-hidden />
+          <span className="sk-crm-status__title">{column.title}</span>
         </div>
-        <span className="shrink-0 text-sm font-semibold tabular-nums">{count}</span>
+        <span className="sk-crm-status__count">{count}</span>
       </div>
-      <p className="mt-1 truncate text-[10px] opacity-75">{valueLabel}</p>
+      <p className="sk-crm-status__value">{valueLabel}</p>
     </button>
   );
 }
@@ -272,12 +270,12 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
         </p>
 
         {isLoading ? (
-          <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm font-semibold text-muted-foreground">
+          <div className="sk-data-panel rounded-2xl border border-border/60 bg-white p-6 text-sm font-semibold text-muted-foreground">
             Načítám dealy...
           </div>
         ) : selectedColumn ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card">
-            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/50 px-4 py-3">
+          <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
+            <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2">
                 <span className={cn("h-2.5 w-2.5 rounded-full", selectedColumn.dot)} />
                 <h3 className="truncate text-sm font-semibold uppercase tracking-wide">
@@ -293,9 +291,10 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
 
             <div
               className={cn(
-                "scrollbar-hide min-h-0 flex-1 space-y-2 overflow-y-auto p-3",
+                "sk-data-panel__scroll scrollbar-hide min-h-0 flex-1 overflow-y-auto px-3 pb-3",
               )}
             >
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {selectedLeads.map((lead) => (
                 <DraggableLeadCard key={lead.id} lead={lead} column={selectedColumn}>
                   {(drag) =>
@@ -311,9 +310,10 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
                   }
                 </DraggableLeadCard>
               ))}
+              </div>
 
               {selectedLeads.length === 0 && (
-                <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-border/40 text-sm text-muted-foreground">
+                <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl text-sm text-muted-foreground">
                   V tomto stavu zatím nejsou žádné firmy.
                 </div>
               )}

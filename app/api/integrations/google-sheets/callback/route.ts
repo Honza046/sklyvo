@@ -5,7 +5,7 @@ import {
 } from "@/lib/google-sheets-oauth";
 import {
   createCrmSpreadsheet,
-  writeVenegardCrmWorkbook,
+  writeSklyvoCrmWorkbook,
 } from "@/lib/google-sheets-sync";
 import { prisma } from "@/lib/prisma";
 
@@ -102,9 +102,9 @@ export async function GET(request: NextRequest) {
         where: { id: workspaceId },
         select: { name: true },
       });
-      const title = `Venegard CRM – ${workspace?.name?.trim() || "workspace"}`;
+      const title = `Sklyvo CRM – ${workspace?.name?.trim() || "workspace"}`;
       const created = await createCrmSpreadsheet(tokenJson.access_token, title);
-      await writeVenegardCrmWorkbook({
+      await writeSklyvoCrmWorkbook({
         accessToken: tokenJson.access_token,
         spreadsheetId: created.spreadsheetId,
         workspaceId,

@@ -15,6 +15,7 @@ export const cz = {
   },
   nav: {
     tools: "Nástroje",
+    work: "Práce",
     overview: "Přehled",
     sniper: "Sniper",
     radar: "Radar",
@@ -29,6 +30,7 @@ export const cz = {
     workspace: "Pracovní prostor",
     myProfile: "Můj profil",
     accountSettings: "Nastavení účtu",
+    plansAndBilling: "Tarify a předplatné",
     lightMode: "Světlý režim",
     darkMode: "Tmavý režim",
     logout: "Odhlásit se",
@@ -41,6 +43,24 @@ export const cz = {
     trialEndsOn: "Zkušební doba končí: {date}",
     planRenewsOn: "Tarif se obnoví: {date}",
     subscriptionEndsOn: "Předplatné končí: {date}",
+  },
+  planGate: {
+    choosePlan: "Vybrat tarif",
+    autopilot: {
+      title: "Autopilot je v placeném tarifu",
+      description:
+        "S free kredity Autopilot nelze spustit. Aktivujte tarif a začněte hromadný outreach.",
+    },
+    storage: {
+      title: "Úložiště je v placeném tarifu",
+      description:
+        "S free kredity Úložiště není dostupné. Aktivujte tarif pro dokumenty týmu.",
+    },
+    generator: {
+      title: "Generátor je v placeném tarifu",
+      description:
+        "S free kredity Generátor nelze použít. Aktivujte tarif pro nabídky a smlouvy.",
+    },
   },
   dashboard: {
     welcome: "Vítejte zpět, {name}! 👋",
@@ -76,7 +96,7 @@ export const cz = {
     attentionEmptyTitle: "Zatím žádné úkoly k řešení",
     attentionEmptyDesc: "Jakmile se objeví nové firmy, uvidíte je zde.",
     attentionNewLead: "Čeká na první oslovení",
-    attentionReplied: "Klient odpověděl, nutná reakce",
+    attentionReplied: "Klient odpověděl",
     timeNow: "Právě teď",
     timeToday: "Dnes, {time}",
     timeMinutesAgo: "Před {minutes} min",
@@ -290,7 +310,7 @@ export const cz = {
     },
     emailIntegration: {
       description:
-        "Připojte svůj venegard e-mail, ze kterého budete odesílat outreach. Každý člen týmu má vlastní schránku. Autopilot a Sniper posílají z vašeho účtu.",
+        "Připojte svůj firemní e-mail, ze kterého budete odesílat outreach. Každý člen týmu má vlastní schránku. Autopilot a Sniper posílají z vašeho účtu.",
       statusConnected: "✅ Připojeno. Autopilot je aktivní",
       statusDisconnected: "⚠️ Nepřipojeno. Autopilot je neaktivní",
       disconnect: "Odpojit",
@@ -327,8 +347,10 @@ export const cz = {
     title: "venesis",
     online: "Online",
     open: "Otevřít AI asistenta",
+    close: "Zavřít",
+    clearChat: "Smazat chat",
     send: "Odeslat dotaz",
-    welcome: "Zeptej se na cokoliv ve Venegardu: Sniper, Radar, Autopilot, kredity, e-mail…",
+    welcome: "Zeptej se na cokoliv ve Sklyvu: Sniper, Radar, Autopilot, kredity, e-mail…",
     placeholder: "Zeptej se na cokoliv...",
     analyzing: "AI Asistent analyzuje váš dotaz...",
     prompt1: "Jak správně propojit firemní e-mail pro Autopilota?",
@@ -381,7 +403,7 @@ export const cz = {
       openAutopilot: "🚀 Otevřít Autopilot",
     },
     fallback:
-      "Rád pomohu s Venegard. Zeptejte se na propojení e-mailu, Autopilot nebo nastavení pracovního prostoru, nebo použijte rychlé návrhy níže.",
+      "Rád pomohu s Sklyvo. Zeptejte se na propojení e-mailu, Autopilot nebo nastavení pracovního prostoru, nebo použijte rychlé návrhy níže.",
     openEmailSettings: "⚙️ Otevřít nastavení e-mailu",
     sendHint:
       "Pište a odesílejte zprávy zde. Pro zavření použijte X v záhlaví.",

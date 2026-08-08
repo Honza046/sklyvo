@@ -143,7 +143,7 @@ function DriveFileIcon({ kind }: { kind: DriveKind }) {
   if (kind.id === "doc") return <FileText className={cn(className, "text-blue-600")} />;
   if (kind.id === "slides") return <Presentation className={cn(className, "text-orange-500")} />;
   if (kind.id === "pdf") return <FileText className={cn(className, "text-rose-600")} />;
-  if (kind.id === "image") return <ImageIcon className={cn(className, "text-violet-600")} />;
+  if (kind.id === "image") return <ImageIcon className={cn(className, "text-sky-600")} />;
   return <File className={cn(className, "text-muted-foreground")} />;
 }
 
@@ -538,7 +538,7 @@ export default function StoragePage() {
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="mx-auto flex w-full max-w-5xl shrink-0 flex-col items-center px-1 pb-3 pt-1 text-center sm:pb-4 sm:pt-2">
         <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-2 text-amber-700 shadow-sm dark:border-amber-800/50 dark:bg-amber-900/30 dark:text-amber-300 md:rounded-2xl md:p-3">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-blue-600 shadow-sm dark:border-blue-800/50 dark:bg-blue-900/30 dark:text-blue-400 md:rounded-2xl md:p-3">
             <FolderOpen className="h-5 w-5 md:h-7 md:w-7" />
           </div>
         </div>
@@ -562,7 +562,7 @@ export default function StoragePage() {
               className={cn(
                 "-mb-px flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 pb-2 text-center transition-colors sm:flex-none sm:items-start sm:px-0 sm:pb-2.5 sm:text-left",
                 active
-                  ? "border-amber-600 text-amber-700 dark:border-amber-400 dark:text-amber-300"
+                  ? "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
@@ -595,7 +595,7 @@ export default function StoragePage() {
                 type="button"
                 disabled={isUploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-9 min-w-0 rounded-xl bg-amber-600 px-1.5 text-xs font-semibold text-white hover:bg-amber-700 sm:px-3 sm:text-sm"
+                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
               >
                 {isUploading ? (
                   <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -650,7 +650,7 @@ export default function StoragePage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl sm:rounded-2xl">
             {isLoading ? (
               <div className="flex min-h-0 flex-1 items-center justify-center gap-2 px-4 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -666,18 +666,18 @@ export default function StoragePage() {
                 </p>
               </div>
             ) : (
-              <ul className="min-h-0 flex-1 divide-y divide-border/50 overflow-y-auto">
+              <ul className="sk-data-panel__scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
                 {documents.map((doc) => (
                   <li
                     key={doc.id}
-                    className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4"
+                    className="sk-data-row flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       {doc.previewUrl ? (
                         <button
                           type="button"
                           onClick={() => setPreviewDoc(doc)}
-                          className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted/40 transition hover:ring-2 hover:ring-amber-500/40"
+                          className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/80 bg-white/70 transition hover:ring-2 hover:ring-[color:var(--sk-brand)]/35"
                           title="Zobrazit náhled"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -690,7 +690,7 @@ export default function StoragePage() {
                           />
                         </button>
                       ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/80 bg-white/70 text-muted-foreground">
                           <FileText className="h-5 w-5" />
                         </div>
                       )}
@@ -883,7 +883,7 @@ export default function StoragePage() {
                       className={cn(
                         "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
                         active
-                          ? "border-amber-600 bg-amber-50 text-amber-800 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-200"
+                          ? "border-blue-600 bg-blue-50 text-blue-800 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200"
                           : "border-border/70 bg-background text-muted-foreground hover:text-foreground",
                       )}
                     >

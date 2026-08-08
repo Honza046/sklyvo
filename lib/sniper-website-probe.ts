@@ -308,7 +308,7 @@ export async function probeClientWebsite(urlRaw: string): Promise<WebsiteProbeRe
       maxBodyChars: FETCH_BODY_MAX,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; VenegardSniper/2.0; +https://venegard.com)",
+          "Mozilla/5.0 (compatible; SklyvoSniper/2.0; +https://venegard.com)",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "cs,en;q=0.8",
       },

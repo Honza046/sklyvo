@@ -16,6 +16,7 @@ export const es: MessageTree = {
   },
   nav: {
     tools: "Herramientas",
+    work: "Trabajo",
     overview: "Resumen",
     sniper: "Sniper",
     radar: "Radar",
@@ -30,6 +31,7 @@ export const es: MessageTree = {
     workspace: "Espacio de trabajo",
     myProfile: "Mi perfil",
     accountSettings: "Configuración de cuenta",
+    plansAndBilling: "Planes y suscripción",
     lightMode: "Modo claro",
     darkMode: "Modo oscuro",
     logout: "Cerrar sesión",
@@ -42,6 +44,24 @@ export const es: MessageTree = {
     trialEndsOn: "La prueba termina: {date}",
     planRenewsOn: "El plan se renueva: {date}",
     subscriptionEndsOn: "La suscripción termina: {date}",
+  },
+  planGate: {
+    choosePlan: "Elegir plan",
+    autopilot: {
+      title: "Autopilot está en un plan de pago",
+      description:
+        "Los créditos free no desbloquean Autopilot. Activa un plan para outreach masivo.",
+    },
+    storage: {
+      title: "Almacenamiento está en un plan de pago",
+      description:
+        "Los créditos free no desbloquean el almacenamiento. Activa un plan para documentos.",
+    },
+    generator: {
+      title: "Generador está en un plan de pago",
+      description:
+        "Los créditos free no desbloquean el Generador. Activa un plan para ofertas.",
+    },
   },
   dashboard: {
     welcome: "¡Bienvenido de nuevo, {name}! 👋",
@@ -77,7 +97,7 @@ export const es: MessageTree = {
     attentionEmptyTitle: "Sin tareas pendientes",
     attentionEmptyDesc: "Cuando aparezcan nuevas empresas, las verás aquí.",
     attentionNewLead: "Esperando primer contacto",
-    attentionReplied: "El cliente respondió — acción necesaria",
+    attentionReplied: "El cliente respondió",
     timeNow: "Ahora mismo",
     timeToday: "Hoy, {time}",
     timeMinutesAgo: "Hace {minutes} min",
@@ -326,9 +346,11 @@ export const es: MessageTree = {
     title: "venesis",
     online: "En línea",
     open: "Abrir asistente IA",
+    close: "Cerrar",
+    clearChat: "Borrar chat",
     send: "Enviar pregunta",
-    welcome: "Pregunta lo que quieras sobre Venegard — estamos para ayudarte.",
-    placeholder: "Pregunta lo que quieras sobre Venegard...",
+    welcome: "Pregunta lo que quieras sobre Sklyvo — estamos para ayudarte.",
+    placeholder: "Pregunta lo que quieras sobre Sklyvo...",
     analyzing: "El Asistente IA está analizando tu consulta...",
     prompt1: "¿Cómo conectar correctamente el e-mail corporativo para Autopilot?",
     prompt2: "¿Cómo configurar límites diarios y ventanas horarias de envío?",
@@ -380,7 +402,7 @@ export const es: MessageTree = {
       openAutopilot: "🚀 Abrir Autopilot",
     },
     fallback:
-      "Puedo ayudarle con Venegard. Pregunte sobre conexión de e-mail, Autopilot o ajustes del espacio de trabajo.",
+      "Puedo ayudarle con Sklyvo. Pregunte sobre conexión de e-mail, Autopilot o ajustes del espacio de trabajo.",
     openEmailSettings: "⚙️ Abrir ajustes de e-mail",
     sendHint: "Escribe y envía mensajes aquí. Usa la X del encabezado para cerrar.",
   },

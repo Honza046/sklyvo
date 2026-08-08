@@ -107,7 +107,7 @@ export function AiBehaviorSettingsForm({
           value={emailSignature}
           onChange={(e) => setEmailSignature(e.target.value)}
           placeholder={"S pozdravem,\n\nJan Sedlář\n\nvenegard.com\n+420 605 875 808\njan@venegard.com"}
-          className="min-h-[100px] resize-none rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-none outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-border/60 dark:bg-background dark:text-foreground"
+          className="min-h-[100px] resize-none rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">
           Jméno a e-mail v podpisu se berou z přihlášeného člena týmu. Tady nastavte hlavně společný web / telefon (šablona).
@@ -127,7 +127,7 @@ export function AiBehaviorSettingsForm({
           value={forbiddenWords}
           onChange={(e) => setForbiddenWords(e.target.value)}
           placeholder="např. synergie, namontujeme, -"
-          className="w-full resize-y rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-none outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-border/60 dark:bg-background dark:text-foreground"
+          className="w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="mt-1 text-[10px] text-gray-500 dark:text-muted-foreground">
           Tato slova AI nikdy nepoužije. Oddělujte čárkou (např. synergie, inovativní, zaručeně).
@@ -145,7 +145,7 @@ export function AiBehaviorSettingsForm({
           id="system-prompt"
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
-          className="min-h-[150px] w-full resize-y rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 shadow-none outline-none transition-colors placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 dark:border-border/60 dark:bg-background dark:text-foreground"
+          className="min-h-[150px] w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">
           Tato instrukce ovlivňuje, jakým stylem Sniper generuje e-maily.

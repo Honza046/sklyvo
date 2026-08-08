@@ -200,7 +200,7 @@ export function SniperClient() {
         {/* LOADING STREAM */}
         {loading && (
           <div className="rounded-xl border border-border/60 bg-muted/30 p-6 animate-pulse">
-             <p className="text-sm text-muted-foreground font-mono whitespace-pre-wrap">{rawStream || "Inicializuji Venegard Sniper Engine..."}</p>
+             <p className="text-sm text-muted-foreground font-mono whitespace-pre-wrap">{rawStream || "Inicializuji Sklyvo Sniper Engine..."}</p>
           </div>
         )}
 

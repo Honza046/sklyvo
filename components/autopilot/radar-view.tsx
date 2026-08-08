@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Globe, Mail, Maximize2, Phone, Radio, Search } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
+import { CopyEmailButton } from "@/components/copy-email-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -177,8 +178,7 @@ export function AutopilotRadarView() {
     });
   }, [workspaceLeads, searchQuery, tagFilter, presetFilter, dateSort, dateFrom, dateTo]);
 
-  const filterControlClass =
-    "h-9 shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none";
+  const filterControlClass = "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
 
   const renderFilters = () => (
     <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
@@ -293,14 +293,14 @@ export function AutopilotRadarView() {
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "md:hidden",
+            "sk-data-panel__scroll--mobile flex flex-col md:hidden",
             viewportClass,
           )}
         >
           {paginatedRadarLeads.map((lead) => (
             <div
               key={`${mode}-m-${lead.id}`}
-              className="flex items-start gap-3 border-b border-border/40 px-3 py-2.5"
+              className="sk-data-row"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
@@ -327,14 +327,14 @@ export function AutopilotRadarView() {
 
         <div
           className={cn(
-            "hidden md:block",
+            "sk-data-panel__scroll hidden md:block",
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
             viewportClass,
           )}
         >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-              <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+              <tr className="text-left">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Datum nalezení</th>
@@ -345,30 +345,34 @@ export function AutopilotRadarView() {
               {paginatedRadarLeads.map((lead) => {
                 const web = leadFullWebsiteUrl(lead.url);
                 return (
-                  <tr
-                    key={`${mode}-d-${lead.id}`}
-                    className="border-b border-border/40 transition-colors hover:bg-muted/40"
-                  >
-                    <td className="px-3 py-3">
-                      <p className="break-words font-semibold text-foreground">{lead.company}</p>
-                      <span className="flex items-center break-words text-xs text-muted-foreground">
+                  <tr key={`${mode}-d-${lead.id}`}>
+                    <td className="px-3 py-2.5">
+                      <p className="break-words text-[13px] font-semibold text-foreground">{lead.company}</p>
+                      <span className="mt-0.5 flex items-center break-words text-[11px] text-muted-foreground">
                         <Globe className="mr-1 h-3 w-3 shrink-0" />
                         {lead.url || web || "–"}
                       </span>
                     </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className={cn(
-                          "flex break-words text-sm",
-                          lead.email ? "text-foreground" : "text-muted-foreground",
+                    <td className="px-3 py-2.5">
+                      <div className="flex min-w-0 items-center gap-0.5">
+                        {lead.email ? (
+                          <CopyEmailButton email={lead.email} size="sm" variant="ghost" />
+                        ) : (
+                          <Mail className="mr-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         )}
-                      >
-                        <Mail className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-                        {lead.email || t("common.noEmail")}
-                      </span>
+                        <span
+                          className={cn(
+                            "min-w-0 truncate text-[13px]",
+                            lead.email ? "text-foreground" : "text-muted-foreground",
+                          )}
+                          title={lead.email || undefined}
+                        >
+                          {lead.email || t("common.noEmail")}
+                        </span>
+                      </div>
                       <span
                         className={cn(
-                          "mt-1 flex break-words text-xs",
+                          "mt-0.5 flex break-words text-[11px]",
                           lead.phone ? "text-foreground" : "text-muted-foreground",
                         )}
                       >
@@ -376,13 +380,13 @@ export function AutopilotRadarView() {
                         {lead.phone || t("common.noPhone")}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-sm text-foreground">
+                    <td className="px-3 py-2.5 text-[13px] text-foreground">
                       {formatFoundDate(lead.createdAt, dateLocale)}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <span
                         className={cn(
-                          "text-xs font-semibold",
+                          "text-[11px] font-semibold",
                           leadStatusClassName(lead.leadStatus),
                         )}
                       >
@@ -438,7 +442,7 @@ export function AutopilotRadarView() {
   };
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden">
+    <div className="sk-autopilot__stack">
       <AutopilotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -452,6 +456,7 @@ export function AutopilotRadarView() {
         onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
+      <div className="sk-autopilot__panel">
       <AutopilotControlPanel
         icon={<Radio className="h-5 w-5" />}
         iconWrapClassName="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
@@ -482,18 +487,18 @@ export function AutopilotRadarView() {
             <AutopilotSettingsIconButton
               label={t("autopilot.radarSettings")}
               onClick={openSettings}
-              className="rounded-lg border border-border/50 bg-background/90 text-muted-foreground shadow-sm hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:bg-zinc-900/90 dark:hover:border-emerald-800 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-300"
             />
           </>
         }
       />
+      </div>
 
       {tableExpanded ? (
-        <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-4">
+        <div className="sk-autopilot__table mt-0 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground">
           Historie sběru je otevřená ve zvětšeném okně.
         </div>
       ) : (
-        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4">
+        <div className="sk-autopilot__table mt-0">
           {renderTable("compact")}
         </div>
       )}

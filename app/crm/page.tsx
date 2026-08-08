@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { CopyEmailButton } from "@/components/copy-email-button";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
@@ -42,8 +43,6 @@ import {
 import { 
   Search, 
   Plus, 
-  LayoutGrid, 
-  List, 
   Globe, 
   Calendar, 
   MoreHorizontal,
@@ -61,6 +60,8 @@ import {
   Eye,
   Hand,
   Mail,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { leadProvenanceParts, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
@@ -81,6 +82,7 @@ import { sendOutreachEmailBulk, sendOutreachEmailNow } from "@/app/actions/outre
 import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
 import { AutopilotDialog, type AutopilotLead } from "@/app/crm/autopilot-dialog";
 import { CompanyAvatar } from "@/components/crm/company-avatar";
+import { SlidingViewToggle } from "@/components/sklyvo/sliding-view-toggle";
 import { toast } from "sonner";
 import { OUTREACH_KIND_LABELS, type OutreachKindValue } from "@/lib/outreach";
 import { htmlBodyToEditablePlainText } from "@/lib/email-format";
@@ -133,6 +135,50 @@ const COLUMNS = [
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(amount);
 };
+
+/** Čas pro řazení / filtr data: poslední odeslání, jinak přidání do CRM. */
+function leadActivityTime(lead: Pick<Lead, "lastContactedAt" | "createdAt">): number {
+  if (lead.lastContactedAt) {
+    const t = new Date(lead.lastContactedAt).getTime();
+    if (Number.isFinite(t)) return t;
+  }
+  const created = new Date(lead.createdAt).getTime();
+  return Number.isFinite(created) ? created : 0;
+}
+
+function formatCsDate(isoOrDate: string): string {
+  const d = new Date(isoOrDate);
+  if (!Number.isFinite(d.getTime())) return "—";
+  return d.toLocaleDateString("cs-CZ");
+}
+
+/** Primární datum na kartě / v tabulce. */
+function leadPrimaryDateLabel(lead: Pick<Lead, "lastContactedAt" | "createdAt" | "date">): {
+  label: string;
+  /** Krátký řádek s datem (pro tabulku bez překryvu). */
+  dateLine: string;
+  kindLine: string;
+  title: string;
+  isSent: boolean;
+} {
+  if (lead.lastContactedAt) {
+    const sent = formatCsDate(lead.lastContactedAt);
+    return {
+      label: `Odesláno ${sent}`,
+      kindLine: "Odesláno",
+      dateLine: sent,
+      title: `E-mail odeslán ${sent}${lead.date ? ` · přidáno ${lead.date}` : ""}`,
+      isSent: true,
+    };
+  }
+  return {
+    label: `Přidáno ${lead.date}`,
+    kindLine: "Přidáno",
+    dateLine: lead.date,
+    title: `Přidáno do CRM ${lead.date}`,
+    isSent: false,
+  };
+}
 
 function WebsiteVisitedGlobeButton({
   visited,
@@ -337,6 +383,11 @@ function CrmPageContent() {
   const [isLoadingSentEmails, setIsLoadingSentEmails] = useState(false);
 
   const [view, setView] = useState<"board" | "list">("list");
+  /** Keep board mounted after first open so list↔board switch doesn’t remount & flash */
+  const [boardMounted, setBoardMounted] = useState(false);
+  useEffect(() => {
+    if (view === "board") setBoardMounted(true);
+  }, [view]);
   const [searchQuery, setSearchQuery] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -388,7 +439,7 @@ function CrmPageContent() {
     if (isLoading || leads.length === 0) return;
     const missing = leads.some((l) => !shortLeadAuthorName(l.author));
     if (!missing) return;
-    const key = "venegard-author-backfill-v1";
+    const key = "sklyvo-author-backfill-v1";
     try {
       if (sessionStorage.getItem(key) === "1") return;
       sessionStorage.setItem(key, "1");
@@ -457,12 +508,13 @@ function CrmPageContent() {
           lead.contactedVia !== "AUTOPILOT_SNIPER") ||
         (sourceFilter === "manual" && lead.source === "MANUAL" && !lead.contactedVia);
 
-      const created = new Date(lead.createdAt);
+      const activity = leadActivityTime(lead);
+      const activityDate = new Date(activity);
       const matchDate =
         dateFilter === "all" ||
-        (dateFilter === "last_7_days" && created >= sevenDaysAgo) ||
-        (dateFilter === "last_30_days" && created >= thirtyDaysAgo) ||
-        (dateFilter === "this_year" && created.getFullYear() === now.getFullYear());
+        (dateFilter === "last_7_days" && activityDate >= sevenDaysAgo) ||
+        (dateFilter === "last_30_days" && activityDate >= thirtyDaysAgo) ||
+        (dateFilter === "this_year" && activityDate.getFullYear() === now.getFullYear());
 
       const matchTag =
         tagFilter === "all" || (lead.tags ?? []).includes(tagFilter);
@@ -474,7 +526,7 @@ function CrmPageContent() {
 
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === "oldest") {
-        const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        const diff = leadActivityTime(a) - leadActivityTime(b);
         return diff !== 0 ? diff : byId(a, b);
       }
       if (sortBy === "value_high") {
@@ -485,7 +537,8 @@ function CrmPageContent() {
         const diff = a.value - b.value;
         return diff !== 0 ? diff : byId(a, b);
       }
-      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // Výchozí „newest“: naposledy odeslané / aktivní nahoře
+      const diff = leadActivityTime(b) - leadActivityTime(a);
       return diff !== 0 ? diff : byId(a, b);
     });
 
@@ -948,7 +1001,7 @@ function CrmPageContent() {
             </div>
           )}
           
-          <div className="flex min-h-0 shrink-0 items-center rounded-2xl bg-muted/50 p-1.5 dark:bg-muted/20 md:rounded-2xl md:border md:border-border/60 md:bg-card md:p-3 md:shadow-sm">
+          <div className="flex min-h-0 shrink-0 items-center rounded-2xl border border-border/60 bg-muted/40 p-1.5 shadow-none dark:bg-muted/20 md:p-3">
             {selectedLeads.length > 0 ? (
               <div className="flex w-full flex-col gap-2 rounded-md bg-blue-50 p-2 dark:bg-blue-900/20">
                 <div className="flex w-full flex-wrap items-center justify-between gap-2">
@@ -1060,18 +1113,31 @@ function CrmPageContent() {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1 md:gap-3">
-                  <Popover>
+                  <Popover modal={false}>
                     <PopoverTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="h-9 w-9 rounded-full p-0 text-muted-foreground hover:bg-background/80 hover:text-foreground md:h-11 md:w-auto md:rounded-xl md:border md:border-border/60 md:bg-background md:px-4 md:text-sm"
+                        className="h-9 w-9 shrink-0 rounded-xl p-0 text-muted-foreground md:h-9 md:w-auto md:px-3.5 md:text-sm"
                       >
                         <SlidersHorizontal className="h-4 w-4 md:mr-2" />
                         <span className="hidden md:inline">Filtry</span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="z-[100] w-80 border border-border bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-950" align="end">
+                    <PopoverContent
+                      className="z-[100] w-80 border border-border bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
+                      align="end"
+                      onInteractOutside={(event) => {
+                        const target = event.target as HTMLElement | null;
+                        if (
+                          target?.closest(
+                            "[data-radix-select-content], [data-radix-popper-content-wrapper]",
+                          )
+                        ) {
+                          event.preventDefault();
+                        }
+                      }}
+                    >
                       <div className="flex flex-col gap-4">
                         <div className="space-y-1.5">
                           <Label>Status</Label>
@@ -1079,7 +1145,7 @@ function CrmPageContent() {
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Status" />
                             </SelectTrigger>
-                            <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
                               <SelectItem value="all">Všechny statusy</SelectItem>
                               <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
                               <SelectItem value="CONTACTED">KONTAKTOVÁNO</SelectItem>
@@ -1098,7 +1164,7 @@ function CrmPageContent() {
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Čas" />
                             </SelectTrigger>
-                            <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
+                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
                               <SelectItem value="all">Všechny datumy</SelectItem>
                               <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
                               <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
@@ -1113,7 +1179,7 @@ function CrmPageContent() {
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Obor" />
                             </SelectTrigger>
-                            <SelectContent className="z-[110] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                            <SelectContent className="z-[220] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
                               <SelectItem value="all">Všechny obory</SelectItem>
                               {availableTags.map(({ tag, label, count }) => (
                                 <SelectItem key={tag} value={tag}>
@@ -1144,7 +1210,7 @@ function CrmPageContent() {
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Zdroj" />
                             </SelectTrigger>
-                            <SelectContent className="z-[110] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
+                            <SelectContent className="z-[220] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
                               <SelectItem value="all">Všechny zdroje</SelectItem>
                               <SelectItem value="radar">Radar</SelectItem>
                               <SelectItem value="ap_radar">Autopilot Radar</SelectItem>
@@ -1162,9 +1228,9 @@ function CrmPageContent() {
                             <SelectTrigger className="h-9 w-full bg-background">
                               <SelectValue placeholder="Řazení" />
                             </SelectTrigger>
-                            <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                              <SelectItem value="newest">Nejnovější</SelectItem>
-                              <SelectItem value="oldest">Nejstarší</SelectItem>
+                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
+                              <SelectItem value="newest">Nejnovější (odesláno)</SelectItem>
+                              <SelectItem value="oldest">Nejstarší (odesláno)</SelectItem>
                               <SelectItem value="value_high">Hodnota: nejvyšší</SelectItem>
                               <SelectItem value="value_low">Hodnota: nejnižší</SelectItem>
                             </SelectContent>
@@ -1174,34 +1240,11 @@ function CrmPageContent() {
                     </PopoverContent>
                   </Popover>
 
-                  <div className="flex items-center rounded-full bg-background/70 p-0.5 md:rounded-xl md:border md:border-border/50 md:bg-background md:p-1">
-                    <button
-                      type="button"
-                      title="Seznam firem"
-                      onClick={() => setView("list")}
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full transition-all md:h-9 md:w-10 md:rounded-lg",
-                        view === "list" ? "bg-card text-blue-600 shadow-sm dark:text-blue-400" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      title="Kanban board"
-                      onClick={() => setView("board")}
-                      className={cn(
-                        "flex h-8 w-8 items-center justify-center rounded-full transition-all md:h-9 md:w-10 md:rounded-lg",
-                        view === "board" ? "bg-card text-blue-600 shadow-sm dark:text-blue-400" : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                    </button>
-                  </div>
+                  <SlidingViewToggle view={view} onChange={setView} />
 
                   <Button
                     type="button"
-                    className="hidden h-9 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 md:inline-flex"
+                    className="hidden h-9 rounded-xl px-4 text-sm md:inline-flex"
                     onClick={() => setIsNewDealOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />
@@ -1212,8 +1255,14 @@ function CrmPageContent() {
             )}
           </div>
 
-          {view === "board" && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-x-visible overflow-y-hidden">
+          {boardMounted && (
+            <div
+              className={cn(
+                "flex min-h-0 w-full flex-1 flex-col overflow-x-visible overflow-y-hidden",
+                view !== "board" && "hidden",
+              )}
+              aria-hidden={view !== "board"}
+            >
             <CrmKanbanBoard
               columns={COLUMNS}
               leads={filteredLeads}
@@ -1257,25 +1306,25 @@ function CrmPageContent() {
                   {...(!overlay && drag ? drag.listeners : {})}
                   {...(!overlay && drag ? drag.attributes : {})}
                   className={cn(
-                    "group flex w-full min-w-0 flex-col gap-2 rounded-xl border border-border/60 bg-card p-3 box-border shadow-sm transition-all touch-none",
+                    "sk-data-row group h-full w-full min-w-0 flex-col gap-1.5 !p-2.5 touch-none transition-opacity sm:!p-3",
                     !overlay &&
-                      "cursor-grab active:cursor-grabbing hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md",
+                      "cursor-grab active:cursor-grabbing hover:brightness-[0.98]",
                     overlay &&
-                      "cursor-grabbing bg-muted/80 opacity-70 shadow-xl ring-2 ring-blue-500/25 grayscale-[20%]",
+                      "cursor-grabbing opacity-70 ring-2 ring-blue-500/25 grayscale-[20%]",
                     drag?.isDragging && "opacity-40 grayscale-[35%]",
                   )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className="flex min-w-0 items-center gap-2">
                       <CompanyAvatar
                         name={lead.company}
                         initials={lead.avatar}
                         faviconUrl={lead.faviconUrl}
-                        sizeClassName="h-8 w-8"
-                        textClassName="text-[10px]"
+                        sizeClassName="h-7 w-7"
+                        textClassName="text-[9px]"
                       />
                       <div className="min-w-0">
-                        <h4 className="mb-1 truncate text-sm font-bold leading-none text-foreground">
+                        <h4 className="mb-0.5 truncate text-[13px] font-bold leading-tight text-foreground">
                           {lead.company}
                         </h4>
                         {(() => {
@@ -1328,7 +1377,7 @@ function CrmPageContent() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="w-48 bg-white dark:bg-zinc-950 z-50 border shadow-md"
+                        className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950"
                       >
                         <DropdownMenuItem onClick={() => onEdit()}>
                           <Pencil className="mr-2 h-4 w-4" />
@@ -1338,8 +1387,9 @@ function CrmPageContent() {
                           <DropdownMenuItem
                             disabled={isLoadingSentEmails}
                             onClick={() => void handleViewSentEmails(lead)}
+                            className="whitespace-nowrap"
                           >
-                            <Mail className="mr-2 h-4 w-4" />
+                            <Mail className="mr-2 h-4 w-4 shrink-0" />
                             Zobrazit odeslaný e-mail
                           </DropdownMenuItem>
                         )}
@@ -1373,12 +1423,24 @@ function CrmPageContent() {
                     </DropdownMenu>
                   </div>
 
-                  <div className="flex items-center justify-between mt-1 pt-2.5 border-t border-border/40">
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center text-[10px] text-muted-foreground font-medium">
-                        <Calendar className="mr-1.5 h-3 w-3" />
-                        {lead.date}
-                      </div>
+                  <div className="mt-0.5 flex items-center justify-between gap-2 pt-1.5">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      {(() => {
+                        const d = leadPrimaryDateLabel(lead);
+                        return (
+                          <div
+                            className="flex items-center truncate text-[10px] font-medium text-muted-foreground"
+                            title={d.title}
+                          >
+                            {d.isSent ? (
+                              <Mail className="mr-1 h-3 w-3 shrink-0" />
+                            ) : (
+                              <Calendar className="mr-1 h-3 w-3 shrink-0" />
+                            )}
+                            <span className="truncate">{d.label}</span>
+                          </div>
+                        );
+                      })()}
                       {lead.outreachDue && lead.nextOutreachKind ? (
                         <span className="text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
                           {OUTREACH_KIND_LABELS[lead.nextOutreachKind]} splatný
@@ -1390,7 +1452,7 @@ function CrmPageContent() {
                         <button
                           type="button"
                           className={cn(
-                            "px-1.5 py-0.5 rounded-md text-[8px] font-bold border uppercase tracking-widest hover:opacity-80 transition-opacity cursor-pointer",
+                            "shrink-0 cursor-pointer rounded-md border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-opacity hover:opacity-80",
                             col.color,
                           )}
                           onPointerDown={(e) => e.stopPropagation()}
@@ -1422,11 +1484,15 @@ function CrmPageContent() {
             </div>
           )}
 
-          {view === "list" && (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-muted/40 shadow-none animate-in fade-in zoom-in-95 duration-300 dark:bg-muted/15 md:border md:border-border/60 md:bg-card md:shadow-sm">
-
+          <div
+            className={cn(
+              "sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm",
+              view !== "list" && "hidden",
+            )}
+            aria-hidden={view !== "list"}
+          >
               {/* Mobile native list — karty: celý název + email/telefon na vlastních řádcích */}
-              <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto md:hidden">
+              <div className="sk-data-panel__scroll--mobile flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide md:hidden">
                 {paginatedLeads.map((lead) => {
                   const companyWeb = leadFullWebsiteUrl(lead.url);
                   const emailTrim = (lead.email ?? "").trim();
@@ -1440,7 +1506,7 @@ function CrmPageContent() {
                   return (
                     <div
                       key={lead.id}
-                      className="flex items-start gap-2.5 border-b border-border/40 px-3 py-3 last:border-b-0 active:bg-muted/40"
+                      className="sk-data-row active:opacity-90"
                     >
                       <Checkbox
                         checked={selectedLeads.includes(lead.id)}
@@ -1497,12 +1563,15 @@ function CrmPageContent() {
                         )}
 
                         {emailTrim ? (
-                          <a
-                            href={`mailto:${emailTrim}`}
-                            className="block break-all text-[12px] leading-snug text-foreground/90 underline-offset-2 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
-                          >
-                            {emailTrim}
-                          </a>
+                          <div className="flex items-start gap-1">
+                            <CopyEmailButton email={emailTrim} size="sm" variant="ghost" />
+                            <a
+                              href={`mailto:${emailTrim}`}
+                              className="min-w-0 flex-1 break-all text-[12px] leading-snug text-foreground/90 underline-offset-2 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
+                            >
+                              {emailTrim}
+                            </a>
+                          </div>
                         ) : (
                           <p className="text-[12px] leading-snug text-muted-foreground">Bez e-mailu</p>
                         )}
@@ -1517,6 +1586,18 @@ function CrmPageContent() {
                         ) : (
                           <p className="text-[12px] leading-snug text-muted-foreground">Bez telefonu</p>
                         )}
+
+                        {(() => {
+                          const d = leadPrimaryDateLabel(lead);
+                          return (
+                            <p
+                              className="pt-0.5 text-[11px] font-medium text-muted-foreground"
+                              title={d.title}
+                            >
+                              {d.label}
+                            </p>
+                          );
+                        })()}
 
                         <div className="-ml-1 flex flex-wrap items-center gap-0.5 pt-0.5">
                           {needsContactScrape ? (
@@ -1564,7 +1645,7 @@ function CrmPageContent() {
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="z-50 w-52 border bg-white shadow-md dark:bg-zinc-950">
+                            <DropdownMenuContent align="end" className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950">
                               {needsContactScrape ? (
                                 <DropdownMenuItem
                                   disabled={scrapingLeadIds.includes(lead.id)}
@@ -1578,8 +1659,9 @@ function CrmPageContent() {
                                 <DropdownMenuItem
                                   disabled={isLoadingSentEmails}
                                   onClick={() => void handleViewSentEmails(lead)}
+                                  className="whitespace-nowrap"
                                 >
-                                  <Mail className="mr-2 h-4 w-4" />
+                                  <Mail className="mr-2 h-4 w-4 shrink-0" />
                                   Zobrazit odeslaný e-mail
                                 </DropdownMenuItem>
                               )}
@@ -1641,11 +1723,11 @@ function CrmPageContent() {
                   Načítám dealy...
                 </div>
               ) : (
-              <div className="hidden min-h-0 flex-1 overflow-y-auto overflow-x-hidden md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="sk-data-panel__scroll hidden min-h-0 flex-1 overflow-y-auto overflow-x-hidden md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <table className="w-full table-fixed text-sm">
                   <thead>
-                    <tr className="border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                      <th className="sticky top-0 z-10 w-[44px] bg-white px-3 py-3 text-center font-semibold dark:bg-zinc-950">
+                    <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
+                      <th className="sticky top-0 z-10 w-[44px] bg-transparent px-3 py-3 text-center font-semibold">
                         <div className="flex justify-center">
                           <Checkbox
                             checked={
@@ -1668,12 +1750,11 @@ function CrmPageContent() {
                           />
                         </div>
                       </th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[28%]">Firma</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[11%]">Datum přidání</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[22%]">KONTAKT</th>
-                      <th className="sticky top-0 z-10 bg-white px-3 py-3 font-semibold dark:bg-zinc-950 w-[9%]">Hodnota</th>
-                      <th className="sticky top-0 z-10 min-w-[11rem] bg-white px-3 py-3 pr-8 font-semibold dark:bg-zinc-950 w-[14%]">Status</th>
-                      <th className="sticky top-0 z-10 w-[11.5rem] bg-white px-3 py-3 pl-6 text-right font-semibold dark:bg-zinc-950">Akce</th>
+                      <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[34%]">Firma</th>
+                      <th className="sticky top-0 z-10 w-[7.25rem] bg-transparent px-2 py-3 font-semibold">Datum</th>
+                      <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[24%] min-w-0">KONTAKT</th>
+                      <th className="sticky top-0 z-10 min-w-[9.75rem] bg-transparent px-3 py-3 pl-3 font-semibold w-[14%]">Status</th>
+                      <th className="sticky top-0 z-10 w-[10.5rem] bg-transparent px-2 py-3 pl-2 text-right font-semibold">Akce</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1682,7 +1763,7 @@ function CrmPageContent() {
                       const emailTrim = (lead.email ?? "").trim();
                       const phoneTrim = (lead.phone ?? "").trim();
                       return (
-                      <tr key={lead.id} className="border-b border-border/40 hover:bg-muted/40 transition-colors">
+                      <tr key={lead.id}>
                         <td className="px-3 py-3 text-center">
                           <div className="flex justify-center">
                             <Checkbox
@@ -1691,7 +1772,7 @@ function CrmPageContent() {
                             />
                           </div>
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="min-w-0 overflow-hidden px-3 py-3 pr-4">
                           <div className="flex min-w-0 items-center gap-3">
                             <CompanyAvatar
                               name={lead.company}
@@ -1711,8 +1792,9 @@ function CrmPageContent() {
                                   lead.contactedVia,
                                 );
                                 if (!sourceLabel && !authorLabel) return null;
+                                const provenance = [sourceLabel, authorLabel].filter(Boolean).join(" · ");
                                 return (
-                                  <p className="truncate text-xs text-muted-foreground">
+                                  <p className="truncate text-xs text-muted-foreground" title={provenance}>
                                     {sourceLabel}
                                     {authorLabel ? (
                                       <>
@@ -1728,13 +1810,40 @@ function CrmPageContent() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">{lead.date}</td>
-                        <td className="px-3 py-3 align-middle">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <div className="min-w-0 flex-1 leading-tight">
+                        <td className="w-[7.25rem] overflow-hidden px-2 py-3 align-top">
+                          {(() => {
+                            const d = leadPrimaryDateLabel(lead);
+                            return (
+                              <div className="min-w-0 max-w-full leading-tight" title={d.title}>
+                                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  {d.kindLine}
+                                </p>
+                                <p className="truncate text-sm tabular-nums text-foreground">
+                                  {d.dateLine}
+                                </p>
+                                {d.isSent && lead.date ? (
+                                  <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                                    Přidáno {lead.date}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          })()}
+                        </td>
+                        <td className="min-w-0 overflow-hidden px-3 py-3 align-middle">
+                          <div className="flex min-w-0 max-w-full items-start gap-1.5">
+                            {emailTrim ? (
+                              <CopyEmailButton
+                                email={emailTrim}
+                                size="sm"
+                                variant="ghost"
+                                className="mt-0.5"
+                              />
+                            ) : null}
+                            <div className="min-w-0 flex-1 overflow-hidden leading-tight">
                               <p
                                 className={cn(
-                                  "truncate whitespace-nowrap text-sm leading-snug",
+                                  "truncate text-sm leading-snug",
                                   emailTrim ? "text-foreground" : "text-muted-foreground",
                                 )}
                                 title={emailTrim || undefined}
@@ -1743,13 +1852,13 @@ function CrmPageContent() {
                               </p>
                               {phoneTrim ? (
                                 <p
-                                  className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground"
+                                  className="truncate text-xs leading-snug text-muted-foreground"
                                   title={phoneTrim}
                                 >
                                   {phoneTrim}
                                 </p>
                               ) : (
-                                <p className="truncate whitespace-nowrap text-xs leading-snug text-muted-foreground">
+                                <p className="truncate text-xs leading-snug text-muted-foreground">
                                   Bez telefonu
                                 </p>
                               )}
@@ -1759,13 +1868,12 @@ function CrmPageContent() {
                                 isLoading={scrapingLeadIds.includes(lead.id)}
                                 disabled={isBulkRunning}
                                 onClick={() => void handleScrapeLeadContacts(lead)}
-                                className="h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                                className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
                               />
                             ) : null}
                           </div>
                         </td>
-                        <td className="px-3 py-3 font-semibold text-foreground whitespace-nowrap">{formatCurrency(lead.value)}</td>
-                        <td className="min-w-[11rem] px-3 py-3 pr-8">
+                        <td className="min-w-[9.75rem] px-3 py-3 pl-3">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button
@@ -1789,7 +1897,7 @@ function CrmPageContent() {
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="w-[11.5rem] px-3 py-3 pl-6 text-right whitespace-nowrap">
+                        <td className="w-[10.5rem] px-2 py-3 pl-2 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
                               asChild
@@ -1831,7 +1939,7 @@ function CrmPageContent() {
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-52 bg-white dark:bg-zinc-950 z-50 border shadow-md">
+                              <DropdownMenuContent align="end" className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950">
                                 {companyWeb && (!emailTrim || !phoneTrim) ? (
                                   <DropdownMenuItem
                                     disabled={scrapingLeadIds.includes(lead.id)}
@@ -1845,8 +1953,9 @@ function CrmPageContent() {
                                   <DropdownMenuItem
                                     disabled={isLoadingSentEmails}
                                     onClick={() => void handleViewSentEmails(lead)}
+                                    className="whitespace-nowrap"
                                   >
-                                    <Mail className="mr-2 h-4 w-4" />
+                                    <Mail className="mr-2 h-4 w-4 shrink-0" />
                                     Zobrazit odeslaný e-mail
                                   </DropdownMenuItem>
                                 )}
@@ -1891,39 +2000,42 @@ function CrmPageContent() {
               </div>
               )}
 
-              <div className="mt-0 flex shrink-0 items-center justify-between gap-2 border-t border-border/40 bg-transparent px-3 py-2 md:gap-3 md:border-border/60 md:bg-muted/30 md:px-6 md:py-2.5">
-                <p className="text-[11px] text-muted-foreground md:text-xs">
+              <div className="sk-pager mt-0 flex shrink-0 items-center justify-between gap-2 border-0 bg-transparent px-3 py-2 md:gap-3 md:px-4 md:py-2.5">
+                <p className="text-[11px] leading-none text-muted-foreground md:text-xs">
                   <span className="md:hidden">{shownFrom}–{shownTo} / {totalItems}</span>
                   <span className="hidden md:inline">
                     Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
                   </span>
                 </p>
-                <div className="flex items-center gap-1.5 md:gap-2">
+                <div className="flex items-center gap-0.5 md:gap-1">
                   <Button
-                    variant="outline"
+                    type="button"
+                    variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-[11px] md:h-9 md:px-3 md:text-sm"
+                    className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={safePage <= 1}
                   >
-                    ←
+                    <ChevronLeft className="!size-3.5 shrink-0" />
+                    <span className="hidden md:inline">Předchozí</span>
                   </Button>
-                  <span className="text-[11px] text-muted-foreground md:text-xs">
+                  <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground md:text-xs">
                     {safePage}/{totalPages}
                   </span>
                   <Button
-                    variant="outline"
+                    type="button"
+                    variant="ghost"
                     size="sm"
-                    className="h-8 px-2 text-[11px] md:h-9 md:px-3 md:text-sm"
+                    className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={safePage >= totalPages}
                   >
-                    →
+                    <span className="hidden md:inline">Následující</span>
+                    <ChevronRight className="!size-3.5 shrink-0" />
                   </Button>
                 </div>
               </div>
             </div>
-          )}
 
         </div>
 
@@ -2169,7 +2281,7 @@ function CrmPageContent() {
         />
 
         <AlertDialog open={leadsToDelete !== null} onOpenChange={(open) => !open && setLeadsToDelete(null)}>
-          <AlertDialogContent className="bg-white dark:bg-zinc-950 border shadow-md">
+          <AlertDialogContent className="bg-card dark:bg-zinc-950 border shadow-md">
             <AlertDialogHeader>
               <AlertDialogTitle>Opravdu chcete odstranit vybrané dealy?</AlertDialogTitle>
               <AlertDialogDescription>

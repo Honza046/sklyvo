@@ -8,7 +8,7 @@ const FAKTUROID_API = "https://app.fakturoid.cz/api/v3";
 export function getFakturoidUserAgent(): string {
   const ua = process.env.FAKTUROID_USER_AGENT?.trim();
   if (ua) return ua;
-  return "Venegard (support@venegard.cz)";
+  return "Sklyvo (podpora@venegard.com)";
 }
 
 export type FakturoidTokenResponse = {

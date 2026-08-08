@@ -16,6 +16,7 @@ export const en: MessageTree = {
   },
   nav: {
     tools: "Tools",
+    work: "Work",
     overview: "Overview",
     sniper: "Sniper",
     radar: "Radar",
@@ -30,6 +31,7 @@ export const en: MessageTree = {
     workspace: "Workspace",
     myProfile: "My profile",
     accountSettings: "Account settings",
+    plansAndBilling: "Plans & billing",
     lightMode: "Light mode",
     darkMode: "Dark mode",
     logout: "Log out",
@@ -42,6 +44,24 @@ export const en: MessageTree = {
     trialEndsOn: "Trial ends: {date}",
     planRenewsOn: "Plan renews: {date}",
     subscriptionEndsOn: "Subscription ends: {date}",
+  },
+  planGate: {
+    choosePlan: "Choose a plan",
+    autopilot: {
+      title: "Autopilot is on a paid plan",
+      description:
+        "Free credits don’t unlock Autopilot. Activate a plan to run bulk outreach.",
+    },
+    storage: {
+      title: "Storage is on a paid plan",
+      description:
+        "Free credits don’t unlock Storage. Activate a plan for team documents.",
+    },
+    generator: {
+      title: "Generator is on a paid plan",
+      description:
+        "Free credits don’t unlock Generator. Activate a plan for offers and contracts.",
+    },
   },
   dashboard: {
     welcome: "Welcome back, {name}! 👋",
@@ -77,7 +97,7 @@ export const en: MessageTree = {
     attentionEmptyTitle: "No tasks to resolve",
     attentionEmptyDesc: "When new companies appear, you will see them here.",
     attentionNewLead: "Awaiting first outreach",
-    attentionReplied: "Client replied — action needed",
+    attentionReplied: "Client replied",
     timeNow: "Just now",
     timeToday: "Today, {time}",
     timeMinutesAgo: "{minutes} min ago",
@@ -289,7 +309,7 @@ export const en: MessageTree = {
     },
     emailIntegration: {
       description:
-        "Connect your own venegard mailbox for outreach. Each teammate has a personal inbox — Autopilot and Sniper send from your account.",
+        "Connect your own company mailbox for outreach. Each teammate has a personal inbox — Autopilot and Sniper send from your account.",
       statusConnected: "✅ Connected — Autopilot is active",
       statusDisconnected: "⚠️ Not connected — Autopilot is inactive",
       disconnect: "Disconnect",
@@ -326,9 +346,11 @@ export const en: MessageTree = {
     title: "venesis",
     online: "Online",
     open: "Open AI assistant",
+    close: "Close",
+    clearChat: "Clear chat",
     send: "Send question",
-    welcome: "Ask anything about Venegard — we're here to help.",
-    placeholder: "Ask anything about Venegard...",
+    welcome: "Ask anything about Sklyvo — we're here to help.",
+    placeholder: "Ask anything about Sklyvo...",
     analyzing: "AI Assistant is analyzing your question...",
     prompt1: "How do I correctly connect a company email for Autopilot?",
     prompt2: "How do I set daily limits and sending time windows?",
@@ -380,7 +402,7 @@ export const en: MessageTree = {
       openAutopilot: "🚀 Open Autopilot",
     },
     fallback:
-      "Happy to help with Venegard. Ask about email connection, Autopilot, or workspace settings — or use a quick prompt below.",
+      "Happy to help with Sklyvo. Ask about email connection, Autopilot, or workspace settings — or use a quick prompt below.",
     openEmailSettings: "⚙️ Open email settings",
     sendHint: "Type and send messages here. Use the X in the header to close.",
   },

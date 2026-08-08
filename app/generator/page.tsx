@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +42,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
 import { cn } from "@/lib/utils";
 
 function Field({
@@ -73,6 +80,177 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function formatMoney(amountRaw: string, currency: string) {
+  const n = Number(String(amountRaw).replace(/\s/g, "").replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  try {
+    return new Intl.NumberFormat("cs-CZ", {
+      style: "currency",
+      currency: currency || "CZK",
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `${n.toLocaleString("cs-CZ")} ${currency}`;
+  }
+}
+
+function LiveDocPreview({
+  docType,
+  clientCompany,
+  clientName,
+  clientEmail,
+  clientIco,
+  clientDic,
+  subject,
+  description,
+  amount,
+  currency,
+  vatRate,
+  validUntil,
+  paymentTerms,
+  notes,
+}: {
+  docType: "offer" | "contract";
+  clientCompany: string;
+  clientName: string;
+  clientEmail: string;
+  clientIco: string;
+  clientDic: string;
+  subject: string;
+  description: string;
+  amount: string;
+  currency: string;
+  vatRate: string;
+  validUntil: string;
+  paymentTerms: string;
+  notes: string;
+}) {
+  const isContract = docType === "contract";
+  const title = isContract ? "Smlouva" : "Obchodní nabídka";
+  const partyLabel = isContract ? "Smluvní strana" : "Klient";
+  const displayCompany = clientCompany.trim() || "Název firmy";
+  const displayName = clientName.trim() || "Kontaktní osoba";
+  const displaySubject = subject.trim() || (isContract ? "Předmět smlouvy" : "Předmět nabídky");
+  const displayDesc =
+    description.trim() ||
+    (isContract
+      ? "Popis předmětu a rozsahu smluvního plnění se zobrazí zde."
+      : "Popis rozsahu prací a dodávky se zobrazí zde.");
+  const net = Number(String(amount).replace(/\s/g, "").replace(",", "."));
+  const vat = Number(vatRate) || 0;
+  const hasAmount = Number.isFinite(net) && net > 0;
+  const gross = hasAmount ? net * (1 + vat / 100) : 0;
+  const netLabel = formatMoney(amount, currency);
+  const grossLabel = hasAmount
+    ? formatMoney(String(gross), currency)
+    : null;
+
+  return (
+    <div className="sk-generator-preview flex min-h-0 flex-1 flex-col">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Náhled
+          </p>
+          <p className="text-sm font-semibold text-foreground">
+            {isContract ? "Smlouva" : "Nabídka"} · live
+          </p>
+        </div>
+        <span className="rounded-full bg-[color-mix(in_oklab,var(--sk-brand)_12%,white)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[color:var(--sk-brand)]">
+          {isContract ? "Smlouva" : "Nabídka"}
+        </span>
+      </div>
+
+      <div className="sk-generator-preview__sheet min-h-0 flex-1 overflow-y-auto">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--sk-brand)]">
+          Sklyvo
+        </p>
+        <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+          {title}
+        </h2>
+        <p className="mt-1 text-sm font-medium text-foreground/80">{displaySubject}</p>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {partyLabel}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">{displayCompany}</p>
+            <p className="text-xs text-muted-foreground">{displayName}</p>
+            {clientEmail.trim() ? (
+              <p className="mt-0.5 text-xs text-muted-foreground">{clientEmail.trim()}</p>
+            ) : null}
+            {(clientIco.trim() || clientDic.trim()) && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {clientIco.trim() ? `IČO ${clientIco.trim()}` : ""}
+                {clientIco.trim() && clientDic.trim() ? " · " : ""}
+                {clientDic.trim() ? `DIČ ${clientDic.trim()}` : ""}
+              </p>
+            )}
+          </div>
+          <div className="sm:text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Podmínky
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Splatnost: <span className="font-medium text-foreground">{paymentTerms}</span>
+            </p>
+            {validUntil ? (
+              <p className="text-xs text-muted-foreground">
+                Platnost do:{" "}
+                <span className="font-medium text-foreground">
+                  {new Date(`${validUntil}T12:00:00`).toLocaleDateString("cs-CZ")}
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground/70">Platnost neuvedena</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-border/60 pt-4">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            {isContract ? "Předmět plnění" : "Rozsah"}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
+            {displayDesc}
+          </p>
+        </div>
+
+        <div className="mt-6 rounded-xl bg-[color-mix(in_oklab,oklch(0.94_0.006_245)_70%,white)] px-4 py-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Cena bez DPH
+              </p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
+                {netLabel ?? "—"}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Celkem s DPH {vat} %
+              </p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-[color:var(--sk-brand)]">
+                {grossLabel ?? "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {notes.trim() ? (
+          <div className="mt-5 border-t border-border/50 pt-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Poznámky
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{notes.trim()}</p>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function formatDocDate(iso: string | null) {
   if (!iso) return "";
   try {
@@ -90,6 +268,11 @@ function formatDocDate(iso: string | null) {
 export default function GeneratorPage() {
   const router = useRouter();
   const [docType, setDocType] = useState<"offer" | "contract">("offer");
+  const docTypeIndex = docType === "offer" ? 0 : 1;
+  const { trackRef: docTypeTrackRef, thumbStyle: docTypeThumbStyle } = useSlidingThumb(
+    docTypeIndex,
+    [docType],
+  );
   const [clientName, setClientName] = useState("");
   const [clientCompany, setClientCompany] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -119,7 +302,7 @@ export default function GeneratorPage() {
   const [googleDocs, setGoogleDocs] = useState<GoogleDriveFileRow[]>([]);
   const [linkingId, setLinkingId] = useState<string | null>(null);
   const [showMore, setShowMore] = useState(false);
-  const [mobileDocsOpen, setMobileDocsOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
 
   const refreshGoogleDocs = useCallback(async (query?: string) => {
     setDocsLoading(true);
@@ -352,35 +535,14 @@ export default function GeneratorPage() {
 
   const renderGoogleDocsPanel = () => (
     <>
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Google Docs</p>
-          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-            Propojte účet — dokumenty z Google uvidíte tady i v Úložišti a naopak je otevřete v
-            Docs.
-          </p>
-        </div>
-        {googleConnected ? (
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-8 w-8 shrink-0 p-0"
-            disabled={docsLoading}
-            onClick={() => void refreshGoogleDocs(docsQuery)}
-            title="Obnovit"
-          >
-            <RefreshCw className={cn("h-4 w-4", docsLoading && "animate-spin")} />
-          </Button>
-        ) : null}
-      </div>
-
       {!googleConnected ? (
-        <div className="flex flex-1 flex-col items-start justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-8">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-5">
           <p className="text-sm text-muted-foreground">
-            Zatím nepropojeno. Připojení nevyžaduje vyplnění formuláře.
+            Propojte Google — dokumenty uvidíte tady i v Úložišti.
           </p>
           <Button
             type="button"
+            size="sm"
             disabled={googleConnecting}
             onClick={() => void connectGoogle()}
             className="rounded-lg bg-[#1a73e8] text-white hover:bg-[#1765cc]"
@@ -395,8 +557,20 @@ export default function GeneratorPage() {
         </div>
       ) : (
         <>
-          <div className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
-            Propojeno{googleEmail ? `: ${googleEmail}` : ""}
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-emerald-800 dark:text-emerald-300">
+              Propojeno{googleEmail ? `: ${googleEmail}` : ""}
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 w-8 shrink-0 p-0"
+              disabled={docsLoading}
+              onClick={() => void refreshGoogleDocs(docsQuery)}
+              title="Obnovit"
+            >
+              <RefreshCw className={cn("h-4 w-4", docsLoading && "animate-spin")} />
+            </Button>
           </div>
           <div className="mb-2 flex gap-2">
             <Input
@@ -418,15 +592,15 @@ export default function GeneratorPage() {
               Hledat
             </Button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-xl border border-border/60 bg-background [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="max-h-56 overflow-y-auto rounded-xl border border-border/60 bg-background [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {docsLoading ? (
-              <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Načítám Docs…
               </div>
             ) : googleDocs.length === 0 ? (
-              <p className="px-3 py-10 text-center text-sm text-muted-foreground">
-                Žádné Google Docs. Vytvořte nabídku, nebo ji najděte hledáním.
+              <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                Žádné Google Docs.
               </p>
             ) : (
               <ul className="divide-y divide-border/50">
@@ -473,417 +647,430 @@ export default function GeneratorPage() {
               </ul>
             )}
           </div>
-          <button
-            type="button"
-            className="mt-2 text-left text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-            onClick={() => void connectGoogle()}
-          >
-            Znovu připojit Google (nová oprávnění)
-          </button>
         </>
       )}
     </>
   );
 
-  const renderActionButtons = (layout: "mobile" | "desktop") => {
-    const pdfButton = (
-      <Button
-        type="button"
-        disabled={isGenerating}
-        onClick={() => void handleGeneratePdf()}
-        className={cn(
-          "rounded-xl bg-violet-600 text-sm font-semibold text-white hover:bg-violet-700",
-          layout === "mobile" ? "h-11 w-full" : "h-9 rounded-lg px-4",
-        )}
-      >
-        {isGenerating ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="mr-1.5 h-4 w-4" />
-        )}
-        Vygenerovat PDF
-      </Button>
-    );
+  const secondaryBusy =
+    isGeneratingDoc || googleConnecting || isGeneratingWord || microsoftConnecting || isGeneratingInvoice;
 
-    const docsButton = (
-      <Button
-        type="button"
-        variant="outline"
-        disabled={isGeneratingDoc || googleConnecting}
-        onClick={() => void handleCreateInGoogleDocs()}
-        className={cn(
-          "rounded-lg px-3",
-          layout === "mobile" ? "h-10 text-xs" : "h-9 text-sm",
-        )}
-      >
-        {isGeneratingDoc || googleConnecting ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="mr-1.5 h-4 w-4" />
-        )}
-        <span className="truncate">
-          {googleConnected ? "Google Docs" : "Připojit Docs"}
-        </span>
-      </Button>
-    );
+  const typeToggle = (
+    <div
+      ref={docTypeTrackRef as RefObject<HTMLDivElement>}
+      className="sk-segment flex w-full shrink-0 sm:w-auto"
+    >
+      <span className="sk-segment__thumb" style={docTypeThumbStyle} aria-hidden />
+      {(
+        [
+          { id: "offer" as const, label: "Nabídka" },
+          { id: "contract" as const, label: "Smlouva" },
+        ] as const
+      ).map((option, i) => {
+        const active = i === docTypeIndex;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            data-slide-item
+            onClick={() => setDocType(option.id)}
+            className={cn(
+              "sk-segment__item flex-1 whitespace-nowrap px-3.5 py-1.5 text-sm font-semibold sm:flex-none",
+              active ? "sk-segment__item--active" : "sk-segment__item--idle",
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 
-    const wordButton = (
-      <Button
-        type="button"
-        variant="outline"
-        disabled={isGeneratingWord || microsoftConnecting}
-        onClick={() =>
-          void (microsoftConnected ? handleGenerateWordDoc() : connectMicrosoft())
-        }
-        className={cn(
-          "rounded-lg px-3",
-          layout === "mobile" ? "h-10 text-xs" : "h-9 text-sm",
-        )}
-      >
-        {isGeneratingWord || microsoftConnecting ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="mr-1.5 h-4 w-4" />
-        )}
-        <span className="truncate">{microsoftConnected ? "Word" : "Připojit Word"}</span>
-      </Button>
-    );
-
-    const fakturaButton = (
-      <Button
-        type="button"
-        variant="outline"
-        disabled={isGeneratingInvoice}
-        onClick={() => void handleCreateFakturoidInvoice()}
-        className={cn(
-          "rounded-lg px-3",
-          layout === "mobile" ? "h-10 text-xs" : "h-9 text-sm",
-          fakturoidConnected && "border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/30",
-        )}
-      >
-        {isGeneratingInvoice ? (
-          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-        ) : (
-          <FileText className="mr-1.5 h-4 w-4" />
-        )}
-        <span className="truncate">
-          {fakturoidConnected ? "Faktura" : "Připojit Fakturoid"}
-        </span>
-      </Button>
-    );
-
-    if (layout === "mobile") {
-      return (
-        <>
-          {pdfButton}
-          <div className="grid w-full grid-cols-2 gap-2">
-            {docsButton}
-            {wordButton}
-          </div>
-          <div className="grid w-full grid-cols-1 gap-2">{fakturaButton}</div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        {docsButton}
-        {wordButton}
-        {fakturaButton}
-        {pdfButton}
-      </>
-    );
-  };
-
-  return (
-    <div className="flex h-full min-h-0 w-full items-stretch justify-center overflow-auto p-3 pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5">
-      <div className="flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm md:min-h-0 md:max-h-full lg:min-h-[min(640px,100%)]">
-        <div className="flex shrink-0 flex-col gap-3 border-b border-border/50 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="rounded-xl border border-violet-100 bg-violet-50 p-2 text-violet-700 dark:border-violet-800/50 dark:bg-violet-900/30 dark:text-violet-300">
-              <FileText className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base font-semibold text-foreground sm:text-lg">Generátor</h1>
-              <p className="hidden text-xs text-muted-foreground sm:block sm:text-sm">
-                PDF · Google Docs · Word · Fakturoid
-              </p>
-            </div>
-            <Link
-              href="/uloziste"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground md:hidden"
-            >
-              <FolderOpen className="h-3.5 w-3.5" />
-              Úložiště
-            </Link>
-          </div>
-          <div className="flex w-full shrink-0 rounded-lg border border-border/60 bg-muted/30 p-0.5 sm:w-auto">
-            {(
-              [
-                { id: "offer" as const, label: "Nabídka" },
-                { id: "contract" as const, label: "Smlouva" },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setDocType(option.id)}
-                className={cn(
-                  "flex-1 rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors sm:flex-none",
-                  docType === option.id
-                    ? "bg-violet-600 text-white shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+  const formSections = (
+    <>
+      <section className="space-y-3">
+        <SectionLabel>Klient</SectionLabel>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Firma klienta" htmlFor="g-company">
+            <Input
+              id="g-company"
+              value={clientCompany}
+              onChange={(e) => setClientCompany(e.target.value)}
+              placeholder="Eagle Fitness s.r.o."
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="Kontaktní osoba" htmlFor="g-name">
+            <Input
+              id="g-name"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder="Jan Novák"
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="E-mail klienta (faktura)" htmlFor="g-email">
+            <Input
+              id="g-email"
+              type="email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="jan@firma.cz"
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="IČO" htmlFor="g-ico">
+            <Input
+              id="g-ico"
+              value={clientIco}
+              onChange={(e) => setClientIco(e.target.value)}
+              placeholder="12345678"
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="DIČ" htmlFor="g-dic" className="sm:col-span-2">
+            <Input
+              id="g-dic"
+              value={clientDic}
+              onChange={(e) => setClientDic(e.target.value)}
+              placeholder="CZ12345678"
+              className="h-10 text-sm"
+            />
+          </Field>
         </div>
+      </section>
 
-        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.9fr)]">
-          <div className="flex min-h-0 flex-col gap-5 overflow-y-auto border-b border-border/50 px-4 py-4 sm:px-6 sm:py-5 lg:border-b-0 lg:border-r [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <section className="space-y-3">
-              <SectionLabel>Klient</SectionLabel>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Firma klienta" htmlFor="g-company">
-                  <Input
-                    id="g-company"
-                    value={clientCompany}
-                    onChange={(e) => setClientCompany(e.target.value)}
-                    placeholder="Eagle Fitness s.r.o."
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="Kontaktní osoba" htmlFor="g-name">
-                  <Input
-                    id="g-name"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Jan Novák"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="E-mail klienta (faktura)" htmlFor="g-email">
-                  <Input
-                    id="g-email"
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="jan@firma.cz"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="IČO" htmlFor="g-ico">
-                  <Input
-                    id="g-ico"
-                    value={clientIco}
-                    onChange={(e) => setClientIco(e.target.value)}
-                    placeholder="12345678"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="DIČ" htmlFor="g-dic" className="sm:col-span-2">
-                  <Input
-                    id="g-dic"
-                    value={clientDic}
-                    onChange={(e) => setClientDic(e.target.value)}
-                    placeholder="CZ12345678"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-              </div>
-            </section>
+      <section className="space-y-3">
+        <SectionLabel>Obsah</SectionLabel>
+        <div className="grid gap-3">
+          <Field label="Předmět" htmlFor="g-subject">
+            <Input
+              id="g-subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Správa Meta Ads Q3"
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="Popis / rozsah" htmlFor="g-desc">
+            <Textarea
+              id="g-desc"
+              rows={4}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Co přesně nabízíte nebo sjednáváte…"
+              className="min-h-[96px] resize-y text-sm"
+            />
+          </Field>
+        </div>
+      </section>
 
-            <section className="space-y-3">
-              <SectionLabel>Obsah</SectionLabel>
-              <div className="grid gap-3">
-                <Field label="Předmět" htmlFor="g-subject">
-                  <Input
-                    id="g-subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Správa Meta Ads Q3"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="Popis / rozsah" htmlFor="g-desc">
-                  <Textarea
-                    id="g-desc"
-                    rows={4}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Co přesně nabízíte nebo sjednáváte…"
-                    className="min-h-[96px] resize-y text-sm"
-                  />
-                </Field>
-              </div>
-            </section>
+      <section className="space-y-3">
+        <SectionLabel>Cena</SectionLabel>
+        <div className="grid grid-cols-[1fr_auto_auto] gap-3 sm:grid-cols-[minmax(0,1fr)_110px_100px]">
+          <Field label="Částka (bez DPH)" htmlFor="g-amount">
+            <Input
+              id="g-amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="25000"
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="Měna" className="w-[110px] sm:w-auto">
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card dark:bg-zinc-950">
+                <SelectItem value="CZK">CZK</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="DPH %" className="w-[100px] sm:w-auto">
+            <Select value={vatRate} onValueChange={setVatRate}>
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card dark:bg-zinc-950">
+                <SelectItem value="21">21 %</SelectItem>
+                <SelectItem value="12">12 %</SelectItem>
+                <SelectItem value="0">0 %</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </section>
 
-            <section className="space-y-3">
-              <SectionLabel>Cena</SectionLabel>
-              <div className="grid grid-cols-[1fr_auto_auto] gap-3 sm:grid-cols-[minmax(0,1fr)_110px_100px]">
-                <Field label="Částka (bez DPH)" htmlFor="g-amount">
-                  <Input
-                    id="g-amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="25000"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="Měna" className="w-[110px] sm:w-auto">
-                  <Select value={currency} onValueChange={setCurrency}>
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
-                      <SelectItem value="CZK">CZK</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="USD">USD</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="DPH %" className="w-[100px] sm:w-auto">
-                  <Select value={vatRate} onValueChange={setVatRate}>
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
-                      <SelectItem value="21">21 %</SelectItem>
-                      <SelectItem value="12">12 %</SelectItem>
-                      <SelectItem value="0">0 %</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-            </section>
+      <section className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowMore((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 sm:pointer-events-none"
+        >
+          <SectionLabel>Další podrobnosti</SectionLabel>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform sm:hidden",
+              showMore && "rotate-180",
+            )}
+          />
+        </button>
+        <div
+          className={cn(
+            "grid gap-3 sm:grid-cols-6",
+            showMore ? "grid" : "hidden sm:grid",
+          )}
+        >
+          <Field label="Platnost do" htmlFor="g-valid" className="sm:col-span-2">
+            <Input
+              id="g-valid"
+              type="date"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+              className="h-10 text-sm"
+            />
+          </Field>
+          <Field label="Splatnost" className="sm:col-span-2">
+            <Select value={paymentTerms} onValueChange={setPaymentTerms}>
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card dark:bg-zinc-950">
+                <SelectItem value="ihned">Ihned</SelectItem>
+                <SelectItem value="7 dní">7 dní</SelectItem>
+                <SelectItem value="14 dní">14 dní</SelectItem>
+                <SelectItem value="30 dní">30 dní</SelectItem>
+                <SelectItem value="60 dní">60 dní</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Uložit do" className="sm:col-span-2">
+            <Select
+              value={saveTo}
+              onValueChange={(value) =>
+                setSaveTo(value === "SHARED" ? "SHARED" : "PERSONAL")
+              }
+            >
+              <SelectTrigger className="h-10 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card dark:bg-zinc-950">
+                <SelectItem value="PERSONAL">Moje úložiště</SelectItem>
+                <SelectItem value="SHARED">Společné</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Poznámky / podmínky" htmlFor="g-notes" className="sm:col-span-6">
+            <Input
+              id="g-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Např. Cena bez DPH, start do 7 dní…"
+              className="h-10 text-sm"
+            />
+          </Field>
+        </div>
+      </section>
 
-            <section className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setShowMore((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 sm:pointer-events-none"
-              >
-                <SectionLabel>Další podrobnosti</SectionLabel>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform sm:hidden",
-                    showMore && "rotate-180",
-                  )}
-                />
-              </button>
-              <div
-                className={cn(
-                  "grid gap-3 sm:grid-cols-6",
-                  showMore ? "grid" : "hidden sm:grid",
-                )}
-              >
-                <Field label="Platnost do" htmlFor="g-valid" className="sm:col-span-2">
-                  <Input
-                    id="g-valid"
-                    type="date"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
-                    className="h-10 text-sm"
-                  />
-                </Field>
-                <Field label="Splatnost" className="sm:col-span-2">
-                  <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
-                      <SelectItem value="ihned">Ihned</SelectItem>
-                      <SelectItem value="7 dní">7 dní</SelectItem>
-                      <SelectItem value="14 dní">14 dní</SelectItem>
-                      <SelectItem value="30 dní">30 dní</SelectItem>
-                      <SelectItem value="60 dní">60 dní</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Uložit do" className="sm:col-span-2">
-                  <Select
-                    value={saveTo}
-                    onValueChange={(value) =>
-                      setSaveTo(value === "SHARED" ? "SHARED" : "PERSONAL")
-                    }
-                  >
-                    <SelectTrigger className="h-10 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
-                      <SelectItem value="PERSONAL">Moje úložiště</SelectItem>
-                      <SelectItem value="SHARED">Společné</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Poznámky / podmínky" htmlFor="g-notes" className="sm:col-span-6">
-                  <Input
-                    id="g-notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Např. Cena bez DPH, start do 7 dní…"
-                    className="h-10 text-sm"
-                  />
-                </Field>
-              </div>
-            </section>
-
-            {/* Mobile: Google Docs accordion under form */}
-            <section className="lg:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileDocsOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5"
-              >
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-foreground">Propojené Google Docs</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {googleConnected
-                      ? googleEmail
-                        ? `Účet: ${googleEmail}`
-                        : "Účet propojen"
-                      : "Volitelné. Synchronizace s Drive"}
-                  </p>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                    mobileDocsOpen && "rotate-180",
-                  )}
-                />
-              </button>
-              {mobileDocsOpen ? (
-                <div className="mt-3 flex min-h-[220px] flex-col rounded-xl border border-border/50 bg-muted/10 p-3">
-                  {renderGoogleDocsPanel()}
-                </div>
-              ) : null}
-            </section>
+      <section className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setIntegrationsOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-muted/15 px-3 py-2.5 text-left transition-colors hover:bg-muted/25"
+        >
+          <div>
+            <p className="text-sm font-semibold text-foreground">Google Docs</p>
+            <p className="text-[11px] text-muted-foreground">
+              {googleConnected
+                ? googleEmail
+                  ? `Účet: ${googleEmail}`
+                  : "Účet propojen"
+                : "Volitelné propojení s Drive"}
+            </p>
           </div>
-
-          {/* Desktop Google Docs panel */}
-          <div className="hidden min-h-0 flex-col overflow-y-auto bg-muted/15 px-4 py-4 sm:px-5 sm:py-5 lg:flex [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              integrationsOpen && "rotate-180",
+            )}
+          />
+        </button>
+        {integrationsOpen ? (
+          <div className="rounded-xl border border-border/50 bg-muted/10 p-3">
             {renderGoogleDocsPanel()}
           </div>
-        </div>
+        ) : null}
+      </section>
+    </>
+  );
 
-        {/* Desktop footer — vždy dole v kartě, nepřekrývá obsah */}
-        <div className="relative z-10 hidden shrink-0 items-center justify-between gap-2 border-t border-border/50 bg-muted/20 px-6 py-3 md:flex">
-          <Button type="button" variant="ghost" asChild className="h-9 px-2 text-sm">
-            <Link href="/uloziste">
-              <FolderOpen className="mr-1.5 h-4 w-4" />
-              Úložiště
-            </Link>
-          </Button>
-          <div className="flex flex-wrap items-center justify-end gap-2">{renderActionButtons("desktop")}</div>
+  const previewProps = {
+    docType,
+    clientCompany,
+    clientName,
+    clientEmail,
+    clientIco,
+    clientDic,
+    subject,
+    description,
+    amount,
+    currency,
+    vatRate,
+    validUntil,
+    paymentTerms,
+    notes,
+  };
+
+  const primaryPdfButton = (className?: string) => (
+    <Button
+      type="button"
+      disabled={isGenerating}
+      onClick={() => void handleGeneratePdf()}
+      className={cn(
+        "h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700",
+        className,
+      )}
+    >
+      {isGenerating ? (
+        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+      ) : (
+        <FileText className="mr-1.5 h-4 w-4" />
+      )}
+      Vygenerovat PDF
+    </Button>
+  );
+
+  const exportMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={secondaryBusy}
+          className="h-9 w-full rounded-lg px-3 text-sm sm:w-auto"
+        >
+          {secondaryBusy ? (
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          ) : null}
+          Další exporty
+          <ChevronDown className="ml-1.5 h-3.5 w-3.5 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="z-50 w-56 border bg-white shadow-md dark:bg-zinc-950">
+        <DropdownMenuItem
+          disabled={isGeneratingDoc || googleConnecting}
+          onClick={() => void handleCreateInGoogleDocs()}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          {googleConnected ? "Vytvořit Google Doc" : "Připojit Google Docs"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isGeneratingWord || microsoftConnecting}
+          onClick={() =>
+            void (microsoftConnected ? handleGenerateWordDoc() : connectMicrosoft())
+          }
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          {microsoftConnected ? "Vytvořit Word" : "Připojit Word"}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={isGeneratingInvoice}
+          onClick={() => void handleCreateFakturoidInvoice()}
+        >
+          <FileText className="mr-2 h-4 w-4" />
+          {fakturoidConnected ? "Vytvořit fakturu" : "Připojit Fakturoid"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col items-stretch overflow-hidden md:items-center">
+      {/* Mobile header */}
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-2 px-1 md:hidden">
+        <div className="min-w-0">
+          <h1 className="text-[22px] font-semibold tracking-tight text-foreground">Generátor</h1>
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
+            Nabídky a smlouvy do PDF i Docs
+          </p>
+        </div>
+        <Link
+          href="/uloziste"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-muted-foreground"
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          Úložiště
+        </Link>
+      </div>
+
+      {/* Desktop hero */}
+      <div className="mb-2 hidden shrink-0 space-y-1 text-center md:block">
+        <div className="mb-2 flex items-center justify-center gap-3">
+          <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+            <FileText className="h-8 w-8" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+          Generátor
+        </h1>
+        <p className="mx-auto max-w-lg text-sm text-muted-foreground">
+          Vytvořte nabídku nebo smlouvu — živý náhled vpravo, PDF jedním klikem.
+        </p>
+      </div>
+
+      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-0 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:px-2 md:pb-2">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+          <div className="flex shrink-0 flex-col gap-3 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-3.5">
+            <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+              Vyplňte údaje — náhled se aktualizuje hned
+            </p>
+            {typeToggle}
+          </div>
+
+          <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.95fr)]">
+            <div className="flex min-h-0 flex-col gap-5 overflow-y-auto border-b border-border/50 px-4 py-4 sm:px-6 sm:py-5 lg:border-b-0 lg:border-r [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              {formSections}
+              <div className="lg:hidden">
+                <LiveDocPreview {...previewProps} />
+              </div>
+            </div>
+
+            <div className="hidden min-h-0 flex-col overflow-hidden bg-[color-mix(in_oklab,oklch(0.955_0.006_245)_55%,white)] px-4 py-4 sm:px-5 sm:py-5 lg:flex">
+              <LiveDocPreview {...previewProps} />
+            </div>
+          </div>
+
+          <div className="relative z-10 hidden shrink-0 items-center justify-between gap-3 border-t border-border/50 bg-muted/15 px-6 py-3 md:flex">
+            <Button type="button" variant="ghost" asChild className="h-9 px-2 text-sm">
+              <Link href="/uloziste">
+                <FolderOpen className="mr-1.5 h-4 w-4" />
+                Úložiště
+              </Link>
+            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {exportMenu()}
+              {primaryPdfButton()}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Mobile sticky action bar */}
       <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-border/60 bg-card/95 px-3 py-2.5 backdrop-blur-md md:hidden">
         <div className="mx-auto flex max-w-lg flex-col gap-2">
-          {renderActionButtons("mobile")}
+          {primaryPdfButton("h-11 w-full")}
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">{exportMenu()}</div>
+            <Button type="button" variant="ghost" asChild className="h-9 shrink-0 px-2 text-xs">
+              <Link href="/uloziste">
+                <FolderOpen className="mr-1 h-3.5 w-3.5" />
+                Úložiště
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -87,11 +87,44 @@ model User {
   passwordResetToken     String?   @unique
   passwordResetExpiresAt DateTime?
 
+  /** Preference e-mailových upozornění (Sklyvo → uživatel). */
+  notifyCampaignReply      Boolean @default(true)
+  notifyCrmActivity        Boolean @default(true)
+  notifyWeeklyRadarReport  Boolean @default(true)
+  notifyLowCredits         Boolean @default(true)
+  notifyBillingTrial       Boolean @default(true)
+  notifyProductTips        Boolean @default(true)
+
+  /** 2FA — authenticator app (TOTP). Secret is AES-GCM encrypted at rest. */
+  totpEnabled       Boolean @default(false)
+  totpSecretEnc     String?
+  totpPendingEnc    String?
+
   emailConnection UserEmailConnection?
   documents       WorkspaceDocument[]
+  passkeys        PasskeyCredential[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+/** WebAuthn / passkey credentials (Face ID, Touch ID, security key…). */
+model PasskeyCredential {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /** base64url credential id from the authenticator */
+  credentialId String   @unique
+  publicKey    Bytes
+  counter      BigInt   @default(0)
+  transports   String?
+  deviceType   String?
+  backedUp     Boolean  @default(false)
+  name         String?
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
 }
 
 // TABULKA: PRACOVNÍ PROSTOR
@@ -118,6 +151,11 @@ model Workspace {
   emailsSent       Int @default(0)
   activeDeals      Int @default(0)
   pipelineValue    Int @default(0)
+
+  /** Anti-spam timestamps for system notification emails. */
+  lastLowCreditsEmailAt      DateTime?
+  lastBillingReminderEmailAt DateTime?
+  lastWeeklyRadarEmailAt     DateTime?
   
   emailSignature String?  @db.Text
   systemPrompt   String?  @db.Text
@@ -311,7 +349,7 @@ model WorkspaceEmailConnection {
   updatedAt   DateTime                  @updatedAt
 }
 
-/** Osobní odesílací schránka člena týmu (každý má svůj venegard e-mail). */
+/** Osobní odesílací schránka člena týmu (každý má svůj firemní e-mail). */
 model UserEmailConnection {
   id     String @id @default(cuid())
   userId String @unique

@@ -63,7 +63,7 @@ export function buildEmailSetupGuide(language: "cz" | "en" | "es" | "de"): Copil
         {
           title: "Step 3 — Google App Password (if not using OAuth)",
           body:
-            "In Google Account → Security enable 2-Step Verification, then create an App Password under \"App passwords\" and paste it into Venegard.",
+            "In Google Account → Security enable 2-Step Verification, then create an App Password under \"App passwords\" and paste it into Sklyvo.",
         },
         {
           title: "Step 4 — Verify the status card",
@@ -152,7 +152,7 @@ export function buildEmailSetupGuide(language: "cz" | "en" | "es" | "de"): Copil
       {
         title: "Krok 3: Google heslo aplikace (bez OAuth)",
         body:
-          "V Google účtu → Zabezpečení zapněte dvoufázové ověření a v části „Hesla aplikací“ vytvořte nové heslo pro Venegard.",
+          "V Google účtu → Zabezpečení zapněte dvoufázové ověření a v části „Hesla aplikací“ vytvořte nové heslo pro Sklyvo.",
       },
       {
         title: "Krok 4: Ověřte stav připojení",

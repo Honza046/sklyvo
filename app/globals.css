@@ -35,7 +35,7 @@ body::-webkit-scrollbar {
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    /* Tvoje Venegard Modrá */
+    /* Tvoje Sklyvo Modrá */
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
 
@@ -59,35 +59,34 @@ body::-webkit-scrollbar {
   }
 
   .dark {
-    /* Nádherná temná barva pro pozadí (žádná čistá černá) */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Soft-UI dark — blue-slate, not pure black */
+    --background: 222 40% 9%;
+    --foreground: 210 40% 96%;
 
-    --card: 223 47% 7%;
-    --card-foreground: 210 40% 98%;
+    --card: 222 32% 12%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 223 47% 7%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222 32% 12%;
+    --popover-foreground: 210 40% 96%;
 
-    /* Světlejší modrá pro lepší kontrast v dark modu */
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 199 100% 55%;
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 222 28% 16%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 222 28% 16%;
+    --muted-foreground: 215 16% 68%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 222 28% 16%;
+    --accent-foreground: 210 40% 96%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 40%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 222 24% 20%;
+    --input: 222 24% 20%;
+    --ring: 199 100% 55%;
   }
 }
 
@@ -143,141 +142,156 @@ body::-webkit-scrollbar {
   }
 }
 
-/* Driver.js — onboarding tour (Venegard UI) */
-.driver-popover.venegard-driver-popover {
+/* Driver.js — soft-UI tour (tokens follow :root / .dark) */
+.driver-popover.sklyvo-driver-popover {
   box-sizing: border-box !important;
   margin: 0;
-  padding: 1rem 2.5rem 1rem 1.125rem !important;
-  border-radius: 0.875rem !important;
+  padding: 16px 16px 14px !important;
+  border-radius: 18px !important;
   min-width: 260px !important;
-  max-width: 22rem !important;
-  background-color: hsl(var(--card)) !important;
-  color: hsl(var(--card-foreground)) !important;
-  border: 1px solid hsl(var(--border)) !important;
-  box-shadow:
-    0 10px 15px -3px rgb(0 0 0 / 0.08),
-    0 4px 6px -4px rgb(0 0 0 / 0.06) !important;
-  font-family: inherit !important;
+  max-width: 320px !important;
+  background: var(--sk-glass) !important;
+  color: var(--sk-ink) !important;
+  border: 1px solid var(--sk-border-soft) !important;
+  box-shadow: var(--sk-glass-shadow) !important;
+  font-family: var(--font-jakarta), Helvetica, Arial, sans-serif !important;
   overflow: visible !important;
 }
-.driver-popover.venegard-driver-popover * {
+.driver-popover.sklyvo-driver-popover * {
   font-family: inherit !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-title {
-  font-size: 1rem !important;
-  font-weight: 600 !important;
-  color: hsl(var(--foreground)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--sk-ink) !important;
   line-height: 1.4 !important;
-  padding-right: 0.25rem !important;
+  margin: 0 28px 6px 0 !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-description {
-  font-size: 0.875rem !important;
-  line-height: 1.55 !important;
-  color: hsl(var(--muted-foreground)) !important;
-  margin-top: 0.375rem !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-description {
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  color: var(--sk-muted) !important;
+  margin: 0 !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-progress-text {
-  font-size: 0.75rem !important;
-  color: hsl(var(--muted-foreground)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-progress-text {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--sk-muted) !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-footer {
-  margin-top: 1rem !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-footer {
+  margin-top: 14px !important;
 }
 
-/* Křížek — uvnitř karty, ne jako modré CTA */
-.driver-popover.venegard-driver-popover .driver-popover-close-btn {
+.driver-popover.sklyvo-driver-popover .driver-popover-close-btn {
   all: unset !important;
   box-sizing: border-box !important;
   position: absolute !important;
-  top: 0.65rem !important;
-  right: 0.65rem !important;
+  top: 12px !important;
+  right: 12px !important;
   z-index: 2 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 1.75rem !important;
-  height: 1.75rem !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 28px !important;
+  height: 28px !important;
   padding: 0 !important;
   margin: 0 !important;
   border: none !important;
-  border-radius: 0.5rem !important;
+  border-radius: 10px !important;
   background: transparent !important;
-  color: hsl(var(--muted-foreground)) !important;
-  font-size: 1.125rem !important;
-  font-weight: 500 !important;
+  color: var(--sk-muted) !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 400 !important;
   line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+  /* × glyph sits high — nudge down for optical center */
+  padding-bottom: 2px !important;
   cursor: pointer !important;
   text-shadow: none !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-close-btn:hover,
-.driver-popover.venegard-driver-popover .driver-popover-close-btn:focus {
-  background: hsl(var(--muted)) !important;
-  color: hsl(var(--foreground)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-close-btn:hover,
+.driver-popover.sklyvo-driver-popover .driver-popover-close-btn:focus {
+  background: var(--sk-nav-hover) !important;
+  color: var(--sk-ink) !important;
   opacity: 1 !important;
 }
 
-.driver-popover.venegard-driver-popover .driver-popover-footer button {
+.driver-popover.sklyvo-driver-popover .driver-popover-footer button {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.85rem !important;
-  font-size: 0.8125rem !important;
+  padding: 8px 14px !important;
+  font-size: 12.5px !important;
   font-weight: 600 !important;
-  border-radius: 0.625rem !important;
+  border-radius: 12px !important;
   cursor: pointer !important;
   line-height: 1.25 !important;
   text-shadow: none !important;
   text-decoration: none !important;
-  border: 1px solid transparent !important;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  border: none !important;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease, color 0.14s ease;
 }
-.driver-popover.venegard-driver-popover .driver-popover-next-btn {
-  background-color: hsl(217 91% 50%) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-next-btn {
+  background: linear-gradient(180deg, #3bbcff 0%, var(--sk-brand, #02a7ff) 48%, #0290e0 100%) !important;
   color: #fff !important;
-  border-color: hsl(217 91% 50%) !important;
+  box-shadow: var(--sk-brand-shadow) !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-next-btn:hover {
-  opacity: 0.92;
+.driver-popover.sklyvo-driver-popover .driver-popover-next-btn:hover {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
 }
-.driver-popover.venegard-driver-popover .driver-popover-prev-btn {
-  background-color: hsl(var(--muted)) !important;
-  color: hsl(var(--foreground)) !important;
-  border-color: hsl(var(--border)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-next-btn:active {
+  filter: none !important;
+  transform: translateY(1px) scale(0.97) !important;
+  box-shadow:
+    0 2px 6px -2px rgba(2, 167, 255, 0.35),
+    inset 0 2px 5px rgba(0, 70, 120, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+.driver-popover.sklyvo-driver-popover .driver-popover-prev-btn {
+  background: transparent !important;
+  color: var(--sk-muted) !important;
+  box-shadow: none !important;
+}
+.driver-popover.sklyvo-driver-popover .driver-popover-prev-btn:hover {
+  color: var(--sk-ink) !important;
+  background: var(--sk-nav-hover) !important;
 }
 
-/* Šipky — čisté, bez dvojitého obrysu / stínu */
-.driver-popover.venegard-driver-popover .driver-popover-arrow {
-  border: 8px solid transparent !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-arrow {
+  border: 7px solid transparent !important;
   filter: none !important;
   box-shadow: none !important;
   background: transparent !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-arrow-side-left {
-  border-left-color: hsl(var(--card)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-arrow-side-left {
+  border-left-color: var(--sk-panel) !important;
   border-right-color: transparent !important;
   border-top-color: transparent !important;
   border-bottom-color: transparent !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-arrow-side-right {
-  border-right-color: hsl(var(--card)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-arrow-side-right {
+  border-right-color: var(--sk-panel) !important;
   border-left-color: transparent !important;
   border-top-color: transparent !important;
   border-bottom-color: transparent !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-arrow-side-top {
-  border-top-color: hsl(var(--card)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-arrow-side-top {
+  border-top-color: var(--sk-panel) !important;
   border-left-color: transparent !important;
   border-right-color: transparent !important;
   border-bottom-color: transparent !important;
 }
-.driver-popover.venegard-driver-popover .driver-popover-arrow-side-bottom {
-  border-bottom-color: hsl(var(--card)) !important;
+.driver-popover.sklyvo-driver-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--sk-panel) !important;
   border-left-color: transparent !important;
   border-right-color: transparent !important;
   border-top-color: transparent !important;
 }
 
-/* Highlight stage — bez viditelného stroke / „čáry“ */
 .driver-overlay,
 .driver-overlay *,
 .driver-overlay path {
@@ -287,9 +301,9 @@ body::-webkit-scrollbar {
 .driver-active-element {
   outline: none !important;
   box-shadow: none !important;
+  border-radius: 14px;
 }
 
-/* Levý sidebar: při tour skrýt border-r (dvojitá čára s výřezem overlay) */
 body.driver-active .flex.h-dvh > aside {
   border-right-color: transparent !important;
 }

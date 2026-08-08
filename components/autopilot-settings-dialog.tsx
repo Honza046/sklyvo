@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Radio, Rocket, Sparkles } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,25 +45,25 @@ export type AutopilotSettingsSection = "radar" | "sniper" | "full-auto";
 
 const SECTION_META: Record<
   AutopilotSettingsSection,
-  { title: string; description: string; icon: typeof Radio; iconClass: string }
+  { title: string; description: string; icon: typeof Radio; accent: "emerald" | "brand" }
 > = {
   radar: {
     title: "Nastavení Radaru",
     description: "Kdy a koho má Radar hledat. Změny platí od příštího automatického běhu.",
     icon: Radio,
-    iconClass: "text-emerald-600",
+    accent: "emerald",
   },
   sniper: {
     title: "Nastavení odesílání",
     description: "Generování hned · odeslání podle dnů, oken a limitu dávky.",
     icon: Rocket,
-    iconClass: "text-blue-600",
+    accent: "brand",
   },
   "full-auto": {
     title: "Nastavení Full Auto",
     description: "Jak často spustit celou smyčku: Radar najde firmy → Sniper je osloví.",
     icon: Sparkles,
-    iconClass: "text-violet-600",
+    accent: "brand",
   },
 };
 
@@ -76,7 +77,7 @@ type AutopilotSettingsDialogProps = {
   isLoading?: boolean;
   isSaving?: boolean;
   /** Zapnutí/vypnutí cronu pro danou funkci. */
-  featureEnabled?: boolean;
+  featureEnabled?: boolean | null;
   onFeatureEnabledChange?: (enabled: boolean) => void;
 };
 
@@ -94,6 +95,8 @@ export function AutopilotSettingsDialog({
 }: AutopilotSettingsDialogProps) {
   const meta = SECTION_META[section];
   const SectionIcon = meta.icon;
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const patch = (partial: Partial<AutopilotAutomationSettings>) => {
     onChange({ ...settings, ...partial });
@@ -144,11 +147,6 @@ export function AutopilotSettingsDialog({
     .join(", ");
 
   const disabled = isLoading || isSaving;
-  const saveButtonClass = {
-    radar: "bg-emerald-600 font-semibold text-white hover:bg-emerald-700",
-    sniper: "bg-blue-600 font-semibold text-white hover:bg-blue-700",
-    "full-auto": "bg-violet-600 font-semibold text-white hover:bg-violet-700",
-  }[section];
 
   // Mount dialog body only when open — avoids evaluating section UI (and possible
   // crashes) on every parent render, and keeps heavy portals off the Full Auto page.
@@ -159,13 +157,16 @@ export function AutopilotSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        data-accent={meta.accent === "emerald" ? "emerald" : "brand"}
+        data-theme={isDark ? "dark" : "light"}
         className={cn(
-          "flex w-full flex-col gap-0 overflow-hidden bg-background p-0",
+          "sklyvo-app sk-settings-dialog flex w-full flex-col gap-0 overflow-hidden p-0",
+          isDark && "dark",
           // Mobile: full-screen sheet
           "left-0 top-0 h-[100dvh] max-h-[100dvh] max-w-none translate-x-0 translate-y-0 rounded-none",
           "data-[state=closed]:slide-out-to-left-0 data-[state=open]:slide-in-from-bottom-2",
           // Desktop: centered modal (not fullscreen)
-          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl",
+          "sm:left-[50%] sm:top-[50%] sm:h-auto sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[20px]",
           section === "radar"
             ? "sm:max-h-[min(90vh,720px)] sm:max-w-3xl"
             : section === "sniper"
@@ -182,8 +183,10 @@ export function AutopilotSettingsDialog({
           )}
         >
           <DialogHeader className={cn("space-y-1 text-left", section === "sniper" && "space-y-0.5")}>
-            <DialogTitle className="flex items-center gap-2 pr-10 text-base">
-              <SectionIcon className={cn("h-5 w-5 shrink-0", meta.iconClass)} />
+            <DialogTitle className="flex items-center gap-3 pr-10 text-base">
+              <span className="sk-settings-icon">
+                <SectionIcon className="h-[18px] w-[18px] shrink-0" strokeWidth={2.25} />
+              </span>
               {meta.title}
             </DialogTitle>
             {section === "sniper" ? null : (
@@ -194,11 +197,9 @@ export function AutopilotSettingsDialog({
           {featureEnabled != null && onFeatureEnabledChange ? (
             <div
               className={cn(
-                "flex items-center justify-between gap-3 rounded-xl border px-3",
+                "sk-settings-row flex items-center justify-between gap-3 px-3",
                 section === "sniper" ? "py-1.5" : "py-2.5",
-                featureEnabled
-                  ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-900 dark:bg-emerald-950/30"
-                  : "border-border/60 bg-muted/20",
+                featureEnabled && "sk-settings-row--on",
               )}
             >
               <div className="min-w-0">
@@ -217,23 +218,16 @@ export function AutopilotSettingsDialog({
                 checked={featureEnabled}
                 onCheckedChange={onFeatureEnabledChange}
                 disabled={disabled}
-                className={cn(
-                  "shrink-0",
-                  section === "radar" && "data-[state=checked]:bg-emerald-600",
-                  section === "sniper" && "data-[state=checked]:bg-blue-600",
-                  section === "full-auto" && "data-[state=checked]:bg-violet-600",
-                )}
+                className="shrink-0"
               />
             </div>
           ) : null}
 
         {section === "radar" && (
           <div className="grid items-stretch gap-3 md:grid-cols-2">
-            <section className="flex h-full min-h-0 flex-col rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  1 · Kdy hledat
-                </p>
+            <section className="sk-settings-panel flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="sk-settings-panel__head">
+                <p>1 · Kdy hledat</p>
               </div>
               <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
                 <div className="space-y-1.5">
@@ -245,10 +239,8 @@ export function AutopilotSettingsDialog({
                         disabled={disabled}
                         onClick={() => patch({ radarDays: [...WEEKDAY_VALUES] })}
                         className={cn(
-                          "rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-50",
-                          isWeekdaysOnly
-                            ? "bg-emerald-600 text-white"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80",
+                          "sk-mini-chip px-2 py-0.5 text-[11px] disabled:opacity-50",
+                          isWeekdaysOnly && "sk-mini-chip--active",
                         )}
                       >
                         Po–Pá
@@ -258,17 +250,15 @@ export function AutopilotSettingsDialog({
                         disabled={disabled}
                         onClick={() => patch({ radarDays: [...ALL_DAY_VALUES] })}
                         className={cn(
-                          "rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-50",
-                          isAllWeek
-                            ? "bg-emerald-600 text-white"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80",
+                          "sk-mini-chip px-2 py-0.5 text-[11px] disabled:opacity-50",
+                          isAllWeek && "sk-mini-chip--active",
                         )}
                       >
                         Celý týden
                       </button>
                     </div>
                   </div>
-                  <div className="flex rounded-lg bg-muted/60 p-0.5">
+                  <div className="sk-day-track">
                     {RADAR_WEEKDAYS.map(({ value, label }) => {
                       const active = settings.radarDays.includes(value);
                       return (
@@ -279,10 +269,8 @@ export function AutopilotSettingsDialog({
                           disabled={disabled}
                           aria-pressed={active}
                           className={cn(
-                            "h-8 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
-                            active
-                              ? "bg-background text-emerald-700 shadow-sm dark:text-emerald-300"
-                              : "text-muted-foreground hover:text-foreground",
+                            "sk-day-track__item disabled:opacity-50",
+                            active && "sk-day-track__item--active",
                           )}
                         >
                           {label}
@@ -351,17 +339,17 @@ export function AutopilotSettingsDialog({
                 </div>
 
                 {settings.radarDays.length > 0 ? (
-                  <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs leading-snug text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                  <p className="sk-settings-note sk-settings-note--info px-3 py-2 text-xs leading-snug">
                     {radarDayLabels} · kolem {settings.radarRunTime || "03:00"} · cíl{" "}
                     {settings.minCompaniesPerRun}–{settings.maxCompaniesPerRun} firem / den
                   </p>
                 ) : (
-                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  <p className="sk-settings-note sk-settings-note--warn px-3 py-2 text-xs">
                     Vyber alespoň jeden den, jinak se sběr nespustí.
                   </p>
                 )}
 
-                <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/50 pt-3">
+                <div className="mt-auto flex items-center justify-between gap-3 border-t border-[color:var(--sk-panel-edge)] pt-3">
                   <div className="min-w-0">
                     <Label htmlFor="auto-start-outreach" className="text-sm text-foreground">
                       3 · Rovnou odesílat
@@ -375,17 +363,15 @@ export function AutopilotSettingsDialog({
                     checked={settings.autoStartOutreach}
                     onCheckedChange={(checked) => patch({ autoStartOutreach: checked })}
                     disabled={disabled}
-                    className="shrink-0 data-[state=checked]:bg-emerald-600"
+                    className="shrink-0"
                   />
                 </div>
               </div>
             </section>
 
-            <section className="flex h-full flex-col rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  2 · Koho hledat
-                </p>
+            <section className="sk-settings-panel flex h-full flex-col overflow-hidden">
+              <div className="sk-settings-panel__head">
+                <p>2 · Koho hledat</p>
               </div>
               <div className="flex flex-col gap-2.5 p-3">
                 <div className="space-y-1">
@@ -434,7 +420,7 @@ export function AutopilotSettingsDialog({
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Vyberte zemi" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
+                    <SelectContent className="bg-card dark:bg-zinc-950">
                       <SelectItem value={RADAR_COUNTRY_NONE}>Bez omezení</SelectItem>
                       {RADAR_COUNTRY_OPTIONS.map((opt) => (
                         <SelectItem key={opt.code} value={opt.code}>
@@ -457,7 +443,7 @@ export function AutopilotSettingsDialog({
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Vyberte velikost" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950">
+                    <SelectContent className="bg-card dark:bg-zinc-950">
                       {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -473,19 +459,24 @@ export function AutopilotSettingsDialog({
 
         {section === "sniper" && (
           <div className="space-y-1.5">
-            <section className="overflow-hidden rounded-xl border border-border/60 bg-muted/15">
-              <div className="grid gap-1 p-1.5 sm:grid-cols-2">
+            <section className="sk-settings-panel overflow-hidden p-1.5">
+              <div className="grid gap-1.5 sm:grid-cols-3">
                 {(
                   [
                     {
+                      id: "queue" as const,
+                      title: "Jen do fronty",
+                      hint: "Jen napíše e-maily. Neodešle, dokud nezapneš odesílání nebo nepošleš ručně.",
+                    },
+                    {
                       id: "batch" as const,
                       title: "V časových oknech",
-                      hint: "Jen ve vybraných dnech a hodinách.",
+                      hint: "Do fronty podle dnů a hodin (odesílá cron, když je zapnutý).",
                     },
                     {
                       id: "immediate" as const,
                       title: "Hned po vygenerování",
-                      hint: "Bez čekání na okna.",
+                      hint: "Vygeneruje a ihned odešle (jen když je Zapnout aktivní).",
                     },
                   ] satisfies { id: SendingStrategy; title: string; hint: string }[]
                 ).map((option) => {
@@ -497,18 +488,11 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       onClick={() => patch({ sendingStrategy: option.id })}
                       className={cn(
-                        "rounded-lg border px-2.5 py-1.5 text-left transition-all disabled:opacity-50",
-                        active
-                          ? "border-blue-500 bg-blue-50 shadow-sm dark:border-blue-600 dark:bg-blue-950/40"
-                          : "border-border/60 bg-background hover:bg-muted/40",
+                        "sk-choice px-2.5 py-1.5 text-left disabled:opacity-50",
+                        active && "sk-choice--active",
                       )}
                     >
-                      <p
-                        className={cn(
-                          "text-[13px] font-semibold",
-                          active ? "text-blue-700 dark:text-blue-300" : "text-foreground",
-                        )}
-                      >
+                      <p className={cn("sk-choice__title text-[13px] font-semibold", !active && "text-foreground")}>
                         {option.title}
                       </p>
                       <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
@@ -522,7 +506,7 @@ export function AutopilotSettingsDialog({
 
             <label
               htmlFor="settings-sniper-only-email"
-              className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/60 bg-muted/15 px-3 py-1.5"
+              className="sk-settings-row flex cursor-pointer items-center justify-between gap-3 px-3 py-1.5"
             >
               <p className="text-[13px] font-semibold text-foreground">
                 Pouze firmy s e-mailem
@@ -532,13 +516,13 @@ export function AutopilotSettingsDialog({
                 checked={Boolean(settings.onlyWithEmail)}
                 disabled={disabled}
                 onCheckedChange={(checked) => patch({ onlyWithEmail: checked })}
-                className="shrink-0 data-[state=checked]:bg-blue-600"
+                className="shrink-0"
               />
             </label>
 
             {settings.sendingStrategy === "batch" ? (
               <div className="space-y-2.5">
-                <section className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                <section className="sk-settings-panel p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       Dny · Tempo
@@ -548,17 +532,15 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       onClick={() => patch({ sendDays: [...WEEKDAY_VALUES] })}
                       className={cn(
-                        "rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50",
-                        isSendWeekdaysOnly
-                          ? "bg-blue-600 text-white"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80",
+                        "sk-mini-chip px-1.5 py-0.5 text-[10px] disabled:opacity-50",
+                        isSendWeekdaysOnly && "sk-mini-chip--active",
                       )}
                     >
                       Po–Pá
                     </button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex min-w-0 flex-1 rounded-lg bg-muted/60 p-0.5">
+                    <div className="sk-day-track min-w-0 flex-1">
                       {SEND_WEEKDAYS.map(({ value, label }) => {
                         const active = sendDays.includes(value);
                         return (
@@ -569,10 +551,8 @@ export function AutopilotSettingsDialog({
                             disabled={disabled}
                             aria-pressed={active}
                             className={cn(
-                              "h-7 flex-1 rounded-md text-xs font-semibold transition-all disabled:opacity-50",
-                              active
-                                ? "bg-background text-blue-700 shadow-sm dark:text-blue-300"
-                                : "text-muted-foreground hover:text-foreground",
+                              "sk-day-track__item !h-7 disabled:opacity-50",
+                              active && "sk-day-track__item--active",
                             )}
                           >
                             {label}
@@ -602,7 +582,7 @@ export function AutopilotSettingsDialog({
                   </div>
                 </section>
 
-                <section className="rounded-xl border border-border/60 bg-muted/15 p-3">
+                <section className="sk-settings-panel p-3">
                   <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     Časová okna
                   </p>
@@ -657,7 +637,7 @@ export function AutopilotSettingsDialog({
                       />
                     )}
                   </div>
-                  <p className="mt-2.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[10px] leading-snug text-blue-800 dark:bg-blue-950/40 dark:text-blue-200">
+                  <p className="sk-settings-note sk-settings-note--info mt-2.5 px-2.5 py-1.5 text-[10px] leading-snug">
                     {sendDayLabels || "žádný den"} ·{" "}
                     {getActiveScheduleWindows(settings)
                       .map((w) => `${w.start}–${w.end}`)
@@ -666,10 +646,15 @@ export function AutopilotSettingsDialog({
                   </p>
                 </section>
               </div>
+            ) : settings.sendingStrategy === "queue" ? (
+              <p className="sk-settings-note sk-settings-note--warn px-3 py-2 text-[11px] leading-relaxed">
+                E-maily se jen vygenerují do fronty. Neodešlou se, dokud nezapneš
+                automatiku nebo je nepošleš ručně z fronty.
+              </p>
             ) : (
-              <p className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-200">
-                E-maily se odešlou hned po vygenerování. Dny, okna a limity dávky se teď
-                nepoužívají.
+              <p className="sk-settings-note sk-settings-note--info px-3 py-2 text-[11px] leading-relaxed">
+                Po vygenerování se e-maily ihned odešlou — jen když je Zapnout aktivní.
+                Při vypnuté automatice zůstanou ve frontě.
               </p>
             )}
           </div>
@@ -677,11 +662,9 @@ export function AutopilotSettingsDialog({
 
         {section === "full-auto" && (
           <div className="space-y-3">
-            <section className="rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  1 · Jak často
-                </p>
+            <section className="sk-settings-panel overflow-hidden">
+              <div className="sk-settings-panel__head">
+                <p>1 · Jak často</p>
               </div>
               <div className="grid gap-2 p-3 sm:grid-cols-3">
                 {(
@@ -711,18 +694,11 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                       onClick={() => patch({ fullAutoFrequency: option.id })}
                       className={cn(
-                        "rounded-lg border px-3 py-2.5 text-left transition-all disabled:opacity-50",
-                        active
-                          ? "border-violet-500 bg-violet-50 shadow-sm dark:border-violet-600 dark:bg-violet-950/40"
-                          : "border-border/60 bg-background hover:bg-muted/40",
+                        "sk-choice px-3 py-2.5 text-left disabled:opacity-50",
+                        active && "sk-choice--active",
                       )}
                     >
-                      <p
-                        className={cn(
-                          "text-sm font-semibold",
-                          active ? "text-violet-700 dark:text-violet-300" : "text-foreground",
-                        )}
-                      >
+                      <p className={cn("sk-choice__title text-sm font-semibold", !active && "text-foreground")}>
                         {option.title}
                       </p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">{option.hint}</p>
@@ -732,11 +708,9 @@ export function AutopilotSettingsDialog({
               </div>
             </section>
 
-            <section className="rounded-xl border border-border/60 bg-muted/15">
-              <div className="border-b border-border/50 px-3 py-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  2 · V kolik hodin
-                </p>
+            <section className="sk-settings-panel overflow-hidden">
+              <div className="sk-settings-panel__head">
+                <p>2 · V kolik hodin</p>
               </div>
               <div className="flex flex-wrap items-end gap-3 p-3">
                 <div className="w-36 space-y-1">
@@ -752,7 +726,7 @@ export function AutopilotSettingsDialog({
                     className="h-9"
                   />
                 </div>
-                <p className="min-w-0 flex-1 rounded-lg bg-violet-50 px-3 py-2 text-xs leading-snug text-violet-800 dark:bg-violet-950/40 dark:text-violet-200">
+                <p className="sk-settings-note sk-settings-note--info min-w-0 flex-1 px-3 py-2 text-xs leading-snug">
                   Full Auto na Vercelu kolem 08:00 Praha (
                   {(
                     FULL_AUTO_FREQUENCY_LABELS[settings.fullAutoFrequency] ??
@@ -766,7 +740,7 @@ export function AutopilotSettingsDialog({
         )}
         </div>
 
-        <DialogFooter className="relative z-10 flex shrink-0 flex-row justify-end gap-2 border-t border-border/60 bg-background px-6 py-3 sm:flex-row sm:space-x-0">
+        <DialogFooter className="sk-settings-footer relative z-10 flex shrink-0 flex-row justify-end gap-2 border-t border-[color:var(--sk-panel-edge)] bg-[color:var(--sk-panel)] px-6 py-3 sm:flex-row sm:space-x-0">
           <Button
             type="button"
             variant="outline"
@@ -778,7 +752,10 @@ export function AutopilotSettingsDialog({
           <Button
             type="button"
             disabled={disabled}
-            className={cn("relative z-10 shrink-0", saveButtonClass)}
+            className={cn(
+              "relative z-10 shrink-0",
+              section === "radar" && "sk-settings-save--emerald",
+            )}
             onClick={() => {
               void (async () => {
                 await onSave?.();
@@ -811,16 +788,16 @@ function OptionalWindowToggle({
       aria-pressed={enabled}
       onClick={() => onEnabledChange(!enabled)}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-lg border border-dashed border-border/70 bg-background/60 px-2.5 py-2 text-left transition-colors disabled:opacity-50",
-        "hover:border-blue-400 hover:bg-blue-50/50 dark:hover:border-blue-700 dark:hover:bg-blue-950/20",
+        "sk-choice flex w-full items-center gap-2.5 border-dashed px-2.5 py-2 text-left disabled:opacity-50",
+        "hover:border-[color-mix(in_oklab,var(--sk-settings-accent)_35%,var(--sk-mix-base))]",
       )}
     >
       <span
         className={cn(
-          "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border",
+          "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border",
           enabled
-            ? "border-blue-600 bg-blue-600 text-white"
-            : "border-zinc-400 bg-white dark:border-zinc-500 dark:bg-zinc-900",
+            ? "border-transparent bg-[color:var(--sk-settings-accent)] text-white shadow-[0_2px_6px_color-mix(in_oklab,var(--sk-settings-accent)_40%,transparent)]"
+            : "border-[color:var(--sk-panel-edge)] bg-[var(--sk-sunken)] shadow-[var(--sk-sunken-shadow)]",
         )}
       >
         {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
@@ -847,7 +824,7 @@ function TimeSelect({
       <SelectTrigger id={id} className="h-8 w-[5.75rem] px-2 text-sm tabular-nums">
         <SelectValue />
       </SelectTrigger>
-      <SelectContent className="max-h-56 bg-white dark:bg-zinc-950">
+      <SelectContent className="max-h-56 bg-card dark:bg-zinc-950">
         {SCHEDULE_TIME_OPTIONS.map((option) => (
           <SelectItem key={option} value={option} className="tabular-nums">
             {option}

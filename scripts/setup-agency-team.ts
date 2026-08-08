@@ -1,5 +1,5 @@
 /**
- * Enable Agency team on Jan's Venegard workspace and add Filip + Matěj.
+ * Enable Agency team on Jan's Sklyvo workspace and add Filip + Matěj.
  *
  * Usage: npx tsx scripts/setup-agency-team.ts
  */
@@ -19,7 +19,7 @@ async function main() {
     where: { id: WORKSPACE_ID },
     data: {
       planTier: "AGENCY",
-      name: "Venegard",
+      name: "Sklyvo",
     },
     select: { id: true, name: true, planTier: true },
   });

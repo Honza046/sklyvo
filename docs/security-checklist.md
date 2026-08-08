@@ -1,4 +1,4 @@
-# Security checklist (Venegard) — config outside the repo
+# Security checklist (Sklyvo) — config outside the repo
 
 ## Required env (Vercel)
 

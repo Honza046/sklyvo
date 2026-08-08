@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Globe, Mail, Maximize2, Search, Sparkles } from "lucide-react";
+import { Globe, Maximize2, Search, Sparkles } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
+import { CopyEmailButton } from "@/components/copy-email-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -159,8 +160,7 @@ export function AutopilotFullAutoView() {
     });
   }, [fullAutoRows, searchQuery, onlyWithEmail, statusFilter, dateSort, dateFrom, dateTo]);
 
-  const filterControlClass =
-    "h-9 shrink-0 rounded-lg border-border bg-card py-0 text-xs shadow-none";
+  const filterControlClass = "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
 
   const renderFilters = () => (
     <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
@@ -218,16 +218,13 @@ export function AutopilotFullAutoView() {
           />
         </div>
       ) : null}
-      <label
-        htmlFor="full-auto-only-email"
-        className="flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-border bg-card px-3 text-[11px] font-medium text-muted-foreground"
-      >
+      <label htmlFor="full-auto-only-email" className={cn("sk-filter-chip shrink-0")}>
         <span>Jen s e-mailem</span>
         <Switch
           id="full-auto-only-email"
           checked={onlyWithEmail}
           onCheckedChange={setOnlyWithEmail}
-          className="shrink-0 scale-90 data-[state=checked]:bg-violet-600"
+          className="shrink-0"
         />
       </label>
     </div>
@@ -283,14 +280,14 @@ export function AutopilotFullAutoView() {
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "overflow-y-auto md:hidden",
-            "min-h-0 flex-1",
+            "sk-data-panel__scroll--mobile overflow-y-auto md:hidden",
+            "flex min-h-0 flex-1 flex-col",
           )}
         >
           {paginatedFullAutoRows.map((row) => (
             <div
               key={`${mode}-m-${row.id}`}
-              className="flex items-start gap-3 border-b border-border/40 px-3 py-2.5"
+              className="sk-data-row"
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold text-foreground">{row.company}</p>
@@ -309,13 +306,13 @@ export function AutopilotFullAutoView() {
 
         <div
           className={cn(
-            "hidden min-h-0 flex-1 overflow-x-auto overflow-y-auto md:block",
+            "sk-data-panel__scroll hidden min-h-0 flex-1 overflow-x-auto overflow-y-auto md:block",
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
           )}
         >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-10 bg-white dark:bg-zinc-950">
-              <tr className="border-b border-border/60 text-left text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+              <tr className="text-left">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Zpracování</th>
@@ -324,9 +321,9 @@ export function AutopilotFullAutoView() {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
+            <tbody>
               {paginatedFullAutoRows.map((row) => (
-                <tr key={`${mode}-d-${row.id}`} className="hover:bg-muted/20">
+                <tr key={`${mode}-d-${row.id}`}>
                   <td className="px-6 py-3.5">
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">{row.company}</p>
@@ -345,10 +342,12 @@ export function AutopilotFullAutoView() {
                   </td>
                   <td className="px-6 py-3.5">
                     {row.email ? (
-                      <span className="inline-flex max-w-full items-center gap-1.5 truncate text-xs text-muted-foreground">
-                        <Mail className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">{row.email}</span>
-                      </span>
+                      <div className="flex min-w-0 items-center gap-0.5">
+                        <CopyEmailButton email={row.email} size="sm" variant="ghost" />
+                        <span className="min-w-0 truncate text-xs text-muted-foreground" title={row.email}>
+                          {row.email}
+                        </span>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
@@ -404,7 +403,7 @@ export function AutopilotFullAutoView() {
   };
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden">
+    <div className="sk-autopilot__stack">
       <AutopilotSettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
@@ -418,9 +417,10 @@ export function AutopilotFullAutoView() {
         onFeatureEnabledChange={setFeatureEnabledLocal}
       />
 
+      <div className="sk-autopilot__panel">
       <AutopilotControlPanel
         icon={<Sparkles className="h-5 w-5" />}
-        iconWrapClassName="bg-violet-50 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400"
+        iconWrapClassName="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
         title="Plná automatizace (Full Auto)"
         powerEnabled={featureEnabled}
         description={
@@ -433,7 +433,7 @@ export function AutopilotFullAutoView() {
             <AutopilotPowerButton
               enabled={featureEnabled}
               disabled={isTogglingPower}
-              accent="violet"
+              accent="blue"
               onClick={() => void toggleFeaturePower()}
             />
             <Button
@@ -448,18 +448,18 @@ export function AutopilotFullAutoView() {
             <AutopilotSettingsIconButton
               label="Nastavení Full Auto"
               onClick={openSettings}
-              className="rounded-lg border border-border/50 bg-background/90 text-muted-foreground shadow-sm hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700 dark:bg-zinc-900/90 dark:hover:border-violet-800 dark:hover:bg-violet-900/30 dark:hover:text-violet-300"
             />
           </>
         }
       />
+      </div>
 
       {tableExpanded ? (
-        <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-4">
+        <div className="sk-autopilot__table mt-0 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground">
           Historie Full Auto je otevřená ve zvětšeném okně.
         </div>
       ) : (
-        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4">
+        <div className="sk-autopilot__table mt-0">
           {renderTable("compact")}
         </div>
       )}

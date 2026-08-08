@@ -15,7 +15,7 @@ export function DashboardOnboardingGate({ needsOnboarding, children }: Props) {
   return (
     <>
       {needsOnboarding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-background/60 p-4 backdrop-blur-sm sm:p-8">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto sk-onboarding__gate p-4 sm:p-8">
           <OnboardingForm
             embedded
             onCompleted={() => {

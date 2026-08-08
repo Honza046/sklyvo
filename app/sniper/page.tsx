@@ -465,7 +465,19 @@ function SniperContent() {
         }
         return;
       }
-      toast.success("E-mail byl odeslán.");
+      toast.success("E-mail odeslán. V CRM je kontaktováno.");
+      // Zavři editor a vrať Sniper do výchozího stavu (ne Autopilot).
+      setIsGenerated(false);
+      setGeneratedParams(null);
+      setSubjects([...MOCK_SUBJECTS]);
+      setSelectedSubject(MOCK_SUBJECTS[0] ?? "");
+      setEditableBody(INITIAL_EMAIL_BODY);
+      setEditorKey((k) => k + 1);
+      setPdfFile(null);
+      setTargetUrl("");
+      setEmailTarget("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {
       console.error("SNIPER SEND:", e);
       toast.error("Odeslání selhalo.");
@@ -758,7 +770,7 @@ function SniperContent() {
 
           {/* Desktop form card */}
           <div className="relative hidden flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all md:flex md:p-8">
-            <div className="grid grid-cols-1 gap-6 pr-12 md:grid-cols-2 md:pr-14">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cílová URL adresa
@@ -766,7 +778,7 @@ function SniperContent() {
                 <div className="relative">
                   <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/70" />
                   <Input
-                    className="h-11 rounded-xl border-border/50 bg-background pl-9"
+                    className="h-11 rounded-xl pl-9"
                     placeholder="https://domain.com"
                     value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
@@ -782,7 +794,7 @@ function SniperContent() {
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground/70" />
                   <Input
-                    className="h-11 rounded-xl border-border/50 bg-background pl-9"
+                    className="h-11 rounded-xl pl-9"
                     placeholder="info@domain.com"
                     value={emailTarget}
                     onChange={(e) => setEmailTarget(e.target.value)}
@@ -839,7 +851,7 @@ function SniperContent() {
 
               <div className="w-full max-w-lg space-y-3">
                 <Select value={selectedOffer} onValueChange={setSelectedOffer}>
-                  <SelectTrigger className="h-11 w-full min-w-[280px] rounded-xl border-border/50 bg-background text-base focus:ring-0 focus:ring-offset-0">
+                  <SelectTrigger className="h-11 w-full min-w-[280px] rounded-xl text-base">
                     <SelectValue placeholder="Vyberte typ nabídky" />
                   </SelectTrigger>
                   <SelectContent className="z-50 rounded-xl border-border/50 bg-card shadow-xl">
@@ -865,7 +877,8 @@ function SniperContent() {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-14 w-14 shrink-0 rounded-xl border-border/60 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                    aria-label="Parametry zprávy"
+                    className="sk-press-btn h-14 w-14 shrink-0 rounded-xl p-0"
                   >
                     <Settings2 className="h-5 w-5" />
                   </Button>
@@ -934,7 +947,7 @@ function SniperContent() {
                 size="lg"
                 onClick={() => void handleGenerate()}
                 disabled={isLoading || !hasCredits || !selectedOffer}
-                className="h-14 flex-1 rounded-xl bg-blue-600 text-base font-semibold text-white shadow-md transition-all hover:bg-blue-700 disabled:bg-blue-400"
+                className="h-14 flex-1 rounded-xl text-base"
               >
                 {isLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-white" />

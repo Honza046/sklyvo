@@ -89,7 +89,7 @@ async function main() {
     data: { author: null },
   });
   const bez = await prisma.lead.updateMany({
-    where: { workspaceId: ws, OR: [{ author: "bez webu" }, { author: "Venegard" }] },
+    where: { workspaceId: ws, OR: [{ author: "bez webu" }, { author: "Sklyvo" }] },
     data: { author: null },
   });
   console.log("\ncleared bad/placeholder authors", { urls: bad.count, other: bez.count });

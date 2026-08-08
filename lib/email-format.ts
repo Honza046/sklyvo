@@ -86,6 +86,36 @@ export function appendEmailSignatureIfMissing(body: string, signature: string): 
 }
 
 /**
+ * Odřízne závěrečný podpis (S pozdravem / S úctou / …) až do konce těla.
+ * Používá se před připojením kanonického podpisu z nastavení workspace.
+ */
+export function stripTrailingEmailClosing(body: string): string {
+  const text = body.trim();
+  if (!text) return "";
+
+  const closing =
+    /\n\s*\n\s*(?:S\s+(?:pozdravem|úctou)|Přeji\s+hezký\s+den|Best\s+regards|Kind\s+regards|With\s+kind\s+regards|Regards|Cheers)\b[\s\S]*$/i;
+  const stripped = text.replace(closing, "").trim();
+  if (stripped !== text) return stripped;
+
+  // Podpis nalepený hned za CTA bez prázdného řádku
+  const glued =
+    /([.!?])\s+(?:S\s+(?:pozdravem|úctou)|Přeji\s+hezký\s+den|Best\s+regards|Kind\s+regards)\b[\s\S]*$/i;
+  return text.replace(glued, "$1").trim();
+}
+
+/**
+ * Tělo e-mailu vždy končí přesně podpisem z nastavení (per uživatel / workspace).
+ * Jakýkoli modelový / šablonový podpis předtím odstraní.
+ */
+export function ensureWorkspaceEmailSignature(body: string, signature: string): string {
+  const content = stripTrailingEmailClosing(body);
+  const sig = signature.trim();
+  if (!sig) return content;
+  return appendEmailSignatureIfMissing(content, sig);
+}
+
+/**
  * Sdílený workspace podpis (kontaktní údaje) personalizuje na přihlášeného člena týmu.
  * Jméno + e-mail vždy z aktuálního uživatele; web/telefon z šablony.
  */

@@ -8,7 +8,7 @@ import { resetPassword } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { VenegardWordmark } from "@/components/brand-marks";
+import { SklyvoWordmark } from "@/components/brand-marks";
 
 function ObnovaHeslaForm() {
   const router = useRouter();
@@ -62,7 +62,7 @@ function ObnovaHeslaForm() {
       <div className="space-y-1.5 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Nové heslo</h1>
         <p className="text-sm text-muted-foreground">
-          Zadejte nové heslo pro svůj Venegard účet.
+          Zadejte nové heslo pro svůj Sklyvo účet.
         </p>
       </div>
 
@@ -151,7 +151,7 @@ export default function ObnovaHeslaPage() {
 
       <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
         <div className="flex justify-center">
-          <VenegardWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
+          <SklyvoWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
         </div>
         <Suspense
           fallback={

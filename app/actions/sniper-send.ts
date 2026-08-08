@@ -12,22 +12,34 @@ import {
   sanitizeEmailRichHtml,
 } from "@/lib/email-format";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
+import { buildLeadFaviconUrl, hostnameFromWebsite } from "@/lib/lead-favicon";
+import { authorFromSessionUser } from "@/lib/lead-provenance";
+import { inferLeadTags } from "@/lib/lead-tags";
+import { nextOutreachAfterSend } from "@/lib/outreach";
 import { prisma } from "@/lib/prisma";
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function companyNameFromTarget(host: string | null, email: string): string {
+  if (host) return host;
+  const at = email.indexOf("@");
+  if (at > 0) return email.slice(at + 1).toLowerCase();
+  return email;
+}
+
 /**
  * Odešle už upravený Sniper e-mail přes napojený firemní účet (SMTP / Google).
  * Neúčtuje kredit znovu — kredit padl při generování.
+ * Po odeslání vždy nastaví / založí lead v CRM jako CONTACTED (kontaktováno).
  */
 export async function sendSniperEmailNow(input: {
   to: string;
   subject: string;
   body: string;
   targetUrl?: string;
-}): Promise<{ success: true } | { error: string; needsEmailSetup?: boolean }> {
+}): Promise<{ success: true; leadId: string } | { error: string; needsEmailSetup?: boolean }> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
   if (!workspaceId) {
@@ -79,90 +91,103 @@ export async function sendSniperEmailNow(input: {
   }
 
   const now = new Date();
-  const targetHost = (() => {
-    const raw = (input.targetUrl ?? "").trim();
-    if (!raw) return null;
-    try {
-      const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-      return new URL(withProto).hostname.replace(/^www\./i, "").toLowerCase();
-    } catch {
-      return null;
-    }
-  })();
+  const next = nextOutreachAfterSend("INITIAL", now);
+  const targetHost = hostnameFromWebsite(input.targetUrl);
+  const companyName = companyNameFromTarget(targetHost, to);
+  const author = authorFromSessionUser(session.user);
+  const tags = inferLeadTags({
+    companyName,
+    domain: targetHost ?? undefined,
+  });
+  const faviconUrl = buildLeadFaviconUrl(targetHost);
 
-  const lead = await prisma.lead.findFirst({
+  let lead = await prisma.lead.findFirst({
     where: {
       workspaceId,
       OR: [
         { email: { equals: to, mode: "insensitive" } },
         { contactEmail: { equals: to, mode: "insensitive" } },
         ...(targetHost
-          ? [{ domain: { contains: targetHost, mode: "insensitive" as const } }]
+          ? [{ domain: { equals: targetHost, mode: "insensitive" as const } }]
           : []),
       ],
     },
-    select: { id: true, companyName: true },
+    select: { id: true, companyName: true, source: true },
     orderBy: { updatedAt: "desc" },
   });
 
-  if (lead) {
-    await prisma.$transaction([
-      prisma.emailQueue.create({
-        data: {
-          leadId: lead.id,
-          subject,
-          htmlBody: html,
-          scheduledAt: now,
-          status: "SENT",
-          kind: "INITIAL",
-          sentAt: now,
-        },
-      }),
-      prisma.lead.update({
-        where: { id: lead.id },
-        data: {
-          status: "CONTACTED",
-          lastContactedAt: now,
-          email: to,
-          contactEmail: to,
-          contactedVia: "SNIPER",
-        },
-      }),
-      prisma.activityLog.create({
-        data: {
-          workspaceId,
-          actionType: "EMAIL_SENT",
-          title: `Sniper: ${lead.companyName}`,
-          description: subject,
-        },
-      }),
-      prisma.workspace.update({
-        where: { id: workspaceId },
-        data: { emailsSent: { increment: 1 } },
-      }),
-    ]);
-    scheduleCrmSheetsSync(workspaceId);
+  if (!lead) {
+    lead = await prisma.lead.create({
+      data: {
+        companyName,
+        domain: targetHost,
+        faviconUrl,
+        email: to,
+        contactEmail: to,
+        status: "CONTACTED",
+        source: "SNIPER",
+        contactedVia: "SNIPER",
+        lastContactedAt: now,
+        nextOutreachAt: next.nextOutreachAt,
+        nextOutreachKind: next.nextOutreachKind,
+        author,
+        tags,
+        workspaceId,
+      },
+      select: { id: true, companyName: true, source: true },
+    });
   } else {
-    await prisma.$transaction([
-      prisma.activityLog.create({
-        data: {
-          workspaceId,
-          actionType: "EMAIL_SENT",
-          title: `Sniper: ${to}`,
-          description: subject,
-        },
-      }),
-      prisma.workspace.update({
-        where: { id: workspaceId },
-        data: { emailsSent: { increment: 1 } },
-      }),
-    ]);
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: "CONTACTED",
+        lastContactedAt: now,
+        nextOutreachAt: next.nextOutreachAt,
+        nextOutreachKind: next.nextOutreachKind,
+        email: to,
+        contactEmail: to,
+        contactedVia: "SNIPER",
+        ...(targetHost
+          ? {
+              domain: targetHost,
+              faviconUrl: faviconUrl ?? undefined,
+            }
+          : {}),
+      },
+    });
   }
 
+  await prisma.$transaction([
+    prisma.emailQueue.create({
+      data: {
+        leadId: lead.id,
+        subject,
+        htmlBody: html,
+        scheduledAt: now,
+        status: "SENT",
+        kind: "INITIAL",
+        sentAt: now,
+      },
+    }),
+    prisma.activityLog.create({
+      data: {
+        workspaceId,
+        actionType: "EMAIL_SENT",
+        title: `Sniper: ${lead.companyName}`,
+        description: subject,
+      },
+    }),
+    prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { emailsSent: { increment: 1 } },
+    }),
+  ]);
+
+  scheduleCrmSheetsSync(workspaceId);
   revalidatePath("/crm");
   revalidatePath("/autopilot");
   revalidatePath("/sniper");
   revalidatePath("/");
 
-  return { success: true };
+  return { success: true, leadId: lead.id };
 }

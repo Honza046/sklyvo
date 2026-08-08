@@ -10,6 +10,9 @@ export type OnboardingFormInput = {
   targetAudience: string;
   defaultTone: string;
   offeredServices: string[];
+  companyWebsite?: string;
+  companyContext?: string;
+  emailSignature?: string;
 };
 
 export async function saveOnboardingData(data: OnboardingFormInput) {
@@ -19,6 +22,9 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
     targetAudience,
     defaultTone,
     offeredServices: offeredServicesRaw,
+    companyWebsite,
+    companyContext,
+    emailSignature,
   } = data;
 
   const offeredServicesList: string[] = Array.isArray(offeredServicesRaw)
@@ -38,6 +44,16 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
     new Set(offeredServicesList.map((item) => String(item).trim()).filter(Boolean)),
   );
 
+  const website = (companyWebsite ?? "").trim();
+  let context = (companyContext ?? "").trim();
+  if (website) {
+    const webLine = `Web: ${website}`;
+    if (!context.toLowerCase().includes(website.toLowerCase())) {
+      context = context ? `${context}\n\n${webLine}` : webLine;
+    }
+  }
+  const signature = (emailSignature ?? "").trim();
+
   try {
     await prisma.workspace.update({
       where: { id: session.user.workspaceId },
@@ -48,10 +64,13 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
         targetAudience: targetAudience.trim() || null,
         defaultTone: defaultTone.trim() || null,
         offeredServices: normalizedOfferedServices,
+        companyContext: context.length > 0 ? context : null,
+        emailSignature: signature.length > 0 ? signature : null,
       } as any,
     });
     revalidatePath("/", "layout");
     revalidatePath("/onboarding");
+    revalidatePath("/settings");
     return { success: true as const };
   } catch (error) {
     console.error("Chyba při ukládání onboardingu:", error);

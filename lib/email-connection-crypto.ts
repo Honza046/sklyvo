@@ -6,7 +6,7 @@ function getEncryptionKey(): Buffer {
   const secret =
     process.env.EMAIL_CREDENTIALS_SECRET?.trim() ||
     process.env.NEXTAUTH_SECRET?.trim() ||
-    "venegard-dev-email-credentials-key";
+    "sklyvo-dev-email-credentials-key";
   return createHash("sha256").update(secret).digest();
 }
 

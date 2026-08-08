@@ -31,7 +31,7 @@ export const RADAR_COUNTRY_NONE = "NONE";
 
 export const DEFAULT_RADAR_COUNTRY = "CZ";
 
-export const RADAR_COUNTRY_STORAGE_KEY = "venegard-radar-country";
+export const RADAR_COUNTRY_STORAGE_KEY = "sklyvo-radar-country";
 
 const COUNTRY_BY_CODE = new Map(
   RADAR_COUNTRY_OPTIONS.map((c) => [c.code.toUpperCase(), c] as const),

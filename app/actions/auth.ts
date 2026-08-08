@@ -301,6 +301,15 @@ export async function loginUser(formData: FormData) {
     });
   }
 
+  const { issuePending2faIfNeeded } = await import("@/app/actions/two-factor");
+  const twoFactor = await issuePending2faIfNeeded(user.id);
+  if (twoFactor.requires2fa) {
+    return {
+      requires2fa: true as const,
+      methods: twoFactor.methods,
+    };
+  }
+
   await setSessionCookie(user.id);
   return { success: true as const };
 }

@@ -24,6 +24,14 @@ import {
   verifyEmailChange,
 } from "@/app/actions/auth";
 import { uploadProfileAvatar } from "@/app/actions/user";
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from "@/app/actions/notifications";
+import {
+  DEFAULT_NOTIFICATION_PREFS,
+  type NotificationPreferences,
+} from "@/lib/emails/notification-prefs";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import {
   Dialog,
@@ -35,6 +43,7 @@ import {
 import { toast } from "sonner";
 import { ProfilePageSkeleton } from "@/components/profile-loading";
 import { AccountInvoiceHistory } from "@/components/account-invoice-history";
+import { AccountTwoFactorPanel } from "@/components/account-two-factor-panel";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -57,6 +66,12 @@ export default function AccountPage() {
   const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [isConfirmingCode, setIsConfirmingCode] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>(
+    DEFAULT_NOTIFICATION_PREFS,
+  );
+  const [savingNotifKey, setSavingNotifKey] = useState<keyof NotificationPreferences | null>(
+    null,
+  );
 
   useEffect(() => {
     void (async () => {
@@ -73,10 +88,23 @@ export default function AccountPage() {
         if (session.workspace) {
           setWorkspace(session.workspace);
         }
+        const prefs = await getNotificationPreferences();
+        if (!("error" in prefs)) {
+          setNotifPrefs(prefs);
+        }
       } finally {
         setIsLoading(false); // Ať se stane cokoliv, po načtení vypneme loading
       }
     })();
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("needs_email") === "1") {
+      toast.message("Doplňte svůj e-mail", {
+        description:
+          "Facebook nevrátil e-mailovou adresu. Nastavte ji tady v účtu.",
+      });
+      window.history.replaceState({}, "", "/account");
+    }
   }, []);
 
   useEffect(() => {
@@ -107,6 +135,26 @@ export default function AccountPage() {
   
   const firstName = (user?.name ?? "Uživatel").split(/\s+/)[0];
   const lastName = (user?.name ?? "").split(/\s+/).slice(1).join(" ");
+
+  const handleToggleNotification = async (
+    key: keyof NotificationPreferences,
+    checked: boolean,
+  ) => {
+    const previous = notifPrefs;
+    setNotifPrefs((prev) => ({ ...prev, [key]: checked }));
+    setSavingNotifKey(key);
+    try {
+      const result = await updateNotificationPreferences({ [key]: checked });
+      if ("error" in result) {
+        setNotifPrefs(previous);
+        toast.error(result.error);
+        return;
+      }
+      toast.success(checked ? "Upozornění zapnuto" : "Upozornění vypnuto");
+    } finally {
+      setSavingNotifKey(null);
+    }
+  };
 
   const handleChangePhoto = () => {
     fileInputRef.current?.click();
@@ -317,83 +365,96 @@ export default function AccountPage() {
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2">
-                <div className="flex flex-col md:flex-row gap-8 items-start">
-                  <div className="flex flex-col items-center gap-3">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => void handleFileChange(e)}
-                    />
-                    <Avatar className="h-24 w-24 rounded-2xl border border-border/50 shadow-sm">
-                    <AvatarImage src={previewUrl || user?.avatarUrl || undefined} alt={user?.name ?? "Uživatel"} />
-                      <AvatarFallback className="rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 font-bold text-3xl">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <Button
-                      onClick={handleChangePhoto}
-                      variant="outline"
-                      size="sm"
-                      disabled={isUploading}
-                      className="rounded-xl text-xs font-semibold"
-                    >
-                      {isUploading ? "Nahrávám..." : "Změnit fotku"}
-                    </Button>
-                    <AvatarCropDialog
-                      open={cropOpen}
-                      imageSrc={cropImageSrc}
-                      onOpenChange={handleCropOpenChange}
-                      onConfirm={handleCropConfirm}
-                      isSaving={isUploading}
-                    />
+                <div className="flex flex-col gap-6">
+                  <div className="grid grid-cols-1 items-center gap-6 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:gap-8">
+                    <div className="flex flex-col items-center gap-3">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => void handleFileChange(e)}
+                      />
+                      <Avatar className="h-24 w-24 rounded-2xl border border-border/50 shadow-sm">
+                        <AvatarImage
+                          src={previewUrl || user?.avatarUrl || undefined}
+                          alt={user?.name ?? "Uživatel"}
+                        />
+                        <AvatarFallback className="rounded-2xl bg-blue-50 text-3xl font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Button
+                        onClick={handleChangePhoto}
+                        variant="outline"
+                        size="sm"
+                        disabled={isUploading}
+                        className="w-full max-w-[9.5rem] rounded-xl text-xs font-semibold"
+                      >
+                        {isUploading ? "Nahrávám..." : "Změnit fotku"}
+                      </Button>
+                      <AvatarCropDialog
+                        open={cropOpen}
+                        imageSrc={cropImageSrc}
+                        onOpenChange={handleCropOpenChange}
+                        onConfirm={handleCropConfirm}
+                        isSaving={isUploading}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          Jméno
+                        </Label>
+                        <Input
+                          className="h-12 rounded-xl border-border/50 bg-background text-base"
+                          defaultValue={firstName}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          Příjmení
+                        </Label>
+                        <Input
+                          className="h-12 rounded-xl border-border/50 bg-background text-base"
+                          defaultValue={lastName}
+                        />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <Mail className="h-3.5 w-3.5" /> E-mailová adresa
+                        </Label>
+                        <Input
+                          type="email"
+                          className="h-12 rounded-xl border-border/50 bg-background text-base"
+                          value={emailValue}
+                          onChange={(e) => setEmailValue(e.target.value)}
+                          disabled={isSavingProfile}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Změna e-mailu se potvrzuje 6místným kódem, který pošleme
+                          na novou adresu.
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex-1 w-full space-y-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Jméno</Label>
-                        <Input className="h-12 rounded-xl bg-background border-border/50 text-base" defaultValue={firstName} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Příjmení</Label>
-                        <Input className="h-12 rounded-xl bg-background border-border/50 text-base" defaultValue={lastName} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
-                        <Mail className="h-3.5 w-3.5" /> E-mailová adresa
-                      </Label>
-                      <Input
-                        type="email"
-                        className="h-12 rounded-xl bg-background border-border/50 text-base"
-                        value={emailValue}
-                        onChange={(e) => setEmailValue(e.target.value)}
-                        disabled={isSavingProfile}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Změna e-mailu se potvrzuje 6místným kódem, který pošleme na novou adresu.
-                      </p>
-                    </div>
-                    
-                    <div className="flex justify-end pt-2">
-                      <Button
-                        onClick={() => void handleSaveProfile()}
-                        disabled={isSavingProfile}
-                        className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
-                      >
-                        {isSavingProfile ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Odesílám kód…
-                          </>
-                        ) : (
-                          "Uložit změny"
-                        )}
-                      </Button>
-                    </div>
+                  <div className="flex justify-end border-t border-border/50 pt-4">
+                    <Button
+                      onClick={() => void handleSaveProfile()}
+                      disabled={isSavingProfile}
+                      className="h-10 rounded-xl bg-blue-600 font-bold text-white shadow-sm hover:bg-blue-700"
+                    >
+                      {isSavingProfile ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Odesílám kód…
+                        </>
+                      ) : (
+                        "Uložit změny"
+                      )}
+                    </Button>
                   </div>
                 </div>
               </AccordionContent>
@@ -453,7 +514,7 @@ export default function AccountPage() {
                   onClick={() => void handlePasswordUpdate()}
                   variant="outline"
                   disabled={isUpdatingPassword}
-                  className="mt-2 rounded-xl border-border/60 font-semibold hover:bg-muted"
+                  className="sk-press-btn mt-2 rounded-xl border-border/60 font-semibold"
                 >
                   {isUpdatingPassword ? (
                     <>
@@ -464,6 +525,8 @@ export default function AccountPage() {
                     "Aktualizovat heslo"
                   )}
                 </Button>
+
+                <AccountTwoFactorPanel />
               </AccordionContent>
             </AccordionItem>
 
@@ -498,7 +561,11 @@ export default function AccountPage() {
                   </span>
                 </div>
 
-                <Button asChild variant="outline" className="w-full border-dashed border-2 rounded-xl h-12 text-muted-foreground hover:text-foreground hover:bg-muted">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="sk-press-btn h-12 w-full rounded-xl border-[color:var(--sk-border)] font-semibold"
+                >
                   <Link href="/settings/connect-email">
                     <Plus className="mr-2 h-4 w-4" /> Přidat další schránku
                   </Link>
@@ -519,33 +586,44 @@ export default function AccountPage() {
               <AccordionContent className="pb-6 pt-2 space-y-6">
                 
                 {/* Aktuální plán */}
-                <div className="p-5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="sk-billing-card flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h4 className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1">
+                    <h4 className="sk-billing-card__eyebrow mb-1 text-[10px] font-bold uppercase tracking-widest">
                       {workspace?.subscriptionStatus === "FREE" ? "Zkušební účet" : 
                        workspace?.subscriptionStatus === "TRIAL" ? "Trial verze aktivní" : "Aktuální tarif"}
                     </h4>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="sk-billing-card__title text-2xl font-bold">
                       {workspace?.planTier === "NONE" || !workspace?.planTier ? "Free Verze" : workspace.planTier}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="sk-billing-card__meta mt-1 text-xs">
                       Kredity: {Math.max(0, (workspace?.creditsTotal || 0) - (workspace?.creditsUsed || 0))} / {workspace?.creditsTotal || 0}
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    onClick={(e) => {
-                      if (workspace?.subscriptionStatus === "FREE") {
-                        e.preventDefault();
-                        window.location.href = "/pricing";
-                        return;
-                      }
-                      void handleBillingPortal(e);
-                    }}
-                    className="rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
-                  >
-                    {workspace?.subscriptionStatus === "FREE" ? "Vybrat tarif" : "Spravovat předplatné"}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      asChild
+                      className="sk-press-brand rounded-xl font-semibold"
+                    >
+                      <Link href="/pricing">
+                        {workspace?.subscriptionStatus === "FREE" || workspace?.planTier === "NONE" || !workspace?.planTier
+                          ? "Vybrat tarif"
+                          : "Změnit tarif"}
+                      </Link>
+                    </Button>
+                    {workspace?.subscriptionStatus !== "FREE" &&
+                      workspace?.planTier &&
+                      workspace.planTier !== "NONE" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={(e) => void handleBillingPortal(e)}
+                        className="sk-press-btn rounded-xl font-semibold"
+                      >
+                        Spravovat předplatné
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {workspace?.subscriptionStatus !== "FREE" ? (
@@ -583,7 +661,7 @@ export default function AccountPage() {
             <AccordionItem value="notifications" className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800 transition-colors">
               <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                     <Bell className="h-5 w-5" />
                   </div>
                   <h2 className="text-sm font-bold sm:text-lg">Upozornění a notifikace</h2>
@@ -591,55 +669,54 @@ export default function AccountPage() {
               </AccordionTrigger>
               <AccordionContent className="pb-6 pt-2">
                 <div className="space-y-6">
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Nová odpověď z kampaně</Label>
-                      <p className="text-xs text-muted-foreground">Upozornit okamžitě, když lead odepíše na zprávu ze Sniperu.</p>
+                  {(
+                    [
+                      {
+                        key: "notifyCampaignReply" as const,
+                        title: "Nová odpověď z kampaně",
+                        desc: "Upozornit okamžitě, když lead odepíše na zprávu ze Sniperu.",
+                      },
+                      {
+                        key: "notifyCrmActivity" as const,
+                        title: "Nové aktivity v CRM",
+                        desc: "Upozornit mě, když se změní stav dealu nebo přibude úkol.",
+                      },
+                      {
+                        key: "notifyWeeklyRadarReport" as const,
+                        title: "Týdenní reporty (Radar)",
+                        desc: "Posílat souhrn nově objevených leadů z automatického hledání.",
+                      },
+                      {
+                        key: "notifyLowCredits" as const,
+                        title: "Nízký stav kreditů",
+                        desc: "Poslat varování, když mi zbývá méně než 10 % měsíčních kreditů.",
+                      },
+                      {
+                        key: "notifyBillingTrial" as const,
+                        title: "Obnova tarifu a konec trialu",
+                        desc: "Připomenout blížící se platbu nebo konec zkušebního období.",
+                      },
+                      {
+                        key: "notifyProductTips" as const,
+                        title: "Produktové novinky a tipy",
+                        desc: "Nové funkce platformy a rady pro lepší konverze.",
+                      },
+                    ] as const
+                  ).map((item) => (
+                    <div key={item.key} className="flex items-center justify-between gap-4">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-semibold">{item.title}</Label>
+                        <p className="text-xs text-muted-foreground">{item.desc}</p>
+                      </div>
+                      <Switch
+                        checked={notifPrefs[item.key]}
+                        disabled={savingNotifKey === item.key}
+                        onCheckedChange={(checked) => {
+                          void handleToggleNotification(item.key, checked);
+                        }}
+                      />
                     </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Nové aktivity v CRM</Label>
-                      <p className="text-xs text-muted-foreground">Upozornit mě, když se změní stav dealu nebo přibude úkol.</p>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Týdenní reporty (Radar)</Label>
-                      <p className="text-xs text-muted-foreground">Posílat souhrn nově objevených leadů z automatického hledání.</p>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Nízký stav kreditů</Label>
-                      <p className="text-xs text-muted-foreground">Poslat varování, když mi zbývá méně než 10 % měsíčních kreditů.</p>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Obnova tarifu a konec trialu</Label>
-                      <p className="text-xs text-muted-foreground">Připomenout blížící se platbu nebo konec zkušebního období.</p>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-semibold">Produktové novinky a tipy</Label>
-                      <p className="text-xs text-muted-foreground">Nové funkce platformy a rady pro lepší konverze.</p>
-                    </div>
-                    <Switch defaultChecked className="data-[state=checked]:bg-blue-600 data-[state=unchecked]:bg-slate-200 dark:data-[state=unchecked]:bg-slate-700" />
-                  </div>
-
+                  ))}
                 </div>
               </AccordionContent>
             </AccordionItem>

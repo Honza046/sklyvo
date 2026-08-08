@@ -218,46 +218,46 @@ export function TeamAccessPanel() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-border/60">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead>
-            <tr className="border-b border-border/60 bg-muted/40 dark:bg-muted/20">
-              <th className="px-4 py-3 font-semibold">Jméno</th>
-              <th className="px-4 py-3 font-semibold">E-mail</th>
-              <th className="px-4 py-3 font-semibold">Role</th>
-              <th className="px-4 py-3 font-semibold">Stav</th>
-              <th className="px-4 py-3 font-semibold" />
-            </tr>
-          </thead>
-          <tbody>
-            {teamMembers.map((m) => (
-              <tr key={m.id} className="border-b border-border/40 last:border-0 hover:bg-muted/20">
-                <td className="px-4 py-3 font-medium">{m.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{m.email}</td>
-                <td className="px-4 py-3">{roleLabel(m.role)}</td>
-                <td className="px-4 py-3">
-                  <StatusBadge />
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {canManage &&
-                    currentUserRole === "OWNER" &&
-                    m.id !== currentUserId &&
-                    m.role !== "OWNER" && (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
-                        disabled={isPending}
-                        onClick={() => handleRemove(m)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Odebrat
-                      </button>
-                    )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="sk-data-panel overflow-hidden rounded-xl p-3 shadow-sm sm:p-3.5">
+        <div className="mb-1 hidden grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem] items-center gap-3 px-3.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[color:var(--sk-muted)] sm:grid">
+          <span>Jméno</span>
+          <span>E-mail</span>
+          <span>Role</span>
+          <span>Stav</span>
+          <span className="sr-only">Akce</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {teamMembers.map((m) => (
+            <div
+              key={m.id}
+              className="sk-data-row !grid grid-cols-1 items-center gap-2 sm:!grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem] sm:!gap-3 sm:!px-3.5 sm:!py-2.5"
+            >
+              <p className="truncate text-sm font-medium text-[color:var(--sk-ink)]">{m.name}</p>
+              <p className="truncate text-sm text-[color:var(--sk-muted)]">{m.email}</p>
+              <p className="text-sm text-[color:var(--sk-ink)]">{roleLabel(m.role)}</p>
+              <div className="flex items-center">
+                <StatusBadge />
+              </div>
+              <div className="flex h-8 w-8 items-center justify-center justify-self-end">
+                {canManage &&
+                  currentUserRole === "OWNER" &&
+                  m.id !== currentUserId &&
+                  m.role !== "OWNER" && (
+                    <button
+                      type="button"
+                      aria-label={`Odebrat ${m.email}`}
+                      title="Odebrat"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--sk-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+                      disabled={isPending}
+                      onClick={() => handleRemove(m)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {inviteOpen && (
@@ -267,7 +267,7 @@ export function TeamAccessPanel() {
           role="presentation"
         >
           <div
-            className="relative w-full max-w-md rounded-xl border border-border/60 bg-white p-8 shadow-xl dark:bg-card"
+            className="relative w-full max-w-md rounded-2xl border border-border/60 bg-card p-8 shadow-xl"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"

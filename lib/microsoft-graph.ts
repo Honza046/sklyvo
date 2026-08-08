@@ -221,7 +221,7 @@ function buildOfferRtf(payload: OfferGeneratorInput): string {
     payload.paymentTerms ? `Splatnost: ${payload.paymentTerms}` : "",
     payload.notes ? `\nPoznamky:\n${payload.notes}` : "",
     "",
-    "Dokument vytvoren ve Venegard Generatoru.",
+    "Dokument vytvoren ve Sklyvo Generatoru.",
   ]
     .filter(Boolean)
     .join("\n");
@@ -319,7 +319,7 @@ export async function exportCrmCsvToOneDrive(
   if (!accessToken) return { error: "Microsoft účet není připojen." };
 
   const stamp = new Date().toISOString().slice(0, 10);
-  const fileName = `Venegard-CRM-${stamp}.csv`;
+  const fileName = `Sklyvo-CRM-${stamp}.csv`;
   const csv = buildCrmCsv(rows);
   const uploaded = await uploadToOneDrive(
     accessToken,

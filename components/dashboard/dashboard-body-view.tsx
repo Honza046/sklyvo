@@ -159,7 +159,7 @@ export function DashboardBodyView({
 
         <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
-            <div className="rounded-md bg-purple-50 p-1.5 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 sm:rounded-lg sm:p-2">
+            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
               <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
             <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">

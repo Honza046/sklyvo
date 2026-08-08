@@ -49,9 +49,9 @@ const PROVIDERS: {
     description: "Integrujte Microsoft 365 nebo Outlook.com pro odesílání kampaní z vaší schránky.",
     icon: <Mail className="h-5 w-5" />,
     iconWrapClassName:
-      "border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
-    hoverBorderClassName: "hover:border-indigo-300 dark:hover:border-indigo-700",
-    titleHoverClassName: "group-hover:text-indigo-600 dark:group-hover:text-indigo-400",
+      "border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    hoverBorderClassName: "hover:border-blue-300 dark:hover:border-blue-700",
+    titleHoverClassName: "group-hover:text-blue-600 dark:group-hover:text-blue-400",
   },
   {
     id: "seznam",

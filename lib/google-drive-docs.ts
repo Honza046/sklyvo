@@ -183,7 +183,7 @@ function buildDocPlainText(payload: OfferGeneratorInput): string {
     payload.paymentTerms ? `Splatnost: ${payload.paymentTerms}` : null,
     payload.notes ? `\nPoznámky / podmínky:\n${payload.notes}` : null,
     "",
-    "Dokument vytvořen ve Venegard Generátoru.",
+    "Dokument vytvořen ve Sklyvo Generátoru.",
   ];
   return lines.filter((line) => line != null).join("\n");
 }

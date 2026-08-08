@@ -131,7 +131,7 @@ async function main() {
         rawAuthorSamples.set(rawAuthor, (rawAuthorSamples.get(rawAuthor) ?? 0) + 1);
       }
       const author = normalizeLeadAuthor(rawAuthor);
-      if (!author || author === "Venegard") continue;
+      if (!author || author === "Sklyvo") continue;
 
       const email =
         idx.email >= 0 ? (row[idx.email] ?? "").trim().toLowerCase() || null : null;

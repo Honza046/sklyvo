@@ -1,12 +1,13 @@
 /**
  * Systémové e-maily (obnova hesla, ověřovací kód) přes Resend.
  * Pro produkci nastav RESEND_FROM_EMAIL na adresu z ověřené domény
- * (např. "Venegard <noreply@venegard.com>").
+ * (např. "Sklyvo <noreply@venegard.com>").
  */
 export function getResendFromAddress(): string {
   const configured = process.env.RESEND_FROM_EMAIL?.trim();
   if (configured) return configured;
-  return "Venegard <onboarding@resend.dev>";
+  // Prefer verified domain when set in env; Resend sandbox otherwise.
+  return "Sklyvo <onboarding@resend.dev>";
 }
 
 /** Přeloží technické chyby Resendu do srozumitelné češtiny. */

@@ -15,7 +15,7 @@ export const HTML_LANG: Record<Language, string> = {
   de: "de",
 };
 
-export const STORAGE_KEY = "venegard-language";
+export const STORAGE_KEY = "sklyvo-language";
 
 export const DATE_LOCALE: Record<Language, string> = {
   cz: "cs-CZ",

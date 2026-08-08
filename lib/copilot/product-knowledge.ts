@@ -1,7 +1,7 @@
-/** Znalost Venegardu pro venesis (LLM system prompt). */
+/** Znalost produktu Sklyvo pro venesis (LLM system prompt). */
 
-export const VENEGARD_PRODUCT_KNOWLEDGE = `
-Venegard je B2B outreach aplikace (české UI). Asistent se jmenuje venesis.
+export const SKLYVO_PRODUCT_KNOWLEDGE = `
+Sklyvo je B2B outreach aplikace (české UI). Asistent se jmenuje venesis.
 
 Moduly:
 - Přehled (dashboard /): metriky, aktivita, konverzní trychtýř CRM stavů.
@@ -19,7 +19,7 @@ Autopilot — odesílání:
 
 E-mail:
 - Bez napojené schránky Autopilot/Sniper neodešle. Napojení v Nastavení → firemní e-mail (OAuth Google doporučeno, nebo SMTP + App Password).
-- BYOK (vlastní OpenAI klíč) nepodporujeme — běží na serverech Venegard, kupují se kredity.
+- BYOK (vlastní OpenAI klíč) nepodporujeme — běží na serverech Sklyvo, kupují se kredity.
 
 Kredity:
 - Sniper generování: 1 kredit.

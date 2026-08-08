@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Lock } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { VenegardWordmark } from "@/components/brand-marks";
+import { SklyvoWordmark } from "@/components/brand-marks";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
@@ -92,7 +92,7 @@ export default function UpdatePasswordPage() {
 
       <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
         <div className="flex justify-center">
-          <VenegardWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
+          <SklyvoWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
         </div>
 
         <div className="flex flex-col gap-8 rounded-3xl border border-border/60 bg-card p-8 shadow-xl">

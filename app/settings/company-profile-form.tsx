@@ -57,7 +57,7 @@ export function CompanyProfileForm({ initialContext }: CompanyProfileFormProps) 
           value={companyContext}
           onChange={(e) => setCompanyContext(e.target.value)}
           disabled={isSaving}
-          placeholder="Např. Pomáhám firmám s redesignem a tvorbou webů a e-shopů (včetně Shopify). Při zájmu i AI a automatizace. Fixní nabídka, projekty na míru bez šablon. (Nepíš „My v Venegardu…“, to patří do podpisu.)"
+          placeholder="Např. Pomáhám firmám s redesignem a tvorbou webů a e-shopů (včetně Shopify). Při zájmu i AI a automatizace. Fixní nabídka, projekty na míru bez šablon. (Nepíš „My ve Sklyvu…“, to patří do podpisu.)"
           className="min-h-[180px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">

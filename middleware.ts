@@ -10,6 +10,7 @@ const PUBLIC_PATHS = new Set([
   "/update-password",
   "/auth/callback",
   "/api/access-state",
+  "/api/geo-locale",
 ]);
 
 export async function middleware(request: NextRequest) {
