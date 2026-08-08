@@ -197,14 +197,7 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     const startHeight = persistedCardHeight!;
     let cancelledEarly = false;
 
-    // Growing with overflow:hidden clips the new fields (reads as a blink).
-    // Snap open instantly; only animate when shrinking empty space away.
-    if (target > startHeight + 2) {
-      persistedCardHeight = target;
-      paint(target, "none");
-      return;
-    }
-
+    // Expand or shrink: keep overflow:hidden so content reveals/hides with height.
     setAnimating(true);
     paint(startHeight, "none");
     void form.offsetHeight;
