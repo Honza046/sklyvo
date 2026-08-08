@@ -10,6 +10,7 @@ import {
   verifyLoginTotp,
 } from "@/app/actions/two-factor";
 import { useLanguage } from "@/components/sklyvo/language-provider";
+import { AuthButtonLoader } from "@/components/sklyvo/auth-button-loader";
 import {
   OAuthProviderButtons,
   useOAuthLogin,
@@ -194,7 +195,7 @@ export function LoginScreen() {
             ) : null}
 
             <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
-              {pending ? "…" : "Ověřit kód"}
+              {pending ? <AuthButtonLoader /> : "Ověřit kód"}
             </button>
           </form>
         ) : null}
@@ -212,7 +213,7 @@ export function LoginScreen() {
               disabled={pending}
               onClick={() => void handlePasskeyVerify()}
             >
-              {pending ? "…" : "Použít passkey"}
+              {pending ? <AuthButtonLoader /> : "Použít passkey"}
             </button>
           </div>
         ) : null}
@@ -351,7 +352,7 @@ export function LoginScreen() {
         ) : null}
 
         <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
-          {pending ? "…" : t.login.cta}
+          {pending ? <AuthButtonLoader /> : t.login.cta}
         </button>
       </form>
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";
 import { registerUser } from "@/app/actions/auth";
 import { useLanguage } from "@/components/sklyvo/language-provider";
+import { AuthButtonLoader } from "@/components/sklyvo/auth-button-loader";
 import {
   OAuthProviderButtons,
   useOAuthLogin,
@@ -184,7 +185,7 @@ export function RegisterScreen() {
         ) : null}
 
         <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
-          {pending ? "…" : t.register.cta}
+          {pending ? <AuthButtonLoader /> : t.register.cta}
         </button>
       </form>
 
