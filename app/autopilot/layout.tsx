@@ -3,8 +3,10 @@ import { getEmailConnectionState } from "@/app/actions/email-connection";
 import { AutopilotEmailGate } from "@/components/autopilot/autopilot-email-gate";
 import { AutopilotSubNav } from "@/components/autopilot/autopilot-sub-nav";
 import { PlanFeatureGateClient } from "@/components/plan-feature-gate-client";
+import { requireSessionUserId } from "@/lib/require-session";
 
 export default async function AutopilotLayout({ children }: { children: React.ReactNode }) {
+  await requireSessionUserId();
   const emailConnection = await getEmailConnectionState();
 
   return (

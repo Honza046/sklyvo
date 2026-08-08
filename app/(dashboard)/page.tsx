@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getSessionUser } from "@/app/actions/auth";
 import { DashboardBody } from "@/app/dashboard-body";
 import { DashboardBodySkeleton } from "@/components/dashboard-loading";
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    redirect("/login");
+  }
   const firstName = session.user?.firstName ?? "Uživatel";
   const emailsSent = session.workspace?.emailsSent ?? 0;
   const needsOnboarding =

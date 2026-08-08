@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
 /**
  * Best-effort connection locale for the auth language toggle.
  * On Vercel / Cloudflare the country header is set from the edge IP.
+ * (Node runtime — Edge bundling was crashing related middleware with __dirname.)
  */
 export async function GET(request: Request) {
   const country =
