@@ -32,9 +32,15 @@ function base64UrlDecode(input: string): Uint8Array {
 }
 
 async function importHmacKey(usages: KeyUsage[]): Promise<CryptoKey> {
+  const secret = getSessionSecretBytes();
+  // Copy into a plain ArrayBuffer — TS DOM libs reject Uint8Array<ArrayBufferLike>.
+  const keyData = secret.buffer.slice(
+    secret.byteOffset,
+    secret.byteOffset + secret.byteLength,
+  ) as ArrayBuffer;
   return crypto.subtle.importKey(
     "raw",
-    getSessionSecretBytes(),
+    keyData,
     { name: "HMAC", hash: "SHA-256" },
     false,
     usages,
@@ -76,10 +82,15 @@ export async function verifySessionToken(
   const [header, payload, signature] = parts as [string, string, string];
   try {
     const key = await importHmacKey(["verify"]);
+    const sig = base64UrlDecode(signature);
+    const sigBuf = sig.buffer.slice(
+      sig.byteOffset,
+      sig.byteOffset + sig.byteLength,
+    ) as ArrayBuffer;
     const ok = await crypto.subtle.verify(
       "HMAC",
       key,
-      base64UrlDecode(signature),
+      sigBuf,
       new TextEncoder().encode(`${header}.${payload}`),
     );
     if (!ok) return null;
