@@ -4,7 +4,10 @@ import { unstable_noStore as noStore } from "next/cache";
 import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { sendVerificationCodeEmail, sendPasswordResetEmail } from "@/app/actions/email";
+import {
+  sendVerificationCodeEmail,
+  sendPasswordResetEmail,
+} from "@/lib/emails/auth-mail";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import {
   SESSION_COOKIE,
@@ -12,6 +15,7 @@ import {
   sessionCookieOptions,
   verifySessionToken,
 } from "@/lib/session";
+import { isPlatformAdminEmail } from "@/lib/platform-admin";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING"]);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -132,10 +136,11 @@ export async function getSessionUser() {
       role: true,
       workspaceId: true,
       onboardingTourCompleted: true,
+      disabledAt: true,
     },
   });
 
-  if (!user) {
+  if (!user || user.disabledAt) {
     cookieStore.delete(SESSION_COOKIE);
     return { user: null, workspace: null };
   }
@@ -185,6 +190,7 @@ export async function getSessionUser() {
       role: user.role,
       workspaceId: user.workspaceId,
       onboardingTourCompleted: user.onboardingTourCompleted,
+      isPlatformAdmin: isPlatformAdminEmail(user.email),
     },
     workspace: {
       id: workspace.id,
@@ -234,8 +240,12 @@ export async function getWorkspaceAccessState() {
   }
 
   const now = Date.now();
-  const trialEndsAt = session.workspace.trialEndsAt ? new Date(session.workspace.trialEndsAt) : null;
-  const trialRemainingMs = trialEndsAt ? Math.max(0, trialEndsAt.getTime() - now) : 0;
+  const trialEndsAt = session.workspace.trialEndsAt
+    ? new Date(session.workspace.trialEndsAt)
+    : null;
+  const trialRemainingMs = trialEndsAt
+    ? Math.max(0, trialEndsAt.getTime() - now)
+    : 0;
   const status = (session.workspace.subscriptionStatus ?? "FREE").toUpperCase();
   const planTier = (session.workspace.planTier ?? "NONE").toUpperCase();
   const hasPaidPlanTier = planTier !== "NONE" && planTier !== "FREE";
@@ -282,11 +292,16 @@ export async function loginUser(formData: FormData) {
     select: {
       id: true,
       passwordHash: true,
+      disabledAt: true,
     },
   });
 
   if (!user) {
     return { error: "Neplatné přihlašovací údaje." };
+  }
+
+  if (user.disabledAt) {
+    return { error: "Tento účet byl deaktivován. Kontaktujte podporu." };
   }
 
   const check = await verifyPassword(password, user.passwordHash);
@@ -301,7 +316,7 @@ export async function loginUser(formData: FormData) {
     });
   }
 
-  const { issuePending2faIfNeeded } = await import("@/app/actions/two-factor");
+  const { issuePending2faIfNeeded } = await import("@/lib/two-factor-login");
   const twoFactor = await issuePending2faIfNeeded(user.id);
   if (twoFactor.requires2fa) {
     return {
@@ -381,7 +396,10 @@ export async function requestEmailChange(
   }
 
   const existing = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" }, NOT: { id: userId } },
+    where: {
+      email: { equals: email, mode: "insensitive" },
+      NOT: { id: userId },
+    },
     select: { id: true },
   });
   if (existing) {
@@ -446,7 +464,10 @@ export async function verifyEmailChange(
   const newEmail = user.pendingEmail;
 
   const existing = await prisma.user.findFirst({
-    where: { email: { equals: newEmail, mode: "insensitive" }, NOT: { id: userId } },
+    where: {
+      email: { equals: newEmail, mode: "insensitive" },
+      NOT: { id: userId },
+    },
     select: { id: true },
   });
   if (existing) {
@@ -515,7 +536,10 @@ export async function requestPasswordReset(
   if (!sent.success) {
     // V devu necháme odkaz v logu, ať jde obnovu otestovat i bez ověřené Resend domény.
     if (process.env.NODE_ENV === "development") {
-      console.info("[password-reset] Odeslání selhalo, odkaz pro test:", resetLink);
+      console.info(
+        "[password-reset] Odeslání selhalo, odkaz pro test:",
+        resetLink,
+      );
       console.info("[password-reset] Důvod:", sent.error);
     }
     return { error: sent.error };
@@ -548,7 +572,10 @@ export async function resetPassword(
   if (!user) {
     return { error: "Neplatný nebo již použitý odkaz pro obnovu hesla." };
   }
-  if (!user.passwordResetExpiresAt || user.passwordResetExpiresAt.getTime() < Date.now()) {
+  if (
+    !user.passwordResetExpiresAt ||
+    user.passwordResetExpiresAt.getTime() < Date.now()
+  ) {
     return { error: "Platnost odkazu vypršela. Vyžádejte si nový." };
   }
 

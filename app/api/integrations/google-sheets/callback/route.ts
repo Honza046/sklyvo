@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { decryptSecret, encryptSecret } from "@/lib/email-connection-crypto";
 import {
   decodeGoogleOAuthState,
   getGoogleSheetsOAuthConfig,
@@ -10,7 +11,8 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  const { appUrl, clientId, clientSecret, redirectUri } = getGoogleSheetsOAuthConfig();
+  const { appUrl, clientId, clientSecret, redirectUri } =
+    getGoogleSheetsOAuthConfig();
 
   const code = request.nextUrl.searchParams.get("code");
   const rawState = request.nextUrl.searchParams.get("state");
@@ -35,7 +37,19 @@ export async function GET(request: NextRequest) {
   if (!code || !workspaceId) {
     redirectBase.searchParams.set(
       "sheetsError",
-      encodeURIComponent("Chybí autorizační kód od Google."),
+      encodeURIComponent("Neplatný nebo vypršelý autorizační odkaz."),
+    );
+    return NextResponse.redirect(redirectBase);
+  }
+
+  const workspaceExists = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true, name: true },
+  });
+  if (!workspaceExists) {
+    redirectBase.searchParams.set(
+      "sheetsError",
+      encodeURIComponent("Workspace pro Google propojení nebyl nalezen."),
     );
     return NextResponse.redirect(redirectBase);
   }
@@ -71,14 +85,19 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok || !tokenJson.access_token) {
       redirectBase.searchParams.set(
         "sheetsError",
-        encodeURIComponent(tokenJson.error_description ?? "Google token exchange selhal."),
+        encodeURIComponent(
+          tokenJson.error_description ?? "Google token exchange selhal.",
+        ),
       );
       return NextResponse.redirect(redirectBase);
     }
 
-    const profileResponse = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
-    });
+    const profileResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+      },
+    );
     const profile = (await profileResponse.json()) as { email?: string };
 
     const existing = await prisma.workspaceGoogleSheetsConnection.findUnique({
@@ -98,11 +117,7 @@ export async function GET(request: NextRequest) {
     const sheetName = existing?.sheetName || "Vše";
 
     if (!spreadsheetId) {
-      const workspace = await prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true },
-      });
-      const title = `Sklyvo CRM – ${workspace?.name?.trim() || "workspace"}`;
+      const title = `Sklyvo CRM – ${workspaceExists.name?.trim() || "workspace"}`;
       const created = await createCrmSpreadsheet(tokenJson.access_token, title);
       await writeSklyvoCrmWorkbook({
         accessToken: tokenJson.access_token,
@@ -119,16 +134,17 @@ export async function GET(request: NextRequest) {
         ? new Date(Date.now() + tokenJson.expires_in * 1000)
         : null;
 
-    const refreshToken =
-      tokenJson.refresh_token ?? existing?.googleRefreshToken ?? null;
+    const existingRefresh = decryptSecret(existing?.googleRefreshToken);
+    const refreshPlain =
+      tokenJson.refresh_token ?? existingRefresh ?? null;
 
     await prisma.workspaceGoogleSheetsConnection.upsert({
       where: { workspaceId },
       create: {
         workspaceId,
         status: "CONNECTED",
-        googleAccessToken: tokenJson.access_token,
-        googleRefreshToken: refreshToken,
+        googleAccessToken: encryptSecret(tokenJson.access_token),
+        googleRefreshToken: refreshPlain ? encryptSecret(refreshPlain) : null,
         googleTokenExpiresAt: expiresAt,
         googleAccountEmail: profile.email?.trim() || null,
         spreadsheetId,
@@ -142,11 +158,11 @@ export async function GET(request: NextRequest) {
       },
       update: {
         status: "CONNECTED",
-        googleAccessToken: tokenJson.access_token,
+        googleAccessToken: encryptSecret(tokenJson.access_token),
         ...(tokenJson.refresh_token
-          ? { googleRefreshToken: tokenJson.refresh_token }
-          : refreshToken
-            ? { googleRefreshToken: refreshToken }
+          ? { googleRefreshToken: encryptSecret(tokenJson.refresh_token) }
+          : refreshPlain
+            ? { googleRefreshToken: encryptSecret(refreshPlain) }
             : {}),
         googleTokenExpiresAt: expiresAt,
         googleAccountEmail: profile.email?.trim() || null,

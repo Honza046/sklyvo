@@ -2,14 +2,21 @@ import type { TranslationParams } from "@/lib/i18n/types";
 
 export function getByPath(obj: unknown, path: string): unknown {
   return path.split(".").reduce<unknown>((acc, key) => {
-    if (acc && typeof acc === "object" && key in (acc as Record<string, unknown>)) {
+    if (
+      acc &&
+      typeof acc === "object" &&
+      key in (acc as Record<string, unknown>)
+    ) {
       return (acc as Record<string, unknown>)[key];
     }
     return undefined;
   }, obj);
 }
 
-export function interpolate(template: string, params?: TranslationParams): string {
+export function interpolate(
+  template: string,
+  params?: TranslationParams,
+): string {
   if (!params) return template;
   return Object.entries(params).reduce(
     (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),

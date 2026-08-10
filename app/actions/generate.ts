@@ -14,7 +14,13 @@ import {
   parseForbiddenWordsFromStoredSystemPrompt,
   parseStoredAiBehaviorSettings,
 } from "@/lib/ai-behavior-settings";
-import { plainTextToHtml, plainTextToMimeText, ensureWorkspaceEmailSignature, personalizeEmailSignature, stripTrailingEmailClosing } from "@/lib/email-format";
+import {
+  plainTextToHtml,
+  plainTextToMimeText,
+  ensureWorkspaceEmailSignature,
+  personalizeEmailSignature,
+  stripTrailingEmailClosing,
+} from "@/lib/email-format";
 import { sendEmail } from "@/app/actions/email";
 import {
   buildGoldEmailFewShotBlock,
@@ -27,29 +33,83 @@ const google = createGoogleGenerativeAI({
 
 /**
  * Model pro Sniper (AI SDK Google). Override: env `SNIPER_GEMINI_MODEL`.
- * Krátký název `gemini-1.5-flash` může u API vracet 404 — používej `-latest` suffix.
+ * `gemini-2.5-flash` už novým projektům nefunguje (404) — default je 3.5 Flash.
+ *
+ * Autopilot / cron generování: preferuj levnější Flash-Lite přes
+ * `AUTOPILOT_GEMINI_MODEL` (viz docs/radar-cogs.md) — cíl COGS ~500–700 Kč/user.
  */
 const SNIPER_GEMINI_MODEL =
-  process.env.SNIPER_GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+  process.env.SNIPER_GEMINI_MODEL?.trim() || "gemini-3.5-flash";
+
+/** Levnější model pro noční Autopilot / Full Auto frontu. */
+const AUTOPILOT_GEMINI_MODEL =
+  process.env.AUTOPILOT_GEMINI_MODEL?.trim() ||
+  "gemini-2.0-flash-lite";
 
 function isGeminiQuotaError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
-  const e = error as { statusCode?: number; message?: string; data?: unknown };
+  const e = error as {
+    statusCode?: number;
+    message?: string;
+    data?: unknown;
+    cause?: unknown;
+    lastError?: unknown;
+    errors?: unknown[];
+  };
   if (e.statusCode === 429) return true;
-  const msg = String(e.message ?? error).toLowerCase();
-  return (
-    msg.includes("resource_exhausted") ||
-    msg.includes("exceeded your current quota") ||
-    msg.includes("quota exceeded") ||
-    msg.includes("rate-limits")
+
+  const haystacks: string[] = [String(e.message ?? error).toLowerCase()];
+  if (e.cause) haystacks.push(String((e.cause as { message?: string }).message ?? e.cause).toLowerCase());
+  if (e.lastError) {
+    haystacks.push(
+      String((e.lastError as { message?: string }).message ?? e.lastError).toLowerCase(),
+    );
+  }
+  if (Array.isArray(e.errors)) {
+    for (const nested of e.errors) {
+      haystacks.push(
+        String((nested as { message?: string })?.message ?? nested).toLowerCase(),
+      );
+    }
+  }
+
+  return haystacks.some(
+    (msg) =>
+      msg.includes("resource_exhausted") ||
+      msg.includes("exceeded your current quota") ||
+      msg.includes("quota exceeded") ||
+      msg.includes("rate-limits") ||
+      msg.includes("prepayment credits are depleted") ||
+      msg.includes("credits are depleted") ||
+      msg.includes("billing"),
   );
 }
 
 function geminiQuotaUserMessage(error: unknown): string {
-  const raw = error && typeof error === "object" ? String((error as { message?: string }).message ?? "") : "";
+  const raw =
+    error && typeof error === "object"
+      ? [
+          String((error as { message?: string }).message ?? ""),
+          String(
+            ((error as { lastError?: { message?: string } }).lastError)
+              ?.message ?? "",
+          ),
+          String(
+            ((error as { cause?: { message?: string } }).cause)?.message ?? "",
+          ),
+        ].join(" ")
+      : "";
+
+  if (/prepayment credits are depleted|credits are depleted/i.test(raw)) {
+    return "Gemini kredit je vyčerpaný. Doplň prepaid / billing v AI Studio (ai.studio/projects) a zkus to znovu.";
+  }
+
   const retryMatch = /retry in\s+(\d+(?:\.\d+)?)\s*s/i.exec(raw);
   const waitSec = retryMatch ? Math.ceil(Number(retryMatch[1])) : null;
-  const waitHint = waitSec && waitSec > 0 ? ` Zkus to znovu za cca ${waitSec} s.` : " Zkus to za chvíli znovu.";
+  const waitHint =
+    waitSec && waitSec > 0
+      ? ` Zkus to znovu za cca ${waitSec} s.`
+      : " Zkus to za chvíli znovu.";
   return `AI generování je teď dočasně nedostupné (limit Gemini API).${waitHint}`;
 }
 
@@ -66,10 +126,22 @@ function sniperUserFacingError(error: unknown): string {
     if (
       m.startsWith("Generování") ||
       m.startsWith("Vyčerpaná") ||
+      m.startsWith("Gemini kredit") ||
       m.includes("GOOGLE_API_KEY")
     ) {
       return m;
     }
+  }
+  const blob = String(
+    error && typeof error === "object"
+      ? (error as { message?: string }).message ?? error
+      : error,
+  ).toLowerCase();
+  if (
+    blob.includes("no longer available") ||
+    (blob.includes("models/") && blob.includes("not_found"))
+  ) {
+    return "Gemini model není pro tento projekt dostupný. Zkus novější model (např. gemini-3.5-flash) v SNIPER_GEMINI_MODEL.";
   }
   if (isGeminiQuotaError(error) || isQuotaExhaustedUserError(error)) {
     return geminiQuotaUserMessage(error);
@@ -254,7 +326,10 @@ const emailSubjectsSchema = z.object({
       (arr) =>
         arr.every((s) => {
           const words = s.trim().split(/\s+/).filter(Boolean).length;
-          return words >= SNIPER_SUBJECT_MIN_WORDS && words <= SNIPER_SUBJECT_MAX_WORDS;
+          return (
+            words >= SNIPER_SUBJECT_MIN_WORDS &&
+            words <= SNIPER_SUBJECT_MAX_WORDS
+          );
         }),
       `Každý předmět musí mít ${SNIPER_SUBJECT_MIN_WORDS}–${SNIPER_SUBJECT_MAX_WORDS} slov.`,
     ),
@@ -289,12 +364,17 @@ type SniperWorkspaceContext = {
 };
 
 function buildEffectiveForbiddenWords(customWords: string[]): string[] {
-  const merged = [...FORBIDDEN_SUBSTRINGS, ...customWords.map((w) => w.toLowerCase())];
+  const merged = [
+    ...FORBIDDEN_SUBSTRINGS,
+    ...customWords.map((w) => w.toLowerCase()),
+  ];
   return Array.from(new Set(merged));
 }
 
 function normalizeOfferedServicesList(list: string[] | null | undefined) {
-  return Array.from(new Set((list ?? []).map((s) => String(s).trim()).filter(Boolean)));
+  return Array.from(
+    new Set((list ?? []).map((s) => String(s).trim()).filter(Boolean)),
+  );
 }
 
 function escapeRegExp(s: string) {
@@ -330,8 +410,10 @@ function countEmailParagraphs(text: string): number {
 function textHasForbiddenLexicon(text: string) {
   const lowered = text.toLowerCase();
   if (FORBIDDEN_SUBSTRINGS.some((word) => lowered.includes(word))) return true;
-  if (BANNED_CHEESY_PHRASES.some((phrase) => lowered.includes(phrase))) return true;
-  if (BANNED_GENERIC_ICEBREAKERS.some((phrase) => lowered.includes(phrase))) return true;
+  if (BANNED_CHEESY_PHRASES.some((phrase) => lowered.includes(phrase)))
+    return true;
+  if (BANNED_GENERIC_ICEBREAKERS.some((phrase) => lowered.includes(phrase)))
+    return true;
   return false;
 }
 
@@ -360,7 +442,10 @@ function lowercaseFirstLetterSubject(s: string): string {
 }
 
 /** Unikátní 3–4 předměty; doplní obecné varianty, pokud AI vrátilo málo. */
-function ensureVygenerovanePredmetyCount(subjects: string[], nabizenaSluzba: string): string[] {
+function ensureVygenerovanePredmetyCount(
+  subjects: string[],
+  nabizenaSluzba: string,
+): string[] {
   const capped = subjects.slice(0, SNIPER_SUBJECT_VARIANTS_MAX);
   const seen = new Set<string>();
   const out: string[] = [];
@@ -376,10 +461,22 @@ function ensureVygenerovanePredmetyCount(subjects: string[], nabizenaSluzba: str
   }
   const nabizena = nabizenaSluzba.trim() || "vaše nabídka online";
   const defaults = [
-    truncateToMaxWords("dotaz k tomu co píšete na webu", SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords("rychlý dotaz k vaší praxi online", SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords(`rychlý dotaz k ${nabizena} podle toho co máte na webu`, SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords("měl bych krátký dotaz k vašim službám z webu", SNIPER_SUBJECT_MAX_WORDS),
+    truncateToMaxWords(
+      "dotaz k tomu co píšete na webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      "rychlý dotaz k vaší praxi online",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      `rychlý dotaz k ${nabizena} podle toho co máte na webu`,
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      "měl bych krátký dotaz k vašim službám z webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
   ];
   for (const d of defaults) {
     if (out.length >= SNIPER_SUBJECT_VARIANTS_MIN) break;
@@ -411,17 +508,18 @@ function formatClosingSignatureBlock(block: string): string {
   const isUctou = /úctou/i.test(greetingMatch[1] ?? "");
   const greeting = isUctou ? "S úctou," : "S pozdravem,";
 
-  const restParts = [
-    (greetingMatch[2] ?? "").trim(),
-    ...lines.slice(1),
-  ].filter(Boolean);
+  const restParts = [(greetingMatch[2] ?? "").trim(), ...lines.slice(1)].filter(
+    Boolean,
+  );
   const restText = restParts.join(" ");
 
   const emails = uniqueTokensFromText(
     [...restText.matchAll(/[\w.+-]+@[\w.-]+\.\w+/gi)].map((m) => m[0]),
   );
   const phones = uniqueTokensFromText(
-    [...restText.matchAll(/\+?\d[\d\s]{8,15}/g)].map((m) => m[0].replace(/\s+/g, " ").trim()),
+    [...restText.matchAll(/\+?\d[\d\s]{8,15}/g)].map((m) =>
+      m[0].replace(/\s+/g, " ").trim(),
+    ),
   );
 
   // Domény ber až z textu bez e-mailů — jinak „venegard.com“ z jan@venegard.com zmizí.
@@ -430,14 +528,24 @@ function formatClosingSignatureBlock(block: string): string {
     textWithoutEmails = textWithoutEmails.replace(email, " ");
   }
   const domains = uniqueTokensFromText(
-    [...textWithoutEmails.matchAll(/(?:https?:\/\/)?(?:www\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi)].map(
-      (m) => m[0].replace(/^https?:\/\//i, "").replace(/^www\./i, ""),
-    ),
+    [
+      ...textWithoutEmails.matchAll(
+        /(?:https?:\/\/)?(?:www\.)?[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+/gi,
+      ),
+    ].map((m) => m[0].replace(/^https?:\/\//i, "").replace(/^www\./i, "")),
   );
 
   let name = restText;
-  for (const token of [...emails, ...phones, ...domains, ...domains.map((d) => `www.${d}`)]) {
-    name = name.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+  for (const token of [
+    ...emails,
+    ...phones,
+    ...domains,
+    ...domains.map((d) => `www.${d}`),
+  ]) {
+    name = name.replace(
+      new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"),
+      " ",
+    );
   }
   name = name.replace(/\s{2,}/g, " ").trim();
 
@@ -486,11 +594,16 @@ function normalizeSniperEmailBody(text: string): string {
         return formatClosingSignatureBlock(trimmed);
       }
       // Pokud je podpis nalepený uprostřed bloku, rozděl
-      const glued = trimmed.match(/^(.*?)([.!?])\s+(S\s+(?:pozdravem|úctou)\b[\s\S]*)$/i);
+      const glued = trimmed.match(
+        /^(.*?)([.!?])\s+(S\s+(?:pozdravem|úctou)\b[\s\S]*)$/i,
+      );
       if (glued?.[1] && glued[2] && glued[3]) {
         return `${glued[1].trim()}${glued[2]}\n\n${formatClosingSignatureBlock(glued[3])}`;
       }
-      return trimmed.replace(/[ \t\r\f\v]+/g, " ").replace(/\n+/g, " ").trim();
+      return trimmed
+        .replace(/[ \t\r\f\v]+/g, " ")
+        .replace(/\n+/g, " ")
+        .trim();
     })
     .filter(Boolean)
     .join("\n\n");
@@ -513,26 +626,37 @@ function normalizeSniperEmailOutput(
   o: z.infer<typeof sniperEmailOutputSchema>,
   nabizenaSluzba: string,
 ): z.infer<typeof sniperEmailOutputSchema> {
-  const rawList = Array.isArray(o.vygenerovane_predmety) ? o.vygenerovane_predmety : [];
+  const rawList = Array.isArray(o.vygenerovane_predmety)
+    ? o.vygenerovane_predmety
+    : [];
   const cleaned = rawList
     .map((s) =>
       lowercaseFirstLetterSubject(
-        replaceUnicodeDashesWithSpace(truncateToMaxWords(String(s).trim(), SNIPER_SUBJECT_MAX_WORDS)),
+        replaceUnicodeDashesWithSpace(
+          truncateToMaxWords(String(s).trim(), SNIPER_SUBJECT_MAX_WORDS),
+        ),
       ),
     )
     .filter((s) => s.length > 0);
-  const vygenerovane_predmety = ensureVygenerovanePredmetyCount(cleaned, nabizenaSluzba);
+  const vygenerovane_predmety = ensureVygenerovanePredmetyCount(
+    cleaned,
+    nabizenaSluzba,
+  );
   return {
     ...o,
     osloveni: replaceUnicodeDashesWithSpace(o.osloveni),
     analyza_klienta: replaceUnicodeDashesWithSpace(o.analyza_klienta),
     vygenerovane_predmety,
     // Podpis z modelu vždy odříznout — kanonický podpis z nastavení se připojí až nakonec.
-    vygenerovany_email: stripTrailingEmailClosing(normalizeSniperEmailBody(o.vygenerovany_email)),
+    vygenerovany_email: stripTrailingEmailClosing(
+      normalizeSniperEmailBody(o.vygenerovany_email),
+    ),
   };
 }
 
-function sniperOutputViolatesForbiddenOnly(o: z.infer<typeof sniperEmailOutputSchema>): boolean {
+function sniperOutputViolatesForbiddenOnly(
+  o: z.infer<typeof sniperEmailOutputSchema>,
+): boolean {
   if (
     o.vygenerovane_predmety.length < SNIPER_SUBJECT_VARIANTS_MIN ||
     o.vygenerovane_predmety.length > SNIPER_SUBJECT_VARIANTS_MAX
@@ -541,7 +665,8 @@ function sniperOutputViolatesForbiddenOnly(o: z.infer<typeof sniperEmailOutputSc
   }
   for (const s of o.vygenerovane_predmety) {
     const wc = subjectLineWordCount(s);
-    if (wc < SNIPER_SUBJECT_MIN_WORDS || wc > SNIPER_SUBJECT_MAX_WORDS) return true;
+    if (wc < SNIPER_SUBJECT_MIN_WORDS || wc > SNIPER_SUBJECT_MAX_WORDS)
+      return true;
     if (textHasForbiddenLexicon(s)) return true;
     if (subjectLineContainsRawDomain(s)) return true;
   }
@@ -583,28 +708,48 @@ function finalizeSniperEmailOutput(
     return x.length > 0 ? x : emptyFallback;
   };
   const predmetyFb = [
-    truncateToMaxWords("dotaz k tomu co píšete na webu", SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords("rychlý dotaz k vaší praxi online", SNIPER_SUBJECT_MAX_WORDS),
+    truncateToMaxWords(
+      "dotaz k tomu co píšete na webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      "rychlý dotaz k vaší praxi online",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
     truncateToMaxWords(
       `rychlý dotaz k ${nabizenaSluzba.trim() || "vaší nabídce"} podle vašeho webu`,
       SNIPER_SUBJECT_MAX_WORDS,
     ),
-    truncateToMaxWords("měl bych dotaz k vašim službám zobrazeným na webu", SNIPER_SUBJECT_MAX_WORDS),
+    truncateToMaxWords(
+      "měl bych dotaz k vašim službám zobrazeným na webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
   ];
   const scrubbedSubjects = base.vygenerovane_predmety.map((s, i) =>
     lowercaseFirstLetterSubject(
-      truncateToMaxWords(scrub(s, predmetyFb[i] ?? predmetyFb[0]!), SNIPER_SUBJECT_MAX_WORDS),
+      truncateToMaxWords(
+        scrub(s, predmetyFb[i] ?? predmetyFb[0]!),
+        SNIPER_SUBJECT_MAX_WORDS,
+      ),
     ),
   );
-  const vygenerovane_predmety = ensureVygenerovanePredmetyCount(scrubbedSubjects, nabizenaSluzba);
+  const vygenerovane_predmety = ensureVygenerovanePredmetyCount(
+    scrubbedSubjects,
+    nabizenaSluzba,
+  );
   return {
     contact_email: base.contact_email,
     contact_phone: base.contact_phone,
     osloveni: scrub(base.osloveni, "Dobrý den,"),
-    analyza_klienta: scrub(base.analyza_klienta, "Shrnutí z outreachu doplňte ručně v CRM."),
+    analyza_klienta: scrub(
+      base.analyza_klienta,
+      "Shrnutí z outreachu doplňte ručně v CRM.",
+    ),
     vygenerovane_predmety,
     vygenerovany_email: (() => {
-      const x = scrubForbiddenLexiconPreservingParagraphs(base.vygenerovany_email);
+      const x = scrubForbiddenLexiconPreservingParagraphs(
+        base.vygenerovany_email,
+      );
       if (x.length > 0) return stripTrailingEmailClosing(x);
       return [
         "Procházel jsem váš web a napadla mě jedna konkrétní věc k tomu, jak online prezentujete svoji práci.",
@@ -615,43 +760,67 @@ function finalizeSniperEmailOutput(
   };
 }
 
-function normalizeEmailSubjectsOutput(o: z.infer<typeof emailSubjectsSchema>): z.infer<typeof emailSubjectsSchema> {
+function normalizeEmailSubjectsOutput(
+  o: z.infer<typeof emailSubjectsSchema>,
+): z.infer<typeof emailSubjectsSchema> {
   return {
     subjects: o.subjects.map((s) =>
       lowercaseFirstLetterSubject(
-        replaceUnicodeDashesWithSpace(truncateToMaxWords(s, SNIPER_SUBJECT_MAX_WORDS)),
+        replaceUnicodeDashesWithSpace(
+          truncateToMaxWords(s, SNIPER_SUBJECT_MAX_WORDS),
+        ),
       ),
     ) as [string, string, string],
   };
 }
 
-function subjectsViolateForbiddenOnly(o: z.infer<typeof emailSubjectsSchema>): boolean {
+function subjectsViolateForbiddenOnly(
+  o: z.infer<typeof emailSubjectsSchema>,
+): boolean {
   for (const s of o.subjects) {
     const w = subjectLineWordCount(s);
-    if (w < SNIPER_SUBJECT_MIN_WORDS || w > SNIPER_SUBJECT_MAX_WORDS) return true;
+    if (w < SNIPER_SUBJECT_MIN_WORDS || w > SNIPER_SUBJECT_MAX_WORDS)
+      return true;
     if (textHasForbiddenLexicon(s)) return true;
     if (subjectLineContainsRawDomain(s)) return true;
   }
   return false;
 }
 
-function finalizeEmailSubjectsOutput(o: z.infer<typeof emailSubjectsSchema>): z.infer<typeof emailSubjectsSchema> {
+function finalizeEmailSubjectsOutput(
+  o: z.infer<typeof emailSubjectsSchema>,
+): z.infer<typeof emailSubjectsSchema> {
   const fallbacks = [
-    truncateToMaxWords("dotaz k tomu co píšete na webu", SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords("rychlý dotaz k vaší praxi online", SNIPER_SUBJECT_MAX_WORDS),
-    truncateToMaxWords("rychlý dotaz k vašim službám z webu", SNIPER_SUBJECT_MAX_WORDS),
+    truncateToMaxWords(
+      "dotaz k tomu co píšete na webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      "rychlý dotaz k vaší praxi online",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
+    truncateToMaxWords(
+      "rychlý dotaz k vašim službám z webu",
+      SNIPER_SUBJECT_MAX_WORDS,
+    ),
   ].map((s) => lowercaseFirstLetterSubject(s));
   const scrubbed = o.subjects.map((s, i) => {
-    const cleaned = scrubForbiddenLexiconFromText(replaceUnicodeDashesWithSpace(s));
-    const t = cleaned.length > 0 ? cleaned : fallbacks[i] ?? fallbacks[0]!;
-    return lowercaseFirstLetterSubject(truncateToMaxWords(t, SNIPER_SUBJECT_MAX_WORDS));
+    const cleaned = scrubForbiddenLexiconFromText(
+      replaceUnicodeDashesWithSpace(s),
+    );
+    const t = cleaned.length > 0 ? cleaned : (fallbacks[i] ?? fallbacks[0]!);
+    return lowercaseFirstLetterSubject(
+      truncateToMaxWords(t, SNIPER_SUBJECT_MAX_WORDS),
+    );
   });
   return {
     subjects: [scrubbed[0]!, scrubbed[1]!, scrubbed[2]!],
   };
 }
 
-async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWorkspaceContext> {
+async function loadSniperWorkspaceContext(
+  workspaceId: string,
+): Promise<SniperWorkspaceContext> {
   const [workspace, services] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -675,13 +844,19 @@ async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWo
     }),
   ]);
 
-  const offered = normalizeOfferedServicesList(workspace?.offeredServices ?? []);
-  const companyServices = (workspace?.companyServices ?? "").trim().slice(0, 8000);
+  const offered = normalizeOfferedServicesList(
+    workspace?.offeredServices ?? [],
+  );
+  const companyServices = (workspace?.companyServices ?? "")
+    .trim()
+    .slice(0, 8000);
   const parsedPrompt = parseStoredAiBehaviorSettings(workspace?.systemPrompt);
   const aiSettings = {
     emailSignature: (workspace?.emailSignature ?? "").trim(),
     systemPrompt: parsedPrompt.systemPrompt,
-    forbiddenWords: parseForbiddenWordsFromStoredSystemPrompt(workspace?.systemPrompt),
+    forbiddenWords: parseForbiddenWordsFromStoredSystemPrompt(
+      workspace?.systemPrompt,
+    ),
   };
 
   const profileParts: string[] = [];
@@ -704,9 +879,7 @@ async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWo
   }
 
   const companyName =
-    workspace?.companyName?.trim() ||
-    workspace?.name?.trim() ||
-    "Vaše firma";
+    workspace?.companyName?.trim() || workspace?.name?.trim() || "Vaše firma";
 
   const fallbackParts: string[] = [`Název firmy: ${companyName}`];
 
@@ -714,7 +887,10 @@ async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWo
     fallbackParts.push(
       "Nabízené služby:",
       ...services.map((s) => {
-        const desc = (s.description ?? "").trim().replace(/\s+/g, " ").slice(0, 400);
+        const desc = (s.description ?? "")
+          .trim()
+          .replace(/\s+/g, " ")
+          .slice(0, 400);
         return desc ? `- ${s.name}: ${desc}` : `- ${s.name}`;
       }),
     );
@@ -729,7 +905,9 @@ async function loadSniperWorkspaceContext(workspaceId: string): Promise<SniperWo
     fallbackParts.push(`Cílová skupina: ${workspace.targetAudience.trim()}`);
   }
   if (workspace?.defaultTone?.trim()) {
-    fallbackParts.push(`Preferovaný tón značky: ${workspace.defaultTone.trim()}`);
+    fallbackParts.push(
+      `Preferovaný tón značky: ${workspace.defaultTone.trim()}`,
+    );
   }
 
   const companyContext =
@@ -849,7 +1027,11 @@ function inferSegmentFromWebsiteText(
   if (/advokát|advokat|právn|pravn|notář|notar|advokacie|\.legal\b/.test(t)) {
     return "legal";
   }
-  if (/restaurace|kavárna|kavarna|bistro|hospoda|menu|gastro|pizzerie|cukrárna/.test(t)) {
+  if (
+    /restaurace|kavárna|kavarna|bistro|hospoda|menu|gastro|pizzerie|cukrárna/.test(
+      t,
+    )
+  ) {
     return "gastro";
   }
   if (/e-?shop|eshop|košík|kosik|doprava zdarma/.test(t)) {
@@ -888,7 +1070,9 @@ function resolveDetectedSegment(
   return null;
 }
 
-function getAuthorFromSession(session: Awaited<ReturnType<typeof getSessionUser>>): SniperAuthorContext {
+function getAuthorFromSession(
+  session: Awaited<ReturnType<typeof getSessionUser>>,
+): SniperAuthorContext {
   const u = session.user;
   if (!u) {
     return { fullName: "Kolega", firstName: "Kolega" };
@@ -900,12 +1084,14 @@ function getAuthorFromSession(session: Awaited<ReturnType<typeof getSessionUser>
     (fromEmail ? fromEmail.split("@")[0]?.replace(/\./g, " ").trim() : null) ||
     "Kolega";
   const firstName = fromName
-    ? (u.firstName?.trim() || full.split(/\s+/).filter(Boolean)[0] || full)
+    ? u.firstName?.trim() || full.split(/\s+/).filter(Boolean)[0] || full
     : full.split(/\s+/).filter(Boolean)[0] || full;
   return { fullName: full, firstName };
 }
 
-async function getAuthorForWorkspace(workspaceId: string): Promise<SniperAuthorContext> {
+async function getAuthorForWorkspace(
+  workspaceId: string,
+): Promise<SniperAuthorContext> {
   const owner = await prisma.user.findFirst({
     where: { workspaceId, role: { in: ["OWNER", "ADMIN"] } },
     orderBy: { createdAt: "asc" },
@@ -1054,7 +1240,8 @@ function buildSniperSystemPrompt(
 }
 
 function buildLanguageToneSegmentBlock(params: GenerateEmailParams): string {
-  const isAutodetect = params.selectedOfferedService?.trim() === SNIPER_AUTODETECT_VALUE;
+  const isAutodetect =
+    params.selectedOfferedService?.trim() === SNIPER_AUTODETECT_VALUE;
   const toneHint =
     params.tone === "friendly"
       ? "přátelský = klidný a lidský, ne familiární a ne marketingově „uvolněný“"
@@ -1118,20 +1305,23 @@ async function generateWithValidation<T>(args: {
    * Nikdy nevolat s null — bez AI výstupu radši vyhodíme chybu, ať UI neukáže fake e-mail.
    */
   buildFallback: (lastNormalized: T) => T;
+  /** Override Gemini model id (Autopilot Flash-Lite vs ruční Sniper). */
+  modelId?: string;
 }) {
   let lastNormalized: T | null = null;
   let lastError: unknown = null;
+  const modelId = args.modelId?.trim() || SNIPER_GEMINI_MODEL;
 
   const generateArgs =
     args.userInput.mode === "prompt"
       ? {
-          model: google(SNIPER_GEMINI_MODEL),
+          model: google(modelId),
           schema: args.schema,
           system: args.system,
           prompt: args.userInput.prompt,
         }
       : {
-          model: google(SNIPER_GEMINI_MODEL),
+          model: google(modelId),
           schema: args.schema,
           system: args.system,
           messages: args.userInput.messages,
@@ -1162,7 +1352,10 @@ async function generateWithValidation<T>(args: {
     return args.buildFallback(lastNormalized);
   }
 
-  console.error("SNIPER FATAL: žádný platný výstup modelu po 3 pokusech", lastError);
+  console.error(
+    "SNIPER FATAL: žádný platný výstup modelu po 3 pokusech",
+    lastError,
+  );
   throw new Error(
     "Generování e-mailu selhalo (model nevrátil použitelný výstup). Zkuste to prosím znovu.",
   );
@@ -1181,7 +1374,14 @@ type SniperGenerationInput = {
   countryCode?: string | null;
   languageMode?: "auto" | "manual";
   outreachKind?: "INITIAL" | "FOLLOW_UP" | "BREAKUP";
-  priorEmails?: Array<{ kind: string; subject: string; body: string; sentAt: string }>;
+  priorEmails?: Array<{
+    kind: string;
+    subject: string;
+    body: string;
+    sentAt: string;
+  }>;
+  /** Gemini model override (Autopilot Flash-Lite). */
+  modelId?: string;
 };
 
 /**
@@ -1191,8 +1391,15 @@ type SniperGenerationInput = {
 async function runSniperEmailGeneration(
   input: SniperGenerationInput,
 ): Promise<z.infer<typeof sniperEmailOutputSchema>> {
-  const { workspaceId, targetUrl, selectedOfferedService, language, tone, segment, pdfBase64 } =
-    input;
+  const {
+    workspaceId,
+    targetUrl,
+    selectedOfferedService,
+    language,
+    tone,
+    segment,
+    pdfBase64,
+  } = input;
 
   const choice = selectedOfferedService.trim();
   const isAutodetect = choice === SNIPER_AUTODETECT_VALUE;
@@ -1201,7 +1408,9 @@ async function runSniperEmailGeneration(
   const ctxRaw = await loadSniperWorkspaceContext(workspaceId);
   const author =
     input.author ??
-    (input.session ? getAuthorFromSession(input.session) : { fullName: "Kolega", firstName: "Kolega" });
+    (input.session
+      ? getAuthorFromSession(input.session)
+      : { fullName: "Kolega", firstName: "Kolega" });
 
   let senderEmail: string | null = null;
   const sessionUserId = input.session?.user?.id;
@@ -1212,7 +1421,12 @@ async function runSniperEmailGeneration(
     });
     if (mailbox?.status === "CONNECTED" && mailbox.senderEmail?.trim()) {
       senderEmail = mailbox.senderEmail.trim();
-    } else if (input.session?.user?.email?.trim()?.toLowerCase().endsWith("@venegard.com")) {
+    } else if (
+      input.session?.user?.email
+        ?.trim()
+        ?.toLowerCase()
+        .endsWith("@venegard.com")
+    ) {
       senderEmail = input.session.user.email.trim();
     }
   }
@@ -1227,8 +1441,9 @@ async function runSniperEmailGeneration(
   const clientSiteLabel = clientSiteLabelFromUrl(targetUrl);
   const websiteProbe = await probeClientWebsite(targetUrl);
   const clientWebsiteData = websiteProbe.textForModel;
-  const autodectOffer =
-    isAutodetect ? websiteProbe.recommendedOffer : offerForPrompts;
+  const autodectOffer = isAutodetect
+    ? websiteProbe.recommendedOffer
+    : offerForPrompts;
 
   const system = buildSniperSystemPrompt(
     ctx,
@@ -1238,7 +1453,9 @@ async function runSniperEmailGeneration(
   );
   const params: GenerateEmailParams = {
     targetUrl,
-    selectedOfferedService: isAutodetect ? autodectOffer : selectedOfferedService,
+    selectedOfferedService: isAutodetect
+      ? autodectOffer
+      : selectedOfferedService,
     language,
     tone,
     segment,
@@ -1262,7 +1479,8 @@ async function runSniperEmailGeneration(
       ? buildGoldEmailFewShotBlock({
           websiteText: clientWebsiteData,
           companyLabel: clientSiteLabel,
-          segment: inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
+          segment:
+            inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
           limit: 2,
         })
       : "";
@@ -1281,7 +1499,9 @@ async function runSniperEmailGeneration(
     buildLanguageToneSegmentBlock({
       ...params,
       // V autodetekci už máme doporučenou službu z heuristiky — model ji má držet.
-      selectedOfferedService: isAutodetect ? autodectOffer : selectedOfferedService,
+      selectedOfferedService: isAutodetect
+        ? autodectOffer
+        : selectedOfferedService,
     }),
     isAutodetect
       ? `V tomto e-mailu primárně nabízej: „${autodectOffer}“ (z heuristiky). Odchýl se jen pokud text webu jasně říká něco jiného.`
@@ -1291,19 +1511,19 @@ async function runSniperEmailGeneration(
     "",
     "Vygeneruj čistý JSON s následující strukturou (NEPŘIDÁVEJ ŽÁDNÝ MARKDOWN, POUZE JSON přes schéma):",
     "{",
-    '  "contact_email": "nalezeny_email (pokud není, vrať null)",',
-    '  "contact_phone": "nalezeny_telefon (pokud není, vrať null)",',
-    '  "osloveni": "Vhodné oslovení (např. Dobrý den, pane Nováku, nebo jen Dobrý den,).",',
-    '  "analyza_klienta": "2 až 4 věty interní shrnutí z webu: 1) o jakou firmu/ordinaci jde, 2) co nabízí, 3) co by se dalo zlepšit (web/prezentace/proces), 4) jak jim naše služba pomůže. Žádné obecné SaaS fráze.",',
-    `  "vygenerovane_predmety": ["varianta 1", "varianta 2", "varianta 3", "varianta 4"],`,
+    ' "contact_email": "nalezeny_email (pokud není, vrať null)",',
+    ' "contact_phone": "nalezeny_telefon (pokud není, vrať null)",',
+    ' "osloveni": "Vhodné oslovení (např. Dobrý den, pane Nováku, nebo jen Dobrý den,).",',
+    ' "analyza_klienta": "2 až 4 věty interní shrnutí z webu: 1) o jakou firmu/ordinaci jde, 2) co nabízí, 3) co by se dalo zlepšit (web/prezentace/proces), 4) jak jim naše služba pomůže. Žádné obecné SaaS fráze.",',
+    ` "vygenerovane_predmety": ["varianta 1", "varianta 2", "varianta 3", "varianta 4"],`,
     kind === "BREAKUP"
-      ? '  "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. Max 2 krátké odstavce. Breakup — krátké uzavření, prostor se ozvat později.",'
+      ? ' "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. Max 2 krátké odstavce. Breakup — krátké uzavření, prostor se ozvat později.",'
       : kind === "FOLLOW_UP"
-        ? '  "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. 2 až 3 krátké odstavce. Follow-up navazující na historii, jedno CTA.",'
-        : '  "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. 4 krátké odstavce: postřeh z webu, proč to řešit, nabídka, jedno CTA. Přirozená čeština, žádná AI vata, žádné domény, žádné pomlčky. Podpis nepřidávej.",',
-    `  "detekovany_segment": "segment z webu, JEDEN z: ${SNIPER_DETECTED_SEGMENTS.join(", ")} (jinak null)",`,
-    `  "detekovany_ton": "nejvhodnější tón, JEDEN z: ${SNIPER_DETECTED_TONES.join(", ")} (jinak null)",`,
-    `  "detekovany_jazyk": "jazyk webu, JEDEN z: ${SNIPER_DETECTED_LANGUAGES.join(", ")} (jinak null)"`,
+        ? ' "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. 2 až 3 krátké odstavce. Follow-up navazující na historii, jedno CTA.",'
+        : ' "vygenerovany_email": "Tělo BEZ pozdravu a BEZ podpisu. 4 krátké odstavce: postřeh z webu, proč to řešit, nabídka, jedno CTA. Přirozená čeština, žádná AI vata, žádné domény, žádné pomlčky. Podpis nepřidávej.",',
+    ` "detekovany_segment": "segment z webu, JEDEN z: ${SNIPER_DETECTED_SEGMENTS.join(", ")} (jinak null)",`,
+    ` "detekovany_ton": "nejvhodnější tón, JEDEN z: ${SNIPER_DETECTED_TONES.join(", ")} (jinak null)",`,
+    ` "detekovany_jazyk": "jazyk webu, JEDEN z: ${SNIPER_DETECTED_LANGUAGES.join(", ")} (jinak null)"`,
     "}",
     "",
     "detekovany_segment urči jen z webu (ordinace → healthcare). E-mail piš podle faktů z webu, ne podle šablony SaaS.",
@@ -1341,7 +1561,9 @@ async function runSniperEmailGeneration(
       }
     : { mode: "prompt", prompt: userPrompt };
 
-  const withDetectedSegment = (object: z.infer<typeof sniperEmailOutputSchema>) => ({
+  const withDetectedSegment = (
+    object: z.infer<typeof sniperEmailOutputSchema>,
+  ) => ({
     ...object,
     detekovany_segment: resolveDetectedSegment(
       clientWebsiteData,
@@ -1349,10 +1571,11 @@ async function runSniperEmailGeneration(
     ),
   });
 
-  const withCanonicalSignature = (object: z.infer<typeof sniperEmailOutputSchema>) => {
+  const withCanonicalSignature = (
+    object: z.infer<typeof sniperEmailOutputSchema>,
+  ) => {
     const fallbackSig =
-      ctx.emailSignature.trim() ||
-      `S pozdravem,\n\n${author.fullName}`;
+      ctx.emailSignature.trim() || `S pozdravem,\n\n${author.fullName}`;
     return {
       ...object,
       vygenerovany_email: ensureWorkspaceEmailSignature(
@@ -1370,6 +1593,7 @@ async function runSniperEmailGeneration(
       normalize: (obj) => normalizeSniperEmailOutput(obj, offerForPrompts),
       violates: sniperOutputViolatesForbiddenOnly,
       buildFallback: (last) => finalizeSniperEmailOutput(last, offerForPrompts),
+      modelId: input.modelId,
     });
     return withDetectedSegment(withCanonicalSignature(object));
   } catch (error) {
@@ -1381,7 +1605,8 @@ async function runSniperEmailGeneration(
       const gold = buildGoldQuotaFallbackDraft({
         websiteText: clientWebsiteData,
         companyLabel: clientSiteLabel,
-        segment: inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
+        segment:
+          inferredSegmentForGold ?? (segment !== "auto" ? segment : null),
       });
       const draft = finalizeSniperEmailOutput(
         {
@@ -1441,7 +1666,11 @@ export async function generateEmailContent(params: GenerateEmailParams) {
       };
     }
 
-    if ((session.workspace?.creditsTotal ?? 0) - (session.workspace?.creditsUsed ?? 0) <= 0) {
+    if (
+      (session.workspace?.creditsTotal ?? 0) -
+        (session.workspace?.creditsUsed ?? 0) <=
+      0
+    ) {
       return {
         error: "INSUFFICIENT_CREDITS",
         message: "Nemáte dostatek kreditů pro tuto akci.",
@@ -1521,12 +1750,18 @@ export async function generateEmailForLead(
   },
 ): Promise<GeneratedLeadEmail> {
   try {
-    const { verifyInternalWorkspaceToken } = await import("@/lib/internal-auth");
+    const { verifyInternalWorkspaceToken } =
+      await import("@/lib/internal-auth");
     let session: Awaited<ReturnType<typeof getSessionUser>> | null = null;
     let workspaceId: string | undefined;
 
     if (options?.workspaceId?.trim()) {
-      if (!verifyInternalWorkspaceToken(options.workspaceId, options.internalToken)) {
+      if (
+        !verifyInternalWorkspaceToken(
+          options.workspaceId,
+          options.internalToken,
+        )
+      ) {
         return { error: "Nejste přihlášen." };
       }
       workspaceId = options.workspaceId.trim();
@@ -1557,7 +1792,8 @@ export async function generateEmailForLead(
       return { error: "Workspace nenalezen." };
     }
     const creditsLeft =
-      (workspaceCredits.creditsTotal ?? 0) - (workspaceCredits.creditsUsed ?? 0);
+      (workspaceCredits.creditsTotal ?? 0) -
+      (workspaceCredits.creditsUsed ?? 0);
     if (creditsLeft <= 0) {
       return { error: "Nedostatek kreditů." };
     }
@@ -1586,7 +1822,9 @@ export async function generateEmailForLead(
     if (!website) {
       return { error: "Lead nemá web k analýze." };
     }
-    const targetUrl = /^https?:\/\//i.test(website) ? website : `https://${website}`;
+    const targetUrl = /^https?:\/\//i.test(website)
+      ? website
+      : `https://${website}`;
 
     const priorRows = await prisma.emailQueue.findMany({
       where: { leadId: lead.id, status: "SENT" },
@@ -1609,7 +1847,9 @@ export async function generateEmailForLead(
     }));
 
     if (kind === "FOLLOW_UP" || kind === "BREAKUP") {
-      const hasInitial = priorEmails.some((m) => m.kind.toUpperCase() === "INITIAL");
+      const hasInitial = priorEmails.some(
+        (m) => m.kind.toUpperCase() === "INITIAL",
+      );
       if (!hasInitial && priorEmails.length === 0) {
         return {
           error:
@@ -1635,9 +1875,8 @@ export async function generateEmailForLead(
       }
     }
 
-    const { nativeLanguageFromCountry, normalizeCountryCode } = await import(
-      "@/lib/country-language"
-    );
+    const { nativeLanguageFromCountry, normalizeCountryCode } =
+      await import("@/lib/country-language");
     const countryCode = normalizeCountryCode(lead.countryCode);
     const nativeLanguage = nativeLanguageFromCountry(countryCode);
 
@@ -1654,6 +1893,8 @@ export async function generateEmailForLead(
       languageMode: "auto",
       outreachKind: kind,
       priorEmails,
+      // Autopilot / cron (internalToken) → levnější Flash-Lite.
+      modelId: options?.internalToken ? AUTOPILOT_GEMINI_MODEL : undefined,
     });
 
     const savedSignature = personalizeEmailSignature(
@@ -1698,7 +1939,9 @@ export type ProcessSingleLeadResult =
 /**
  * Autopilot (legacy okamžité odeslání): vygeneruje a rovnou odešle e-mail.
  */
-export async function processSingleLead(leadId: string): Promise<ProcessSingleLeadResult> {
+export async function processSingleLead(
+  leadId: string,
+): Promise<ProcessSingleLeadResult> {
   try {
     const session = await getSessionUser();
     const workspaceId = session.user?.workspaceId;
@@ -1751,13 +1994,16 @@ export async function processSingleLead(leadId: string): Promise<ProcessSingleLe
     };
   } catch (error) {
     console.error("AUTOPILOT ERROR:", error);
-    return { error: "Zpracování leadu selhalo (chyba serveru nebo nedostupný web)." };
+    return {
+      error: "Zpracování leadu selhalo (chyba serveru nebo nedostupný web).",
+    };
   }
 }
 
 export async function generateEmailSubjects(params: GenerateEmailParams) {
   try {
-    const { targetUrl, selectedOfferedService, language, tone, segment } = params;
+    const { targetUrl, selectedOfferedService, language, tone, segment } =
+      params;
     const session = await getSessionUser();
     if (!session.user?.workspaceId) {
       return { error: "Nejste přihlášen." };
@@ -1816,7 +2062,9 @@ export async function generateEmailSubjects(params: GenerateEmailParams) {
       `3. Propojení jejich světa s nabídkou „${offerForPrompts}“ nebo neformální přímý dotaz k tématu z webu.`,
       "",
       `ABSOLUTNÍ ZÁKAZ SLOV: „synergie“, „namontujeme“. Další zakázaná slova: ${FORBIDDEN_SUBSTRINGS.filter((w) => w !== "synergie" && w !== "namontujeme").join(", ")}.`,
-      `Nikdy nepoužívej fráze jako: ${BANNED_CHEESY_PHRASES.slice(0, 3).map((p) => `„${p}“`).join(", ")}.`,
+      `Nikdy nepoužívej fráze jako: ${BANNED_CHEESY_PHRASES.slice(0, 3)
+        .map((p) => `„${p}“`)
+        .join(", ")}.`,
       "Jakákoli pomlčka (-, –, —) v předmětu je ZAKÁZANÁ; systém zprávu okamžitě smaže. Ber to smrtelně vážně.",
       "Výstup: pouze pole subjects (3 položky) podle schématu.",
     ].join("\n");

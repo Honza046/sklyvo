@@ -34,7 +34,14 @@ export type WorkspaceLead = {
   email: string;
   phone: string;
   createdAt: string;
-  leadStatus: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP";
+  leadStatus:
+    | "NEW"
+    | "CONTACTED"
+    | "REPLIED"
+    | "MEETING_SET"
+    | "CLOSED_WON"
+    | "CLOSED_LOST"
+    | "BREAK_UP";
   /** Neviditelné tagy — jen pro filtraci. */
   tags: string[];
 };
@@ -70,10 +77,11 @@ export const SNIPER_QUEUE_TABLE_SCROLL_CLASS =
   "max-h-[min(35dvh,190px)] min-h-[140px] overflow-x-auto overflow-y-auto sm:h-[190px] sm:min-h-[190px] sm:max-h-[190px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 export const AUTOPILOT_TABLE_HEAD_CELL_CLASS =
-  "h-8 bg-transparent px-3 py-1.5 align-middle text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground";
+  "h-8 bg-transparent px-3 py-1.5 align-middle sk-type-label";
 
 export const SNIPER_SETTINGS_STORAGE_KEY = "sklyvo-autopilot-sniper-settings";
-export const FULL_AUTO_SETTINGS_STORAGE_KEY = "sklyvo-autopilot-full-auto-settings";
+export const FULL_AUTO_SETTINGS_STORAGE_KEY =
+  "sklyvo-autopilot-full-auto-settings";
 
 export const FULL_AUTO_STATUS_BADGES: Record<
   FullAutoAutomationStatus,
@@ -81,23 +89,23 @@ export const FULL_AUTO_STATUS_BADGES: Record<
 > = {
   found: {
     label: "Nalezeno",
-    className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+    className: "bg-emerald-50 text-emerald-700 ",
   },
   generating: {
     label: "Generování AI",
-    className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+    className: "bg-amber-50 text-amber-700 ",
   },
   queued: {
     label: "Ve frontě",
-    className: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    className: "bg-blue-50 text-blue-700 ",
   },
   sent: {
     label: "Odesláno",
-    className: "bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300",
+    className: "bg-sky-50 text-sky-700 ",
   },
   failed: {
     label: "Chyba",
-    className: "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+    className: "bg-rose-50 text-rose-700 ",
   },
 };
 
@@ -105,9 +113,17 @@ export const STATUS_META: Record<
   RunStatus,
   { icon: typeof CheckCircle2; className: string; label: string }
 > = {
-  pending: { icon: Clock, className: "text-muted-foreground", label: "Ve frontě" },
+  pending: {
+    icon: Clock,
+    className: "text-muted-foreground",
+    label: "Ve frontě",
+  },
   processing: { icon: Loader2, className: "text-amber-500", label: "Generuji" },
-  queued: { icon: CheckCircle2, className: "text-emerald-500", label: "Ve frontě k odeslání" },
+  queued: {
+    icon: CheckCircle2,
+    className: "text-emerald-500",
+    label: "Ve frontě k odeslání",
+  },
   error: { icon: XCircle, className: "text-rose-500", label: "Chyba" },
 };
 
@@ -155,7 +171,11 @@ export function formatQueueDateTime(iso: string | null | undefined): string {
   }).format(date);
 }
 
-export function FullAutoStatusBadge({ status }: { status: FullAutoAutomationStatus }) {
+export function FullAutoStatusBadge({
+  status,
+}: {
+  status: FullAutoAutomationStatus;
+}) {
   const meta = FULL_AUTO_STATUS_BADGES[status] ?? FULL_AUTO_STATUS_BADGES.found;
   return (
     <span
@@ -182,30 +202,35 @@ export function leadStatusLabel(status: WorkspaceLead["leadStatus"]): string {
   return labels[status];
 }
 
-export function leadStatusClassName(status: WorkspaceLead["leadStatus"]): string {
-  if (status === "NEW") return "text-emerald-700 dark:text-emerald-400";
-  if (status === "CONTACTED" || status === "REPLIED") return "text-blue-700 dark:text-blue-400";
-  if (status === "MEETING_SET" || status === "CLOSED_WON") return "text-sky-700 dark:text-sky-400";
-  if (status === "BREAK_UP") return "text-amber-700 dark:text-amber-400";
+export function leadStatusClassName(
+  status: WorkspaceLead["leadStatus"],
+): string {
+  if (status === "NEW") return "text-emerald-700 ";
+  if (status === "CONTACTED" || status === "REPLIED") return "text-blue-700 ";
+  if (status === "MEETING_SET" || status === "CLOSED_WON")
+    return "text-sky-700 ";
+  if (status === "BREAK_UP") return "text-amber-700 ";
   return "text-muted-foreground";
 }
 
-const WORKSPACE_LEAD_STATUS_KEYS: Record<WorkspaceLead["leadStatus"], string> = {
-  NEW: "autopilot.workspaceLead.NEW",
-  CONTACTED: "autopilot.workspaceLead.CONTACTED",
-  REPLIED: "autopilot.workspaceLead.REPLIED",
-  MEETING_SET: "autopilot.workspaceLead.MEETING_SET",
-  CLOSED_WON: "autopilot.workspaceLead.CLOSED_WON",
-  CLOSED_LOST: "autopilot.workspaceLead.CLOSED_LOST",
-  BREAK_UP: "autopilot.workspaceLead.BREAK_UP",
-};
+const WORKSPACE_LEAD_STATUS_KEYS: Record<WorkspaceLead["leadStatus"], string> =
+  {
+    NEW: "autopilot.workspaceLead.NEW",
+    CONTACTED: "autopilot.workspaceLead.CONTACTED",
+    REPLIED: "autopilot.workspaceLead.REPLIED",
+    MEETING_SET: "autopilot.workspaceLead.MEETING_SET",
+    CLOSED_WON: "autopilot.workspaceLead.CLOSED_WON",
+    CLOSED_LOST: "autopilot.workspaceLead.CLOSED_LOST",
+    BREAK_UP: "autopilot.workspaceLead.BREAK_UP",
+  };
 
 export function useAutopilotLabels() {
   const { t, language } = useLanguage();
   const dateLocale = DATE_LOCALE[language];
 
   const localizedLeadStatusLabel = useCallback(
-    (status: WorkspaceLead["leadStatus"]) => t(WORKSPACE_LEAD_STATUS_KEYS[status]),
+    (status: WorkspaceLead["leadStatus"]) =>
+      t(WORKSPACE_LEAD_STATUS_KEYS[status]),
     [t],
   );
 
@@ -218,10 +243,10 @@ export function AutopilotPowerBadge({ enabled }: { enabled: boolean | null }) {
       className={cn(
         "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
         enabled === null
-          ? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500"
+          ? "bg-zinc-100 text-zinc-400 "
           : enabled
-            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
-            : "bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+            ? "bg-emerald-100 text-emerald-800 "
+            : "bg-zinc-200 text-zinc-600 ",
       )}
     >
       {enabled === null ? "…" : enabled ? "Zapnuto" : "Vypnuto"}
@@ -233,39 +258,66 @@ export function AutopilotPowerButton({
   enabled,
   onClick,
   disabled,
-  accent = "emerald",
+  accent: _accent = "emerald",
 }: {
   enabled: boolean | null;
   onClick: () => void;
   disabled?: boolean;
   accent?: "emerald" | "blue" | "violet";
 }) {
-  const onClass = {
-    emerald: "bg-emerald-600 text-white hover:bg-emerald-700",
-    blue: "bg-blue-600 text-white hover:bg-blue-700",
-    violet: "bg-blue-600 text-white hover:bg-blue-700",
-  }[accent];
-  const offClass = {
-    emerald:
-      "border border-emerald-300 bg-card text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:bg-zinc-950 dark:text-emerald-300",
-    blue: "border border-blue-300 bg-card text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
-    violet:
-      "border border-blue-300 bg-card text-blue-800 hover:bg-blue-50 dark:border-blue-700 dark:bg-zinc-950 dark:text-blue-300",
-  }[accent];
-
+  void _accent;
   const loading = enabled === null || disabled;
+  const isOn = enabled === true;
 
   return (
     <Button
       type="button"
       disabled={loading}
       onClick={onClick}
+      variant={isOn ? "secondary" : "primary"}
       className={cn(
-        "h-8 shrink-0 px-3 text-xs font-semibold sm:h-9 sm:px-5 sm:text-sm",
-        enabled === null ? "border border-border/60 bg-card text-muted-foreground" : enabled ? offClass : onClass,
+        "h-9 shrink-0 rounded-[12px] px-4 text-sm font-semibold sm:px-5",
+        loading && "opacity-70",
+        isOn && "sk-press-btn",
+        !isOn && !loading && "sk-press-brand",
       )}
     >
-      {disabled ? "Ukládám…" : enabled === null ? "…" : enabled ? "Vypnout" : "Zapnout"}
+      {disabled
+        ? "Ukládám…"
+        : enabled === null
+          ? "…"
+          : enabled
+            ? "Vypnout"
+            : "Zapnout"}
+    </Button>
+  );
+}
+
+export function AutopilotIconButton({
+  onClick,
+  label,
+  children,
+  className,
+}: {
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="secondary"
+      size="icon"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "sk-press-btn h-9 w-9 shrink-0 rounded-[12px] p-0",
+        className,
+      )}
+    >
+      {children}
     </Button>
   );
 }
@@ -290,10 +342,17 @@ export function AutopilotControlPanel({
 }) {
   return (
     <>
-      <div className="relative flex min-h-12 shrink-0 items-start rounded-xl border border-border/60 bg-card px-2.5 py-2.5 shadow-sm sm:min-h-16 sm:items-center sm:rounded-2xl sm:px-5 sm:py-3">
+      <div className="sk-autopilot-control relative flex min-h-12 shrink-0 items-start px-2.5 py-2.5 sm:min-h-16 sm:items-center sm:px-5 sm:py-3">
         <div className="flex w-full flex-row items-start justify-between gap-1.5 sm:items-center sm:gap-4">
           <div className="flex min-w-0 flex-1 items-start gap-1.5 sm:items-center sm:gap-3">
-            <div className={cn("mt-0.5 shrink-0 rounded-lg p-1.5 sm:mt-0 sm:rounded-xl sm:p-2", iconWrapClassName)}>{icon}</div>
+            <div
+              className={cn(
+                "mt-0.5 shrink-0 rounded-lg p-1.5 sm:mt-0 sm:rounded-xl sm:p-2",
+                iconWrapClassName,
+              )}
+            >
+              {icon}
+            </div>
             <div className="min-w-0 flex-1 text-left">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <h2 className="text-xs font-semibold leading-snug text-foreground sm:text-base">
@@ -310,7 +369,9 @@ export function AutopilotControlPanel({
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">{actions}</div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+            {actions}
+          </div>
         </div>
       </div>
       {extra}
@@ -448,19 +509,8 @@ export function AutopilotSettingsIconButton({
   className?: string;
 }) {
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={cn(
-        "h-9 w-9 shrink-0 rounded-lg p-0 text-muted-foreground",
-        className,
-      )}
-    >
+    <AutopilotIconButton onClick={onClick} label={label} className={className}>
       <Settings className="h-4 w-4" />
-    </Button>
+    </AutopilotIconButton>
   );
 }

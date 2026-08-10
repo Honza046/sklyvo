@@ -94,7 +94,12 @@ function kindLabel(kind: WorkspaceDocumentRow["kind"]) {
 function getDriveFileKind(file: GoogleDriveFileRow): DriveKind {
   const mime = file.mimeType;
   if (file.isFolder || mime === "application/vnd.google-apps.folder") {
-    return { id: "folder", label: "Složka", shortLabel: "Složka", filterGroup: "folder" };
+    return {
+      id: "folder",
+      label: "Složka",
+      shortLabel: "Složka",
+      filterGroup: "folder",
+    };
   }
   if (
     mime === "application/vnd.google-apps.spreadsheet" ||
@@ -103,7 +108,12 @@ function getDriveFileKind(file: GoogleDriveFileRow): DriveKind {
     mime === "text/csv" ||
     /\.(xlsx?|csv)$/i.test(file.name)
   ) {
-    return { id: "sheet", label: "Tabulka", shortLabel: "Tabulka", filterGroup: "sheet" };
+    return {
+      id: "sheet",
+      label: "Tabulka",
+      shortLabel: "Tabulka",
+      filterGroup: "sheet",
+    };
   }
   if (
     mime === "application/vnd.google-apps.document" ||
@@ -125,25 +135,46 @@ function getDriveFileKind(file: GoogleDriveFileRow): DriveKind {
     mime.includes("presentation") ||
     /\.(pptx?|key)$/i.test(file.name)
   ) {
-    return { id: "slides", label: "Prezentace", shortLabel: "Prezentace", filterGroup: "other" };
+    return {
+      id: "slides",
+      label: "Prezentace",
+      shortLabel: "Prezentace",
+      filterGroup: "other",
+    };
   }
   if (mime === "application/pdf" || /\.pdf$/i.test(file.name)) {
     return { id: "pdf", label: "PDF", shortLabel: "PDF", filterGroup: "pdf" };
   }
   if (mime.startsWith("image/")) {
-    return { id: "image", label: "Obrázek", shortLabel: "Obrázek", filterGroup: "other" };
+    return {
+      id: "image",
+      label: "Obrázek",
+      shortLabel: "Obrázek",
+      filterGroup: "other",
+    };
   }
-  return { id: "other", label: "Soubor", shortLabel: "Soubor", filterGroup: "other" };
+  return {
+    id: "other",
+    label: "Soubor",
+    shortLabel: "Soubor",
+    filterGroup: "other",
+  };
 }
 
 function DriveFileIcon({ kind }: { kind: DriveKind }) {
   const className = "h-4 w-4";
-  if (kind.id === "folder") return <Folder className={cn(className, "text-amber-600")} />;
-  if (kind.id === "sheet") return <FileSpreadsheet className={cn(className, "text-emerald-600")} />;
-  if (kind.id === "doc") return <FileText className={cn(className, "text-blue-600")} />;
-  if (kind.id === "slides") return <Presentation className={cn(className, "text-orange-500")} />;
-  if (kind.id === "pdf") return <FileText className={cn(className, "text-rose-600")} />;
-  if (kind.id === "image") return <ImageIcon className={cn(className, "text-sky-600")} />;
+  if (kind.id === "folder")
+    return <Folder className={cn(className, "text-amber-600")} />;
+  if (kind.id === "sheet")
+    return <FileSpreadsheet className={cn(className, "text-emerald-600")} />;
+  if (kind.id === "doc")
+    return <FileText className={cn(className, "text-blue-600")} />;
+  if (kind.id === "slides")
+    return <Presentation className={cn(className, "text-orange-500")} />;
+  if (kind.id === "pdf")
+    return <FileText className={cn(className, "text-rose-600")} />;
+  if (kind.id === "image")
+    return <ImageIcon className={cn(className, "text-sky-600")} />;
   return <File className={cn(className, "text-muted-foreground")} />;
 }
 
@@ -172,9 +203,12 @@ export default function StoragePage() {
   const [driveConnecting, setDriveConnecting] = useState(false);
   const [driveFiles, setDriveFiles] = useState<GoogleDriveFileRow[]>([]);
   const [driveQuery, setDriveQuery] = useState("");
-  const [driveTypeFilter, setDriveTypeFilter] = useState<DriveTypeFilter>("all");
+  const [driveTypeFilter, setDriveTypeFilter] =
+    useState<DriveTypeFilter>("all");
   const [driveFolderId, setDriveFolderId] = useState<string | null>(null);
-  const [drivePath, setDrivePath] = useState<{ id: string; name: string }[]>([]);
+  const [drivePath, setDrivePath] = useState<{ id: string; name: string }[]>(
+    [],
+  );
   const [importingId, setImportingId] = useState<string | null>(null);
 
   const [oneDriveOpen, setOneDriveOpen] = useState(false);
@@ -185,9 +219,13 @@ export default function StoragePage() {
   const [oneDriveConnecting, setOneDriveConnecting] = useState(false);
   const [oneDriveFiles, setOneDriveFiles] = useState<OneDriveFileRow[]>([]);
   const [oneDriveQuery, setOneDriveQuery] = useState("");
-  const [oneDriveImportingId, setOneDriveImportingId] = useState<string | null>(null);
+  const [oneDriveImportingId, setOneDriveImportingId] = useState<string | null>(
+    null,
+  );
 
-  const [previewDoc, setPreviewDoc] = useState<WorkspaceDocumentRow | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<WorkspaceDocumentRow | null>(
+    null,
+  );
   const [fullPreviewUrl, setFullPreviewUrl] = useState<string | null>(null);
   const [fullPreviewLoading, setFullPreviewLoading] = useState(false);
 
@@ -536,22 +574,20 @@ export default function StoragePage() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="mx-auto flex w-full max-w-5xl shrink-0 flex-col items-center px-1 pb-3 pt-1 text-center sm:pb-4 sm:pt-2">
+      <div className="flex w-full shrink-0 flex-col items-center px-0 pb-3 pt-1 text-center sm:pb-4 sm:pt-2">
         <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-blue-600 shadow-sm dark:border-blue-800/50 dark:bg-blue-900/30 dark:text-blue-400 md:rounded-2xl md:p-3">
-            <FolderOpen className="h-5 w-5 md:h-7 md:w-7" />
+          <div className="sk-page-badge" aria-hidden>
+            <FolderOpen strokeWidth={2} />
           </div>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Úložiště
-        </h1>
-        <p className="mt-1 max-w-xl px-2 text-xs text-muted-foreground sm:text-sm">
-          Osobní dokumenty jen pro vás a společné pro celý tým. Můžete nahrát soubory nebo
-          importovat z Google Drive / OneDrive.
+        <h1 className="sk-type-h1">Úložiště</h1>
+        <p className="sk-type-body mt-1 max-w-xl px-2">
+          Osobní dokumenty jen pro vás a společné pro celý tým. Můžete nahrát
+          soubory nebo importovat z Google Drive / OneDrive.
         </p>
       </div>
 
-      <div className="mx-auto flex w-full max-w-5xl shrink-0 gap-1 border-b border-border/60 px-1 sm:gap-4">
+      <div className="flex w-full shrink-0 gap-1 border-b border-border/60 sm:gap-4">
         {tabs.map(({ id, label, hint, icon: Icon }) => {
           const active = tab === id;
           return (
@@ -562,7 +598,7 @@ export default function StoragePage() {
               className={cn(
                 "-mb-px flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 pb-2 text-center transition-colors sm:flex-none sm:items-start sm:px-0 sm:pb-2.5 sm:text-left",
                 active
-                  ? "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300"
+                  ? "border-blue-600 text-blue-700 "
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
@@ -570,13 +606,15 @@ export default function StoragePage() {
                 <Icon className="h-3.5 w-3.5 shrink-0" />
                 {label}
               </span>
-              <span className="hidden text-[10px] text-muted-foreground sm:block">{hint}</span>
+              <span className="hidden text-[10px] text-muted-foreground sm:block">
+                {hint}
+              </span>
             </button>
           );
         })}
       </div>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col overflow-hidden px-1 pt-3 sm:pt-4">
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden pt-3 sm:pt-4">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="mb-3 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground sm:text-sm">
@@ -595,7 +633,8 @@ export default function StoragePage() {
                 type="button"
                 disabled={isUploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
+                size="sm"
+                className="min-w-0"
               >
                 {isUploading ? (
                   <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -609,10 +648,18 @@ export default function StoragePage() {
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                disabled={!driveOauthConfigured || driveConnecting}
-                onClick={() => void (driveConnected ? openDrivePicker() : connectGoogleDrive())}
-                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
+                variant={driveConnected ? "default" : "secondary"}
+                size="sm"
+                disabled={driveConnecting}
+                onClick={() =>
+                  void (driveConnected
+                    ? openDrivePicker()
+                    : connectGoogleDrive())
+                }
+                className={cn(
+                  "min-w-0",
+                  !driveConnected && "text-muted-foreground",
+                )}
               >
                 {driveConnecting ? (
                   <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -628,12 +675,18 @@ export default function StoragePage() {
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                disabled={!oneDriveOauthConfigured || oneDriveConnecting}
+                variant={oneDriveConnected ? "default" : "secondary"}
+                size="sm"
+                disabled={oneDriveConnecting}
                 onClick={() =>
-                  void (oneDriveConnected ? openOneDrivePicker() : connectOneDrive())
+                  void (oneDriveConnected
+                    ? openOneDrivePicker()
+                    : connectOneDrive())
                 }
-                className="h-9 min-w-0 rounded-xl px-1.5 text-xs sm:px-3 sm:text-sm"
+                className={cn(
+                  "min-w-0",
+                  !oneDriveConnected && "text-muted-foreground",
+                )}
               >
                 {oneDriveConnecting ? (
                   <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
@@ -659,10 +712,12 @@ export default function StoragePage() {
             ) : documents.length === 0 ? (
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
                 <FileText className="h-8 w-8 text-muted-foreground/50" />
-                <p className="text-sm font-medium text-foreground">Zatím prázdné</p>
+                <p className="text-sm font-medium text-foreground">
+                  Zatím prázdné
+                </p>
                 <p className="max-w-sm text-xs text-muted-foreground">
-                  Nahrajte dokument, importujte z Google Drive / OneDrive, nebo vytvořte nabídku v
-                  Generátoru.
+                  Nahrajte dokument, importujte z Google Drive / OneDrive, nebo
+                  vytvořte nabídku v Generátoru.
                 </p>
               </div>
             ) : (
@@ -722,7 +777,11 @@ export default function StoragePage() {
                           type="button"
                           variant="outline"
                           onClick={() =>
-                            window.open(doc.externalUrl!, "_blank", "noopener,noreferrer")
+                            window.open(
+                              doc.externalUrl!,
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
                           }
                           className="h-8 rounded-lg px-2.5 text-xs"
                         >
@@ -750,7 +809,7 @@ export default function StoragePage() {
                           variant="outline"
                           disabled={busyId === doc.id}
                           onClick={() => void handleDelete(doc.id)}
-                          className="h-8 rounded-lg px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                          className="h-8 rounded-lg px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 "
                         >
                           <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                           Smazat
@@ -776,7 +835,9 @@ export default function StoragePage() {
       >
         <DialogContent className="max-h-[90vh] overflow-hidden sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="truncate pr-6">{previewDoc?.name || "Náhled"}</DialogTitle>
+            <DialogTitle className="truncate pr-6">
+              {previewDoc?.name || "Náhled"}
+            </DialogTitle>
             <DialogDescription>
               {previewDoc
                 ? `${formatBytes(previewDoc.sizeBytes)} · ${formatDate(previewDoc.createdAt)}`
@@ -795,16 +856,25 @@ export default function StoragePage() {
                   className="max-h-[65vh] w-auto max-w-full rounded-lg object-contain"
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">Náhled se nepodařilo načíst.</p>
+                <p className="text-sm text-muted-foreground">
+                  Náhled se nepodařilo načíst.
+                </p>
               )}
             </div>
           ) : null}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setPreviewDoc(null)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setPreviewDoc(null)}
+            >
               Zavřít
             </Button>
             {previewDoc ? (
-              <Button type="button" onClick={() => void handleDownload(previewDoc.id)}>
+              <Button
+                type="button"
+                onClick={() => void handleDownload(previewDoc.id)}
+              >
                 <Download className="mr-1.5 h-4 w-4" />
                 Stáhnout
               </Button>
@@ -883,12 +953,14 @@ export default function StoragePage() {
                       className={cn(
                         "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
                         active
-                          ? "border-blue-600 bg-blue-50 text-blue-800 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200"
+                          ? "border-blue-600 bg-blue-50 text-blue-800 "
                           : "border-border/70 bg-background text-muted-foreground hover:text-foreground",
                       )}
                     >
                       {filter.label}
-                      <span className="ml-1 tabular-nums opacity-70">{count}</span>
+                      <span className="ml-1 tabular-nums opacity-70">
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
@@ -904,7 +976,10 @@ export default function StoragePage() {
                   Můj Drive
                 </button>
                 {drivePath.map((crumb, index) => (
-                  <span key={crumb.id} className="inline-flex items-center gap-1">
+                  <span
+                    key={crumb.id}
+                    className="inline-flex items-center gap-1"
+                  >
                     <ChevronRight className="h-3.5 w-3.5 opacity-50" />
                     <button
                       type="button"
@@ -937,7 +1012,8 @@ export default function StoragePage() {
                     </div>
                   ) : filteredDriveFiles.length === 0 ? (
                     <p className="px-3 py-14 text-center text-sm text-muted-foreground">
-                      Nic nenalezeno. Změňte filtr, hledání, nebo otevřete jinou složku.
+                      Nic nenalezeno. Změňte filtr, hledání, nebo otevřete jinou
+                      složku.
                     </p>
                   ) : (
                     <ul className="divide-y divide-border/50">
@@ -948,7 +1024,8 @@ export default function StoragePage() {
                             key={file.id}
                             className={cn(
                               "grid grid-cols-1 items-center gap-2 px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_110px_80px_96px] sm:gap-2",
-                              file.isFolder && "cursor-pointer hover:bg-amber-50/60 dark:hover:bg-amber-950/20",
+                              file.isFolder &&
+                                "cursor-pointer hover:bg-amber-50/60 ",
                               !file.isFolder && "hover:bg-muted/40",
                             )}
                             onDoubleClick={() => {
@@ -1112,7 +1189,9 @@ export default function StoragePage() {
                           </p>
                           <p className="text-[11px] text-muted-foreground">
                             {file.mimeType}
-                            {file.sizeBytes != null ? ` · ${formatBytes(file.sizeBytes)}` : ""}
+                            {file.sizeBytes != null
+                              ? ` · ${formatBytes(file.sizeBytes)}`
+                              : ""}
                           </p>
                         </div>
                         <Button

@@ -5,10 +5,15 @@ function secret(): string {
     process.env.CRON_SECRET?.trim() ||
     process.env.SESSION_SECRET?.trim() ||
     "";
-  if (!s && process.env.NODE_ENV === "production") {
-    console.error("[internal-auth] CRON_SECRET / SESSION_SECRET missing");
+  if (!s) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "[internal-auth] CRON_SECRET or SESSION_SECRET required in production",
+      );
+    }
+    return "dev-only-internal-secret";
   }
-  return s || "dev-only-internal-secret";
+  return s;
 }
 
 function hmac(payload: string): string {
@@ -36,7 +41,11 @@ export function verifyInternalWorkspaceToken(
   token: string | undefined,
 ): boolean {
   if (!workspaceId?.trim() || !token?.trim()) return false;
-  return safeEqualHex(createInternalWorkspaceToken(workspaceId), token.trim());
+  try {
+    return safeEqualHex(createInternalWorkspaceToken(workspaceId), token.trim());
+  } catch {
+    return false;
+  }
 }
 
 /** Token pro globální cron job (všechny workspace). */
@@ -49,5 +58,9 @@ export function verifyInternalCronToken(
   token: string | undefined,
 ): boolean {
   if (!token?.trim()) return false;
-  return safeEqualHex(createInternalCronToken(job), token.trim());
+  try {
+    return safeEqualHex(createInternalCronToken(job), token.trim());
+  } catch {
+    return false;
+  }
 }

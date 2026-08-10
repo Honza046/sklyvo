@@ -141,9 +141,28 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   const formCardRef = useRef<HTMLElement>(null);
   const globeCardRef = useRef<HTMLElement>(null);
   const prevModeRef = useRef<AuthMode | null>(null);
+  const prevStepRef = useRef<string | null>(null);
 
   const [cardHeight, setCardHeight] = useState<number>(initialCardHeight);
   const [animating, setAnimating] = useState(false);
+  const [authStep, setAuthStep] = useState<string | null>(null);
+
+  useLayoutEffect(() => {
+    const root = document.querySelector(".sklyvo-auth");
+    if (!(root instanceof HTMLElement)) return;
+
+    const readStep = () => root.getAttribute("data-step");
+    setAuthStep(readStep());
+
+    const observer = new MutationObserver(() => {
+      setAuthStep(readStep());
+    });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-step"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     const form = formCardRef.current;
@@ -156,14 +175,19 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     let finished = false;
 
     const natural = measureContentHeight(form);
+    const liveStep =
+      form.closest(".sklyvo-auth")?.getAttribute("data-step") ?? authStep;
+    const isTwoFactor = mode === "login" && liveStep === "2fa";
 
     let target = natural;
-    if (mode === "login") {
+    if (mode === "login" && !isTwoFactor) {
       storeLoginHeight(natural);
       target = natural;
-    } else if (mode === "recovery") {
-      // Always match login card height — even after hard refresh on /recovery.
-      target = resolveLoginHeight(natural);
+    } else if (mode === "recovery" || isTwoFactor) {
+      // Slightly shorter than login so the shrink animation reads.
+      const loginH = resolveLoginHeight(natural);
+      const slack = Math.max(0, loginH - natural);
+      target = Math.max(natural, Math.round(loginH - slack * 0.25));
     } else {
       const loginH = resolveLoginHeight(natural);
       target = Math.max(natural, loginH);
@@ -178,15 +202,19 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     };
 
     const prevMode = prevModeRef.current;
+    const prevStep = prevStepRef.current;
     prevModeRef.current = mode;
+    prevStepRef.current = liveStep;
 
     // Refresh / first mount: snap to target — never animate (avoids the
     // globe card shrinking from auto-height then growing back).
+    const stepChanged = prevStep !== liveStep;
+    const modeChanged = prevMode != null && prevMode !== mode;
     const shouldAnimate =
       prevMode != null &&
-      prevMode !== mode &&
       persistedCardHeight != null &&
-      Math.abs(persistedCardHeight - target) > 2;
+      Math.abs(persistedCardHeight - target) > 2 &&
+      (modeChanged || stepChanged);
 
     if (!shouldAnimate) {
       persistedCardHeight = target;
@@ -241,7 +269,7 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
         for (const el of cards) el.style.transition = "none";
       }
     };
-  }, [mode]);
+  }, [mode, authStep]);
 
   return (
     <main className="sklyvo-login">

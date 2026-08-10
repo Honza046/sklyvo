@@ -174,8 +174,12 @@ export function CopilotMessage({
           <div className="mt-3 w-full min-w-[12rem] space-y-2 border-t border-border/50 pt-3">
             {guide.steps.map((step) => (
               <div key={step.title}>
-                <p className="text-xs font-semibold text-foreground">{step.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{step.body}</p>
+                <p className="text-xs font-semibold text-foreground">
+                  {step.title}
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {step.body}
+                </p>
               </div>
             ))}
             <div className="pt-0.5">

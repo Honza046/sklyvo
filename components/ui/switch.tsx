@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
+import * as React from "react";
+import * as SwitchPrimitives from "@radix-ui/react-switch";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
@@ -11,21 +11,21 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer inline-flex h-[22px] w-10 shrink-0 cursor-pointer items-center rounded-full border-0 p-0.5 transition-[background,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sk-brand,#02a7ff)]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+      "peer relative inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer items-center rounded-full border-0 p-0 transition-[background,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50",
       "data-[state=unchecked]:bg-[image:var(--sk-sunken)] data-[state=unchecked]:shadow-[var(--sk-sunken-shadow)]",
-      "data-[state=checked]:bg-[linear-gradient(180deg,#3bbcff_0%,#02a7ff_52%,#0290e0_100%)] data-[state=checked]:shadow-[inset_0_1px_2px_rgba(0,90,140,0.28),0_6px_14px_-6px_rgba(2,167,255,0.55)]",
-      className
+      "data-[state=checked]:bg-[image:var(--sk-ink-bg)] data-[state=checked]:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]",
+      className,
     )}
     {...props}
     ref={ref}
   >
     <SwitchPrimitives.Thumb
       className={cn(
-        "pointer-events-none block h-[18px] w-[18px] rounded-full bg-[color:var(--sk-thumb,#fff)] shadow-[0_3px_7px_rgba(30,70,110,0.3),inset_0_1px_0_var(--sk-highlight,#fff)] ring-0 transition-transform duration-150 data-[state=checked]:translate-x-[18px] data-[state=unchecked]:translate-x-0"
+        "pointer-events-none absolute left-[3px] top-[3px] block h-5 w-5 rounded-full bg-[color:var(--sk-thumb,#fff)] shadow-[0_4px_10px_-4px_rgba(0,0,0,0.45),inset_0_1.5px_0_var(--sk-highlight,#fff)] ring-0 transition-transform duration-[280ms] ease-[cubic-bezier(0.34,1.35,0.5,1)] data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0",
       )}
     />
   </SwitchPrimitives.Root>
-))
-Switch.displayName = SwitchPrimitives.Root.displayName
+));
+Switch.displayName = SwitchPrimitives.Root.displayName;
 
-export { Switch }
+export { Switch };

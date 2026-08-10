@@ -51,7 +51,8 @@ export async function getTeamAccessState() {
     maxMembers: AGENCY_MAX_MEMBERS,
     sharedCredits: Math.max(
       0,
-      (session.workspace.creditsTotal ?? 0) - (session.workspace.creditsUsed ?? 0),
+      (session.workspace.creditsTotal ?? 0) -
+        (session.workspace.creditsUsed ?? 0),
     ),
     currentUserId: session.user.id,
     currentUserRole: session.user.role,
@@ -137,7 +138,9 @@ export async function inviteTeamMember(input: {
 
     // Smaž opuštěný sólo workspace, pokud už nemá členy / data není kritické.
     try {
-      const leftover = await prisma.user.count({ where: { workspaceId: oldWorkspaceId } });
+      const leftover = await prisma.user.count({
+        where: { workspaceId: oldWorkspaceId },
+      });
       if (leftover === 0) {
         await prisma.workspace.delete({ where: { id: oldWorkspaceId } });
       }

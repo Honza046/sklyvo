@@ -7,7 +7,10 @@ export async function POST() {
   try {
     const session = await getSessionUser();
     if (!session.user?.workspaceId) {
-      return NextResponse.json({ error: "Nejste přihlášeni." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Nejste přihlášeni." },
+        { status: 401 },
+      );
     }
 
     const workspace = await prisma.workspace.findUnique({

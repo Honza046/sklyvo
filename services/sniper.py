@@ -20,8 +20,8 @@ from starlette.concurrency import iterate_in_threadpool
 
 SKLYVO_KNOW_HOW = ""  # TODO: Zde vlož firemní DNA
 
-# TODO: Zde případně upřesni model (např. gemini-2.0-flash, gemini-1.5-pro, …)
-GEMINI_MODEL_NAME = "gemini-2.5-flash"
+# TODO: Zde případně upřesni model (např. gemini-3.5-flash, …)
+GEMINI_MODEL_NAME = "gemini-3.5-flash"
 
 # TODO: Zde vlož logiku pro scrapování webu (beautifulsoup4 / requests / …)
 async def scrape_target_page(url: str) -> str:

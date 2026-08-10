@@ -27,15 +27,14 @@ export const de: MessageTree = {
     autopilotCollect: "Lead-Sammlung",
     autopilotSend: "Versand",
     autopilotFullAuto: "Full Auto",
-    help: "Hilfezentrum",
+    help: "Support",
     workspace: "Arbeitsbereich",
     myProfile: "Mein Profil",
     accountSettings: "Kontoeinstellungen",
     plansAndBilling: "Tarife & Abonnement",
-    lightMode: "Hellmodus",
-    darkMode: "Dunkelmodus",
     logout: "Abmelden",
-    credits: "Credits",
+    credits: "Nutzung",
+    usagePercent: "{pct} %",
     plan: "Tarif",
     planFree: "Kostenlos",
     planFreeTrial: "Kostenlos (Test)",
@@ -85,7 +84,8 @@ export const de: MessageTree = {
     activityRecent: "{count} neueste",
     activityPeriod: "Kürzlich",
     activityEmptyTitle: "Noch keine Aktivität",
-    activityEmptyDesc: "Sobald Sie die erste Aktion starten, erscheint sie hier.",
+    activityEmptyDesc:
+      "Sobald Sie die erste Aktion starten, erscheint sie hier.",
     activityNewLead: "Neuer Lead hinzugefügt:",
     activityViewHistory: "Gesamte Historie im CRM →",
     quickActions: "Schnellaktionen",
@@ -118,8 +118,10 @@ export const de: MessageTree = {
     subtitle: "KI-Generator für personalisierte Cold E-Mails",
     generate: "E-Mail generieren",
     copySuccess: "In die Zwischenablage kopiert.",
-    selectService: "Bitte wählen oder fügen Sie einen anzubietenden Service hinzu.",
-    generateFailed: "E-Mail-Generierung fehlgeschlagen. Bitte erneut versuchen.",
+    selectService:
+      "Bitte wählen oder fügen Sie einen anzubietenden Service hinzu.",
+    generateFailed:
+      "E-Mail-Generierung fehlgeschlagen. Bitte erneut versuchen.",
     generateSuccess: "E-Mail erfolgreich generiert.",
     insufficientCredits: "Nicht genügend Credits für diese Aktion.",
     targetUrl: "Ziel-URL",
@@ -193,7 +195,8 @@ export const de: MessageTree = {
     subtitle: "Lead-Management und Sales-Pipeline",
     searchPlaceholder: "Firma im CRM suchen...",
     emptyTitle: "Noch keine Leads",
-    emptyDesc: "Fügen Sie Firmen aus Radar hinzu oder importieren Sie eine Liste.",
+    emptyDesc:
+      "Fügen Sie Firmen aus Radar hinzu oder importieren Sie eine Liste.",
     columns: {
       new: "Neuer Lead",
       contacted: "Kontaktiert",
@@ -208,16 +211,19 @@ export const de: MessageTree = {
     description:
       "Zentrale für automatisierte Radar- und Sniper-Workflows. Manuelle Arbeit in den Menübereichen; hier starten Sie Massen- und Vollautomatisierung.",
     radarTitle: "Automatische Lead-Sammlung",
-    radarDescription: "Findet neue Firmen nach Ihren Parametern und speichert sie im CRM.",
+    radarDescription:
+      "Findet neue Firmen nach Ihren Parametern und speichert sie im CRM.",
     radarSettings: "Radar-Einstellungen",
-    loadLeadsError: "Firmen konnten nicht geladen werden. Bitte erneut versuchen.",
+    loadLeadsError:
+      "Firmen konnten nicht geladen werden. Bitte erneut versuchen.",
     startCollectError: "Automatische Sammlung konnte nicht gestartet werden.",
     collecting: "Firmen werden gesammelt…",
     startCollect: "Automatische Sammlung starten",
     sniperTitle: "Automatischer E-Mail-Versand",
     fullAutoTitle: "Vollautomatisierung (Full Auto)",
     activateFullAuto: "Full Auto aktivieren",
-    fullAutoSoon: "Full Auto demnächst verfügbar. Einstellungen können Sie vorab speichern.",
+    fullAutoSoon:
+      "Full Auto demnächst verfügbar. Einstellungen können Sie vorab speichern.",
     runStatus: {
       pending: "In Warteschlange",
       processing: "Generiere",
@@ -247,15 +253,23 @@ export const de: MessageTree = {
       description:
         "Um Autopilot zu starten, verbinden Sie zuerst Ihr Firmenpostfach in den Workspace-Einstellungen.",
       openSettings: "Einstellungen öffnen",
-      askCopilot: "KI-Assistent um Anleitung bitten",
+      askCopilot: "Skly Bot um Anleitung bitten",
     },
   },
   help: {
-    title: "Wie können wir helfen?",
-    subtitle: "Anleitungen, FAQ oder direkter Kontakt.",
-    searchPlaceholder: "Hilfe durchsuchen (z. B. 'Domain einrichten')...",
-    faqTitle: "Häufige Fragen (FAQ)",
-    faqEmpty: "Keine Ergebnisse für diese Suche.",
+    title: "Support",
+    heroTitle: "Wie können wir helfen?",
+    subtitle: "Anleitungen lesen oder direkt Skly Bot fragen.",
+    searchPlaceholder: "Hilfe durchsuchen…",
+    guidesTitle: "Nach Tool durchsuchen",
+    faqTitle: "Häufige Fragen",
+    faqEmpty: "Keine Treffer für diese Suche.",
+    chatCta: "Frag Skly Bot",
+    chatCtaDesc:
+      "Antwort nicht gefunden? Schreib hier und der Chat mit dem Agenten öffnet sich.",
+    chatClose: "Zurück zur Hilfe",
+    chatPlaceholder: "Frag irgendetwas…",
+    restartTour: "UI-Tour erneut starten",
     guideSniper: "Sniper-Anleitung",
     guideSniperDesc: "Hochkonvertierende E-Mails und Zielsegmente.",
     guideRadar: "Radar nutzen",
@@ -265,7 +279,8 @@ export const de: MessageTree = {
     guideAutopilot: "Autopilot",
     guideAutopilotDesc: "Automatisierte Outreach-Kampagnen einrichten.",
     contactTitle: "Nicht gefunden?",
-    contactDesc: "Support Mo–Fr 9:00–17:00. Antwort meist innerhalb von 2 Stunden.",
+    contactDesc:
+      "Support Mo–Fr 9:00–17:00. Antwort meist innerhalb von 2 Stunden.",
     contactEmail: "Support kontaktieren",
     contactVideos: "Video-Tutorials",
     modalAutopilotTitle: "Autopilot nutzen",
@@ -276,17 +291,19 @@ export const de: MessageTree = {
   },
   settings: {
     title: "Arbeitsbereich",
-    subtitle: "Projekteinstellungen, CRM-Integrationen und KI-Credits verwalten.",
+    subtitle:
+      "Projekteinstellungen, CRM-Integrationen und KI-Credits verwalten.",
     subscription: "Abonnement",
     noActivePlan: "Kein aktiver Tarif (Kostenlos)",
     freePlan: "Kostenlos",
     choosePlan: "Tarif wählen",
     manageSubscription: "Abo verwalten",
     companyProfile: "Firmenprofil",
-    companyProfileDesc: "Beschreibung für die Personalisierung von Sniper-E-Mails.",
+    companyProfileDesc:
+      "Beschreibung für die Personalisierung von Sniper-E-Mails.",
     offeredServices: "Angebotene Services",
     offeredServicesDesc: "Services Ihrer Firma für Sniper-E-Mails.",
-    credits: "Nutzung & Credits",
+    credits: "Nutzung",
     integrations: "Integrationen & Webhooks",
     aiBehavior: "KI-Verhalten & Vorlagen",
     team: "Team & Zugriff",
@@ -294,9 +311,10 @@ export const de: MessageTree = {
     saving: "Speichern...",
     saveSuccess: "Einstellungen erfolgreich gespeichert.",
     saveError: "Speichern fehlgeschlagen. Bitte Seite neu laden.",
-    remainingCredits: "Verbleibende Credits",
+    remainingCredits: "Limitnutzung",
     needMorePower: "Mehr Leistung benötigt?",
-    creditsUsed: "{used} von {total} Credits verbraucht",
+    creditsUsed: "{pct} % des Limits verbraucht",
+    usagePercent: "{pct} %",
     creditsRenewTrial: "Test endet in {days} {dayWord}.",
     creditsRenewMonthly: "Monatslimit erneuert sich in {days} {dayWord}.",
     connectEmail: {
@@ -335,7 +353,8 @@ export const de: MessageTree = {
     personalData: "Persönliche Daten",
     security: "Kontosicherheit",
     connectedEmails: "Verbundene E-Mail-Konten",
-    connectedEmailsDesc: "Postfächer verbinden, damit Sniper von Ihrer Adresse sendet.",
+    connectedEmailsDesc:
+      "Postfächer verbinden, damit Sniper von Ihrer Adresse sendet.",
     addMailbox: "Weiteres Postfach hinzufügen",
     connected: "Verbunden",
     billing: "Abrechnung & Abo",
@@ -343,15 +362,15 @@ export const de: MessageTree = {
     userFallback: "Benutzer",
   },
   copilot: {
-    title: "venesis",
+    title: "Skly Bot",
     online: "Online",
-    open: "KI-Assistent öffnen",
+    open: "Skly Bot öffnen",
     close: "Schließen",
     clearChat: "Chat löschen",
     send: "Frage senden",
-    welcome: "Fragen Sie alles über Sklyvo — wir helfen Ihnen gerne.",
+    welcome: "Hallo, ich bin Skly Bot. Frag mich alles zu Sklyvo…",
     placeholder: "Fragen Sie alles über Sklyvo...",
-    analyzing: "KI-Assistent analysiert Ihre Frage...",
+    analyzing: "Skly Bot denkt nach...",
     prompt1: "Wie verbinde ich die Firmen-E-Mail korrekt für Autopilot?",
     prompt2: "Wie stelle ich Tageslimits und Sendezeitfenster ein?",
     prompt3: "Wie starte ich die erste automatische Firmensuche (Prospector)?",
@@ -375,10 +394,12 @@ export const de: MessageTree = {
     slash: {
       statusDesc: "Prüft Autopilot- und E-Mail-Status",
       statusMessage: "Prüfe den Status meines Autopilot und meiner E-Mails",
-      creditsDesc: "Zeigt verbleibende Credits und Tarif",
-      creditsMessage: "Wie viele Credits habe ich noch und welchen Tarif habe ich?",
+      creditsDesc: "Zeigt Limitnutzung und Tarif",
+      creditsMessage:
+        "Wie viele Credits habe ich noch und welchen Tarif habe ich?",
       stopDesc: "Notfall-Pause für den Versand",
-      stopMessage: "Stoppe alle laufenden Autopilot-Kampagnen und schlage eine Notfall-Pause vor.",
+      stopMessage:
+        "Stoppe alle laufenden Autopilot-Kampagnen und schlage eine Notfall-Pause vor.",
     },
     replies: {
       apiKeys:
@@ -387,8 +408,7 @@ export const de: MessageTree = {
         "Der Conversion-Funnel zeigt den Weg von Besuchern über Kontakte bis zu Abschlüssen. Beobachten Sie die Schritt-zu-Schritt-Verhältnisse.",
       credits:
         "Credits und Abrechnung finden Sie im Workspace. Dort können Sie auch Ihren Tarif ändern.",
-      stop:
-        "Für einen Notfall-Stopp öffnen Sie Autopilot, pausieren aktive Kampagnen und trennen vorübergehend die Firmen-E-Mail.",
+      stop: "Für einen Notfall-Stopp öffnen Sie Autopilot, pausieren aktive Kampagnen und trennen vorübergehend die Firmen-E-Mail.",
       status:
         "Prüfen Sie den E-Mail-Verbindungsstatus im Workspace. Autopilot sendet nur bei Status Verbunden.",
       autopilotPage:
@@ -398,12 +418,13 @@ export const de: MessageTree = {
     },
     actions: {
       openIntegrations: "⚙️ Integrationen öffnen",
-      openCredits: "💳 Credits & Abrechnung öffnen",
+      openCredits: "💳 Nutzung & Abrechnung öffnen",
       openAutopilot: "🚀 Autopilot öffnen",
     },
     fallback:
       "Ich helfe gern bei Sklyvo. Fragen Sie nach E-Mail-Verbindung, Autopilot oder Workspace-Einstellungen.",
     openEmailSettings: "⚙️ E-Mail-Einstellungen öffnen",
-    sendHint: "Hier Nachrichten schreiben und senden. Zum Schließen X in der Kopfzeile nutzen.",
+    sendHint:
+      "Hier Nachrichten schreiben und senden. Zum Schließen X in der Kopfzeile nutzen.",
   },
 };

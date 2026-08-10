@@ -82,7 +82,9 @@ export async function getMicrosoftConnectionState(): Promise<MicrosoftConnection
   };
 }
 
-export async function getMicrosoftOAuthUrl(returnPath = "/settings#integrations") {
+export async function getMicrosoftOAuthUrl(
+  returnPath = "/settings#integrations",
+) {
   const session = await requireSession();
   if (!session) return { error: "Nejste přihlášen." };
 
@@ -131,9 +133,9 @@ export async function disconnectMicrosoft() {
   return { ok: true };
 }
 
-export async function listMicrosoftOneDriveFiles(query?: string): Promise<
-  { files: OneDriveFileRow[] } | { error: string }
-> {
+export async function listMicrosoftOneDriveFiles(
+  query?: string,
+): Promise<{ files: OneDriveFileRow[] } | { error: string }> {
   const session = await requireSession();
   if (!session) return { error: "Nejste přihlášen." };
   return listOneDriveFiles(session.workspace.id, query);
@@ -156,7 +158,8 @@ export async function importOneDriveFile(input: {
     const supabase = createSupabaseAdmin();
     if ("error" in supabase) return supabase;
 
-    const scope: DocumentScope = input.scope === "SHARED" ? "SHARED" : "PERSONAL";
+    const scope: DocumentScope =
+      input.scope === "SHARED" ? "SHARED" : "PERSONAL";
     const documentId = crypto.randomUUID();
     const fileName = sanitizeFileName(downloaded.fileName);
     const storagePath = buildDocumentStoragePath({
@@ -189,7 +192,10 @@ export async function importOneDriveFile(input: {
         mimeType: downloaded.contentType,
         sizeBytes: downloaded.bytes.byteLength,
         storagePath,
-        metaJson: JSON.stringify({ source: "onedrive", driveFileId: input.fileId }),
+        metaJson: JSON.stringify({
+          source: "onedrive",
+          driveFileId: input.fileId,
+        }),
       },
     });
 
@@ -198,7 +204,8 @@ export async function importOneDriveFile(input: {
   } catch (error) {
     console.error("importOneDriveFile:", error);
     return {
-      error: error instanceof Error ? error.message : "Import z OneDrive selhal.",
+      error:
+        error instanceof Error ? error.message : "Import z OneDrive selhal.",
     };
   }
 }
@@ -252,7 +259,8 @@ export async function generateOfferWordDoc(input: {
       const pdfBytes = await buildOfferOrContractPdf(payload);
       const supabase = createSupabaseAdmin();
       if (!("error" in supabase)) {
-        const scope: DocumentScope = input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
+        const scope: DocumentScope =
+          input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
         const documentId = crypto.randomUUID();
         const label = payload.type === "contract" ? "Smlouva" : "Nabidka";
         const fileName = sanitizeFileName(
@@ -298,7 +306,10 @@ export async function generateOfferWordDoc(input: {
   } catch (error) {
     console.error("generateOfferWordDoc:", error);
     return {
-      error: error instanceof Error ? error.message : "Nepodařilo se vytvořit Word dokument.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se vytvořit Word dokument.",
     };
   }
 }
@@ -341,7 +352,8 @@ export async function exportCrmToExcelOneDrive() {
   } catch (error) {
     console.error("exportCrmToExcelOneDrive:", error);
     return {
-      error: error instanceof Error ? error.message : "Export do Excelu selhal.",
+      error:
+        error instanceof Error ? error.message : "Export do Excelu selhal.",
     };
   }
 }

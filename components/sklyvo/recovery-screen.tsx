@@ -36,7 +36,9 @@ export function RecoveryScreen() {
       setSuccessMessage(t.recovery.success);
       form.reset();
     } catch {
-      setErrorMessage("Při odesílání e-mailu nastala chyba. Zkuste to později.");
+      setErrorMessage(
+        "Při odesílání e-mailu nastala chyba. Zkuste to později.",
+      );
     } finally {
       setPending(false);
     }

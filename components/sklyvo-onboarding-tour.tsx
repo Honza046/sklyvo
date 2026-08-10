@@ -61,7 +61,10 @@ function waitForSelector(selector: string, timeoutMs = 2500): Promise<void> {
   });
 }
 
-async function goToTourStep(router: ReturnType<typeof useRouter>, href: string) {
+async function goToTourStep(
+  router: ReturnType<typeof useRouter>,
+  href: string,
+) {
   if (!pathMatchesTourHref(window.location.pathname, href)) {
     router.push(href);
     await waitForRoute(href);
@@ -83,7 +86,8 @@ function buildDesktopSteps(): DriveStep[] {
       element: '[data-tour="onboarding-overview"]',
       popover: {
         title: "Přehled",
-        description: "Vítejte v aplikaci! Tady je vaše hlavní velitelské centrum.",
+        description:
+          "Vítejte v aplikaci! Tady je vaše hlavní velitelské centrum.",
         side: "right",
         align: "start",
       },
@@ -92,7 +96,8 @@ function buildDesktopSteps(): DriveStep[] {
       element: '[data-tour="onboarding-sniper"]',
       popover: {
         title: "Sniper",
-        description: "Tady probíhá hlavní kouzlo. Sniper vám vygeneruje emaily přesně na míru.",
+        description:
+          "Tady probíhá hlavní kouzlo. Sniper vám vygeneruje emaily přesně na míru.",
         side: "right",
         align: "start",
       },
@@ -140,115 +145,18 @@ function buildDesktopSteps(): DriveStep[] {
     {
       element: '[data-tour="onboarding-help"]',
       popover: {
-        title: "Centrum nápovědy",
+        title: "Podpora",
         description:
-          "FAQ, návody a znovuspuštění této prohlídky. Když něco nevíte, začněte tady.",
+          "Návody, FAQ a chat se Skly Botem. Když něco nevíš, začni tady.",
         side: "right",
         align: "end",
       },
     },
-    {
-      element: '[data-tour="onboarding-copilot"]',
-      popover: {
-        title: "AI asistent",
-        description:
-          "Kdykoli se zaseknete, klikněte sem. Asistent vám pomůže se vším dalším v aplikaci.",
-        side: "left",
-        align: "end",
-      },
-    },
   ];
-}
-
-function buildMobileSteps(): DriveStep[] {
-  return [
-    {
-      element: 'nav[data-tour="onboarding-mobile-tabs"] [data-tour="onboarding-overview"]',
-      popover: {
-        title: "Přehled",
-        description: "Vítejte v aplikaci! Tady je vaše hlavní velitelské centrum.",
-        side: "top",
-        align: "start",
-      },
-    },
-    {
-      element: 'nav[data-tour="onboarding-mobile-tabs"] [data-tour="onboarding-sniper"]',
-      popover: {
-        title: "Sniper",
-        description: "Tady probíhá hlavní kouzlo. Sniper vám vygeneruje emaily přesně na míru.",
-        side: "top",
-        align: "center",
-      },
-    },
-    {
-      element: 'nav[data-tour="onboarding-mobile-tabs"] [data-tour="onboarding-radar"]',
-      popover: {
-        title: "Radar",
-        description:
-          "Tohle je váš vyhledávač. Zde najdete nové klienty a získáte na ně kontaktní údaje.",
-        side: "top",
-        align: "center",
-      },
-    },
-    {
-      element: '[data-tour="onboarding-autopilot-page"]',
-      popover: {
-        title: "Autopilot",
-        description:
-          "Tady necháte Radar a Sniper běžet za vás. Hromadné sbírání leadů i odesílání e-mailů na jedno místo.",
-        side: "bottom",
-        align: "center",
-      },
-    },
-    {
-      element: 'nav[data-tour="onboarding-mobile-tabs"] [data-tour="onboarding-crm"]',
-      popover: {
-        title: "CRM",
-        description:
-          "Tady spravujete leady, dealy a celou pipeline. Přehled o tom, co se právě řeší.",
-        side: "top",
-        align: "end",
-      },
-    },
-    {
-      element: '[data-tour="onboarding-mobile-menu"]',
-      popover: {
-        title: "Pracovní prostor",
-        description:
-          "V menu najdete pracovní prostor. Nastavte si profil, aby zprávy zněly jako vy.",
-        side: "bottom",
-        align: "end",
-      },
-    },
-    {
-      element: '[data-tour="onboarding-help-page"]',
-      popover: {
-        title: "Centrum nápovědy",
-        description:
-          "FAQ, návody a znovuspuštění této prohlídky. Když něco nevíte, začněte tady.",
-        side: "bottom",
-        align: "center",
-      },
-    },
-    {
-      element: '[data-tour="onboarding-copilot-mobile"]',
-      popover: {
-        title: "AI asistent",
-        description:
-          "Kdykoli se zaseknete, klikněte sem. Asistent vám pomůže se vším dalším v aplikaci.",
-        side: "bottom",
-        align: "end",
-      },
-    },
-  ];
-}
-
-function isDesktopViewport() {
-  return typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches;
 }
 
 function tourSteps() {
-  return isDesktopViewport() ? buildDesktopSteps() : buildMobileSteps();
+  return buildDesktopSteps();
 }
 
 function missingTourSelectors(): string[] {
@@ -314,7 +222,11 @@ export function SklyvoOnboardingTour({
           const url = new URL(window.location.href);
           if (url.searchParams.has("tour")) {
             url.searchParams.delete("tour");
-            window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+            window.history.replaceState(
+              {},
+              "",
+              `${url.pathname}${url.search}${url.hash}`,
+            );
           }
         }
         onCompletedRef.current();
@@ -336,7 +248,9 @@ export function SklyvoOnboardingTour({
         const href = TOUR_STEP_HREFS[index] ?? "/";
         const steps = tourSteps();
         const selector =
-          typeof steps[index]?.element === "string" ? (steps[index].element as string) : null;
+          typeof steps[index]?.element === "string"
+            ? (steps[index].element as string)
+            : null;
         const isCopilotStep = isCopilotStepIndex(index);
 
         d.setConfig({
@@ -363,7 +277,6 @@ export function SklyvoOnboardingTour({
       // Stránkové kotvy (Autopilot/Help) a FAB přibývají až po navigaci / mountu
       const criticalMissing = missing.filter(
         (s) =>
-          !s.includes("onboarding-copilot") &&
           !s.includes("onboarding-autopilot-page") &&
           !s.includes("onboarding-help-page"),
       );

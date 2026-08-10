@@ -8,12 +8,18 @@ export async function GET() {
   settingsUrl.hash = "integrations";
 
   if ("error" in result && result.error) {
-    settingsUrl.searchParams.set("sheetsError", encodeURIComponent(result.error));
+    settingsUrl.searchParams.set(
+      "sheetsError",
+      encodeURIComponent(result.error),
+    );
     return NextResponse.redirect(settingsUrl);
   }
 
   if (!result.url) {
-    return NextResponse.json({ error: "OAuth URL nebyla vytvořena." }, { status: 500 });
+    return NextResponse.json(
+      { error: "OAuth URL nebyla vytvořena." },
+      { status: 500 },
+    );
   }
 
   return NextResponse.redirect(result.url);

@@ -27,15 +27,14 @@ export const es: MessageTree = {
     autopilotCollect: "Recolección",
     autopilotSend: "Envío",
     autopilotFullAuto: "Full Auto",
-    help: "Centro de ayuda",
+    help: "Soporte",
     workspace: "Espacio de trabajo",
     myProfile: "Mi perfil",
     accountSettings: "Configuración de cuenta",
     plansAndBilling: "Planes y suscripción",
-    lightMode: "Modo claro",
-    darkMode: "Modo oscuro",
     logout: "Cerrar sesión",
-    credits: "Créditos",
+    credits: "Uso",
+    usagePercent: "{pct} %",
     plan: "Plan",
     planFree: "Plan gratuito",
     planFreeTrial: "Plan gratuito (prueba)",
@@ -208,7 +207,8 @@ export const es: MessageTree = {
     description:
       "Centro de flujos automatizados de Radar y Sniper. El trabajo manual hazlo en las secciones del menú; aquí ejecutas procesos masivos y automáticos.",
     radarTitle: "Recolección automática de leads",
-    radarDescription: "Busca nuevas empresas según tus parámetros y las guarda en el CRM.",
+    radarDescription:
+      "Busca nuevas empresas según tus parámetros y las guarda en el CRM.",
     radarSettings: "Ajustes de Radar",
     loadLeadsError: "No se pudieron cargar las empresas. Inténtalo de nuevo.",
     startCollectError: "No se pudo iniciar la recolección automática.",
@@ -217,7 +217,8 @@ export const es: MessageTree = {
     sniperTitle: "Envío automático de emails",
     fullAutoTitle: "Automatización completa (Full Auto)",
     activateFullAuto: "Activar Full Auto",
-    fullAutoSoon: "Full Auto próximamente. Puedes guardar la configuración antes.",
+    fullAutoSoon:
+      "Full Auto próximamente. Puedes guardar la configuración antes.",
     runStatus: {
       pending: "En cola",
       processing: "Generando",
@@ -247,25 +248,36 @@ export const es: MessageTree = {
       description:
         "Para iniciar Autopilot debe conectar primero su buzón corporativo en Ajustes del espacio de trabajo.",
       openSettings: "Abrir ajustes",
-      askCopilot: "Pedir guía al Asistente IA",
+      askCopilot: "Pedir guía a Skly Bot",
     },
   },
   help: {
-    title: "¿Cómo podemos ayudarte?",
-    subtitle: "Consulta guías, preguntas frecuentes o contáctanos.",
-    searchPlaceholder: "Buscar en la ayuda (ej. 'configurar dominio')...",
-    faqTitle: "Preguntas frecuentes (FAQ)",
-    faqEmpty: "No encontramos nada para esta consulta.",
+    title: "Soporte",
+    heroTitle: "¿Cómo podemos ayudarte?",
+    subtitle: "Explora guías o pregunta directamente a Skly Bot.",
+    searchPlaceholder: "Buscar en la ayuda…",
+    guidesTitle: "Explorar por herramienta",
+    faqTitle: "Preguntas frecuentes",
+    faqEmpty: "No encontramos nada para esta búsqueda.",
+    chatCta: "Pregunta a Skly Bot",
+    chatCtaDesc:
+      "¿No encontraste la respuesta? Escribe aquí y se abre el chat con el agente.",
+    chatClose: "Volver a la ayuda",
+    chatPlaceholder: "Pregunta lo que quieras…",
+    restartTour: "Reiniciar el tour de la UI",
     guideSniper: "Guía de Sniper",
-    guideSniperDesc: "Aprende a escribir emails de alta conversión y gestionar segmentos.",
+    guideSniperDesc:
+      "Aprende a escribir emails de alta conversión y gestionar segmentos.",
     guideRadar: "Cómo usar Radar",
     guideRadarDesc: "Filtra leads y usa Deep Scan para encontrar contactos.",
     guideCrm: "CRM e integraciones",
     guideCrmDesc: "Conecta Make.com, sincroniza con Pipedrive y más.",
     guideAutopilot: "Autopilot",
-    guideAutopilotDesc: "Configura y gestiona campañas de outreach automatizadas.",
+    guideAutopilotDesc:
+      "Configura y gestiona campañas de outreach automatizadas.",
     contactTitle: "¿No encontraste lo que buscabas?",
-    contactDesc: "Soporte disponible de lunes a viernes 9:00–17:00. Respondemos en ~2 horas.",
+    contactDesc:
+      "Soporte disponible de lunes a viernes 9:00–17:00. Respondemos en ~2 horas.",
     contactEmail: "Escribir a soporte",
     contactVideos: "Tutoriales en video",
     modalAutopilotTitle: "Cómo usar Autopilot",
@@ -283,10 +295,12 @@ export const es: MessageTree = {
     choosePlan: "Elegir plan",
     manageSubscription: "Gestionar suscripción",
     companyProfile: "Perfil de empresa",
-    companyProfileDesc: "Descripción usada por Sniper para personalizar emails salientes.",
+    companyProfileDesc:
+      "Descripción usada por Sniper para personalizar emails salientes.",
     offeredServices: "Servicios ofrecidos",
-    offeredServicesDesc: "Servicios que ofrece tu empresa para los emails de Sniper.",
-    credits: "Uso y créditos",
+    offeredServicesDesc:
+      "Servicios que ofrece tu empresa para los emails de Sniper.",
+    credits: "Uso",
     integrations: "Integraciones y webhooks",
     aiBehavior: "Comportamiento IA y plantillas",
     team: "Equipo y accesos",
@@ -294,9 +308,10 @@ export const es: MessageTree = {
     saving: "Guardando...",
     saveSuccess: "Configuración guardada correctamente.",
     saveError: "No se pudo guardar. Actualiza la página.",
-    remainingCredits: "Créditos restantes",
+    remainingCredits: "Uso del límite",
     needMorePower: "¿Necesitas más potencia?",
-    creditsUsed: "Usados {used} de {total} créditos",
+    creditsUsed: "Usado el {pct} % del límite",
+    usagePercent: "{pct} %",
     creditsRenewTrial: "La prueba termina en {days} {dayWord}.",
     creditsRenewMonthly: "El límite mensual se renueva en {days} {dayWord}.",
     connectEmail: {
@@ -305,7 +320,8 @@ export const es: MessageTree = {
       back: "Volver a ajustes",
       preparing: "La integración con {provider} estará disponible pronto.",
       smtpTitle: "SMTP / IMAP personalizado",
-      smtpPlaceholder: "Host SMTP, puerto, usuario y contraseña — próximamente.",
+      smtpPlaceholder:
+        "Host SMTP, puerto, usuario y contraseña — próximamente.",
     },
     emailIntegration: {
       description:
@@ -320,7 +336,8 @@ export const es: MessageTree = {
       googleDescription: "Conexión segura recomendada vía Google OAuth.",
       googleButton: "Conectar vía Google OAuth",
       smtpTitle: "Microsoft Outlook / SMTP personalizado",
-      smtpDescription: "Configuración manual con servidor SMTP y contraseña de aplicación.",
+      smtpDescription:
+        "Configuración manual con servidor SMTP y contraseña de aplicación.",
       customSmtp: "SMTP personalizado",
       senderName: "Nombre del remitente",
       senderEmail: "E-mail corporativo",
@@ -335,7 +352,8 @@ export const es: MessageTree = {
     personalData: "Datos personales",
     security: "Seguridad de cuenta",
     connectedEmails: "Cuentas de email conectadas",
-    connectedEmailsDesc: "Conecta buzones para que Sniper envíe desde tu dirección.",
+    connectedEmailsDesc:
+      "Conecta buzones para que Sniper envíe desde tu dirección.",
     addMailbox: "Añadir otro buzón",
     connected: "Conectado",
     billing: "Facturación y suscripción",
@@ -343,18 +361,20 @@ export const es: MessageTree = {
     userFallback: "Usuario",
   },
   copilot: {
-    title: "venesis",
+    title: "Skly Bot",
     online: "En línea",
-    open: "Abrir asistente IA",
+    open: "Abrir Skly Bot",
     close: "Cerrar",
     clearChat: "Borrar chat",
     send: "Enviar pregunta",
-    welcome: "Pregunta lo que quieras sobre Sklyvo — estamos para ayudarte.",
+    welcome: "Hola, soy Skly Bot. Pregúntame lo que quieras sobre Sklyvo…",
     placeholder: "Pregunta lo que quieras sobre Sklyvo...",
-    analyzing: "El Asistente IA está analizando tu consulta...",
-    prompt1: "¿Cómo conectar correctamente el e-mail corporativo para Autopilot?",
+    analyzing: "Skly Bot está pensando...",
+    prompt1:
+      "¿Cómo conectar correctamente el e-mail corporativo para Autopilot?",
     prompt2: "¿Cómo configurar límites diarios y ventanas horarias de envío?",
-    prompt3: "¿Cómo lanzar la primera búsqueda automática de empresas (Prospector)?",
+    prompt3:
+      "¿Cómo lanzar la primera búsqueda automática de empresas (Prospector)?",
     prompts: {
       workspace: {
         email: "¿Cómo conecto el e-mail corporativo?",
@@ -375,10 +395,11 @@ export const es: MessageTree = {
     slash: {
       statusDesc: "Comprueba Autopilot y e-mails",
       statusMessage: "Comprueba el estado de mi Autopilot y e-mails",
-      creditsDesc: "Muestra créditos y plan",
+      creditsDesc: "Muestra el uso del límite y el plan",
       creditsMessage: "¿Cuántos créditos me quedan y qué plan tengo?",
       stopDesc: "Pausa de emergencia del envío",
-      stopMessage: "Detén todas las campañas Autopilot y sugiere una pausa de emergencia.",
+      stopMessage:
+        "Detén todas las campañas Autopilot y sugiere una pausa de emergencia.",
     },
     replies: {
       apiKeys:
@@ -387,8 +408,7 @@ export const es: MessageTree = {
         "El embudo de conversión muestra el flujo desde visitantes hasta contactos y cierres. Compare las ratios entre pasos.",
       credits:
         "Los créditos y la facturación están en el espacio de trabajo. Desde ahí puede cambiar su plan.",
-      stop:
-        "Para una parada de emergencia, abra Autopilot, pause campañas activas y desconecte temporalmente el e-mail corporativo.",
+      stop: "Para una parada de emergencia, abra Autopilot, pause campañas activas y desconecte temporalmente el e-mail corporativo.",
       status:
         "Compruebe el estado de conexión de e-mail en el espacio de trabajo. Autopilot solo envía cuando está Conectado.",
       autopilotPage:
@@ -398,12 +418,13 @@ export const es: MessageTree = {
     },
     actions: {
       openIntegrations: "⚙️ Abrir integraciones",
-      openCredits: "💳 Abrir créditos y facturación",
+      openCredits: "💳 Abrir uso y facturación",
       openAutopilot: "🚀 Abrir Autopilot",
     },
     fallback:
       "Puedo ayudarle con Sklyvo. Pregunte sobre conexión de e-mail, Autopilot o ajustes del espacio de trabajo.",
     openEmailSettings: "⚙️ Abrir ajustes de e-mail",
-    sendHint: "Escribe y envía mensajes aquí. Usa la X del encabezado para cerrar.",
+    sendHint:
+      "Escribe y envía mensajes aquí. Usa la X del encabezado para cerrar.",
   },
 };

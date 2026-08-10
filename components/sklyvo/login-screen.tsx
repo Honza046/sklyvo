@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useState,
+  type FormEvent,
+} from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { loginUser } from "@/app/actions/auth";
 import {
@@ -32,9 +38,8 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pending, setPending] = useState(false);
-  const [twoFactorMethods, setTwoFactorMethods] = useState<TwoFactorMethods | null>(
-    null,
-  );
+  const [twoFactorMethods, setTwoFactorMethods] =
+    useState<TwoFactorMethods | null>(null);
   const [twoFactorMode, setTwoFactorMode] = useState<"totp" | "passkey" | null>(
     null,
   );
@@ -43,6 +48,19 @@ export function LoginScreen() {
   const emailId = useId();
   const passwordId = useId();
   const totpId = useId();
+
+  useLayoutEffect(() => {
+    const root = document.querySelector(".sklyvo-auth");
+    if (!(root instanceof HTMLElement)) return;
+    if (twoFactorMethods) {
+      root.setAttribute("data-step", "2fa");
+    } else {
+      root.removeAttribute("data-step");
+    }
+    return () => {
+      root.removeAttribute("data-step");
+    };
+  }, [twoFactorMethods]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -105,7 +123,9 @@ export function LoginScreen() {
         setErrorMessage(begin.error);
         return;
       }
-      const assertion = await startAuthentication({ optionsJSON: begin.options });
+      const assertion = await startAuthentication({
+        optionsJSON: begin.options,
+      });
       const finish = await finishLoginPasskey({ response: assertion });
       if ("error" in finish) {
         setErrorMessage(finish.error);
@@ -188,13 +208,19 @@ export function LoginScreen() {
               </div>
             </div>
 
+            <div className="sklyvo-form__aside" aria-hidden />
+
             {errorMessage ? (
               <p className="sklyvo-error" role="alert">
                 {errorMessage}
               </p>
             ) : null}
 
-            <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
+            <button
+              type="submit"
+              className="sklyvo-btn-primary"
+              disabled={pending}
+            >
               {pending ? <AuthButtonLoader /> : "Ověřit kód"}
             </button>
           </form>

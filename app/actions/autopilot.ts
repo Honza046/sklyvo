@@ -12,7 +12,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { plainTextToHtml } from "@/lib/email-format";
 import { nextOutreachAfterSend, type OutreachKindValue } from "@/lib/outreach";
-import { authorFromSessionUser, shortLeadAuthorName } from "@/lib/lead-provenance";
+import {
+  authorFromSessionUser,
+  shortLeadAuthorName,
+} from "@/lib/lead-provenance";
 
 export type AutopilotScheduleWindow = ScheduleTimeWindow;
 
@@ -75,7 +78,8 @@ export type AutopilotEmailQueueRow = {
   errorMessage: string | null;
 };
 
-export type FullAutoAutomationStatus = "found" | "generating" | "queued" | "sent" | "failed";
+export type FullAutoAutomationStatus =
+  "found" | "generating" | "queued" | "sent" | "failed";
 
 export type FullAutoProcessHistoryRow = {
   id: string;
@@ -93,14 +97,19 @@ function deriveFullAutoAutomationStatus(
   if (queueStatus === "PENDING") return "queued";
   if (queueStatus === "SENT") return "sent";
   if (queueStatus === "FAILED") return "failed";
-  if (leadStatus === "CONTACTED" || leadStatus === "REPLIED" || leadStatus === "MEETING_SET") {
+  if (
+    leadStatus === "CONTACTED" ||
+    leadStatus === "REPLIED" ||
+    leadStatus === "MEETING_SET"
+  ) {
     return "sent";
   }
   return "found";
 }
 
 export async function getFullAutoProcessHistory(): Promise<
-  { rows: FullAutoProcessHistoryRow[] } | { error: string; rows: FullAutoProcessHistoryRow[] }
+  | { rows: FullAutoProcessHistoryRow[] }
+  | { error: string; rows: FullAutoProcessHistoryRow[] }
 > {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
@@ -132,7 +141,11 @@ export async function getFullAutoProcessHistory(): Promise<
   const rows: FullAutoProcessHistoryRow[] = leads
     .map((lead) => {
       const latestQueue = lead.emailQueue[0] ?? null;
-      const processedAt = (latestQueue?.createdAt ?? lead.updatedAt ?? lead.createdAt).toISOString();
+      const processedAt = (
+        latestQueue?.createdAt ??
+        lead.updatedAt ??
+        lead.createdAt
+      ).toISOString();
 
       return {
         id: lead.id,
@@ -146,17 +159,22 @@ export async function getFullAutoProcessHistory(): Promise<
         ),
       };
     })
-    .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime(),
+    );
 
   return { rows };
 }
 
 export async function queueAutopilotLead(
-  input: QueueAutopilotLeadInput & { workspaceId?: string; internalToken?: string },
+  input: QueueAutopilotLeadInput & {
+    workspaceId?: string;
+    internalToken?: string;
+  },
 ): Promise<QueueAutopilotLeadResult> {
-  const { verifyInternalWorkspaceToken, createInternalWorkspaceToken } = await import(
-    "@/lib/internal-auth"
-  );
+  const { verifyInternalWorkspaceToken, createInternalWorkspaceToken } =
+    await import("@/lib/internal-auth");
 
   let workspaceId: string | undefined;
   let senderUserId: string | undefined;
@@ -170,7 +188,8 @@ export async function queueAutopilotLead(
     const session = await getSessionUser();
     workspaceId = session.user?.workspaceId ?? undefined;
     senderUserId = session.user?.id ?? undefined;
-    authorLabel = shortLeadAuthorName(authorFromSessionUser(session.user)) || "";
+    authorLabel =
+      shortLeadAuthorName(authorFromSessionUser(session.user)) || "";
   }
   if (!workspaceId) {
     return { error: "Nejste přihlášen." };
@@ -261,7 +280,8 @@ export async function queueAutopilotCampaign(
       input.sendDays,
     );
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Neplatná nastavení plánování.";
+    const message =
+      err instanceof Error ? err.message : "Neplatná nastavení plánování.";
     return { error: message };
   }
 
@@ -303,15 +323,34 @@ export async function processEmailQueue(
   limit = 50,
   options?: ProcessEmailQueueOptions,
 ): Promise<ProcessEmailQueueResult> {
-  const { verifyInternalWorkspaceToken, verifyInternalCronToken, createInternalWorkspaceToken } =
-    await import("@/lib/internal-auth");
+  const {
+    verifyInternalWorkspaceToken,
+    verifyInternalCronToken,
+    createInternalWorkspaceToken,
+  } = await import("@/lib/internal-auth");
 
   if (options?.workspaceId?.trim()) {
-    if (!verifyInternalWorkspaceToken(options.workspaceId, options.internalToken)) {
-      return { ok: false, processed: 0, sent: 0, failed: 0, errors: ["Neautorizováno."] };
+    if (
+      !verifyInternalWorkspaceToken(options.workspaceId, options.internalToken)
+    ) {
+      return {
+        ok: false,
+        processed: 0,
+        sent: 0,
+        failed: 0,
+        errors: ["Neautorizováno."],
+      };
     }
-  } else if (!verifyInternalCronToken("processEmailQueue", options?.internalToken)) {
-    return { ok: false, processed: 0, sent: 0, failed: 0, errors: ["Neautorizováno."] };
+  } else if (
+    !verifyInternalCronToken("processEmailQueue", options?.internalToken)
+  ) {
+    return {
+      ok: false,
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      errors: ["Neautorizováno."],
+    };
   }
 
   const now = new Date();
@@ -326,7 +365,11 @@ export async function processEmailQueue(
       ).map((row) => row.workspaceId);
 
   // Globální cron: bez zapnutého odesílání nic neposílat.
-  if (!options?.workspaceId && enabledWorkspaceIds && enabledWorkspaceIds.length === 0) {
+  if (
+    !options?.workspaceId &&
+    enabledWorkspaceIds &&
+    enabledWorkspaceIds.length === 0
+  ) {
     return { ok: true, processed: 0, sent: 0, failed: 0, errors: [] };
   }
 
@@ -471,7 +514,9 @@ export async function forceSendAutopilotEmailQueue(): Promise<
   return processEmailQueue(Math.max(pendingCount, 50), {
     workspaceId,
     ignoreSchedule: true,
-    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
+    internalToken: (
+      await import("@/lib/internal-auth")
+    ).createInternalWorkspaceToken(workspaceId),
   });
 }
 
@@ -500,14 +545,18 @@ export async function forceSendAutopilotQueueItem(
   });
 
   if (!item) {
-    return { error: "Položka fronty nebyla nalezena, nebo už není k odeslání." };
+    return {
+      error: "Položka fronty nebyla nalezena, nebo už není k odeslání.",
+    };
   }
 
   return processEmailQueue(1, {
     workspaceId,
     queueId: item.id,
     ignoreSchedule: true,
-    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
+    internalToken: (
+      await import("@/lib/internal-auth")
+    ).createInternalWorkspaceToken(workspaceId),
   });
 }
 
@@ -541,7 +590,8 @@ export async function clearAutopilotEmailQueue(
 }
 
 export async function getAutopilotEmailQueue(): Promise<
-  { rows: AutopilotEmailQueueRow[] } | { error: string; rows: AutopilotEmailQueueRow[] }
+  | { rows: AutopilotEmailQueueRow[] }
+  | { error: string; rows: AutopilotEmailQueueRow[] }
 > {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
@@ -569,7 +619,11 @@ export async function getAutopilotEmailQueue(): Promise<
   });
 
   const senderIds = Array.from(
-    new Set(items.map((item) => item.senderUserId).filter((id): id is string => Boolean(id))),
+    new Set(
+      items
+        .map((item) => item.senderUserId)
+        .filter((id): id is string => Boolean(id)),
+    ),
   );
   const senders =
     senderIds.length > 0
@@ -596,7 +650,8 @@ export async function getAutopilotEmailQueue(): Promise<
       htmlBody: item.htmlBody,
       scheduledAt: item.scheduledAt.toISOString(),
       createdAt: item.createdAt.toISOString(),
-      author: (item.senderUserId && authorByUserId.get(item.senderUserId)) || "",
+      author:
+        (item.senderUserId && authorByUserId.get(item.senderUserId)) || "",
       status: item.status,
       errorMessage: item.errorMessage,
     })),
@@ -646,7 +701,9 @@ export async function updateAutopilotQueueRecipient(
   });
 
   if (!queueItem) {
-    return { error: "Položka ve frontě nebyla nalezena nebo už byla odeslána." };
+    return {
+      error: "Položka ve frontě nebyla nalezena nebo už byla odeslána.",
+    };
   }
 
   const requeued = queueItem.status === "FAILED";
@@ -686,7 +743,9 @@ export type UpdateAutopilotEmailQueueInput = {
 
 export async function updateAutopilotEmailQueueItem(
   input: UpdateAutopilotEmailQueueInput,
-): Promise<{ ok: true; subject: string; htmlBody: string } | { error: string }> {
+): Promise<
+  { ok: true; subject: string; htmlBody: string } | { error: string }
+> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
   if (!workspaceId) {
@@ -717,7 +776,9 @@ export async function updateAutopilotEmailQueueItem(
   });
 
   if (!item) {
-    return { error: "Položka ve frontě nebyla nalezena nebo již byla odeslána." };
+    return {
+      error: "Položka ve frontě nebyla nalezena nebo již byla odeslána.",
+    };
   }
 
   const htmlBody = plainTextToHtml(body);

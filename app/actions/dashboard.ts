@@ -3,7 +3,13 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { prisma } from "@/lib/prisma";
 
-export type LeadStatus = "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST";
+export type LeadStatus =
+  | "NEW"
+  | "CONTACTED"
+  | "REPLIED"
+  | "MEETING_SET"
+  | "CLOSED_WON"
+  | "CLOSED_LOST";
 
 type DashboardLeadActivity = {
   id: string;
@@ -48,47 +54,50 @@ export async function getDashboardData(): Promise<DashboardData> {
     };
   }
 
-  const [groupedCounts, recentActivities, valueAggregate, repliedLeadsRaw] = await Promise.all([
-    prisma.lead.groupBy({
-      by: ["status"],
-      where: { workspaceId },
-      _count: { _all: true },
-    }),
-    prisma.lead.findMany({
-      where: { workspaceId },
-      orderBy: { updatedAt: "desc" },
-      take: 6,
-      select: {
-        id: true,
-        companyName: true,
-        status: true,
-        updatedAt: true,
-        createdAt: true,
-      },
-    }),
-    prisma.lead.aggregate({
-      where: { workspaceId },
-      _sum: { value: true },
-    }),
-    prisma.lead.findMany({
-      where: { workspaceId, status: "REPLIED" },
-      orderBy: { updatedAt: "desc" },
-      take: 8,
-      select: {
-        id: true,
-        companyName: true,
-        status: true,
-      },
-    }),
-  ]);
+  const [groupedCounts, recentActivities, valueAggregate, repliedLeadsRaw] =
+    await Promise.all([
+      prisma.lead.groupBy({
+        by: ["status"],
+        where: { workspaceId },
+        _count: { _all: true },
+      }),
+      prisma.lead.findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          companyName: true,
+          status: true,
+          updatedAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.lead.aggregate({
+        where: { workspaceId },
+        _sum: { value: true },
+      }),
+      prisma.lead.findMany({
+        where: { workspaceId, status: "REPLIED" },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          companyName: true,
+          status: true,
+        },
+      }),
+    ]);
 
   const ATTENTION_TASK_LIMIT = 8;
 
-  let attentionTasks: DashboardAttentionLead[] = repliedLeadsRaw.map((item) => ({
-    id: item.id,
-    companyName: item.companyName,
-    status: item.status as LeadStatus,
-  }));
+  let attentionTasks: DashboardAttentionLead[] = repliedLeadsRaw.map(
+    (item) => ({
+      id: item.id,
+      companyName: item.companyName,
+      status: item.status as LeadStatus,
+    }),
+  );
 
   const fillCount = Math.max(0, ATTENTION_TASK_LIMIT - attentionTasks.length);
   if (fillCount > 0) {
@@ -108,10 +117,13 @@ export async function getDashboardData(): Promise<DashboardData> {
     ];
   }
 
-  const statusCounts = groupedCounts.reduce((acc, item) => {
-    acc[item.status as LeadStatus] = item._count._all;
-    return acc;
-  }, { ...emptyCounts });
+  const statusCounts = groupedCounts.reduce(
+    (acc, item) => {
+      acc[item.status as LeadStatus] = item._count._all;
+      return acc;
+    },
+    { ...emptyCounts },
+  );
 
   return {
     statusCounts,
@@ -137,7 +149,9 @@ const EMPTY_FUNNEL_COUNTS: Record<LeadStatus, number> = {
 };
 
 /** Počty leadů podle stavu za posledních `days` dní (podle data vytvoření záznamu). */
-export async function getDashboardFunnelStats(days: number): Promise<Record<LeadStatus, number>> {
+export async function getDashboardFunnelStats(
+  days: number,
+): Promise<Record<LeadStatus, number>> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
 

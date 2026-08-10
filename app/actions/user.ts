@@ -18,9 +18,12 @@ export async function uploadProfileAvatar(file: File) {
 
     // 1. BEZPEČNÉ NAČTENÍ KLÍČŮ A OČIŠTĚNÍ (odstraní případné lomítko na konci)
     let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-    let supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    let supabaseKey =
+      process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      "";
 
-    supabaseUrl = supabaseUrl.trim().replace(/\/$/, ""); 
+    supabaseUrl = supabaseUrl.trim().replace(/\/$/, "");
     supabaseKey = supabaseKey.trim();
 
     if (!supabaseUrl || !supabaseKey) {
@@ -50,7 +53,9 @@ export async function uploadProfileAvatar(file: File) {
     }
 
     // 5. ZÍSKÁNÍ VEŘEJNÉ URL
-    const { data: publicResult } = supabase.storage.from("avatars").getPublicUrl(filePath);
+    const { data: publicResult } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
     const avatarUrl = publicResult.publicUrl;
 
     // 6. ULOŽENÍ DO DATABÁZE

@@ -39,13 +39,30 @@ const STATUS_META: Record<
   LeadRunStatus,
   { icon: typeof CheckCircle2; className: string; label: string }
 > = {
-  pending: { icon: Clock, className: "text-muted-foreground", label: "Ve frontě" },
-  processing: { icon: Loader2, className: "text-amber-500", label: "Zpracovávám" },
-  sent: { icon: CheckCircle2, className: "text-emerald-500", label: "Odesláno" },
+  pending: {
+    icon: Clock,
+    className: "text-muted-foreground",
+    label: "Ve frontě",
+  },
+  processing: {
+    icon: Loader2,
+    className: "text-amber-500",
+    label: "Zpracovávám",
+  },
+  sent: {
+    icon: CheckCircle2,
+    className: "text-emerald-500",
+    label: "Odesláno",
+  },
   error: { icon: XCircle, className: "text-rose-500", label: "Chyba" },
 };
 
-export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: AutopilotDialogProps) {
+export function AutopilotDialog({
+  open,
+  onOpenChange,
+  leads,
+  onFinished,
+}: AutopilotDialogProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [hasRun, setHasRun] = useState(false);
   const [states, setStates] = useState<Record<string, LeadRunState>>({});
@@ -54,7 +71,12 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
   useEffect(() => {
     if (open) {
       setStates(
-        Object.fromEntries(leads.map((lead) => [lead.id, { status: "pending" as LeadRunStatus }])),
+        Object.fromEntries(
+          leads.map((lead) => [
+            lead.id,
+            { status: "pending" as LeadRunStatus },
+          ]),
+        ),
       );
       setHasRun(false);
       setIsRunning(false);
@@ -93,7 +115,10 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
         if ("error" in result) {
           updateLead(lead.id, { status: "error", message: result.error });
         } else {
-          updateLead(lead.id, { status: "sent", message: `Předmět: ${result.subject}` });
+          updateLead(lead.id, {
+            status: "sent",
+            message: `Předmět: ${result.subject}`,
+          });
         }
       } catch (e) {
         // Smyčka se nesmí zastavit — chybu zachytíme a jdeme na další firmu.
@@ -120,8 +145,10 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
             Autopilot kampaň
           </DialogTitle>
           <DialogDescription>
-            Systém projde {total} {total === 1 ? "vybranou firmu" : "vybraných firem"}, pro každou
-            zanalyzuje web, vygeneruje e-mail na míru a odešle ho na kontaktní adresu.
+            Systém projde {total}{" "}
+            {total === 1 ? "vybranou firmu" : "vybraných firem"}, pro každou
+            zanalyzuje web, vygeneruje e-mail na míru a odešle ho na kontaktní
+            adresu.
           </DialogDescription>
         </DialogHeader>
 
@@ -141,7 +168,9 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
 
           <div className="max-h-[280px] space-y-1.5 overflow-y-auto rounded-xl border border-border/60 bg-muted/20 p-2">
             {leads.map((lead) => {
-              const state = states[lead.id] ?? { status: "pending" as LeadRunStatus };
+              const state = states[lead.id] ?? {
+                status: "pending" as LeadRunStatus,
+              };
               const meta = STATUS_META[state.status];
               const Icon = meta.icon;
               return (
@@ -157,7 +186,9 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
                     )}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-foreground">{lead.company}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {lead.company}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {state.message ?? lead.email ?? meta.label}
                     </p>
@@ -182,13 +213,20 @@ export function AutopilotDialog({ open, onOpenChange, leads, onFinished }: Autop
         </div>
 
         <div className="flex justify-end gap-3 border-t border-border/40 pt-4">
-          <Button type="button" variant="outline" onClick={() => handleClose(false)} disabled={isRunning}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleClose(false)}
+            disabled={isRunning}
+          >
             {hasRun && !isRunning ? "Zavřít" : "Zrušit"}
           </Button>
           <Button
             type="button"
             onClick={() => void handleRun()}
-            disabled={isRunning || total === 0 || (hasRun && processedCount === total)}
+            disabled={
+              isRunning || total === 0 || (hasRun && processedCount === total)
+            }
             className="bg-blue-600 font-semibold text-white hover:bg-blue-700"
           >
             {isRunning ? (

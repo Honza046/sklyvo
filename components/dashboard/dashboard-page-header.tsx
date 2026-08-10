@@ -20,9 +20,7 @@ export function DashboardPageHeader({ firstName }: { firstName: string }) {
         <p className="sk-page-head__sub">{t("dashboard.subtitle")}</p>
       </div>
       <div className="flex items-center gap-1.5 md:gap-2">
-        <div className="hidden md:block">
-          <DashboardLanguageSwitcher />
-        </div>
+        <DashboardLanguageSwitcher />
         <Link
           href="/crm"
           className="sk-btn sk-btn--secondary sk-btn--md flex-1 sm:flex-none"
@@ -31,7 +29,7 @@ export function DashboardPageHeader({ firstName }: { firstName: string }) {
         </Link>
         <Link
           href="/radar"
-          className="sk-btn sk-btn--brand sk-btn--md flex-1 sm:flex-none"
+          className="sk-btn sk-btn--primary sk-btn--md flex-1 sm:flex-none"
         >
           <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           {t("dashboard.newSearch")}

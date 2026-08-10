@@ -19,7 +19,9 @@ type CompanyAvatarProps = {
  * Treat tiny default icons as missing so we show company initials instead.
  */
 function isGenericFavicon(img: HTMLImageElement): boolean {
-  return img.naturalWidth > 0 && img.naturalWidth <= 16 && img.naturalHeight <= 16;
+  return (
+    img.naturalWidth > 0 && img.naturalWidth <= 16 && img.naturalHeight <= 16
+  );
 }
 
 export function CompanyAvatar({
@@ -48,7 +50,7 @@ export function CompanyAvatar({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden border border-blue-100 bg-blue-50 font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+        "relative flex shrink-0 items-center justify-center overflow-hidden border border-blue-100 bg-blue-50 font-bold text-blue-700 ",
         sizeClassName,
         shape === "circle" ? "rounded-full" : "rounded-lg",
         className,

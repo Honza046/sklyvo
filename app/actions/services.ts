@@ -7,7 +7,10 @@ import { prisma } from "@/lib/prisma";
 export async function getServices() {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
-    return { error: "Nejste přihlášen.", services: [] as { id: string; name: string; description: string }[] };
+    return {
+      error: "Nejste přihlášen.",
+      services: [] as { id: string; name: string; description: string }[],
+    };
   }
 
   try {
@@ -19,13 +22,17 @@ export async function getServices() {
     return { services };
   } catch (e) {
     console.error("getServices:", e);
-    return { error: "Nepodařilo se načíst služby.", services: [] as { id: string; name: string; description: string }[] };
+    return {
+      error: "Nepodařilo se načíst služby.",
+      services: [] as { id: string; name: string; description: string }[],
+    };
   }
 }
 
-export async function createService(
-  input: { name: string; description: string },
-) {
+export async function createService(input: {
+  name: string;
+  description: string;
+}) {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
     return { error: "Nejste přihlášen." };

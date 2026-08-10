@@ -24,13 +24,17 @@ export function OfferedServicesManager({
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
   const [services, setServices] = useState<string[]>(initialServices);
-  const [companyServices, setCompanyServices] = useState(initialCompanyServices);
+  const [companyServices, setCompanyServices] = useState(
+    initialCompanyServices,
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const handleToggleService = (service: string) => {
     if (isSaving) return;
     setServices((prev) =>
-      prev.includes(service) ? prev.filter((item) => item !== service) : [...prev, service],
+      prev.includes(service)
+        ? prev.filter((item) => item !== service)
+        : [...prev, service],
     );
   };
 
@@ -69,15 +73,17 @@ export function OfferedServicesManager({
             Základní obory
           </p>
           <p className="text-xs text-muted-foreground">
-            Vyberte kategorie, které nejlépe vystihují vaši nabídku. Sniper z nich nabídne zaměření
-            konkrétního e-mailu.
+            Vyberte kategorie, které nejlépe vystihují vaši nabídku. Sniper z
+            nich nabídne zaměření konkrétního e-mailu.
           </p>
         </div>
 
         <div className="space-y-5">
           {PREDEFINED_SERVICE_GROUPS.map((group) => (
             <div key={group.id} className="space-y-2">
-              <p className="text-[11px] font-semibold text-foreground/80">{group.label}</p>
+              <p className="text-[11px] font-semibold text-foreground/80">
+                {group.label}
+              </p>
               <div className="flex flex-wrap gap-2">
                 {group.services.map((service) => {
                   const selected = services.includes(service);
@@ -106,7 +112,11 @@ export function OfferedServicesManager({
         {services.length > 0 ? (
           <p className="text-xs text-muted-foreground">
             Vybráno: {services.length}{" "}
-            {services.length === 1 ? "obor" : services.length >= 2 && services.length <= 4 ? "obory" : "oborů"}
+            {services.length === 1
+              ? "obor"
+              : services.length >= 2 && services.length <= 4
+                ? "obory"
+                : "oborů"}
           </p>
         ) : null}
       </div>
@@ -127,8 +137,8 @@ export function OfferedServicesManager({
           className="min-h-[220px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Sem patří rozepsaný text se specifikacemi služeb. AI ho použije spolu s profilem firmy při psaní
-          e-mailů.
+          Sem patří rozepsaný text se specifikacemi služeb. AI ho použije spolu
+          s profilem firmy při psaní e-mailů.
         </p>
       </div>
 

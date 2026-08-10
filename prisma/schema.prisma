@@ -100,6 +100,9 @@ model User {
   totpSecretEnc     String?
   totpPendingEnc    String?
 
+  /** Platform ops: account suspended — login / session rejected. */
+  disabledAt        DateTime?
+
   emailConnection UserEmailConnection?
   documents       WorkspaceDocument[]
   passkeys        PasskeyCredential[]
@@ -205,6 +208,12 @@ model RadarSettings {
   /** Soft dolní cíl firem na běh (snaží se dostat aspoň sem). */
   minCompaniesPerRun Int      @default(20)
   maxCompaniesPerRun Int      @default(50)
+  /** Multi-source Radar: Google Places / Maps. */
+  sourcePlaces       Boolean  @default(true)
+  /** Multi-source Radar: web search (Serper). */
+  sourceWeb          Boolean  @default(true)
+  /** Multi-source Radar: LinkedIn discovery + enrich. */
+  sourceLinkedin     Boolean  @default(true)
   /** Poslední úspěšný běh naplánovaného Radaru (cron). */
   lastScheduledRunAt DateTime?
 
@@ -257,6 +266,13 @@ model Lead {
   /** Cached favicon URL for CRM avatar (usually Google s2 for the domain). */
   faviconUrl    String?
   placeId       String?
+  /** LinkedIn company/person URL from web/LinkedIn providers. */
+  linkedinUrl   String?
+  /**
+   * Discovery channels for this lead (places | web | linkedin).
+   * Used for CRM/Radar badges — not shown as marketing tags.
+   */
+  discoverySources String[] @default([])
   value         Int?       @default(0)
   email         String?
   phone         String?
@@ -517,4 +533,21 @@ model WorkspaceDocument {
 
   @@index([workspaceId, scope])
   @@index([workspaceId, ownerUserId, scope])
+}
+
+/** Sklyvo platform ops audit trail (not customer ActivityLog). */
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  actorEmail  String
+  action      String
+  targetType  String
+  targetId    String
+  /** JSON metadata (no secrets). */
+  metaJson    String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorUserId])
+  @@index([targetType, targetId])
 }

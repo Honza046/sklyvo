@@ -22,7 +22,10 @@ export function DashboardLanguageSwitcher({
     toggleSlots.findIndex((slot) => slot.code === activeCode && slot.enabled),
   );
   const single = toggleSlots.length < 2;
-  const { trackRef, thumbStyle } = useSlidingThumb(index, [toggleSlots.length, variant]);
+  const { trackRef, thumbStyle } = useSlidingThumb(index, [
+    toggleSlots.length,
+    variant,
+  ]);
 
   return (
     <div

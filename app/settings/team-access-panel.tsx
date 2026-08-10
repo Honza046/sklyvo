@@ -30,11 +30,14 @@ function roleLabel(role: TeamMemberDto["role"]) {
 
 function StatusBadge() {
   return (
-    <span className="inline-flex rounded-md bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+    <span className="inline-flex rounded-md bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ">
       Aktivní
     </span>
   );
 }
+
+const TEAM_COLS =
+  "grid-cols-1 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem]";
 
 export function TeamAccessPanel() {
   const [isPending, startTransition] = useTransition();
@@ -42,7 +45,6 @@ export function TeamAccessPanel() {
   const [isAgency, setIsAgency] = useState(false);
   const [planTier, setPlanTier] = useState("NONE");
   const [maxMembers, setMaxMembers] = useState(5);
-  const [sharedCredits, setSharedCredits] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>("MEMBER");
   const [teamMembers, setTeamMembers] = useState<TeamMemberDto[]>([]);
@@ -67,7 +69,6 @@ export function TeamAccessPanel() {
       setIsAgency(state.isAgency);
       setPlanTier(state.planTier);
       setMaxMembers(state.maxMembers);
-      setSharedCredits(state.sharedCredits);
       setCurrentUserId(state.currentUserId);
       setCurrentUserRole(state.currentUserRole);
       setTeamMembers(state.members);
@@ -82,22 +83,25 @@ export function TeamAccessPanel() {
 
   if (!loaded) {
     return (
-      <p className="py-6 text-center text-sm text-muted-foreground">Načítám tým…</p>
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        Načítám tým…
+      </p>
     );
   }
 
   if (!isAgency) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/35 dark:text-blue-400">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 ">
           <Lock className="h-7 w-7" aria-hidden />
         </div>
-        <h3 className="text-lg font-bold text-foreground">
+        <h3 className="sk-type-h3">
           Týmová spolupráce je dostupná od tarifu Agency
         </h3>
-        <p className="mt-2 mb-6 max-w-md text-sm text-gray-500 dark:text-muted-foreground">
-          Pozvěte kolegy do svého pracovního prostoru, sdílejte společně CRM, Google Sheets a kredity.
-          Aktuální tarif: <span className="font-medium text-foreground">{planTier}</span>
+        <p className="mt-2 mb-6 max-w-md text-sm text-gray-500 ">
+          Pozvěte kolegy do svého pracovního prostoru, sdílejte společně CRM,
+          Google Sheets a kredity. Aktuální tarif:{" "}
+          <span className="font-medium text-foreground">{planTier}</span>
         </p>
         <Button
           className="h-11 rounded-xl bg-blue-600 px-8 font-semibold text-white shadow-sm hover:bg-blue-700"
@@ -111,7 +115,8 @@ export function TeamAccessPanel() {
 
   const seatsUsed = teamMembers.length;
   const canManage = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
-  const ownerName = teamMembers.find((m) => m.role === "OWNER")?.name?.trim() || null;
+  const ownerName =
+    teamMembers.find((m) => m.role === "OWNER")?.name?.trim() || null;
 
   const handlePozvatClick = () => {
     setCapacityWarning(false);
@@ -133,7 +138,10 @@ export function TeamAccessPanel() {
         return;
       }
       if (result.temporaryPassword) {
-        setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+        setTempPasswordInfo({
+          email: result.email,
+          password: result.temporaryPassword,
+        });
         toast.success(
           `${result.name} přidán. Pošli mu dočasné heslo (zobrazí se níže).`,
         );
@@ -162,18 +170,16 @@ export function TeamAccessPanel() {
 
   return (
     <div className="space-y-5 pb-2 pt-2">
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/30 p-4 dark:bg-muted/10">
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/30 p-4 ">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">Agency workspace</p>
+          <p className="text-sm font-semibold text-foreground">
+            Agency workspace
+          </p>
           <p className="text-sm text-muted-foreground">
             Členové:{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {seatsUsed} / {maxMembers}
             </span>
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Sdílené kredity:{" "}
-            <span className="font-semibold tabular-nums text-foreground">{sharedCredits}</span>
           </p>
           <p className="text-xs text-muted-foreground">
             Všichni vidí stejné CRM, stavy a Google Sheets.
@@ -182,7 +188,8 @@ export function TeamAccessPanel() {
             {ownerName
               ? `Předplatné spravuje ${ownerName}`
               : "Předplatné spravuje vlastník workspace"}
-          </p>        </div>
+          </p>
+        </div>
         {canManage && (
           <Button
             type="button"
@@ -199,7 +206,7 @@ export function TeamAccessPanel() {
       {capacityWarning && (
         <div
           role="alert"
-          className="rounded-xl border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-950/25 dark:text-amber-100"
+          className="rounded-xl border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 "
         >
           Dosáhli jste maximální kapacity týmu ({maxMembers} míst).
         </div>
@@ -208,18 +215,28 @@ export function TeamAccessPanel() {
       {tempPasswordInfo && (
         <div
           role="status"
-          className="rounded-xl border border-blue-300/80 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 dark:border-blue-700 dark:bg-blue-950/25 dark:text-blue-100"
+          className="rounded-xl border border-blue-300/80 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 "
         >
-          <p className="font-semibold">Dočasné heslo pro {tempPasswordInfo.email}</p>
-          <p className="mt-1 font-mono text-base tracking-wide">{tempPasswordInfo.password}</p>
+          <p className="font-semibold">
+            Dočasné heslo pro {tempPasswordInfo.email}
+          </p>
+          <p className="mt-1 font-mono text-base tracking-wide">
+            {tempPasswordInfo.password}
+          </p>
           <p className="mt-1 text-xs opacity-80">
-            Pošli ho kolegovi (Slack / e-mail). Po přihlášení ať si heslo změní v účtu.
+            Pošli ho kolegovi (Slack / e-mail). Po přihlášení ať si heslo změní
+            v účtu.
           </p>
         </div>
       )}
 
       <div className="sk-data-panel overflow-hidden rounded-xl p-3 shadow-sm sm:p-3.5">
-        <div className="mb-1 hidden grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem] items-center gap-3 px-3.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[color:var(--sk-muted)] sm:grid">
+        <div
+          className={cn(
+            "mb-1.5 hidden items-center gap-3 px-3.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[color:var(--sk-muted)] sm:grid",
+            TEAM_COLS,
+          )}
+        >
           <span>Jméno</span>
           <span>E-mail</span>
           <span>Role</span>
@@ -230,11 +247,20 @@ export function TeamAccessPanel() {
           {teamMembers.map((m) => (
             <div
               key={m.id}
-              className="sk-data-row !grid grid-cols-1 items-center gap-2 sm:!grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem] sm:!gap-3 sm:!px-3.5 sm:!py-2.5"
+              className={cn(
+                "sk-data-row !grid !items-center gap-2 !px-3.5 !py-2.5 sm:!gap-3",
+                TEAM_COLS,
+              )}
             >
-              <p className="truncate text-sm font-medium text-[color:var(--sk-ink)]">{m.name}</p>
-              <p className="truncate text-sm text-[color:var(--sk-muted)]">{m.email}</p>
-              <p className="text-sm text-[color:var(--sk-ink)]">{roleLabel(m.role)}</p>
+              <p className="truncate text-sm font-medium leading-none text-[color:var(--sk-ink)]">
+                {m.name}
+              </p>
+              <p className="truncate text-sm leading-none text-[color:var(--sk-muted)]">
+                {m.email}
+              </p>
+              <p className="text-sm leading-none text-[color:var(--sk-ink)]">
+                {roleLabel(m.role)}
+              </p>
               <div className="flex items-center">
                 <StatusBadge />
               </div>
@@ -279,7 +305,7 @@ export function TeamAccessPanel() {
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="mb-1 text-lg font-bold text-foreground">Pozvat do workspace</h3>
+            <h3 className="sk-type-h3 mb-1">Pozvat do workspace</h3>
             <p className="mb-5 text-sm text-muted-foreground">
               Kolega uvidí stejné CRM, stavy a Google Sheets jako ty.
             </p>
@@ -303,7 +329,9 @@ export function TeamAccessPanel() {
                     "flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm",
                   )}
                   value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value as "ADMIN" | "MEMBER")}
+                  onChange={(e) =>
+                    setInviteRole(e.target.value as "ADMIN" | "MEMBER")
+                  }
                 >
                   <option value="MEMBER">Člen</option>
                   <option value="ADMIN">Admin</option>

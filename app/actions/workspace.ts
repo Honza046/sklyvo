@@ -41,7 +41,9 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
   }
 
   const normalizedOfferedServices = Array.from(
-    new Set(offeredServicesList.map((item) => String(item).trim()).filter(Boolean)),
+    new Set(
+      offeredServicesList.map((item) => String(item).trim()).filter(Boolean),
+    ),
   );
 
   const website = (companyWebsite ?? "").trim();
@@ -74,7 +76,9 @@ export async function saveOnboardingData(data: OnboardingFormInput) {
     return { success: true as const };
   } catch (error) {
     console.error("Chyba při ukládání onboardingu:", error);
-    return { error: "Nepodařilo se uložit data. Zkontrolujte připojení k databázi." };
+    return {
+      error: "Nepodařilo se uložit data. Zkontrolujte připojení k databázi.",
+    };
   }
 }
 
@@ -100,7 +104,9 @@ export async function updateCompanyContext(companyContext: string) {
   } catch (e) {
     console.error("updateCompanyContext:", e);
     const message = e instanceof Error ? e.message : String(e);
-    return { error: `Nepodařilo se uložit profil firmy.${message ? ` (${message})` : ""}` };
+    return {
+      error: `Nepodařilo se uložit profil firmy.${message ? ` (${message})` : ""}`,
+    };
   }
 }
 
@@ -109,14 +115,18 @@ export type WorkspaceServicesInput = {
   companyServices: string;
 };
 
-export async function updateWorkspaceServicesSettings(input: WorkspaceServicesInput) {
+export async function updateWorkspaceServicesSettings(
+  input: WorkspaceServicesInput,
+) {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
     return { error: "Nejste přihlášen. Přihlaste se prosím znovu." };
   }
 
   const normalized = Array.from(
-    new Set((input.offeredServices ?? []).map((item) => item.trim()).filter(Boolean)),
+    new Set(
+      (input.offeredServices ?? []).map((item) => item.trim()).filter(Boolean),
+    ),
   );
   const companyServices = input.companyServices.trim();
 
@@ -139,7 +149,9 @@ export async function updateWorkspaceServicesSettings(input: WorkspaceServicesIn
   } catch (e) {
     console.error("updateWorkspaceServicesSettings:", e);
     const message = e instanceof Error ? e.message : String(e);
-    return { error: `Nepodařilo se uložit nabízené služby.${message ? ` (${message})` : ""}` };
+    return {
+      error: `Nepodařilo se uložit nabízené služby.${message ? ` (${message})` : ""}`,
+    };
   }
 }
 
@@ -160,7 +172,10 @@ export async function updateAiBehaviorSettings(input: AiBehaviorSettingsInput) {
   const emailSignature = input.emailSignature.trim();
   const systemPrompt = input.systemPrompt.trim();
   const forbiddenWords = input.forbiddenWords.trim();
-  const storedSystemPrompt = serializeSystemPromptWithForbiddenWords(systemPrompt, forbiddenWords);
+  const storedSystemPrompt = serializeSystemPromptWithForbiddenWords(
+    systemPrompt,
+    forbiddenWords,
+  );
 
   try {
     await prisma.workspace.update({
@@ -182,7 +197,9 @@ export async function updateAiBehaviorSettings(input: AiBehaviorSettingsInput) {
   } catch (e) {
     console.error("updateAiBehaviorSettings:", e);
     const message = e instanceof Error ? e.message : String(e);
-    return { error: `Nepodařilo se uložit chování AI.${message ? ` (${message})` : ""}` };
+    return {
+      error: `Nepodařilo se uložit chování AI.${message ? ` (${message})` : ""}`,
+    };
   }
 }
 

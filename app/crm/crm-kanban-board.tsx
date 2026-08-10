@@ -14,7 +14,14 @@ import {
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Banknote } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { cn } from "@/lib/utils";
 
 /** Při tažení s DragOverlay ponechá zdroj v layoutu; kopii tahá overlay (@dnd-kit doporučení). */
@@ -67,10 +74,11 @@ function DraggableLeadCard<L extends KanbanLead>({
   column: KanbanColumnSpec;
   children: (drag: KanbanDragProps) => ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: lead.id,
-    data: { lead, columnId: column.id },
-  });
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: lead.id,
+      data: { lead, columnId: column.id },
+    });
 
   const style: CSSProperties = isDragging
     ? {
@@ -113,6 +121,9 @@ function DroppableStatusPill({
     id: column.id,
   });
 
+  const valueTitle =
+    "Součet odhadovaných cen dealů v této fázi. Cenu nastavíš při vytvoření nebo úpravě dealu.";
+
   return (
     <button
       ref={setNodeRef}
@@ -132,7 +143,9 @@ function DroppableStatusPill({
         </div>
         <span className="sk-crm-status__count">{count}</span>
       </div>
-      <p className="sk-crm-status__value">{valueLabel}</p>
+      <p className="sk-crm-status__value" title={valueTitle}>
+        {valueLabel}
+      </p>
     </button>
   );
 }
@@ -170,10 +183,13 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
 
   const [activeColumnId, setActiveColumnId] = useState(columns[0]?.id ?? "new");
   const [activeLead, setActiveLead] = useState<L | KanbanLead | null>(null);
-  const [activeColumn, setActiveColumn] = useState<KanbanColumnSpec | null>(null);
-  const [dragOverlayRect, setDragOverlayRect] = useState<{ width: number; height: number } | null>(
+  const [activeColumn, setActiveColumn] = useState<KanbanColumnSpec | null>(
     null,
   );
+  const [dragOverlayRect, setDragOverlayRect] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const didInitColumnRef = useRef(false);
 
   const columnStats = useMemo(
@@ -195,7 +211,8 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
     didInitColumnRef.current = true;
   }, [columnStats, leads.length]);
 
-  const activeStat = columnStats.find((s) => s.col.id === activeColumnId) ?? columnStats[0];
+  const activeStat =
+    columnStats.find((s) => s.col.id === activeColumnId) ?? columnStats[0];
   const selectedColumn = activeStat?.col ?? columns[0];
   const selectedLeads = activeStat?.leads ?? [];
 
@@ -206,7 +223,8 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    const data = event.active.data.current as { lead?: KanbanLead; columnId?: string } | undefined;
+    const data = event.active.data.current as
+      { lead?: KanbanLead; columnId?: string } | undefined;
     if (data?.lead) {
       setActiveLead(data.lead);
       const col = columns.find((c) => c.id === data.columnId);
@@ -258,7 +276,9 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
               key={col.id}
               column={col}
               count={count}
-              valueLabel={count === 0 ? "Prázdné" : formatCurrency(valueSum)}
+              valueLabel={
+                count === 0 ? "Prázdné" : `Hodnota: ${formatCurrency(valueSum)}`
+              }
               active={col.id === activeColumnId}
               onSelect={() => setActiveColumnId(col.id)}
             />
@@ -266,7 +286,9 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
         </div>
 
         <p className="shrink-0 text-center text-[11px] text-muted-foreground">
-          Přetáhni kartu na jiné políčko nahoře = změna stavu.
+          Kartu přetáhni na fázi nahoře a změní se stav.
+          <br />
+          Hodnota u fáze je součet odhadovaných cen dealů.
         </p>
 
         {isLoading ? (
@@ -277,15 +299,22 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
           <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
             <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
               <div className="flex min-w-0 items-center gap-2">
-                <span className={cn("h-2.5 w-2.5 rounded-full", selectedColumn.dot)} />
+                <span
+                  className={cn("h-2.5 w-2.5 rounded-full", selectedColumn.dot)}
+                />
                 <h3 className="truncate text-sm font-semibold uppercase tracking-wide">
                   {selectedColumn.title}
                 </h3>
-                <span className="text-sm text-muted-foreground">· {selectedLeads.length}</span>
+                <span className="text-sm text-muted-foreground">
+                  · {selectedLeads.length}
+                </span>
               </div>
-              <div className="flex items-center text-xs font-semibold text-muted-foreground">
+              <div
+                className="flex items-center text-xs font-semibold text-muted-foreground"
+                title="Součet odhadovaných cen dealů v této fázi. Cenu nastavíš při vytvoření nebo úpravě dealu."
+              >
                 <Banknote className="mr-1 h-3.5 w-3.5 opacity-70" />
-                {formatCurrency(activeStat?.valueSum ?? 0)}
+                Hodnota: {formatCurrency(activeStat?.valueSum ?? 0)}
               </div>
             </div>
 
@@ -295,21 +324,26 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
               )}
             >
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {selectedLeads.map((lead) => (
-                <DraggableLeadCard key={lead.id} lead={lead} column={selectedColumn}>
-                  {(drag) =>
-                    renderLeadCard({
-                      lead,
-                      column: selectedColumn,
-                      drag,
-                      isDragOverlay: false,
-                      onEdit: () => onEdit(lead),
-                      onDelete: () => onDelete(lead.id),
-                      onQuickStatus: (status) => onQuickStatus(lead.id, status),
-                    })
-                  }
-                </DraggableLeadCard>
-              ))}
+                {selectedLeads.map((lead) => (
+                  <DraggableLeadCard
+                    key={lead.id}
+                    lead={lead}
+                    column={selectedColumn}
+                  >
+                    {(drag) =>
+                      renderLeadCard({
+                        lead,
+                        column: selectedColumn,
+                        drag,
+                        isDragOverlay: false,
+                        onEdit: () => onEdit(lead),
+                        onDelete: () => onDelete(lead.id),
+                        onQuickStatus: (status) =>
+                          onQuickStatus(lead.id, status),
+                      })
+                    }
+                  </DraggableLeadCard>
+                ))}
               </div>
 
               {selectedLeads.length === 0 && (

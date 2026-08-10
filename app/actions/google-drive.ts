@@ -14,7 +14,10 @@ import {
   listWorkspaceDriveFiles,
   listWorkspaceGoogleDocs,
 } from "@/lib/google-drive-docs";
-import { buildGoogleSheetsAuthorizeUrl, getGoogleSheetsOAuthConfig } from "@/lib/google-sheets-oauth";
+import {
+  buildGoogleSheetsAuthorizeUrl,
+  getGoogleSheetsOAuthConfig,
+} from "@/lib/google-sheets-oauth";
 import { prisma } from "@/lib/prisma";
 import {
   WORKSPACE_DOCS_BUCKET,
@@ -121,9 +124,12 @@ export async function linkGoogleDocToStorage(input: {
     const docUrl =
       input.webViewLink?.trim() ||
       `https://docs.google.com/document/d/${input.fileId}/edit`;
-    const scope: DocumentScope = input.scope === "SHARED" ? "SHARED" : "PERSONAL";
+    const scope: DocumentScope =
+      input.scope === "SHARED" ? "SHARED" : "PERSONAL";
     const documentId = crypto.randomUUID();
-    const fileName = sanitizeFileName(`${input.name || "Google-Doc"}.gdoc.json`);
+    const fileName = sanitizeFileName(
+      `${input.name || "Google-Doc"}.gdoc.json`,
+    );
     const linkBody = Buffer.from(
       JSON.stringify(
         {
@@ -185,7 +191,10 @@ export async function linkGoogleDocToStorage(input: {
   } catch (error) {
     console.error("linkGoogleDocToStorage:", error);
     return {
-      error: error instanceof Error ? error.message : "Propojení Google Doc selhalo.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Propojení Google Doc selhalo.",
     };
   }
 }
@@ -209,7 +218,8 @@ export async function importGoogleDriveFile(input: {
     const supabase = createSupabaseAdmin();
     if ("error" in supabase) return supabase;
 
-    const scope: DocumentScope = input.scope === "SHARED" ? "SHARED" : "PERSONAL";
+    const scope: DocumentScope =
+      input.scope === "SHARED" ? "SHARED" : "PERSONAL";
     const documentId = crypto.randomUUID();
     const fileName = sanitizeFileName(downloaded.fileName);
     const storagePath = buildDocumentStoragePath({
@@ -243,7 +253,10 @@ export async function importGoogleDriveFile(input: {
         mimeType: downloaded.contentType,
         sizeBytes: downloaded.bytes.byteLength,
         storagePath,
-        metaJson: JSON.stringify({ source: "google-drive", driveFileId: input.fileId }),
+        metaJson: JSON.stringify({
+          source: "google-drive",
+          driveFileId: input.fileId,
+        }),
       },
     });
 
@@ -255,7 +268,10 @@ export async function importGoogleDriveFile(input: {
   } catch (error) {
     console.error("importGoogleDriveFile:", error);
     return {
-      error: error instanceof Error ? error.message : "Import z Google Drive selhal.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Import z Google Drive selhal.",
     };
   }
 }
@@ -304,7 +320,8 @@ export async function generateOfferGoogleDoc(input: {
     const doc = await createGoogleDocFromOffer(session.workspace.id, payload);
     if ("error" in doc) return doc;
 
-    const scope: DocumentScope = input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
+    const scope: DocumentScope =
+      input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
     let pdfSaved = false;
     let linkedInStorage = false;
 
@@ -397,7 +414,10 @@ export async function generateOfferGoogleDoc(input: {
               mimeType: "application/pdf",
               sizeBytes: pdfBytes.byteLength,
               storagePath: pdfPath,
-              metaJson: JSON.stringify({ ...payload, googleDocUrl: doc.docUrl }),
+              metaJson: JSON.stringify({
+                ...payload,
+                googleDocUrl: doc.docUrl,
+              }),
             },
           });
           pdfSaved = true;
@@ -417,7 +437,9 @@ export async function generateOfferGoogleDoc(input: {
     console.error("generateOfferGoogleDoc:", error);
     return {
       error:
-        error instanceof Error ? error.message : "Nepodařilo se vytvořit Google Doc.",
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se vytvořit Google Doc.",
     };
   }
 }

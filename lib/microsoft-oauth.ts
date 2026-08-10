@@ -1,3 +1,8 @@
+import {
+  createSignedOAuthState,
+  verifySignedOAuthState,
+} from "@/lib/oauth-state";
+
 const MS_SCOPES = [
   "offline_access",
   "openid",
@@ -12,8 +17,7 @@ export function getMicrosoftOAuthConfig() {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const clientId = process.env.MICROSOFT_CLIENT_ID?.trim() || "";
   const clientSecret = process.env.MICROSOFT_CLIENT_SECRET?.trim() || "";
-  const tenant =
-    process.env.MICROSOFT_TENANT_ID?.trim() || "common";
+  const tenant = process.env.MICROSOFT_TENANT_ID?.trim() || "common";
   const redirectUri =
     process.env.MICROSOFT_REDIRECT_URI?.trim() ||
     `${appUrl}/api/integrations/microsoft/callback`;
@@ -34,31 +38,25 @@ export function encodeMicrosoftOAuthState(
   workspaceId: string,
   returnPath?: string | null,
 ) {
-  const path = (returnPath || "").trim();
-  if (!path || path === "/settings") return workspaceId;
-  return `${workspaceId}|${encodeURIComponent(path)}`;
+  return createSignedOAuthState({
+    kind: "microsoft",
+    workspaceId,
+    returnPath,
+  });
 }
 
 export function decodeMicrosoftOAuthState(state: string | null): {
   workspaceId: string | null;
   returnPath: string;
 } {
-  if (!state) return { workspaceId: null, returnPath: "/settings#integrations" };
-  const sep = state.indexOf("|");
-  if (sep === -1) {
-    return { workspaceId: state, returnPath: "/settings#integrations" };
+  const claims = verifySignedOAuthState(state, "microsoft");
+  if (!claims) {
+    return { workspaceId: null, returnPath: "/settings#integrations" };
   }
-  const workspaceId = state.slice(0, sep);
-  let returnPath = "/settings#integrations";
-  try {
-    returnPath = decodeURIComponent(state.slice(sep + 1)) || returnPath;
-  } catch {
-    // keep default
-  }
-  if (!returnPath.startsWith("/")) {
-    returnPath = "/settings#integrations";
-  }
-  return { workspaceId, returnPath };
+  return {
+    workspaceId: claims.workspaceId,
+    returnPath: claims.returnPath || "/settings#integrations",
+  };
 }
 
 export function buildMicrosoftAuthorizeUrl(
@@ -66,7 +64,8 @@ export function buildMicrosoftAuthorizeUrl(
   loginHint?: string | null,
   returnPath?: string | null,
 ) {
-  const { clientId, redirectUri, scope, authorizeUrl } = getMicrosoftOAuthConfig();
+  const { clientId, redirectUri, scope, authorizeUrl } =
+    getMicrosoftOAuthConfig();
   if (!clientId) return null;
 
   const params = new URLSearchParams({

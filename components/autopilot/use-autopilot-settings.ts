@@ -39,9 +39,9 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   const [radarCronEnabled, setRadarCronEnabledState] = useState<boolean | null>(
     () => powerFlagsCache?.radarCronEnabled ?? null,
   );
-  const [emailSendCronEnabled, setEmailSendCronEnabledState] = useState<boolean | null>(
-    () => powerFlagsCache?.emailSendCronEnabled ?? null,
-  );
+  const [emailSendCronEnabled, setEmailSendCronEnabledState] = useState<
+    boolean | null
+  >(() => powerFlagsCache?.emailSendCronEnabled ?? null);
   const [fullAutoEnabled, setFullAutoEnabledState] = useState<boolean | null>(
     () => powerFlagsCache?.fullAutoEnabled ?? null,
   );
@@ -51,7 +51,9 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const sniperRaw = window.localStorage.getItem(SNIPER_SETTINGS_STORAGE_KEY);
+      const sniperRaw = window.localStorage.getItem(
+        SNIPER_SETTINGS_STORAGE_KEY,
+      );
       const sniperParsed = sniperRaw
         ? (JSON.parse(sniperRaw) as Partial<AutopilotAutomationSettings>)
         : {};
@@ -65,7 +67,8 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           sniperParsed.sendingStrategy === "queue" ||
           sniperParsed.sendingStrategy === "batch"
             ? sniperParsed.sendingStrategy
-            : (prev.sendingStrategy ?? DEFAULT_AUTOPILOT_SETTINGS.sendingStrategy),
+            : (prev.sendingStrategy ??
+              DEFAULT_AUTOPILOT_SETTINGS.sendingStrategy),
         onlyWithEmail:
           typeof sniperParsed.onlyWithEmail === "boolean"
             ? sniperParsed.onlyWithEmail
@@ -80,11 +83,14 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             : false,
         sendDays: (() => {
           const raw =
-            Array.isArray(sniperParsed.sendDays) && sniperParsed.sendDays.length > 0
+            Array.isArray(sniperParsed.sendDays) &&
+            sniperParsed.sendDays.length > 0
               ? sniperParsed.sendDays
               : (prev.sendDays ?? DEFAULT_AUTOPILOT_SETTINGS.sendDays);
           const weekdays = raw.filter((d) => d >= 1 && d <= 5);
-          return weekdays.length > 0 ? weekdays : DEFAULT_AUTOPILOT_SETTINGS.sendDays;
+          return weekdays.length > 0
+            ? weekdays
+            : DEFAULT_AUTOPILOT_SETTINGS.sendDays;
         })(),
       }));
     } catch {
@@ -131,6 +137,9 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             radarRunTime: result.settings.radarRunTime,
             minCompaniesPerRun: result.settings.minCompaniesPerRun,
             maxCompaniesPerRun: result.settings.maxCompaniesPerRun,
+            sourcePlaces: result.settings.sourcePlaces,
+            sourceWeb: result.settings.sourceWeb,
+            sourceLinkedin: result.settings.sourceLinkedin,
           }));
         }
       } else if (section === "full-auto") {
@@ -138,7 +147,10 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
         if (!cancelled && "settings" in result) {
           setFullAutoEnabledState(result.settings.enabled);
           if (powerFlagsCache) {
-            powerFlagsCache = { ...powerFlagsCache, fullAutoEnabled: result.settings.enabled };
+            powerFlagsCache = {
+              ...powerFlagsCache,
+              fullAutoEnabled: result.settings.enabled,
+            };
           }
           setAutomationSettings((prev) => ({
             ...prev,
@@ -165,13 +177,16 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
   const setFeatureEnabledLocal = (enabled: boolean) => {
     if (section === "radar") {
       setRadarCronEnabledState(enabled);
-      if (powerFlagsCache) powerFlagsCache = { ...powerFlagsCache, radarCronEnabled: enabled };
+      if (powerFlagsCache)
+        powerFlagsCache = { ...powerFlagsCache, radarCronEnabled: enabled };
     } else if (section === "sniper") {
       setEmailSendCronEnabledState(enabled);
-      if (powerFlagsCache) powerFlagsCache = { ...powerFlagsCache, emailSendCronEnabled: enabled };
+      if (powerFlagsCache)
+        powerFlagsCache = { ...powerFlagsCache, emailSendCronEnabled: enabled };
     } else {
       setFullAutoEnabledState(enabled);
-      if (powerFlagsCache) powerFlagsCache = { ...powerFlagsCache, fullAutoEnabled: enabled };
+      if (powerFlagsCache)
+        powerFlagsCache = { ...powerFlagsCache, fullAutoEnabled: enabled };
     }
   };
 
@@ -225,6 +240,9 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
             radarRunTime: automationSettings.radarRunTime,
             minCompaniesPerRun: automationSettings.minCompaniesPerRun,
             maxCompaniesPerRun: automationSettings.maxCompaniesPerRun,
+            sourcePlaces: true,
+            sourceWeb: true,
+            sourceLinkedin: true,
           }),
           setRadarCronEnabled(radarOn),
         ]);
@@ -261,10 +279,15 @@ export function useAutopilotSettings(section: AutopilotSettingsSection) {
           window3Enabled: Boolean(automationSettings.window3Enabled),
           maxEmailsPerBatch: automationSettings.maxEmailsPerBatch,
           sendingStrategy: automationSettings.sendingStrategy,
-          sendDays: (automationSettings.sendDays ?? []).filter((d) => d >= 1 && d <= 5),
+          sendDays: (automationSettings.sendDays ?? []).filter(
+            (d) => d >= 1 && d <= 5,
+          ),
           onlyWithEmail: Boolean(automationSettings.onlyWithEmail),
         };
-        window.localStorage.setItem(SNIPER_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+        window.localStorage.setItem(
+          SNIPER_SETTINGS_STORAGE_KEY,
+          JSON.stringify(payload),
+        );
         const powerResult = await setEmailSendCronEnabled(sniperOn);
         if ("error" in powerResult) {
           toast.error(powerResult.error);

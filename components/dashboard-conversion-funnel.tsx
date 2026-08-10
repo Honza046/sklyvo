@@ -16,9 +16,12 @@ export type DashboardConversionFunnelProps = {
   initialCounts: Record<LeadStatus, number>;
 };
 
-export function DashboardConversionFunnel({ initialCounts }: DashboardConversionFunnelProps) {
+export function DashboardConversionFunnel({
+  initialCounts,
+}: DashboardConversionFunnelProps) {
   const [days, setDays] = useState("30");
-  const [counts, setCounts] = useState<Record<LeadStatus, number>>(initialCounts);
+  const [counts, setCounts] =
+    useState<Record<LeadStatus, number>>(initialCounts);
   const [isPending, startTransition] = useTransition();
 
   const refresh = useCallback((nextDays: string) => {
@@ -37,9 +40,7 @@ export function DashboardConversionFunnel({ initialCounts }: DashboardConversion
   return (
     <div className="sk-surface sk-surface--pad flex shrink-0 flex-col">
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 sm:mb-2 sm:gap-2">
-        <h2 className="text-sm font-bold text-[color:var(--sk-ink)] sm:text-base">
-          Konverzní trychtýř
-        </h2>
+        <h2 className="sk-type-h3">Konverzní trychtýř</h2>
         <Select value={days} onValueChange={refresh} disabled={isPending}>
           <SelectTrigger
             className="sk-select"
@@ -75,13 +76,18 @@ export function DashboardConversionFunnel({ initialCounts }: DashboardConversion
             <div key={row.key} className="space-y-0.5">
               <div className="flex justify-between text-[11px] font-semibold text-[color:var(--sk-ink)] sm:text-xs">
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`} />
+                  <div
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`}
+                  />
                   <span className="truncate">{row.label}</span>
                 </span>
                 <span className="shrink-0 tabular-nums">{count}</span>
               </div>
               <div className="sk-funnel-bar h-1 sm:h-1.5">
-                <div className="sk-funnel-bar__fill" style={{ width: `${width}%` }} />
+                <div
+                  className="sk-funnel-bar__fill"
+                  style={{ width: `${width}%` }}
+                />
               </div>
             </div>
           );

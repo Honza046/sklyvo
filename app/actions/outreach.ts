@@ -79,7 +79,12 @@ export async function sendOutreachEmailNow(input: {
   leadId: string;
   kind: OutreachKindValue;
 }): Promise<
-  | { success: true; subject: string; kind: OutreachKindValue; nextDueLabel: string | null }
+  | {
+      success: true;
+      subject: string;
+      kind: OutreachKindValue;
+      nextDueLabel: string | null;
+    }
   | { error: string }
 > {
   const session = await getSessionUser();
@@ -103,13 +108,17 @@ export async function sendOutreachEmailNow(input: {
     select: { id: true },
   });
   if (existingPending) {
-    return { error: "Lead už má e-mail ve frontě Autopilota. Nejdřív ho vyřeš." };
+    return {
+      error: "Lead už má e-mail ve frontě Autopilota. Nejdřív ho vyřeš.",
+    };
   }
 
   const generated = await generateEmailForLead(leadId, {
     workspaceId,
     kind,
-    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(workspaceId),
+    internalToken: (
+      await import("@/lib/internal-auth")
+    ).createInternalWorkspaceToken(workspaceId),
   });
   if ("error" in generated) {
     return { error: generated.error };
@@ -185,13 +194,19 @@ export async function sendOutreachEmailNow(input: {
 export async function sendOutreachEmailBulk(input: {
   leadIds: string[];
   kind: OutreachKindValue;
-}): Promise<{ ok: true; sent: number; failed: number; errors: string[] } | { error: string }> {
+}): Promise<
+  | { ok: true; sent: number; failed: number; errors: string[] }
+  | { error: string }
+> {
   const session = await getSessionUser();
   if (!session.workspace?.id) {
     return { error: "Nejste přihlášen." };
   }
 
-  const ids = Array.from(new Set((input.leadIds ?? []).filter(Boolean))).slice(0, 20);
+  const ids = Array.from(new Set((input.leadIds ?? []).filter(Boolean))).slice(
+    0,
+    20,
+  );
   if (ids.length === 0) {
     return { error: "Vyber alespoň jeden lead." };
   }

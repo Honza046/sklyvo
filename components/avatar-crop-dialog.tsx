@@ -107,7 +107,10 @@ export function AvatarCropDialog({
 
         <div className="space-y-2 px-5 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="avatar-zoom" className="text-xs text-muted-foreground">
+            <Label
+              htmlFor="avatar-zoom"
+              className="text-xs text-muted-foreground"
+            >
               Přiblížení
             </Label>
             <span className="tabular-nums text-[11px] text-muted-foreground">

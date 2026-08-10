@@ -1,5 +1,5 @@
-/* Soft-UI vocabulary — tokens on :root/.dark so portals + UI primitives inherit.
-   .sklyvo-app applies page chrome; raised/sunken stay token-driven in both themes. */
+/* Soft-UI vocabulary — tokens on :root so portals + UI primitives inherit.
+   .sklyvo-app applies page chrome; raised/sunken stay token-driven. */
 
 :root {
   --sk-ink: oklch(0.22 0.015 250);
@@ -38,10 +38,7 @@
     rgba(255, 255, 255, 0.98) 48%,
     #ffffff 100%
   );
-  --sk-glass-shadow:
-    0 28px 56px -20px rgba(30, 70, 110, 0.32),
-    0 10px 24px -10px rgba(30, 70, 110, 0.16),
-    inset 0 1px 0 var(--sk-border-strong);
+  --sk-glass-shadow: var(--sk-card-shadow);
 
   --sk-sunken: linear-gradient(
     180deg,
@@ -49,24 +46,18 @@
     oklch(0.968 0.004 245) 100%
   );
   --sk-sunken-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.28),
+    inset 0 1.5px 3px rgba(90, 130, 165, 0.16),
     inset 0 -1px 0 var(--sk-highlight-soft),
     0 1px 0 var(--sk-highlight-faint);
 
   --sk-light-bg: linear-gradient(180deg, #ffffff 0%, oklch(0.955 0.006 240) 100%);
-  --sk-nav-active: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    color-mix(in oklab, var(--sk-brand) 10%, #fff) 100%
-  );
+  --sk-nav-active: var(--sk-light-bg);
   --sk-nav-active-shadow:
-    0 0 20px -6px rgba(2, 167, 255, 0.4),
-    0 8px 18px -10px rgba(2, 167, 255, 0.28),
-    0 2px 4px rgba(30, 70, 110, 0.1),
-    inset 0 1.5px 0 #fff,
-    0 0 0 1px color-mix(in oklab, var(--sk-brand) 22%, transparent);
-  --sk-nav-active-ink: oklch(0.22 0.02 250);
-  --sk-nav-active-icon: var(--sk-brand);
+    0 8px 18px -10px rgba(30, 70, 110, 0.28),
+    0 1px 2px 0 rgba(30, 70, 110, 0.1),
+    inset 0 1.5px 0 #fff;
+  --sk-nav-active-ink: var(--sk-ink);
+  --sk-nav-active-icon: oklch(0.4 0.02 250);
   --sk-ink-bg: linear-gradient(
     180deg,
     oklch(0.36 0.018 250) 0%,
@@ -105,6 +96,24 @@
     0 16px 32px -12px rgba(30, 70, 110, 0.22),
     inset 0 1px 0 var(--sk-border-strong);
 
+  /* Matěj /design — rádiusy · stíny · mezery */
+  --sk-radius-control: 12px; /* pole a tlačítka */
+  --sk-radius-card: 18px; /* karty (18–22) */
+  --sk-radius-card-lg: 22px;
+  --sk-radius-hero: 26px; /* hero panely */
+  --sk-radius-pill: 999px;
+
+  --sk-card-shadow:
+    0 26px 52px -20px rgba(30, 70, 110, 0.22),
+    0 5px 14px -6px rgba(30, 70, 110, 0.12),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.95);
+
+  --sk-space-field: 10px; /* gap v poli / mezi fieldy */
+  --sk-space-block: 18px; /* mezi bloky */
+  --sk-space-section: 22px; /* sekce */
+  --sk-pad-card-x: 24px;
+  --sk-pad-card-y: 26px;
+
   --sk-ease-pop: cubic-bezier(0.3, 0.9, 0.3, 1);
   --sk-panel-h: 17.5rem;
 
@@ -133,142 +142,13 @@
   --sk-meter-track: oklch(0.925 0.006 245);
 }
 
-.dark {
-  --sk-ink: oklch(0.95 0.01 250);
-  --sk-ink-soft: oklch(0.92 0.01 250);
-  --sk-ink-press: oklch(0.97 0.008 250);
-  --sk-muted: oklch(0.72 0.015 250);
-  --sk-muted-soft: oklch(0.76 0.012 250);
-  --sk-icon: oklch(0.7 0.015 250);
-  --sk-link: oklch(0.78 0.04 230);
-  --sk-brand: #1ab3ff;
-
-  --sk-mix-base: oklch(0.22 0.016 250);
-  --sk-border: rgba(255, 255, 255, 0.1);
-  --sk-border-soft: rgba(255, 255, 255, 0.07);
-  --sk-border-strong: rgba(255, 255, 255, 0.14);
-  --sk-panel: oklch(0.205 0.014 250);
-  --sk-panel-edge: rgba(255, 255, 255, 0.06);
-  --sk-row: oklch(0.175 0.014 250);
-  --sk-row-hover: oklch(0.2 0.016 250);
-  --sk-thumb: oklch(0.92 0.01 250);
-  --sk-highlight: rgba(255, 255, 255, 0.1);
-  --sk-highlight-soft: rgba(255, 255, 255, 0.08);
-  --sk-highlight-faint: rgba(255, 255, 255, 0.05);
-
-  --sk-raised: linear-gradient(
-    180deg,
-    oklch(0.275 0.018 250) 0%,
-    oklch(0.22 0.015 250) 100%
-  );
-  --sk-raised-shadow:
-    0 12px 28px -8px rgba(0, 0, 0, 0.55),
-    0 4px 12px 0 rgba(0, 0, 0, 0.35),
-    0 1px 3px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
-
-  --sk-glass: linear-gradient(
-    165deg,
-    oklch(0.26 0.02 240 / 0.92) 0%,
-    oklch(0.22 0.016 250 / 0.97) 48%,
-    oklch(0.2 0.014 250) 100%
-  );
-  --sk-glass-shadow:
-    0 28px 56px -20px rgba(0, 0, 0, 0.55),
-    0 10px 24px -10px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-  --sk-sunken: linear-gradient(
-    180deg,
-    oklch(0.155 0.014 250) 0%,
-    oklch(0.185 0.014 250) 100%
-  );
-  --sk-sunken-shadow:
-    inset 0 2px 5px rgba(0, 0, 0, 0.55),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-    0 1px 0 rgba(255, 255, 255, 0.04);
-
-  --sk-light-bg: linear-gradient(
-    180deg,
-    oklch(0.28 0.018 250) 0%,
-    oklch(0.225 0.015 250) 100%
-  );
-  --sk-nav-active: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-brand) 32%, oklch(0.3 0.02 250)) 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, oklch(0.22 0.016 250)) 100%
-  );
-  --sk-nav-active-shadow:
-    0 0 18px -4px rgba(26, 179, 255, 0.45),
-    0 6px 14px -8px rgba(26, 179, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 0 1px color-mix(in oklab, var(--sk-brand) 45%, transparent);
-  --sk-nav-active-ink: #ffffff;
-  --sk-nav-active-icon: #9ae0ff;
-  --sk-ink-bg: linear-gradient(
-    180deg,
-    oklch(0.42 0.02 250) 0%,
-    oklch(0.28 0.016 250) 52%,
-    oklch(0.2 0.012 250) 100%
-  );
-  --sk-shadow-raised-hover:
-    0 16px 32px -8px rgba(0, 0, 0, 0.6),
-    0 6px 14px 0 rgba(0, 0, 0, 0.38),
-    0 1px 3px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.12),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
-  --sk-shadow-dark:
-    0 10px 24px -6px rgba(0, 0, 0, 0.5),
-    0 4px 10px 0 rgba(0, 0, 0, 0.35),
-    0 1px 3px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
-  --sk-shadow-dark-hover:
-    0 14px 30px -6px rgba(0, 0, 0, 0.55),
-    0 5px 12px 0 rgba(0, 0, 0, 0.38),
-    0 1px 3px 0 rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.5);
-
-  --sk-brand-shadow:
-    0 12px 22px -10px rgba(26, 179, 255, 0.45),
-    0 3px 6px -2px rgba(26, 179, 255, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -2px 3px rgba(0, 70, 120, 0.35);
-  --sk-brand-shadow-hover:
-    0 16px 28px -12px rgba(26, 179, 255, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.32);
-
-  --sk-popover-shadow:
-    0 16px 32px -12px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-  --sk-page-bg:
-    radial-gradient(120% 80% at 10% -10%, rgba(26, 179, 255, 0.08), transparent 55%),
-    radial-gradient(90% 60% at 100% 0%, rgba(40, 80, 130, 0.22), transparent 52%),
-    linear-gradient(
-      180deg,
-      oklch(0.17 0.018 250) 0%,
-      oklch(0.145 0.014 250) 100%
-    );
-
-  --sk-overlay: rgba(4, 10, 22, 0.62);
-  --sk-sidebar-bg: linear-gradient(
-    180deg,
-    oklch(0.195 0.016 250) 0%,
-    oklch(0.165 0.014 250) 100%
-  );
-  --sk-sidebar-shadow: 0 18px 36px -20px rgba(0, 0, 0, 0.45);
-  --sk-nav-hover: oklch(0.24 0.016 250);
-  --sk-credits-bg: var(--sk-sunken);
-  --sk-meter-track: oklch(0.14 0.012 250);
-}
-
 .sklyvo-app {
   color: var(--sk-ink);
   background: var(--sk-page-bg);
   font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -276,22 +156,143 @@
   text-decoration: none;
 }
 
-/* --------------------------------------------------------------- buttons -- */
+/* ------------------------------------------------------------- typography --
+   Matěj scale from /design: H1 34/800 · H2 22/700 · H3 16/700 ·
+   Body 14/1.6 · Small 12.5 · Label 11/0.12em
+   ------------------------------------------------------------------------ */
 
+.sk-type-h1,
+.sklyvo-app .sk-type-h1,
+.sklyvo-app h1.sk-type-h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--sk-ink);
+}
+
+.sk-type-h2,
+.sklyvo-app .sk-type-h2,
+.sklyvo-app h2.sk-type-h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--sk-ink);
+}
+
+.sk-type-h3,
+.sklyvo-app .sk-type-h3,
+.sklyvo-app h3.sk-type-h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--sk-ink);
+}
+
+.sk-type-body,
+.sklyvo-app .sk-type-body {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--sk-muted);
+}
+
+.sk-type-small,
+.sklyvo-app .sk-type-small {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--sk-muted);
+}
+
+.sk-type-label,
+.sklyvo-app .sk-type-label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--sk-muted);
+}
+
+@media (max-width: 767px) {
+  .sk-type-h1,
+  .sklyvo-app .sk-type-h1,
+  .sklyvo-app h1.sk-type-h1 {
+    font-size: 28px;
+  }
+
+  .sk-type-h2,
+  .sklyvo-app .sk-type-h2,
+  .sklyvo-app h2.sk-type-h2 {
+    font-size: 20px;
+  }
+}
+
+/* ------------------------------------------------ spacing / radius utils -- */
+
+.sklyvo-app .sk-gap-field {
+  gap: var(--sk-space-field);
+}
+
+.sklyvo-app .sk-gap-block {
+  gap: var(--sk-space-block);
+}
+
+.sklyvo-app .sk-gap-section {
+  gap: var(--sk-space-section);
+}
+
+.sklyvo-app .sk-pad-card {
+  padding: var(--sk-pad-card-x) var(--sk-pad-card-y) var(--sk-pad-card-y);
+}
+
+.sklyvo-app .sk-radius-control {
+  border-radius: var(--sk-radius-control);
+}
+
+.sklyvo-app .sk-radius-card {
+  border-radius: var(--sk-radius-card);
+}
+
+.sklyvo-app .sk-radius-hero {
+  border-radius: var(--sk-radius-hero);
+}
+
+.sklyvo-app .sk-radius-pill {
+  border-radius: var(--sk-radius-pill);
+}
+
+/* --------------------------------------------------------------- buttons --
+   Matěj soft-UI: primary / secondary / engraved / ghost (+ optional brand).
+   Heights: sm 32 · default/md 44 · lg 50. Hover −1px, active +1px.
+   ------------------------------------------------------------------------ */
+
+.sk-btn,
 .sklyvo-app .sk-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 16px;
+  gap: 9px;
+  height: 44px;
+  padding: 0 22px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--sk-radius-control);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   letter-spacing: -0.01em;
+  line-height: 1;
   cursor: pointer;
+  text-decoration: none;
   transition:
     transform 0.16s var(--sk-ease-pop),
     background 0.18s ease,
@@ -299,6 +300,34 @@
     color 0.18s ease;
 }
 
+.sk-btn--primary,
+.sklyvo-app .sk-btn--primary {
+  background: var(--sk-ink-bg);
+  color: #fff;
+  box-shadow: var(--sk-shadow-dark);
+}
+
+.sk-btn--primary:hover,
+.sklyvo-app .sk-btn--primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-dark-hover);
+}
+
+.sk-btn--primary:active,
+.sklyvo-app .sk-btn--primary:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+a.sk-btn--primary,
+.sklyvo-app a.sk-btn--primary {
+  color: #fff;
+}
+
+/* Optional brand accent — not in Matěj’s core set; keep for rare CTAs */
+.sk-btn--brand,
 .sklyvo-app .sk-btn--brand {
   background: linear-gradient(
     180deg,
@@ -310,19 +339,18 @@
   box-shadow: var(--sk-brand-shadow);
 }
 
+a.sk-btn--brand,
 .sklyvo-app a.sk-btn--brand {
   color: #fff;
 }
 
-.sklyvo-app a.sk-btn--secondary {
-  color: var(--sk-ink);
-}
-
+.sk-btn--brand:hover,
 .sklyvo-app .sk-btn--brand:hover {
-  transform: translateY(-1.5px);
+  transform: translateY(-1px);
   box-shadow: var(--sk-brand-shadow-hover);
 }
 
+.sk-btn--brand:active,
 .sklyvo-app .sk-btn--brand:active {
   transform: translateY(1px);
   box-shadow:
@@ -330,25 +358,93 @@
     inset 0 2px 4px rgba(0, 90, 140, 0.35);
 }
 
+.sk-btn--secondary,
 .sklyvo-app .sk-btn--secondary {
   background: var(--sk-light-bg);
   color: var(--sk-ink);
   box-shadow: var(--sk-raised-shadow);
 }
 
+a.sk-btn--secondary,
+.sklyvo-app a.sk-btn--secondary {
+  color: var(--sk-ink);
+}
+
+.sk-btn--secondary:hover,
 .sklyvo-app .sk-btn--secondary:hover {
-  transform: translateY(-1.5px);
+  transform: translateY(-1px);
   box-shadow: var(--sk-shadow-raised-hover);
 }
 
+.sk-btn--secondary:active,
 .sklyvo-app .sk-btn--secondary:active {
-  transform: translateY(0);
+  transform: translateY(1px);
   background: var(--sk-sunken);
   box-shadow:
     inset 0 2px 5px rgba(90, 130, 165, 0.38),
     inset 0 -1px 0 var(--sk-highlight-soft);
 }
 
+.sk-btn--engraved,
+.sklyvo-app .sk-btn--engraved {
+  border: 1px solid var(--sk-border);
+  background: var(--sk-sunken);
+  color: var(--sk-muted);
+  box-shadow: var(--sk-sunken-shadow);
+}
+
+.sk-btn--engraved:hover,
+.sklyvo-app .sk-btn--engraved:hover {
+  color: var(--sk-ink);
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 -1px 0 var(--sk-highlight-soft);
+}
+
+.sk-btn--engraved:active,
+.sklyvo-app .sk-btn--engraved:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 3px 6px rgba(90, 130, 165, 0.45);
+}
+
+.sk-btn--ghost,
+.sklyvo-app .sk-btn--ghost {
+  padding: 0 16px;
+  background: transparent;
+  color: var(--sk-link);
+  box-shadow: none;
+}
+
+.sk-btn--ghost:hover,
+.sklyvo-app .sk-btn--ghost:hover {
+  color: var(--sk-ink-soft);
+}
+
+.sk-btn--ghost:active,
+.sklyvo-app .sk-btn--ghost:active {
+  transform: translateY(1px);
+  color: var(--sk-ink-press);
+}
+
+.sk-btn:disabled,
+.sk-btn[aria-disabled="true"],
+.sklyvo-app .sk-btn:disabled,
+.sklyvo-app .sk-btn[aria-disabled="true"] {
+  background: var(--sk-sunken);
+  color: oklch(0.72 0.01 250);
+  cursor: not-allowed;
+  box-shadow: var(--sk-sunken-shadow);
+  transform: none;
+  opacity: 1;
+}
+
+.sk-btn--icon,
+.sklyvo-app .sk-btn--icon {
+  width: 44px;
+  padding: 0;
+}
+
+.sk-btn--sm,
 .sklyvo-app .sk-btn--sm {
   height: 32px;
   padding: 0 14px;
@@ -356,34 +452,260 @@
   font-size: 12px;
 }
 
-.sklyvo-app .sk-btn--md {
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 12px;
-  font-size: 13px;
+.sk-btn--sm.sk-btn--icon,
+.sklyvo-app .sk-btn--sm.sk-btn--icon {
+  width: 32px;
+  padding: 0;
 }
 
-/* -------------------------------------------------------------- surfaces -- */
+.sk-btn--md,
+.sklyvo-app .sk-btn--md {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: var(--sk-radius-control);
+  font-size: 13.5px;
+}
 
-.sklyvo-app .sk-surface {
-  border-radius: 20px;
-  background: var(--sk-glass);
-  border: 1px solid var(--sk-border-soft);
-  /* Soft elevation — short enough to fully fade inside scroll gutters */
-  box-shadow:
-    0 8px 22px -6px rgba(30, 70, 110, 0.16),
-    0 2px 6px -2px rgba(30, 70, 110, 0.08),
-    inset 0 1px 0 var(--sk-border-strong);
+.sk-btn--lg,
+.sklyvo-app .sk-btn--lg {
+  height: 50px;
+  padding: 0 26px;
+  border-radius: 13px;
+  font-size: 14.5px;
+}
+
+.sk-btn--row,
+.sklyvo-app .sk-btn--row {
+  flex: none;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------- surfaces --
+   Matěj /design: Vystouplá · Vyrytá · Tmavá
+   ------------------------------------------------------------------------ */
+
+.sklyvo-app .sk-surface,
+.sklyvo-app .sk-surface--raised {
+  padding: 0;
+  border-radius: var(--sk-radius-card);
+  border: none;
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+  color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-surface--pad {
-  padding: 20px 22px 22px;
+  padding: var(--sk-pad-card-x) var(--sk-pad-card-y) var(--sk-pad-card-y);
+}
+
+/* Search / filter / action strip — bar, not a thin floating “noodle” */
+.sklyvo-app .sk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: 52px;
+  gap: 0.5rem;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+@media (min-width: 768px) {
+  .sklyvo-app .sk-toolbar {
+    min-height: 56px;
+    gap: 0.75rem;
+    padding: 10px 16px;
+  }
+}
+
+/* Quieter than sk-surface card float — strip sits on the page, doesn’t hover */
+.sklyvo-app .sk-surface.sk-toolbar,
+.sklyvo-app .sk-toolbar.sk-surface {
+  border-radius: 14px;
+  background: var(--sk-panel);
+  background-image: none;
+  border: 1px solid var(--sk-panel-edge);
+  box-shadow:
+    0 4px 14px -8px rgba(30, 70, 110, 0.16),
+    0 1px 2px rgba(30, 70, 110, 0.05);
+}
+
+/* Toolbar secondary — raised soft-UI, readable on white strip (not a flat outline) */
+.sklyvo-app .sk-toolbar .sk-press-btn {
+  color: var(--sk-ink) !important;
+  background: var(--sk-light-bg) !important;
+  border: none !important;
+  box-shadow: var(--sk-raised-shadow) !important;
+  font-weight: 600 !important;
+}
+
+.sklyvo-app .sk-toolbar .sk-press-btn:hover {
+  color: var(--sk-ink) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-raised-hover) !important;
+}
+
+.sklyvo-app .sk-toolbar .sk-press-btn:active,
+.sklyvo-app .sk-toolbar .sk-press-btn[data-state="open"],
+.sklyvo-app .sk-toolbar .sk-press-btn[aria-expanded="true"] {
+  transform: translateY(1px) !important;
+  background: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.4),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+}
+
+/* CRM bulk-selection mode — same toolbar chrome, quieter accent */
+.sklyvo-app .sk-toolbar.sk-toolbar--selection {
+  background: color-mix(in oklab, var(--sk-brand) 6%, var(--sk-panel));
+  border-color: color-mix(in oklab, var(--sk-brand) 16%, var(--sk-panel-edge));
+}
+
+.sklyvo-app .sk-selection__count {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sk-muted);
+  white-space: nowrap;
+}
+
+.sklyvo-app .sk-selection__count strong {
+  color: var(--sk-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sklyvo-app .sk-selection__actions > button,
+.sklyvo-app .sk-selection__actions > .sk-press-btn {
+  gap: 6px;
+  padding-inline: 12px !important;
+  font-size: 12.5px !important;
+}
+
+.sklyvo-app .sk-selection__select {
+  border-radius: 12px !important;
+  border: none !important;
+  background: var(--sk-sunken) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
+  color: var(--sk-ink) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+
+/* Soft success action in toolbars (Odeslat vše) */
+.sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__success,
+.sklyvo-app .sk-press-btn.sk-selection__success {
+  color: #047857 !important;
+}
+
+.sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__success:hover,
+.sklyvo-app .sk-press-btn.sk-selection__success:hover {
+  color: #065f46 !important;
+}
+
+.sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__danger,
+.sklyvo-app .sk-selection__danger {
+  color: #b42318 !important;
+}
+
+.sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__danger:hover,
+.sklyvo-app .sk-selection__danger:hover {
+  color: #912018 !important;
+}
+
+.sklyvo-app .sk-selection__clear {
+  color: var(--sk-muted) !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.sklyvo-app .sk-selection__clear:hover {
+  color: var(--sk-ink) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.sklyvo-app .sk-selection__hint {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-selection__hint button {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 650;
+  color: var(--sk-brand);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.sklyvo-app .sk-selection__hint button:hover {
+  text-decoration: none;
 }
 
 .sklyvo-app .sk-surface--engraved {
   background: var(--sk-sunken);
-  border: 1px solid var(--sk-border);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: var(--sk-sunken-shadow);
+}
+
+.sklyvo-app .sk-surface--dark {
+  background: linear-gradient(
+    170deg,
+    oklch(0.34 0.02 250) 0%,
+    oklch(0.2 0.015 250) 100%
+  );
+  border: none;
+  box-shadow: var(--sk-shadow-dark);
+  color: #fff;
+}
+
+.sklyvo-app .sk-surface--hero {
+  border-radius: var(--sk-radius-hero);
+  box-shadow: var(--sk-card-shadow);
+  padding: var(--sk-pad-card-x) var(--sk-pad-card-y) var(--sk-pad-card-y);
+}
+
+.sklyvo-app .sk-surface__title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-surface__body {
+  margin: 7px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: oklch(0.52 0.015 250);
+}
+
+.sklyvo-app .sk-surface--dark .sk-surface__title,
+.sklyvo-app .sk-surface--dark .sk-type-h1,
+.sklyvo-app .sk-surface--dark .sk-type-h2,
+.sklyvo-app .sk-surface--dark .sk-type-h3 {
+  color: #fff;
+}
+
+.sklyvo-app .sk-surface--dark .sk-surface__body,
+.sklyvo-app .sk-surface--dark .sk-type-body,
+.sklyvo-app .sk-surface--dark .sk-type-small {
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .sklyvo-app .sk-surface--empty {
@@ -397,6 +719,8 @@
   text-align: center;
   border-radius: 14px;
   background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
 .sklyvo-app .sk-chip {
@@ -446,7 +770,7 @@
   gap: 11px;
   min-height: 42px;
   padding: 0 12px;
-  border-radius: 12px;
+  border-radius: var(--sk-radius-control);
   font-size: 13.5px;
   font-weight: 500;
   color: var(--sk-link);
@@ -486,28 +810,75 @@
   transition: color 0.12s ease;
 }
 
-/* Active icon stays brand blue — including while hovered (don't go charcoal) */
+/* Active icon — ink soft (Matěj), not brand blue */
 .sklyvo-app .sk-nav-item.is-active .sk-nav-icon,
 .sklyvo-app .sk-nav-item.is-active:hover .sk-nav-icon,
 .sklyvo-app .sk-nav-track .sk-nav-item.is-active .sk-nav-icon,
 .sklyvo-app .sk-nav-track .sk-nav-item.is-active:hover .sk-nav-icon {
   color: var(--sk-nav-active-icon);
-  transition: none;
 }
 
 .sklyvo-app .sk-nav-item:not(.is-active):hover .sk-nav-icon {
   color: var(--sk-ink-soft);
 }
 
+.sklyvo-app .sk-nav-tree {
+  min-width: 0;
+}
+
+/* Vertical rail under Autopilot — segmented, never through the dots */
+.sklyvo-app .sk-nav-tree__branch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 2px 0 4px;
+  /* Align rail under parent icon center (12px pad + ~10px icon mid) */
+  margin-left: 22px;
+  padding-left: 14px;
+}
+
+/* Short stub from parent down to the first dot */
+.sklyvo-app .sk-nav-tree__branch::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 1px;
+  height: 8px;
+  background: color-mix(in oklab, var(--sk-muted) 38%, transparent);
+  pointer-events: none;
+}
+
 .sklyvo-app .sk-nav-sub {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px 8px 8px;
+  gap: 10px;
+  padding: 7px 10px 7px 0;
   border-radius: 10px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--sk-muted);
+  background: transparent;
+  transition: color 0.16s ease;
+}
+
+/* Connector between this dot and the next — stops clear of both */
+.sklyvo-app .sk-nav-sub:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: calc(50% + 6px);
+  width: 1px;
+  height: calc(100% + 2px - 12px);
+  background: color-mix(in oklab, var(--sk-muted) 38%, transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sklyvo-app .sk-nav-sub:hover {
+  color: var(--sk-ink-soft);
 }
 
 .sklyvo-app .sk-nav-sub.is-active {
@@ -516,15 +887,72 @@
 }
 
 .sklyvo-app .sk-nav-dot {
+  position: relative;
+  z-index: 1;
   width: 6px;
   height: 6px;
+  margin-left: -17px; /* center on the rail */
   border-radius: 999px;
-  background: transparent;
+  background: color-mix(in oklab, var(--sk-muted) 55%, transparent);
   flex: none;
+}
+
+.sklyvo-app .sk-nav-sub:hover .sk-nav-dot {
+  background: color-mix(in oklab, var(--sk-muted) 75%, transparent);
 }
 
 .sklyvo-app .sk-nav-sub.is-active .sk-nav-dot {
   background: var(--sk-brand);
+}
+
+/* Sonar halo on active sub-item */
+.sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::before,
+.sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sk-brand) 32%, transparent);
+  transform: translate(-50%, -50%) scale(0.7);
+  pointer-events: none;
+  animation: sk-nav-sonar 2s ease-out infinite;
+}
+
+.sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::before {
+  width: 16px;
+  height: 16px;
+}
+
+.sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::after {
+  width: 11px;
+  height: 11px;
+  background: color-mix(in oklab, var(--sk-brand) 24%, transparent);
+  animation-delay: 0.55s;
+}
+
+@keyframes sk-nav-sonar {
+  0% {
+    opacity: 0.75;
+    transform: translate(-50%, -50%) scale(0.55);
+  }
+  75% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::before,
+  .sklyvo-app .sk-nav-sub.is-active .sk-nav-dot::after {
+    animation: none;
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
 }
 
 /* Sliding active pill — vertical sidebar list */
@@ -547,7 +975,7 @@
   right: 0.75rem;
   width: auto;
   z-index: 0;
-  border-radius: 12px;
+  border-radius: var(--sk-radius-control);
   pointer-events: none;
   overflow: visible;
   background: var(--sk-nav-active);
@@ -653,25 +1081,24 @@
   background: transparent;
 }
 
-/* Room for soft card shadows — overflow:hidden parents otherwise clip them. */
+/* Equal page inset on all sides — content uses full width beside the sidebar. */
 .sklyvo-app .sk-main > main {
   padding-left: max(0.85rem, env(safe-area-inset-left));
   padding-right: max(0.85rem, env(safe-area-inset-right));
+  padding-top: max(0.85rem, env(safe-area-inset-top));
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-main > main {
     padding-left: 1.15rem;
     padding-right: 1.15rem;
+    padding-top: 1.15rem;
   }
 }
 
 @media (min-width: 768px) {
   .sklyvo-app .sk-main > main {
-    padding-left: 1.75rem;
-    padding-right: 1.75rem;
-    padding-top: 1.15rem;
-    padding-bottom: 1.15rem;
+    padding: 1.15rem;
   }
 }
 
@@ -687,18 +1114,19 @@
   box-sizing: border-box;
   min-height: 0;
   overflow: hidden;
-  padding: 10px 10px 12px;
+  /* Vertical rhythm only — horizontal inset comes from .sk-main > main */
+  padding: 0 0 4px;
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-autopilot__frame {
-    padding: 12px 18px 16px;
+    padding: 0 0 6px;
   }
 }
 
 @media (min-width: 768px) {
   .sklyvo-app .sk-autopilot__frame {
-    padding: 14px 22px 18px;
+    padding: 0;
   }
 }
 
@@ -711,46 +1139,41 @@
   margin-bottom: 0 !important;
 }
 
-/* Segmented control — sunken track + sliding brand thumb */
+/* Segmented control — Matěj: sunken track + raised white thumb */
 .sklyvo-app .sk-segment {
   position: relative;
   box-sizing: border-box;
   overflow: visible;
   gap: 0;
-  padding: 4px;
-  border-radius: 16px;
-  border: 1px solid var(--sk-border-soft);
+  padding: 3px;
+  border-radius: var(--sk-radius-control);
+  border: none;
   background: var(--sk-sunken);
-  box-shadow: none;
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-segment__thumb {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 3px;
+  bottom: 3px;
   left: 0;
   z-index: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   pointer-events: none;
-  background-image: linear-gradient(
-    180deg,
-    #3bbcff 0%,
-    var(--sk-brand) 48%,
-    #0290e0 100%
-  );
+  background: var(--sk-light-bg);
   box-shadow:
-    0 8px 16px -8px rgba(2, 167, 255, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 6px 12px -7px rgba(30, 70, 110, 0.45),
+    inset 0 1.5px 0 #fff;
   transition:
-    transform 0.32s cubic-bezier(0.34, 1.2, 0.5, 1),
-    width 0.32s cubic-bezier(0.34, 1.2, 0.5, 1),
+    transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1),
+    width 0.28s cubic-bezier(0.34, 1.35, 0.5, 1),
     opacity 0.18s ease;
   will-change: transform, width;
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-segment__thumb {
-    border-radius: 14px;
+    border-radius: 10px;
   }
 }
 
@@ -760,22 +1183,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  padding: 0 15px;
+  min-height: 30px;
   background: transparent !important;
   box-shadow: none !important;
-  transition: color 0.22s ease;
+  font-size: 12px;
+  font-weight: 700;
+  transition: color 0.18s ease;
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-segment__item {
-    border-radius: 14px;
-    padding: 0.55rem 0.85rem;
+    border-radius: 10px;
+    padding: 0 15px;
   }
 }
 
 .sklyvo-app .sk-segment__item--idle {
-  color: var(--sk-muted);
+  color: oklch(0.52 0.015 250);
 }
 
 .sklyvo-app .sk-segment__item--idle:hover {
@@ -784,7 +1210,7 @@
 
 .sklyvo-app .sk-segment__item--active,
 .sklyvo-app a.sk-segment__item--active {
-  color: #fff !important;
+  color: var(--sk-ink) !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -798,35 +1224,38 @@
   filter: none;
   transform: none !important;
   box-shadow: none !important;
+  color: var(--sk-ink) !important;
 }
 
-/* CRM list/board view toggle — sunken track + sliding raised thumb */
+/* CRM list/board view toggle — soft sunken track + soft raised thumb */
 .sklyvo-app .sk-view-toggle {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0;
-  padding: 3px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 2px;
   border-radius: 14px;
-  border: 1px solid var(--sk-border);
+  border: none;
   background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow:
+    inset 0 2px 5px rgba(30, 70, 110, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .sklyvo-app .sk-view-toggle__thumb {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
+  top: 2px;
+  bottom: 2px;
   left: 0;
   z-index: 0;
   border-radius: 11px;
   pointer-events: none;
-  background: var(--sk-light-bg);
+  background: linear-gradient(180deg, #ffffff 0%, oklch(0.96 0.005 240) 100%);
   box-shadow:
-    0 8px 18px -8px rgba(30, 70, 110, 0.3),
-    0 2px 6px rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -1px 2px rgba(120, 160, 190, 0.18);
+    0 6px 12px -7px rgba(30, 70, 110, 0.4),
+    inset 0 1.5px 0 #fff;
   transition:
     transform 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
     width 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
@@ -860,7 +1289,7 @@
 @media (min-width: 768px) {
   .sklyvo-app .sk-view-toggle__item {
     width: 40px;
-    height: 34px;
+    height: 32px;
     border-radius: 12px;
   }
 }
@@ -870,7 +1299,7 @@
 }
 
 .sklyvo-app .sk-view-toggle__item--active {
-  color: var(--sk-brand);
+  color: var(--sk-ink);
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -910,6 +1339,24 @@
   overflow: visible;
 }
 
+/* Control strip — quiet raised panel (not the harsh shadow-sm → card float) */
+.sklyvo-app .sk-autopilot-control {
+  box-sizing: border-box;
+  border: 1px solid var(--sk-panel-edge);
+  border-radius: var(--sk-radius-card);
+  background: var(--sk-panel);
+  box-shadow:
+    0 4px 14px -8px rgba(30, 70, 110, 0.16),
+    0 1px 2px rgba(30, 70, 110, 0.05);
+}
+
+/* Soften table card shadow on Autopilot so it doesn’t clip into a dark edge */
+.sklyvo-app .sk-autopilot__table > .sk-data-panel {
+  box-shadow:
+    0 4px 14px -8px rgba(30, 70, 110, 0.14),
+    0 1px 2px rgba(30, 70, 110, 0.04) !important;
+}
+
 .sklyvo-app .sk-autopilot__stack > .sk-autopilot__table {
   display: flex;
   min-height: 0;
@@ -926,40 +1373,28 @@
   overflow: hidden;
 }
 
-/* Overview: don't hard-clip soft card shadows; keep equal top/bottom page inset */
-.sklyvo-app .sk-main:has(.sk-dashboard-frame) > main {
-  overflow: visible !important;
-  padding-top: 1.15rem !important;
-  padding-bottom: 1.15rem !important;
+/* Overview: don't hard-clip soft card shadows; equal inset on desktop */
+@media (min-width: 768px) {
+  .sklyvo-app .sk-main:has(.sk-dashboard-frame) > main {
+    overflow: visible !important;
+    padding: 1.15rem !important;
+  }
 }
 
 .sklyvo-app .sk-dashboard-frame {
   box-sizing: border-box;
   width: 100%;
-  max-width: 80rem;
-  margin-inline: auto;
-  /* Horizontal only — vertical inset comes from main (same top & bottom) */
-  padding: 0 8px;
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
   overflow: visible;
-  --sk-dash-inline: 18px;
-}
-
-@media (min-width: 768px) {
-  .sklyvo-app .sk-dashboard-frame {
-    padding: 0 8px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .sklyvo-app .sk-dashboard-frame {
-    --sk-dash-inline: 20px;
-  }
+  --sk-dash-inline: 0;
 }
 
 .sklyvo-app .sk-dashboard-header {
   box-sizing: border-box;
   width: 100%;
-  padding-inline: var(--sk-dash-inline);
+  padding-inline: 0;
 }
 
 /*
@@ -1159,18 +1594,22 @@
   }
 }
 
-/* Language toggle — same segmented control as login */
+/* Language toggle — soft sunken track + soft raised thumb (matches sk-btn--md height) */
 .sk-lang {
   position: relative;
   display: inline-flex;
   flex: none;
   align-items: stretch;
   flex-shrink: 0;
+  box-sizing: border-box;
+  height: 44px;
   padding: 3px;
-  border-radius: 11px;
-  border: 1px solid var(--sk-panel-edge);
+  border-radius: var(--sk-radius-control);
+  border: none;
   background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow:
+    inset 0 2px 5px rgba(30, 70, 110, 0.18),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
 }
 
 .sk-lang__thumb {
@@ -1180,11 +1619,13 @@
   left: 0;
   width: 42px;
   box-sizing: border-box;
-  border-radius: 9px;
+  border-radius: calc(var(--sk-radius-control) - 3px);
   z-index: 0;
   pointer-events: none;
-  background: var(--sk-raised);
-  box-shadow: var(--sk-raised-shadow);
+  background: linear-gradient(180deg, #ffffff 0%, oklch(0.96 0.005 240) 100%);
+  box-shadow:
+    0 6px 12px -7px rgba(30, 70, 110, 0.4),
+    inset 0 1.5px 0 #fff;
   transition:
     transform 0.3s cubic-bezier(0.34, 1.3, 0.5, 1),
     width 0.3s cubic-bezier(0.34, 1.3, 0.5, 1),
@@ -1201,14 +1642,14 @@
   justify-content: center;
   width: 42px;
   min-width: 42px;
-  height: 28px;
+  height: 100%;
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 9px;
+  border-radius: calc(var(--sk-radius-control) - 3px);
   background: transparent;
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1;
@@ -1234,35 +1675,6 @@
   width: calc(100% - 6px);
 }
 
-.dark .sk-lang,
-.dark .sklyvo-app .sk-lang {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
-}
-
-.dark .sk-lang__thumb,
-.dark .sklyvo-app .sk-lang__thumb {
-  background: linear-gradient(
-    180deg,
-    oklch(0.3 0.018 250) 0%,
-    oklch(0.24 0.015 250) 100%
-  ) !important;
-  box-shadow:
-    0 6px 14px -8px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-}
-
-.dark .sk-lang__btn,
-.dark .sklyvo-app .sk-lang__btn {
-  color: oklch(0.68 0.015 250) !important;
-}
-
-.dark .sk-lang__btn[aria-pressed="true"],
-.dark .sklyvo-app .sk-lang__btn[aria-pressed="true"] {
-  color: oklch(0.96 0.008 250) !important;
-}
-
 /* ------------------------------------------------------------- overview -- */
 
 .sklyvo-app .sk-page-head {
@@ -1271,45 +1683,83 @@
 
 .sklyvo-app .sk-page-head__title {
   margin: 0 0 8px;
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: -0.025em;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   line-height: 1.15;
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-page-head__sub {
   margin: 0;
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.6;
   color: var(--sk-muted);
+}
+
+/* Soft page hero icon — sunken chip (Matej), same as Pracovní prostor */
+.sklyvo-app .sk-page-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  padding: 0;
+  border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
+  border-radius: 14px;
+  background: var(
+    --sk-sunken,
+    linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))
+  );
+  color: var(--sk-icon, var(--sk-ink));
+  box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
+}
+
+.sklyvo-app .sk-page-badge svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: none;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-page-badge {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 16px;
+  }
+
+  .sklyvo-app .sk-page-badge svg {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .sklyvo-app .sk-page-head__title {
+    font-size: 28px;
+  }
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-page-head__title {
-    font-size: 1.6875rem;
+    font-size: 34px;
   }
 }
 
 .sklyvo-app .sk-stat {
   padding: 12px 14px 14px;
-  border-radius: 14px;
-  background: var(--sk-glass);
-  border: 1px solid var(--sk-border);
-  box-shadow:
-    0 8px 20px -8px rgba(30, 70, 110, 0.16),
-    0 2px 6px -2px rgba(30, 70, 110, 0.08),
-    inset 0 1.5px 0 var(--sk-border-strong);
+  border-radius: var(--sk-radius-card);
+  background: var(--sk-light-bg);
+  border: none;
+  box-shadow: var(--sk-raised-shadow);
   transition: transform 0.16s var(--sk-ease-pop), box-shadow 0.16s ease;
 }
 
 .sklyvo-app .sk-stat:hover {
   transform: translateY(-1px);
-  box-shadow:
-    0 20px 36px -14px rgba(30, 70, 110, 0.26),
-    0 4px 12px -6px rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-border-strong);
+  box-shadow: var(--sk-shadow-raised-hover);
 }
 
 .sklyvo-app .sk-stat .sk-chip {
@@ -1330,18 +1780,19 @@
 }
 
 .sklyvo-app .sk-stat__label {
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sk-muted);
 }
 
 .sklyvo-app .sk-stat__value {
   margin: 8px 0 0;
-  font-size: 1.35rem;
-  font-weight: 900;
-  letter-spacing: -0.03em;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
   color: var(--sk-ink);
   font-variant-numeric: tabular-nums;
 }
@@ -1361,13 +1812,8 @@
   width: 100%;
   padding: 14px 15px;
   border-radius: 14px;
-  background: var(--sk-raised);
-  box-shadow:
-    0 10px 24px -6px rgba(30, 70, 110, 0.26),
-    0 4px 10px 0 rgba(30, 70, 110, 0.13),
-    0 1px 3px 0 rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px rgba(120, 160, 190, 0.22);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
   transition:
     transform 0.12s ease,
     box-shadow 0.12s ease,
@@ -1376,14 +1822,13 @@
 
 .sklyvo-app .sk-action-row:hover {
   transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-raised-hover);
 }
 
 .sklyvo-app .sk-action-row:active {
   transform: translateY(1px);
   background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.38),
-    inset 0 -1px 0 var(--sk-highlight-soft);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-action-row__icon {
@@ -1421,19 +1866,21 @@
 .sklyvo-app .sk-action-row__title {
   display: block;
   margin: 0;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-action-row__meta {
   display: block;
   margin: 2px 0 0;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--sk-muted-soft);
+  color: var(--sk-muted);
 }
 
 .sklyvo-app .sk-action-row__go {
@@ -1471,13 +1918,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--sk-border);
+  padding: 13px 15px;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   background: var(--sk-sunken);
   box-shadow:
     inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft);
+    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .sklyvo-app .sk-overview-grid__left > .shrink-0,
@@ -1493,7 +1940,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  padding: 18px 20px 18px;
+  padding: var(--sk-pad-card-x);
 }
 
 .sklyvo-app .sk-panel-bottom__scroll {
@@ -1508,7 +1955,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sk-space-block);
   min-height: 0;
   align-items: stretch;
 }
@@ -1518,7 +1965,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sk-space-block);
   min-width: 0;
   min-height: 0;
 }
@@ -1526,17 +1973,17 @@
 @media (min-width: 1024px) {
   .sklyvo-app .sk-overview-grid {
     flex-direction: row;
-    gap: 16px;
+    gap: var(--sk-space-block);
   }
 
   .sklyvo-app .sk-overview-grid__left {
     flex: 2 1 0%;
-    gap: 16px;
+    gap: var(--sk-space-block);
   }
 
   .sklyvo-app .sk-overview-grid__right {
     flex: 1 1 0%;
-    gap: 16px;
+    gap: var(--sk-space-block);
   }
 }
 
@@ -1554,10 +2001,10 @@
   flex: none;
   border-radius: 9px;
   background: var(--sk-light-bg);
-  color: var(--sk-icon);
+  color: oklch(0.4 0.02 250);
   box-shadow:
     0 6px 12px -7px rgba(30, 70, 110, 0.35),
-    inset 0 1.5px 0 var(--sk-highlight);
+    inset 0 1.5px 0 #fff;
 }
 
 .sklyvo-app .sk-list__icon--lg {
@@ -1578,6 +2025,7 @@
 .sklyvo-app .sk-list__title {
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0;
   color: var(--sk-ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1590,13 +2038,35 @@
   color: var(--sk-muted-soft);
 }
 
-.sklyvo-app .sk-btn--row {
+.sklyvo-app .sk-list__action {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 30px;
   padding: 0 12px;
+  border: none;
   border-radius: 10px;
-  font-size: 11.5px;
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+  font-size: 12px;
   font-weight: 700;
+  color: var(--sk-ink);
+  cursor: pointer;
+  transition:
+    transform 0.14s var(--sk-ease-pop),
+    box-shadow 0.14s ease;
+}
+
+.sklyvo-app .sk-list__action:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-raised-hover);
+}
+
+.sklyvo-app .sk-list__action:active {
+  transform: translateY(1px);
+  background: var(--sk-sunken);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-select {
@@ -1638,10 +2108,7 @@
 .sklyvo-app .sk-select:focus,
 .sklyvo-app .sk-select:focus-visible {
   outline: none;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.26),
-    inset 0 -1px 0 var(--sk-highlight-soft),
-    0 0 0 2px color-mix(in oklab, var(--sk-brand) 28%, transparent);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-select[data-disabled],
@@ -1674,12 +2141,7 @@
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-stat__value {
-    font-size: 1.45rem;
-  }
-
-  .sklyvo-app .sk-btn--md {
-    height: 36px;
-    padding: 0 18px;
+    font-size: 22px;
   }
 }
 
@@ -1687,22 +2149,17 @@
    App-wide soft-UI remaps (Sniper / Radar / CRM / Autopilot / …)
    =============================================================== */
 
-/* --- Brand CTA: Tailwind blue-600 buttons → soft brand raised --- */
+/* --- Primary CTA: Tailwind blue-600 buttons → Matěj dark primary --- */
 
 .sklyvo-app .bg-blue-600,
 .sklyvo-app .bg-blue-700,
 .sklyvo-app button.bg-blue-600,
 .sklyvo-app a.bg-blue-600 {
   background-color: transparent !important;
-  background-image: linear-gradient(
-    180deg,
-    #3bbcff 0%,
-    var(--sk-brand) 48%,
-    #0290e0 100%
-  ) !important;
+  background-image: var(--sk-ink-bg) !important;
   color: #fff !important;
   border: none !important;
-  box-shadow: var(--sk-brand-shadow) !important;
+  box-shadow: var(--sk-shadow-dark) !important;
   transition:
     transform 0.16s var(--sk-ease-pop),
     box-shadow 0.12s ease,
@@ -1713,14 +2170,9 @@
 .sklyvo-app .bg-blue-600:hover,
 .sklyvo-app button.bg-blue-600:hover,
 .sklyvo-app a.bg-blue-600:hover {
-  background-image: linear-gradient(
-    180deg,
-    #4ec4ff 0%,
-    #0ab0ff 48%,
-    #0298ea 100%
-  ) !important;
-  box-shadow: var(--sk-brand-shadow-hover) !important;
-  filter: brightness(1.03);
+  background-image: var(--sk-ink-bg) !important;
+  box-shadow: var(--sk-shadow-dark-hover) !important;
+  filter: brightness(1.06);
   transform: translateY(-1px);
 }
 
@@ -1729,20 +2181,17 @@
 .sklyvo-app a.bg-blue-600:active {
   transform: translateY(1px) !important;
   box-shadow:
-    0 3px 8px -1px rgba(2, 167, 255, 0.3),
-    inset 0 2px 4px rgba(0, 90, 140, 0.35) !important;
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45) !important;
   filter: none;
 }
 
 .sklyvo-app .disabled\:bg-blue-400:disabled,
 .sklyvo-app .bg-blue-400 {
-  background-image: linear-gradient(
-    180deg,
-    #9ad9f5 0%,
-    #6ec4eb 100%
-  ) !important;
-  box-shadow: none !important;
-  opacity: 0.75;
+  background-image: var(--sk-sunken) !important;
+  color: oklch(0.72 0.01 250) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
+  opacity: 1;
 }
 
 .sklyvo-app .bg-blue-50 {
@@ -1763,72 +2212,113 @@
 }
 
 .sklyvo-app .ring-blue-500,
+.sklyvo-app .ring-blue-600,
 .sklyvo-app .focus-visible\:ring-blue-500:focus-visible,
-.sklyvo-app .focus\:ring-blue-500:focus {
-  --tw-ring-color: color-mix(in oklab, var(--sk-brand) 40%, transparent) !important;
+.sklyvo-app .focus-visible\:ring-blue-600:focus-visible,
+.sklyvo-app .focus\:ring-blue-500:focus,
+.sklyvo-app .focus\:ring-blue-600:focus,
+.sklyvo-app .focus-visible\:ring-blue-500\/40:focus-visible,
+.sklyvo-app .focus-within\:ring-blue-600\/25:focus-within {
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-/* Checkbox checked → brand (switches have their own soft-UI below) */
-.sklyvo-app [data-state="checked"][class*="bg-blue-600"]:not([role="switch"]),
-.sklyvo-app [role="checkbox"][data-state="checked"] {
-  background-color: var(--sk-brand) !important;
+/* Checkbox — flat, quiet; soft-UI shadows look wrong inside gray row pills */
+.sklyvo-app [role="checkbox"],
+.sklyvo-app button[role="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  border-radius: 4px !important;
+  border: 1.5px solid color-mix(in oklab, var(--sk-ink) 22%, transparent) !important;
+  background: transparent !important;
   background-image: none !important;
-  border-color: var(--sk-brand) !important;
+  box-shadow: none !important;
   color: #fff !important;
+  transform: none !important;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease !important;
 }
 
-/* Soft-UI switches — sunken track + raised thumb */
+.sklyvo-app [role="checkbox"]:hover,
+.sklyvo-app button[role="checkbox"]:hover {
+  border-color: color-mix(in oklab, var(--sk-ink) 40%, transparent) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  background: transparent !important;
+}
+
+.sklyvo-app [role="checkbox"][data-state="checked"],
+.sklyvo-app button[role="checkbox"][data-state="checked"],
+.sklyvo-app [data-state="checked"][class*="bg-blue-600"]:not([role="switch"]) {
+  background: var(--sk-ink) !important;
+  background-image: none !important;
+  border-color: var(--sk-ink) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.sklyvo-app [role="checkbox"][data-state="indeterminate"],
+.sklyvo-app button[role="checkbox"][data-state="indeterminate"] {
+  background: var(--sk-ink) !important;
+  background-image: none !important;
+  border-color: var(--sk-ink) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Soft-UI switches — Matěj: sunken track → ink on, raised thumb (desktop-dense) */
 .sklyvo-app button[role="switch"],
 .sklyvo-app [role="switch"] {
   position: relative;
-  height: 22px !important;
-  width: 40px !important;
-  min-width: 40px !important;
-  padding: 2px !important;
+  height: 26px !important;
+  width: 46px !important;
+  min-width: 46px !important;
+  padding: 0 !important;
   border: none !important;
   border-radius: 999px !important;
   transition:
-    background 0.16s ease,
-    box-shadow 0.16s ease !important;
+    background 0.2s ease,
+    box-shadow 0.2s ease !important;
 }
 
 .sklyvo-app button[role="switch"][data-state="unchecked"],
 .sklyvo-app [role="switch"][data-state="unchecked"] {
   background: var(--sk-sunken) !important;
-  background-image: none !important;
+  background-image: var(--sk-sunken) !important;
   box-shadow: var(--sk-sunken-shadow) !important;
 }
 
 .sklyvo-app button[role="switch"][data-state="checked"],
 .sklyvo-app [role="switch"][data-state="checked"] {
   background-color: transparent !important;
-  background-image: linear-gradient(
-    180deg,
-    #3bbcff 0%,
-    var(--sk-brand) 52%,
-    #0290e0 100%
-  ) !important;
+  background-image: var(--sk-ink-bg) !important;
   border-color: transparent !important;
   color: #fff !important;
-  box-shadow:
-    inset 0 1px 2px rgba(0, 90, 140, 0.28),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.28),
-    0 6px 14px -6px rgba(2, 167, 255, 0.55) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
   transform: none !important;
 }
 
 .sklyvo-app button[role="switch"] > span,
 .sklyvo-app [role="switch"] > span {
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
   display: block !important;
-  height: 18px !important;
-  width: 18px !important;
+  height: 20px !important;
+  width: 20px !important;
   border-radius: 999px !important;
-  background: var(--sk-panel) !important;
+  background: #fff !important;
   box-shadow:
-    0 3px 7px rgba(30, 70, 110, 0.3),
-    0 1px 2px rgba(30, 70, 110, 0.14),
-    inset 0 1px 0 #fff !important;
-  transition: transform 0.16s var(--sk-ease-pop) !important;
+    0 4px 10px -4px rgba(0, 0, 0, 0.45),
+    inset 0 1.5px 0 #fff !important;
+  transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1) !important;
 }
 
 .sklyvo-app button[role="switch"][data-state="unchecked"] > span,
@@ -1838,7 +2328,31 @@
 
 .sklyvo-app button[role="switch"][data-state="checked"] > span,
 .sklyvo-app [role="switch"][data-state="checked"] > span {
-  transform: translateX(18px) !important;
+  transform: translateX(20px) !important;
+}
+
+/* Compact switch for dense toolbars (matches h-8 controls) */
+.sklyvo-app button[role="switch"].sk-switch--sm,
+.sklyvo-app [role="switch"].sk-switch--sm {
+  height: 22px !important;
+  width: 38px !important;
+  min-width: 38px !important;
+}
+
+.sklyvo-app button[role="switch"].sk-switch--sm > span,
+.sklyvo-app [role="switch"].sk-switch--sm > span {
+  top: 2px !important;
+  left: 2px !important;
+  height: 18px !important;
+  width: 18px !important;
+  box-shadow:
+    0 4px 8px -4px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 #fff !important;
+}
+
+.sklyvo-app button[role="switch"].sk-switch--sm[data-state="checked"] > span,
+.sklyvo-app [role="switch"].sk-switch--sm[data-state="checked"] > span {
+  transform: translateX(16px) !important;
 }
 
 .sklyvo-app [data-state="unchecked"][class*="bg-slate-200"] {
@@ -1884,10 +2398,10 @@
   --tw-ring-color: color-mix(in oklab, var(--sk-brand) 35%, transparent) !important;
 }
 
-/* --- Surfaces: cards / panels --- */
+/* --- Surfaces: cards / panels (Matěj raised default) --- */
 
 .sklyvo-app .bg-card {
-  background: var(--sk-glass) !important;
+  background: var(--sk-light-bg) !important;
 }
 
 .sklyvo-app .bg-background {
@@ -1899,25 +2413,45 @@
 .sklyvo-app .rounded-2xl.border.border-border\/50.bg-card,
 .sklyvo-app .rounded-xl.border.bg-card,
 .sklyvo-app .rounded-2xl.bg-card {
-  border-color: var(--sk-border-soft) !important;
+  border: none !important;
+  border-radius: var(--sk-radius-card) !important;
+  background: var(--sk-light-bg) !important;
+  box-shadow: var(--sk-raised-shadow) !important;
+}
+
+/* Stacked list cards (Radar results) — quiet raise, not full panel float */
+.sklyvo-app .sk-list-card,
+.sklyvo-app .sk-list-card.rounded-xl.border.bg-card,
+.sklyvo-app .sk-list-card.rounded-2xl.border.bg-card,
+.sklyvo-app .sk-list-card.shadow-sm,
+.sklyvo-app .sk-list-card.hover\:shadow-md:hover {
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent) !important;
+  border-radius: var(--sk-radius-card) !important;
+  background: var(--sk-light-bg) !important;
   box-shadow:
-    0 8px 22px -6px rgba(30, 70, 110, 0.14),
-    0 2px 6px -2px rgba(30, 70, 110, 0.07),
-    inset 0 1px 0 var(--sk-border-strong) !important;
+    0 2px 8px -4px rgba(30, 70, 110, 0.12),
+    0 1px 2px rgba(30, 70, 110, 0.05),
+    inset 0 1px 0 var(--sk-highlight) !important;
+}
+
+.sklyvo-app .sk-list-card:hover {
+  box-shadow:
+    0 4px 12px -6px rgba(30, 70, 110, 0.14),
+    0 1px 3px rgba(30, 70, 110, 0.06),
+    inset 0 1px 0 var(--sk-highlight) !important;
+}
+
+.sklyvo-app .sk-list-card--selected {
+  border-color: color-mix(in oklab, var(--sk-brand) 35%, transparent) !important;
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-light-bg)) !important;
 }
 
 .sklyvo-app .shadow-sm {
-  box-shadow:
-    0 8px 20px -8px rgba(30, 70, 110, 0.14),
-    0 2px 6px -2px rgba(30, 70, 110, 0.07),
-    inset 0 1px 0 var(--sk-highlight-soft) !important;
+  box-shadow: var(--sk-raised-shadow) !important;
 }
 
 .sklyvo-app .shadow-md {
-  box-shadow:
-    0 12px 28px -10px rgba(30, 70, 110, 0.18),
-    0 4px 10px -4px rgba(30, 70, 110, 0.1),
-    inset 0 1px 0 var(--sk-highlight-soft) !important;
+  box-shadow: var(--sk-shadow-raised-hover) !important;
 }
 
 .sklyvo-app .shadow-xl,
@@ -1941,11 +2475,6 @@
     inset 0 1px 0 var(--sk-border-strong) !important;
 }
 
-.sklyvo-app .dark\:bg-zinc-950:is(.dark *),
-.dark .sklyvo-app .dark\:bg-zinc-950 {
-  background: oklch(0.22 0.015 250) !important;
-}
-
 /* Muted / sunken fields & boxes */
 .sklyvo-app .bg-muted,
 .sklyvo-app .bg-muted\/40,
@@ -1964,19 +2493,91 @@
   ) !important;
 }
 
-/* --- Form controls --- */
+/* --- Form controls (Matěj: engraved / sunken) --- */
 
 .sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 .sklyvo-app textarea,
-.sklyvo-app [data-slot="input"],
-.sklyvo-app .sk-field {
-  border-radius: 12px !important;
-  border: 1px solid var(--sk-border) !important;
+.sklyvo-app [data-slot="input"] {
+  border-radius: var(--sk-radius-control) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
   background: var(--sk-sunken) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
   color: var(--sk-ink) !important;
+  font-size: 14px !important;
+}
+
+/* Composed field shell (icon + input + note), like /design */
+.sklyvo-app .sk-field {
+  display: flex;
+  align-items: center;
+  gap: var(--sk-space-field);
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--sk-radius-control);
+  background: var(--sk-sunken);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--sk-sunken-shadow);
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-field--error {
+  border-color: oklch(0.72 0.13 25);
+}
+
+.sklyvo-app .sk-field__input {
+  flex: 1;
+  min-width: 0;
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  font-size: 14px;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-field__input:focus-visible {
+  box-shadow: none !important;
+  outline: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.sklyvo-app .sk-field__icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-field__note {
+  flex: none;
+  font-size: 11px;
+  color: oklch(0.66 0.015 250);
+}
+
+.sklyvo-app .sk-field__reveal {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sk-space-field);
+}
+
+/* Dialog portal uses asChild — no [data-radix-portal] wrapper */
+body:has(.sklyvo-app) [role="dialog"] .sk-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .sklyvo-app .sk-copilot-panel__input input {
@@ -2033,14 +2634,18 @@
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
+.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):focus,
 .sklyvo-app input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+.sklyvo-app textarea:focus,
 .sklyvo-app textarea:focus-visible {
   outline: none !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft),
-    0 0 0 2px color-mix(in oklab, var(--sk-brand) 28%, transparent) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
   --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
 }
 
 .sklyvo-app .sk-copilot-panel__input input:focus-visible {
@@ -2051,22 +2656,36 @@
 .sklyvo-app button[aria-haspopup="listbox"],
 .sklyvo-app [data-radix-select-trigger] {
   border-radius: 12px !important;
-  border: 1px solid var(--sk-border) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
   background: var(--sk-sunken) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
   color: var(--sk-ink) !important;
+  outline: none !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
 }
 
 .sklyvo-app [role="combobox"]:focus,
 .sklyvo-app [role="combobox"]:focus-visible,
-.sklyvo-app button[aria-haspopup="listbox"]:focus-visible {
+.sklyvo-app [role="combobox"][data-state="open"],
+.sklyvo-app [role="combobox"][data-state="closed"],
+.sklyvo-app button[aria-haspopup="listbox"]:focus,
+.sklyvo-app button[aria-haspopup="listbox"]:focus-visible,
+.sklyvo-app button[aria-haspopup="listbox"][data-state="open"],
+.sklyvo-app [data-radix-select-trigger]:focus,
+.sklyvo-app [data-radix-select-trigger]:focus-visible,
+.sklyvo-app [data-radix-select-trigger][data-state="open"] {
   outline: none !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft),
-    0 0 0 2px color-mix(in oklab, var(--sk-brand) 28%, transparent) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
 }
 
 /* Raised filter chips — override default sunken selects in toolbars */
@@ -2085,25 +2704,6 @@
     transform 0.12s var(--sk-ease-pop),
     box-shadow 0.12s ease,
     background 0.12s ease;
-}
-
-.dark .sklyvo-app .sk-filter-chip,
-.dark .sklyvo-app [role="combobox"].sk-filter-chip,
-.dark .sklyvo-app button.sk-filter-chip,
-.dark .sklyvo-app label.sk-filter-chip,
-.dark .sklyvo-app input.sk-filter-chip {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  background: linear-gradient(
-    180deg,
-    oklch(0.3 0.018 250) 0%,
-    oklch(0.245 0.015 250) 100%
-  ) !important;
-  color: var(--sk-ink) !important;
-}
-
-.dark .sklyvo-app .sk-filter-chip span,
-.dark .sklyvo-app [role="combobox"].sk-filter-chip span {
-  color: var(--sk-ink) !important;
 }
 
 .sklyvo-app label.sk-filter-chip {
@@ -2134,17 +2734,31 @@
 
 .sklyvo-app [role="combobox"].sk-filter-chip:focus,
 .sklyvo-app [role="combobox"].sk-filter-chip:focus-visible {
-  box-shadow:
-    var(--sk-raised-shadow),
-    0 0 0 2px color-mix(in oklab, var(--sk-brand) 28%, transparent) !important;
+  box-shadow: var(--sk-raised-shadow) !important;
 }
 
-/* Raised icon/control button with clear press-in */
-.sklyvo-app .sk-press-btn {
+/* No blue focus rings on switches / form controls */
+.sklyvo-app button[role="switch"]:focus,
+.sklyvo-app button[role="switch"]:focus-visible,
+.sklyvo-app [role="switch"]:focus,
+.sklyvo-app [role="switch"]:focus-visible {
+  outline: none !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+}
+
+/* Raised secondary soft-UI — ink text (muted looked disabled on labeled CTAs) */
+.sklyvo-app .sk-press-btn,
+.sklyvo-app a.sk-press-btn,
+.sklyvo-app a.sk-press-btn:link,
+.sklyvo-app a.sk-press-btn:visited {
   background: var(--sk-light-bg) !important;
-  border: 1px solid var(--sk-border) !important;
+  border: none !important;
   box-shadow: var(--sk-raised-shadow) !important;
-  color: var(--sk-muted) !important;
+  color: var(--sk-ink) !important;
   transition:
     transform 0.12s var(--sk-ease-pop),
     box-shadow 0.12s ease,
@@ -2152,7 +2766,8 @@
     color 0.12s ease !important;
 }
 
-.sklyvo-app .sk-press-btn:hover {
+.sklyvo-app .sk-press-btn:hover,
+.sklyvo-app a.sk-press-btn:hover {
   color: var(--sk-ink) !important;
   transform: translateY(-1px);
   box-shadow: var(--sk-shadow-raised-hover) !important;
@@ -2169,8 +2784,12 @@
   color: var(--sk-ink) !important;
 }
 
-/* Brand / primary CTA press-in (blue soft-UI) */
+/* Primary CTA press-in (Matěj dark soft-UI) */
 .sklyvo-app .sk-press-brand {
+  background: var(--sk-ink-bg) !important;
+  color: #fff !important;
+  border: none !important;
+  box-shadow: var(--sk-shadow-dark) !important;
   transition:
     transform 0.12s var(--sk-ease-pop),
     box-shadow 0.12s ease,
@@ -2179,15 +2798,16 @@
 
 .sklyvo-app .sk-press-brand:hover {
   transform: translateY(-1px);
-  filter: brightness(1.04);
+  box-shadow: var(--sk-shadow-dark-hover) !important;
+  filter: brightness(1.06);
 }
 
 .sklyvo-app .sk-press-brand:active {
   transform: translateY(1px) !important;
-  filter: brightness(0.97);
+  filter: none;
   box-shadow:
-    0 3px 8px -2px rgba(2, 167, 255, 0.35),
-    inset 0 2px 4px rgba(0, 90, 140, 0.35) !important;
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* --- Default / outline / ghost shadcn buttons inside app --- */
@@ -2195,47 +2815,98 @@
 .sklyvo-app button.bg-gold,
 .sklyvo-app .bg-gold {
   background-color: transparent !important;
-  background-image: linear-gradient(
-    180deg,
-    #3bbcff 0%,
-    var(--sk-brand) 48%,
-    #0290e0 100%
-  ) !important;
+  background-image: var(--sk-ink-bg) !important;
   color: #fff !important;
-  box-shadow: var(--sk-brand-shadow) !important;
+  box-shadow: var(--sk-shadow-dark) !important;
   border-radius: 12px !important;
+  border: none !important;
 }
 
 .sklyvo-app button.bg-gold:hover,
 .sklyvo-app .hover\:bg-gold-dim:hover {
-  filter: brightness(1.04);
-  box-shadow: var(--sk-brand-shadow-hover) !important;
+  filter: brightness(1.06);
+  box-shadow: var(--sk-shadow-dark-hover) !important;
   transform: translateY(-1px);
 }
 
-.sklyvo-app button.border.bg-transparent,
-.sklyvo-app button.border-border {
+.sklyvo-app button.border.bg-transparent:not([role="checkbox"]),
+.sklyvo-app button.border-border:not([role="checkbox"]) {
   background: var(--sk-light-bg) !important;
-  border: 1px solid var(--sk-border) !important;
+  border: none !important;
   box-shadow: var(--sk-raised-shadow) !important;
   border-radius: 12px !important;
   color: var(--sk-ink) !important;
 }
 
-.sklyvo-app button.border.bg-transparent:hover,
-.sklyvo-app button.border-border:hover {
-  background: var(--sk-raised) !important;
+.sklyvo-app button.border.bg-transparent:not([role="checkbox"]):hover,
+.sklyvo-app button.border-border:not([role="checkbox"]):hover {
+  background: var(--sk-light-bg) !important;
   box-shadow: var(--sk-shadow-raised-hover) !important;
   transform: translateY(-1px);
 }
 
-.sklyvo-app button.border.bg-transparent:active,
-.sklyvo-app button.border-border:active {
-  transform: translateY(0) !important;
+.sklyvo-app button.border.bg-transparent:not([role="checkbox"]):active,
+.sklyvo-app button.border-border:not([role="checkbox"]):active {
+  transform: translateY(1px) !important;
   background: var(--sk-sunken) !important;
   box-shadow:
     inset 0 2px 5px rgba(90, 130, 165, 0.38),
     inset 0 -1px 0 var(--sk-highlight-soft) !important;
+}
+
+/* Compact table action icons — no lift/shadow hover (causes row ripple) */
+.sklyvo-app .sk-data-panel tbody button,
+.sklyvo-app .sk-data-panel tbody a[class*="sk-btn"],
+.sklyvo-app .sk-row-icon-btn,
+.sklyvo-app button.sk-row-icon-btn {
+  transform: none !important;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease !important;
+}
+
+.sklyvo-app .sk-data-panel tbody button:hover,
+.sklyvo-app .sk-data-panel tbody button:active,
+.sklyvo-app .sk-data-panel tbody button:focus,
+.sklyvo-app .sk-data-panel tbody button:focus-visible,
+.sklyvo-app .sk-data-panel tbody button[data-state="open"],
+.sklyvo-app .sk-row-icon-btn:hover,
+.sklyvo-app .sk-row-icon-btn:active,
+.sklyvo-app .sk-row-icon-btn:focus,
+.sklyvo-app .sk-row-icon-btn:focus-visible,
+.sklyvo-app .sk-row-icon-btn[data-state="open"],
+.sklyvo-app button.sk-row-icon-btn:hover,
+.sklyvo-app button.sk-row-icon-btn:active {
+  transform: none !important;
+  filter: none !important;
+  outline: none !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+}
+
+.sklyvo-app .sk-data-panel tbody button:hover,
+.sklyvo-app .sk-row-icon-btn:hover,
+.sklyvo-app button.sk-row-icon-btn:hover {
+  /* Keep the resting shadow — don't swap to raised-hover (paints over neighbors) */
+  box-shadow:
+    0 1px 2px rgba(30, 70, 110, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Text links in table rows — no raised chrome / hover pill */
+.sklyvo-app .sk-data-panel tbody button.sk-row-text-btn,
+.sklyvo-app .sk-data-panel tbody button.sk-row-text-btn:hover,
+.sklyvo-app .sk-data-panel tbody button.sk-row-text-btn:active,
+.sklyvo-app .sk-data-panel tbody button.sk-row-text-btn:focus,
+.sklyvo-app .sk-data-panel tbody button.sk-row-text-btn:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  border-radius: 0 !important;
 }
 
 /* Compact table pagination — no raised “chunky” chrome */
@@ -2279,13 +2950,13 @@
 }
 
 /* Overlay lighter for soft-UI */
-.sklyvo-app ~ [data-radix-portal] [data-state="open"].fixed.inset-0.bg-black\/80,
-body:has(.sklyvo-app) [data-radix-portal] .fixed.inset-0.bg-black\/80 {
+body:has(.sklyvo-app) [data-state="open"].fixed.inset-0.bg-black\/80,
+body:has(.sklyvo-app) .fixed.inset-0.bg-\[color\:var\(--sk-overlay\,rgba\(20\,40\,70\,0\.35\)\)\] {
   background: rgba(20, 40, 70, 0.35) !important;
   backdrop-filter: blur(6px);
 }
 
-body:has(.sklyvo-app) [data-radix-portal] [role="dialog"] {
+body:has(.sklyvo-app) [role="dialog"] {
   background: var(--sk-glass) !important;
   border: 1px solid var(--sk-border-soft) !important;
   border-radius: 18px !important;
@@ -2294,6 +2965,143 @@ body:has(.sklyvo-app) [data-radix-portal] [role="dialog"] {
     0 10px 24px -10px rgba(30, 70, 110, 0.16),
     inset 0 1px 0 var(--sk-border-strong) !important;
   color: var(--sk-ink);
+}
+
+/* Engraved / sunken fields inside dialogs (Matěj soft-UI) */
+body:has(.sklyvo-app) [role="dialog"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+body:has(.sklyvo-app) [role="dialog"] textarea {
+  box-sizing: border-box !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  background: var(--sk-sunken) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 1px 2px rgba(90, 130, 165, 0.16),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  color: var(--sk-ink) !important;
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+body:has(.sklyvo-app) [role="dialog"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus-visible,
+body:has(.sklyvo-app) [role="dialog"] textarea:focus,
+body:has(.sklyvo-app) [role="dialog"] textarea:focus-visible {
+  outline: none !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    inset 0 2px 6px rgba(90, 130, 165, 0.4),
+    inset 0 1px 2px rgba(90, 130, 165, 0.18),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"] textarea {
+  height: auto !important;
+  min-height: 88px !important;
+  padding: 12px 14px !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"] input::placeholder,
+body:has(.sklyvo-app) [role="dialog"] textarea::placeholder {
+  color: var(--sk-muted) !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"] label {
+  color: var(--sk-muted) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+}
+
+/* Soft-UI CTAs in dialogs */
+.sk-dialog-actions,
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions {
+  display: flex !important;
+  flex-direction: column-reverse;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 12px !important;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--sk-panel-edge);
+}
+
+@media (min-width: 640px) {
+  .sk-dialog-actions,
+  body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.sk-dialog-actions > button,
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button {
+  min-height: 44px;
+  border-radius: var(--sk-radius-control) !important;
+  border: none !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+
+.sk-dialog-actions > button:last-child,
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:last-child {
+  background-image: var(--sk-ink-bg) !important;
+  background-color: transparent !important;
+  color: #fff !important;
+  box-shadow: var(--sk-shadow-dark) !important;
+  transition:
+    transform 0.12s var(--sk-ease-pop),
+    box-shadow 0.12s ease,
+    filter 0.12s ease !important;
+}
+
+.sk-dialog-actions > button:last-child:hover:not(:disabled),
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:last-child:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-dark-hover) !important;
+  filter: brightness(1.06);
+}
+
+.sk-dialog-actions > button:last-child:active:not(:disabled),
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:last-child:active:not(:disabled) {
+  transform: translateY(1px) !important;
+  filter: none;
+  box-shadow:
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45) !important;
+}
+
+.sk-dialog-actions > button:first-child,
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:first-child {
+  background-image: var(--sk-light-bg) !important;
+  background-color: transparent !important;
+  color: var(--sk-ink) !important;
+  box-shadow: var(--sk-raised-shadow) !important;
+  transition:
+    transform 0.12s var(--sk-ease-pop),
+    box-shadow 0.12s ease,
+    background 0.12s ease !important;
+}
+
+.sk-dialog-actions > button:first-child:hover:not(:disabled),
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:first-child:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-raised-hover) !important;
+}
+
+.sk-dialog-actions > button:first-child:active:not(:disabled),
+body:has(.sklyvo-app) [role="dialog"] .sk-dialog-actions > button:first-child:active:not(:disabled) {
+  transform: translateY(1px) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.4),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
 }
 
 body:has(.sklyvo-app) [data-radix-portal] [data-radix-select-viewport],
@@ -2311,14 +3119,14 @@ body:has(.sklyvo-app) [data-radix-portal] .bg-card {
     inset 0 1px 0 var(--sk-border-strong) !important;
 }
 
-body:has(.sklyvo-app) [data-radix-portal] [role="dialog"].sk-settings-dialog,
-body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog[role="dialog"] {
+body:has(.sklyvo-app) [role="dialog"].sk-settings-dialog,
+body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
   background: var(--sk-glass) !important;
   border-color: var(--sk-border-soft) !important;
   color: var(--sk-ink) !important;
 }
 
-body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute {
+body:has(.sklyvo-app) .sk-settings-dialog > button.absolute {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2332,7 +3140,7 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute 
   color: var(--sk-muted);
 }
 
-body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:hover {
+body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   color: var(--sk-ink);
   transform: translateY(-1px);
   box-shadow: var(--sk-shadow-raised-hover);
@@ -2343,23 +3151,87 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   --sk-settings-accent-soft: color-mix(in oklab, var(--sk-brand) 14%, var(--sk-mix-base));
   --sk-settings-accent-ink: color-mix(in oklab, var(--sk-brand) 72%, #0b1c2c);
   --sk-settings-edge: var(--sk-panel-edge);
+  /* Nested raised chrome inside the dialog — quieter than page cards */
+  --sk-raised-shadow:
+    0 4px 12px -6px rgba(30, 70, 110, 0.14),
+    0 1px 3px rgba(30, 70, 110, 0.06),
+    inset 0 1px 0 var(--sk-highlight),
+    inset 0 -1px 2px rgba(120, 160, 190, 0.14);
+  --sk-shadow-raised-hover:
+    0 6px 16px -6px rgba(30, 70, 110, 0.18),
+    0 2px 4px rgba(30, 70, 110, 0.08),
+    inset 0 1px 0 var(--sk-highlight),
+    inset 0 -1px 2px rgba(120, 160, 190, 0.14);
+  --sk-shadow-dark:
+    0 6px 14px -6px rgba(20, 32, 50, 0.22),
+    0 2px 5px rgba(20, 32, 50, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.28);
+  --sk-shadow-dark-hover:
+    0 8px 18px -6px rgba(20, 32, 50, 0.26),
+    0 3px 6px rgba(20, 32, 50, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.28);
+  --sk-sunken-shadow:
+    inset 0 1px 2.5px rgba(90, 130, 165, 0.14),
+    inset 0 -1px 0 var(--sk-highlight-soft),
+    0 1px 0 var(--sk-highlight-faint);
 }
 
-.dark .sk-settings-dialog {
-  --sk-settings-accent-ink: color-mix(in oklab, var(--sk-brand) 55%, #e8f7ff);
-  --sk-settings-edge: var(--sk-border-soft);
+.sk-settings-dialog[data-accent="ink"] {
+  /* Dark ink + light brand-blue tint — quiet, no neon greens */
+  --sk-settings-accent: color-mix(in oklab, var(--sk-brand) 22%, #1a2332);
+  --sk-settings-accent-soft: color-mix(
+    in oklab,
+    var(--sk-brand) 7%,
+    var(--sk-mix-base)
+  );
+  --sk-settings-accent-ink: color-mix(in oklab, var(--sk-brand) 16%, #142033);
 }
 
-.sk-settings-dialog[data-accent="emerald"] {
-  --sk-settings-accent: #059669;
-  --sk-settings-accent-soft: color-mix(in oklab, #10b981 16%, var(--sk-mix-base));
-  --sk-settings-accent-ink: #047857;
+.sk-settings-dialog[data-accent="ink"] .sk-settings-icon {
+  color: color-mix(in oklab, var(--sk-brand) 28%, var(--sk-ink));
+  background: var(--sk-sunken);
+  border-color: var(--sk-border-soft);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
-.dark .sk-settings-dialog[data-accent="emerald"] {
-  --sk-settings-accent: #34d399;
-  --sk-settings-accent-soft: color-mix(in oklab, #10b981 22%, var(--sk-mix-base));
-  --sk-settings-accent-ink: #a7f3d0;
+.sk-settings-dialog[data-accent="ink"] .sk-day-track__item--active {
+  color: var(--sk-ink);
+  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  box-shadow:
+    inset 0 1px 0 var(--sk-highlight),
+    0 1px 3px rgba(30, 70, 110, 0.1) !important;
+}
+
+.sk-settings-dialog[data-accent="ink"] .sk-mini-chip--active {
+  color: var(--sk-ink);
+  border-color: color-mix(in oklab, var(--sk-brand) 18%, var(--sk-border-soft));
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-light-bg));
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sk-settings-dialog[data-accent="ink"] .sk-settings-note--info {
+  background: color-mix(in oklab, var(--sk-brand) 6%, var(--sk-mix-base));
+  color: color-mix(in oklab, var(--sk-brand) 12%, #1a2332);
+  box-shadow:
+    inset 0 1px 2px rgba(30, 70, 110, 0.06),
+    inset 0 -1px 0 var(--sk-highlight-soft);
+}
+
+.sk-settings-dialog[data-accent="ink"] .sk-settings-row--on {
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-mix-base));
+  box-shadow:
+    inset 0 1px 0 var(--sk-highlight-soft),
+    0 1px 2px rgba(30, 70, 110, 0.06);
+}
+
+.sk-settings-dialog[data-accent="ink"] .sk-choice--active {
+  border-color: color-mix(in oklab, var(--sk-brand) 18%, var(--sk-mix-base));
+  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  box-shadow:
+    inset 0 1px 0 var(--sk-highlight),
+    0 2px 6px -4px rgba(30, 70, 110, 0.14);
 }
 
 .sk-settings-dialog .sk-settings-icon {
@@ -2377,18 +3249,19 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   );
   border: 1px solid var(--sk-border-soft);
   box-shadow:
-    0 10px 20px -8px color-mix(in oklab, var(--sk-settings-accent) 45%, transparent),
-    0 2px 6px rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px color-mix(in oklab, var(--sk-settings-accent) 18%, transparent);
+    0 4px 10px -6px color-mix(in oklab, var(--sk-settings-accent) 28%, transparent),
+    0 1px 2px rgba(30, 70, 110, 0.08),
+    inset 0 1px 0 var(--sk-highlight),
+    inset 0 -1px 2px color-mix(in oklab, var(--sk-settings-accent) 12%, transparent);
 }
 
+/* Section shells sit raised on the dialog — controls inside stay engraved (never engraved-in-engraved). */
 .sk-settings-dialog .sk-settings-row,
 .sk-settings-dialog .sk-settings-panel {
   border-radius: 16px;
-  border: 1px solid var(--sk-settings-edge);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  border: 1px solid var(--sk-border-soft);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
 }
 
 .sk-settings-dialog .sk-settings-panel__head {
@@ -2428,22 +3301,35 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
     background 0.14s ease;
 }
 
+.sk-settings-dialog .sk-choice-track {
+  padding: 6px;
+  border-radius: 16px;
+  background: var(--sk-sunken);
+  border: 1px solid var(--sk-settings-edge);
+  box-shadow: var(--sk-sunken-shadow);
+}
+
+.sk-settings-dialog .sk-choice-track .sk-choice {
+  box-shadow:
+    0 2px 6px -2px rgba(30, 70, 110, 0.12),
+    inset 0 1px 0 var(--sk-highlight);
+}
+
 .sk-settings-dialog .sk-choice:hover:not(:disabled):not(.sk-choice--active) {
   transform: translateY(-1px);
   box-shadow: var(--sk-shadow-raised-hover);
 }
 
 .sk-settings-dialog .sk-choice--active {
-  border-color: color-mix(in oklab, var(--sk-settings-accent) 45%, var(--sk-mix-base));
+  border-color: color-mix(in oklab, var(--sk-settings-accent) 35%, var(--sk-mix-base));
   background: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--sk-settings-accent) 22%, var(--sk-mix-base)) 0%,
-    color-mix(in oklab, var(--sk-settings-accent) 12%, var(--sk-mix-base)) 100%
+    color-mix(in oklab, var(--sk-settings-accent) 18%, #fff) 0%,
+    color-mix(in oklab, var(--sk-settings-accent) 10%, #fff) 100%
   );
   box-shadow:
-    inset 0 1px 0 var(--sk-highlight-soft),
-    0 0 0 1.5px color-mix(in oklab, var(--sk-settings-accent) 35%, transparent),
-    0 8px 18px -10px color-mix(in oklab, var(--sk-settings-accent) 40%, transparent);
+    inset 0 1px 0 var(--sk-highlight),
+    0 4px 12px -6px color-mix(in oklab, var(--sk-settings-accent) 28%, transparent);
   transform: none;
 }
 
@@ -2457,14 +3343,18 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 
 .sk-settings-dialog .sk-day-track {
   display: flex;
+  gap: 3px;
   padding: 3px;
   border-radius: 12px;
   background: var(--sk-sunken);
   border: 1px solid var(--sk-settings-edge);
   box-shadow: var(--sk-sunken-shadow);
+  overflow: hidden; /* never let item chrome bleed between neighbors */
 }
 
 .sk-settings-dialog .sk-day-track__item {
+  position: relative;
+  z-index: 0;
   flex: 1;
   height: 32px;
   border-radius: 9px;
@@ -2474,21 +3364,29 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
+  box-shadow: none !important;
   transition:
     background 0.14s ease,
-    box-shadow 0.14s ease,
     color 0.14s ease,
-    transform 0.12s var(--sk-ease-pop);
+    filter 0.12s ease;
 }
 
 .sk-settings-dialog .sk-day-track__item:hover:not(:disabled):not(.sk-day-track__item--active) {
   color: var(--sk-ink);
 }
 
+/*
+  Active days: soft raised thumb in sunken track.
+  Keep shadow tight so adjacent actives don’t muddy seams.
+*/
 .sk-settings-dialog .sk-day-track__item--active {
-  color: var(--sk-settings-accent-ink);
-  background: var(--sk-raised);
-  box-shadow: var(--sk-raised-shadow);
+  z-index: 1;
+  color: var(--sk-ink);
+  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  box-shadow:
+    inset 0 1px 0 var(--sk-highlight),
+    0 1px 3px rgba(30, 70, 110, 0.1) !important;
+  filter: none;
 }
 
 .sk-settings-dialog .sk-mini-chip {
@@ -2496,7 +3394,7 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   border: 1px solid var(--sk-settings-edge);
   background: var(--sk-light-bg);
   box-shadow:
-    0 4px 10px -6px rgba(30, 70, 110, 0.22),
+    0 2px 6px -4px rgba(30, 70, 110, 0.14),
     inset 0 1px 0 var(--sk-highlight-soft);
   color: var(--sk-muted);
   font-weight: 600;
@@ -2507,17 +3405,10 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 }
 
 .sk-settings-dialog .sk-mini-chip--active {
-  color: #fff;
-  border-color: transparent;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-settings-accent) 75%, var(--sk-mix-base)) 0%,
-    var(--sk-settings-accent) 55%,
-    color-mix(in oklab, var(--sk-settings-accent) 82%, #000) 100%
-  );
-  box-shadow:
-    0 8px 16px -8px color-mix(in oklab, var(--sk-settings-accent) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: var(--sk-ink);
+  border-color: color-mix(in oklab, var(--sk-settings-accent) 22%, var(--sk-border-soft));
+  background: color-mix(in oklab, var(--sk-settings-accent) 5%, var(--sk-light-bg));
+  box-shadow: var(--sk-raised-shadow);
 }
 
 .sk-settings-dialog .sk-settings-note {
@@ -2547,109 +3438,46 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 }
 
 .sk-settings-dialog .sk-settings-footer {
-  border-top: 1px solid var(--sk-settings-edge);
-  background: color-mix(in oklab, var(--sk-panel) 88%, var(--sk-mix-base));
-  backdrop-filter: blur(8px);
+  border-top: none;
+  background: transparent;
+  backdrop-filter: none;
+  gap: 12px !important;
 }
 
-/* Hard dark overrides — also `.sk-settings-dialog.dark` for portal (class on dialog itself) */
-.dark .sk-settings-dialog .sk-settings-footer,
-.sk-settings-dialog.dark .sk-settings-footer,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-settings-footer {
-  background: oklch(0.175 0.014 250) !important;
-  border-top-color: rgba(255, 255, 255, 0.08) !important;
+.sk-settings-dialog .sk-settings-scroll {
+  /* Room under last raised cards so soft shadows aren't cut flat */
+  padding-bottom: 1.75rem;
 }
 
-.dark .sk-settings-dialog .sk-choice,
-.sk-settings-dialog.dark .sk-choice,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-choice {
-  background: linear-gradient(
-    180deg,
-    oklch(0.28 0.018 250) 0%,
-    oklch(0.225 0.015 250) 100%
-  ) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: oklch(0.95 0.01 250) !important;
+@media (min-width: 640px) {
+  .sk-settings-dialog .sk-settings-scroll {
+    padding-bottom: 2rem;
+  }
+}
+
+/* Soft-UI secondary CTA in settings footer (Matěj raised) */
+.sk-settings-dialog .sk-settings-footer > button:first-child {
+  border: none !important;
+  background-image: var(--sk-light-bg) !important;
+  background-color: transparent !important;
+  color: var(--sk-ink) !important;
   box-shadow: var(--sk-raised-shadow) !important;
+  min-height: 44px;
+  border-radius: var(--sk-radius-control) !important;
+  font-weight: 600 !important;
 }
 
-.dark .sk-settings-dialog .sk-choice--active,
-.sk-settings-dialog.dark .sk-choice--active,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-choice--active {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-brand) 28%, oklch(0.26 0.02 250)) 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, oklch(0.2 0.016 250)) 100%
-  ) !important;
-  border-color: color-mix(in oklab, var(--sk-brand) 45%, transparent) !important;
+.sk-settings-dialog .sk-settings-footer > button:first-child:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-raised-hover) !important;
+}
+
+.sk-settings-dialog .sk-settings-footer > button:first-child:active {
+  transform: translateY(1px);
+  background-image: var(--sk-sunken) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0 0 1.5px color-mix(in oklab, var(--sk-brand) 40%, transparent),
-    0 10px 22px -12px rgba(2, 167, 255, 0.45) !important;
-}
-
-.dark .sk-settings-dialog .sk-choice--active .sk-choice__title,
-.sk-settings-dialog.dark .sk-choice--active .sk-choice__title,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-choice--active .sk-choice__title {
-  color: #ffffff !important;
-}
-
-.dark .sk-settings-dialog .sk-choice--active .text-muted-foreground,
-.sk-settings-dialog.dark .sk-choice--active .text-muted-foreground,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-choice--active .text-muted-foreground {
-  color: rgba(232, 247, 255, 0.78) !important;
-}
-
-.dark .sk-settings-dialog .sk-settings-note--warn,
-.sk-settings-dialog.dark .sk-settings-note--warn,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-settings-note--warn {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, #f59e0b 18%, oklch(0.2 0.016 250)) 0%,
-    color-mix(in oklab, #f59e0b 10%, oklch(0.175 0.014 250)) 100%
-  ) !important;
-  border-color: color-mix(in oklab, #f59e0b 28%, transparent) !important;
-  color: #fbbf24 !important;
-}
-
-.dark .sk-settings-dialog .sk-settings-note--info,
-.sk-settings-dialog.dark .sk-settings-note--info,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-settings-note--info {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-brand) 18%, oklch(0.2 0.016 250)) 0%,
-    color-mix(in oklab, var(--sk-brand) 8%, oklch(0.175 0.014 250)) 100%
-  ) !important;
-  border-color: color-mix(in oklab, var(--sk-brand) 25%, transparent) !important;
-  color: #c5ecff !important;
-}
-
-.dark .sk-settings-dialog .sk-settings-panel,
-.dark .sk-settings-dialog .sk-settings-row,
-.sk-settings-dialog.dark .sk-settings-panel,
-.sk-settings-dialog.dark .sk-settings-row,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-settings-panel,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog .sk-settings-row {
-  background: var(--sk-sunken) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
-}
-
-/* When dialog itself carries .dark, force soft-UI tokens locally (portal-safe) */
-.sk-settings-dialog.dark {
-  --sk-mix-base: oklch(0.22 0.016 250);
-  --sk-panel: oklch(0.205 0.014 250);
-  --sk-ink: oklch(0.95 0.01 250);
-  --sk-muted: oklch(0.72 0.015 250);
-  --sk-border: rgba(255, 255, 255, 0.1);
-  --sk-border-soft: rgba(255, 255, 255, 0.07);
-  --sk-border-strong: rgba(255, 255, 255, 0.14);
-  --sk-panel-edge: rgba(255, 255, 255, 0.06);
-  --sk-settings-edge: rgba(255, 255, 255, 0.08);
-  --sk-settings-accent-ink: #e8f7ff;
-  --sk-highlight: rgba(255, 255, 255, 0.1);
-  --sk-highlight-soft: rgba(255, 255, 255, 0.08);
-  color: var(--sk-ink);
+    inset 0 2px 5px rgba(90, 130, 165, 0.38),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
 }
 
 .sk-settings-dialog button[role="switch"][data-state="checked"] {
@@ -2660,61 +3488,68 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
     color-mix(in oklab, var(--sk-settings-accent) 82%, #000) 100%
   ) !important;
   box-shadow:
-    inset 0 1px 2px color-mix(in oklab, var(--sk-settings-accent) 35%, transparent),
+    inset 0 1px 2px color-mix(in oklab, var(--sk-settings-accent) 28%, transparent),
     inset 0 -1px 0 rgba(255, 255, 255, 0.28),
-    0 6px 14px -6px color-mix(in oklab, var(--sk-settings-accent) 50%, transparent) !important;
+    0 3px 8px -4px color-mix(in oklab, var(--sk-settings-accent) 28%, transparent) !important;
 }
 
 .sk-settings-dialog .sk-settings-save--emerald {
+  /* legacy — Radar uses default ink CTA; keep rule inert if referenced */
   border: none;
-  background: linear-gradient(180deg, #34d399 0%, #059669 48%, #047857 100%);
+  background: var(--sk-ink-bg);
   color: #fff;
-  box-shadow:
-    0 12px 22px -10px rgba(5, 150, 105, 0.5),
-    0 4px 10px -4px rgba(5, 150, 105, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: var(--sk-shadow-dark);
 }
 
 .sk-settings-dialog .sk-settings-save--emerald:hover {
-  filter: brightness(1.04);
+  filter: none;
   transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-dark-hover);
 }
 
 .sk-settings-dialog .sk-settings-save--emerald:active {
   transform: translateY(1px);
   box-shadow:
-    0 3px 8px -1px rgba(5, 150, 105, 0.3),
-    inset 0 2px 4px rgba(4, 80, 55, 0.35);
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45);
 }
 
-/* Select triggers inside settings */
+/* Select triggers inside settings — engraved / sunken */
 .sk-settings-dialog button[role="combobox"] {
   border-radius: 12px !important;
-  border: 1px solid var(--sk-settings-edge) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
   background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 1px 2px rgba(90, 130, 165, 0.16),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
   color: var(--sk-ink) !important;
 }
 
 .sk-settings-dialog textarea,
 .sk-settings-dialog input:not([type="checkbox"]):not([type="radio"]) {
-  border-color: var(--sk-settings-edge) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
   background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 1px 2px rgba(90, 130, 165, 0.16),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
   color: var(--sk-ink) !important;
 }
 
 /* --- Tables (CRM / Autopilot) — sunken row pills like Přehled --- */
 
 /*
-  No vertical border-spacing: it leaves transparent gaps under sticky
-  headers where scrolled rows bleed through. Gaps come from white
-  border-top on body cells instead (same color as panel).
+  Vertical gaps via border-spacing (not border-top): thick panel-colored
+  borders ate the corner radius and made pills look square.
+  Sticky thead uses solid curtains so scrolled rows don’t bleed through gaps.
 */
 .sklyvo-app .sk-data-panel table,
 .sklyvo-app table {
   border-collapse: separate;
-  border-spacing: 0;
+  border-spacing: 0 6px;
   width: 100%;
 }
 
@@ -2735,32 +3570,22 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   position: sticky;
   top: 0;
   z-index: 21;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--sk-muted);
   background-color: var(--sk-panel) !important;
   background-image: none !important;
   border: none !important;
-  padding-top: 0.55rem !important;
-  padding-bottom: 0.45rem !important;
+  padding-top: 0.25rem !important;
+  /* Slim gap under labels — sticky with header, no overlap on first pill */
+  padding-bottom: 0.4rem !important;
   /*
-    Solid curtains (no blur) so gray row pills never shine through sticky header —
-    above covers scroll padding / underlap, below covers first-row radius.
+    Top curtain only (scroll underlap). No bottom curtain — that was
+    clipping the first gray pill’s rounded top everywhere.
   */
-  box-shadow:
-    0 -14px 0 0 var(--sk-panel),
-    0 12px 0 0 var(--sk-panel) !important;
-}
-
-.dark .sklyvo-app thead,
-.dark .sklyvo-app thead th {
-  background-color: var(--sk-panel) !important;
-  color: var(--sk-muted);
-  box-shadow:
-    0 -14px 0 0 var(--sk-panel),
-    0 12px 0 0 var(--sk-panel) !important;
+  box-shadow: 0 -14px 0 0 var(--sk-panel) !important;
 }
 
 .sklyvo-app thead tr {
@@ -2774,39 +3599,29 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   box-shadow: none !important;
 }
 
-/* One continuous sunken pill per row — gap = panel-colored border-top */
+/* One continuous sunken pill per row — same radius as sk-data-panel cards */
 .sklyvo-app .sk-data-panel tbody tr > td:not([colspan]),
 .sklyvo-app tbody tr > td:not([colspan]) {
   background-color: var(--sk-row) !important;
   background-image: none !important;
   border: none !important;
-  border-top: 8px solid var(--sk-panel) !important;
   box-shadow: none !important;
   outline: none !important;
   vertical-align: middle;
-  background-clip: padding-box;
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-}
-
-/*
-  First-row top border ≥ corner radius so gray rounded tops stay below the header curtain.
-*/
-.sklyvo-app .sk-data-panel tbody tr:first-child > td:not([colspan]),
-.sklyvo-app tbody tr:first-child > td:not([colspan]) {
-  border-top-width: 12px !important;
+  padding-top: 0.3rem !important;
+  padding-bottom: 0.3rem !important;
 }
 
 .sklyvo-app .sk-data-panel tbody tr > td:not([colspan]):first-child,
 .sklyvo-app tbody tr > td:not([colspan]):first-child {
-  border-top-left-radius: 10px !important;
-  border-bottom-left-radius: 10px !important;
+  border-top-left-radius: var(--sk-radius-card) !important;
+  border-bottom-left-radius: var(--sk-radius-card) !important;
 }
 
 .sklyvo-app .sk-data-panel tbody tr > td:not([colspan]):last-child,
 .sklyvo-app tbody tr > td:not([colspan]):last-child {
-  border-top-right-radius: 10px !important;
-  border-bottom-right-radius: 10px !important;
+  border-top-right-radius: var(--sk-radius-card) !important;
+  border-bottom-right-radius: var(--sk-radius-card) !important;
 }
 
 .sklyvo-app .sk-data-panel tbody tr:hover > td:not([colspan]),
@@ -2861,33 +3676,10 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 .sklyvo-app main .sk-data-panel.rounded-2xl.border.bg-white {
   background: var(--sk-panel) !important;
   background-image: none !important;
+  border-radius: var(--sk-radius-card) !important;
   /* Theme edge — never the light soft-UI highlight (looked like a white frame in dark) */
   border: 1px solid var(--sk-panel-edge) !important;
   box-shadow: 0 6px 18px -10px rgba(30, 70, 110, 0.12) !important;
-}
-
-.dark .sklyvo-app .sk-data-panel,
-.dark .sklyvo-app .sk-data-panel.bg-card,
-.dark .sklyvo-app .sk-data-panel.bg-white,
-.dark .sklyvo-app .sk-data-panel.shadow-sm,
-.dark .sklyvo-app main .sk-data-panel {
-  background: var(--sk-panel) !important;
-  border-color: rgba(255, 255, 255, 0.07) !important;
-  box-shadow: 0 8px 22px -12px rgba(0, 0, 0, 0.45) !important;
-}
-
-.dark .sklyvo-app .sk-data-row {
-  background-color: var(--sk-row) !important;
-  color: var(--sk-ink) !important;
-}
-
-.dark .sklyvo-app .sk-data-row .text-foreground,
-.dark .sklyvo-app .sk-data-row h4 {
-  color: var(--sk-ink) !important;
-}
-
-.dark .sklyvo-app .sk-data-row .text-muted-foreground {
-  color: var(--sk-muted) !important;
 }
 
 .sklyvo-app .sk-data-panel__scroll {
@@ -2902,37 +3694,24 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   isolation: isolate;
 }
 
-/*
-  Mobile list chrome only under max-md.
-  Never set display outside a max-width query — it overrides Tailwind `md:hidden`
-  and duplicates mobile + desktop lists on desktop.
-*/
-@media (max-width: 767px) {
-  .sklyvo-app .sk-data-panel__scroll--mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px 12px;
-    background: transparent;
-  }
-}
-
-.sklyvo-app .sk-data-panel__scroll--mobile > .sk-list__row,
 .sklyvo-app .sk-data-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: none;
-  background-color: var(--sk-row);
-  background-image: none;
-  box-shadow: none;
+  padding: 9px 14px;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: var(--sk-sunken);
+  background-image: var(--sk-sunken);
+  box-shadow:
+    inset 0 2px 4px rgba(90, 130, 165, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-data-row:hover {
-  background-color: var(--sk-row-hover);
+  background: var(--sk-sunken);
+  filter: brightness(0.99);
 }
 
 .sklyvo-app .sk-data-row.grid {
@@ -2955,8 +3734,73 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 
 /* --- Accordion / settings cards --- */
 
+/*
+  Smooth open/close via grid-template-rows (no height measure / keyframe stutter).
+  forceMount keeps the node in DOM so the transition can run both ways.
+  --ready is added after mount so defaultValue open panels don't animate in.
+*/
+.sklyvo-app .sk-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-accordion-content[data-state="open"] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  /* Let soft-UI button/card shadows breathe once expanded */
+  overflow: visible;
+}
+
+.sklyvo-app .sk-accordion-content--ready {
+  transition:
+    grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.4s;
+}
+
+.sklyvo-app .sk-accordion-content--ready[data-state="open"] {
+  transition:
+    grid-template-rows 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+.sklyvo-app .sk-accordion-content__viewport {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-accordion-content[data-state="open"] .sk-accordion-content__viewport {
+  overflow: visible;
+  min-height: min-content;
+}
+
+.sklyvo-app .sk-accordion-content__viewport > div {
+  /* Room for raised button shadows under last control */
+  padding-inline: 4px;
+  margin-inline: -4px;
+  padding-bottom: 1.15rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sklyvo-app .sk-accordion-content--ready,
+  .sklyvo-app .sk-accordion-content--ready[data-state="open"] {
+    transition: none;
+  }
+}
+
+/* Accordion cards must not clip soft shadows of nested CTAs */
+.sklyvo-app [data-radix-collection-item],
+.sklyvo-app [data-state="open"].rounded-xl,
+.sklyvo-app [data-state="open"].sm\:rounded-2xl,
+.sklyvo-app [data-state="closed"].rounded-xl,
+.sklyvo-app [data-state="closed"].sm\:rounded-2xl {
+  overflow: visible !important;
+}
+
 .sklyvo-app [data-state="open"].rounded-2xl,
 .sklyvo-app [data-state="closed"].rounded-2xl {
+  overflow: visible !important;
   border-color: var(--sk-border-soft) !important;
 }
 
@@ -2967,20 +3811,28 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 
 /* Help center */
 .sklyvo-app .sk-help-card {
-  border-radius: 18px;
-  border: 1px solid var(--sk-panel-edge);
-  background: var(--sk-raised);
-  box-shadow: var(--sk-raised-shadow);
+  border-radius: var(--sk-radius-card);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow:
+    0 3px 10px -6px rgba(30, 70, 110, 0.12),
+    0 1px 2px rgba(30, 70, 110, 0.04),
+    inset 0 1px 0 var(--sk-highlight);
   color: var(--sk-ink);
   transition:
     transform 0.14s var(--sk-ease-pop),
-    box-shadow 0.14s ease;
+    box-shadow 0.14s ease,
+    border-color 0.14s ease;
   cursor: pointer;
 }
 
 .sklyvo-app .sk-help-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sk-shadow-raised-hover);
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--sk-brand) 18%, var(--sk-border));
+  box-shadow:
+    0 8px 16px -8px rgba(30, 70, 110, 0.16),
+    0 2px 4px rgba(30, 70, 110, 0.05),
+    inset 0 1px 0 var(--sk-highlight);
 }
 
 .sklyvo-app .sk-help-card:active {
@@ -2995,102 +3847,594 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   justify-content: center;
   width: 40px;
   height: 40px;
+  flex: none;
   border-radius: 12px;
-  border: 1px solid var(--sk-border-soft);
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-mix-base) 55%, var(--sk-help-accent, var(--sk-brand))) 0%,
-    color-mix(in oklab, var(--sk-help-accent, var(--sk-brand)) 18%, var(--sk-mix-base)) 100%
+  border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
+  background: var(
+    --sk-sunken,
+    linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))
   );
-  color: var(--sk-help-accent, var(--sk-brand));
-  box-shadow:
-    0 8px 16px -8px color-mix(in oklab, var(--sk-help-accent, var(--sk-brand)) 40%, transparent),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px color-mix(in oklab, var(--sk-help-accent, var(--sk-brand)) 16%, transparent);
+  color: var(--sk-icon, var(--sk-ink));
+  box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
 }
 
-/* Billing / credits promo cards — token backgrounds (no Tailwind arbitrary gradients) */
+.sklyvo-app .sk-help-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  stroke-width: 2;
+}
+
+/* Billing / credits promo — dark surface (Matěj CTA / highlighted block) */
 .sklyvo-app .sk-billing-card {
-  border-radius: 14px;
-  border: 1px solid var(--sk-panel-edge);
+  border-radius: var(--sk-radius-card);
+  border: none;
   background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-brand) 12%, var(--sk-mix-base)) 0%,
-    color-mix(in oklab, var(--sk-brand) 6%, var(--sk-mix-base)) 100%
+    170deg,
+    oklch(0.34 0.02 250) 0%,
+    oklch(0.2 0.015 250) 100%
   );
-  color: var(--sk-ink);
-  box-shadow: inset 0 1px 0 var(--sk-highlight-soft);
+  color: #fff;
+  box-shadow: var(--sk-shadow-dark);
 }
 
 .sklyvo-app .sk-billing-card__eyebrow {
-  color: var(--sk-brand);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .sklyvo-app .sk-billing-card__title {
-  color: var(--sk-ink);
+  color: #fff;
 }
 
 .sklyvo-app .sk-billing-card__meta {
-  color: var(--sk-muted);
+  color: rgba(255, 255, 255, 0.68);
 }
 
-.dark .sklyvo-app .sk-billing-card {
+.sklyvo-app .sk-billing-card__meter.sk-meter__track {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.35);
+}
+
+.sklyvo-app .sk-billing-card__meter .sk-meter__fill {
   background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-brand) 18%, oklch(0.22 0.016 250)) 0%,
-    color-mix(in oklab, var(--sk-brand) 8%, oklch(0.175 0.014 250)) 100%
-  ) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  color: oklch(0.95 0.01 250) !important;
+    90deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.55) 100%
+  );
 }
 
-.dark .sklyvo-app .sk-billing-card__title {
-  color: oklch(0.95 0.01 250) !important;
+.sklyvo-app .sk-billing-card__secondary {
+  background: #fff !important;
+  background-image: none !important;
+  color: var(--sk-ink) !important;
+  border: none !important;
+  box-shadow:
+    0 4px 12px -6px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
-.dark .sklyvo-app .sk-billing-card__meta {
-  color: oklch(0.72 0.015 250) !important;
+.sklyvo-app .sk-billing-card__secondary:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 16px -6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 #fff !important;
 }
 
-.dark .sklyvo-app .sk-billing-card__eyebrow {
-  color: #7dd3fc !important;
+/* Ghost / outline on dark surface — not another black fill */
+.sklyvo-app .sk-billing-card__primary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  background-image: none !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.18) !important;
+}
+
+.sklyvo-app .sk-billing-card__primary:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.22) !important;
+}
+
+.sklyvo-app .sk-billing-card__primary:active {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
 }
 
 .sklyvo-app .sk-help-faq {
-  border-radius: 16px !important;
-  border: 1px solid var(--sk-panel-edge) !important;
-  background: var(--sk-raised) !important;
-  box-shadow: var(--sk-raised-shadow) !important;
+  border-radius: var(--sk-radius-card) !important;
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent) !important;
+  background: var(--sk-light-bg) !important;
+  box-shadow:
+    0 3px 10px -6px rgba(30, 70, 110, 0.12),
+    0 1px 2px rgba(30, 70, 110, 0.05),
+    inset 0 1px 0 var(--sk-highlight) !important;
   color: var(--sk-ink) !important;
 }
 
 .sklyvo-app .sk-help-faq[data-state="open"] {
   box-shadow:
-    var(--sk-raised-shadow),
-    0 0 0 1.5px color-mix(in oklab, var(--sk-brand) 22%, var(--sk-mix-base)) !important;
+    0 5px 14px -6px rgba(30, 70, 110, 0.14),
+    0 1px 3px rgba(30, 70, 110, 0.06),
+    inset 0 1px 0 var(--sk-highlight) !important;
 }
 
 .sklyvo-app .sk-help-contact {
-  border-radius: 20px;
-  border: 1px solid var(--sk-panel-edge);
+  border-radius: var(--sk-radius-card);
+  border: none;
+  background: linear-gradient(
+    170deg,
+    oklch(0.34 0.02 250) 0%,
+    oklch(0.2 0.015 250) 100%
+  );
+  box-shadow: var(--sk-shadow-dark);
+  color: #fff;
+}
+
+/* --- Support hub (Podpora) — same page rhythm as CRM / Úložiště / Profil --- */
+
+.sklyvo-app .sk-support {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sklyvo-app .sk-support--hub {
+  max-height: 100%;
+  overflow: hidden;
+  gap: 0;
+}
+
+.sklyvo-app .sk-support--chat {
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+}
+
+.sklyvo-app .sk-support__hero {
+  width: 100%;
+  max-width: 48rem;
+  text-align: center;
+  flex: none;
+}
+
+.sklyvo-app .sk-support__stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 48rem;
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: 1.15rem;
+  padding: 0;
+}
+
+.sklyvo-app .sk-support--chat .sk-support__stack {
+  max-width: none;
+  height: 100%;
+  gap: 0;
+}
+
+.sklyvo-app .sk-support__section {
+  width: 100%;
+  flex: none;
+  min-height: 0;
+}
+
+.sklyvo-app .sk-support__section--faq {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sklyvo-app .sk-support__section-title {
+  margin: 0 0 0.7rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-support__topics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-support__topics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sklyvo-app .sk-support__topic {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  text-align: left;
+}
+
+.sklyvo-app .sk-support__topic-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  margin-top: 0.05rem;
+}
+
+.sklyvo-app .sk-support__topic-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.sklyvo-app .sk-support__topic-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sklyvo-app .sk-support__topic-title {
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-support__topic-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-support__topic-chevron {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  margin-top: 0.35rem;
+  color: color-mix(in oklab, var(--sk-muted) 65%, transparent);
+}
+
+.sklyvo-app .sk-support__faq-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+  padding: 0.35rem 0 0.55rem;
+}
+
+.sklyvo-app .sk-support__faq-group + .sk-support__faq-group {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent);
+}
+
+.sklyvo-app .sk-support__faq-group-title {
+  margin: 0;
+  padding: 0.55rem 1.05rem 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-support__faq-item {
+  border: none !important;
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 1.05rem !important;
+}
+
+.sklyvo-app .sk-support__faq-group .sk-support__faq-item:last-child {
+  border-bottom: none !important;
+}
+
+.sklyvo-app .sk-support__faq-trigger {
+  padding: 0.75rem 0 !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  text-align: left;
+  color: var(--sk-ink) !important;
+  text-decoration: none !important;
+}
+
+.sklyvo-app .sk-support__faq-trigger:hover {
+  text-decoration: none !important;
+}
+
+.sklyvo-app .sk-support__faq-answer {
+  padding-bottom: 0.75rem !important;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-support__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding-top: 0.25rem;
+  flex: none;
+}
+
+.sklyvo-app .sk-support__footer > p {
+  display: none;
+}
+
+.sklyvo-app .sk-support__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+/* Soft raised chips — quiet Matěj secondary */
+.sklyvo-app .sk-support__footer-btn,
+.sklyvo-app a.sk-support__footer-btn,
+.sklyvo-app a.sk-support__footer-btn:link,
+.sklyvo-app a.sk-support__footer-btn:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: var(--sk-radius-control);
+  background: var(--sk-light-bg);
+  background-image: var(--sk-light-bg);
+  box-shadow:
+    0 4px 12px -8px rgba(30, 70, 110, 0.22),
+    0 1px 3px rgba(30, 70, 110, 0.08),
+    inset 0 1px 0 #fff;
+  color: var(--sk-ink);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.12s var(--sk-ease-pop),
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+}
+
+.sklyvo-app .sk-support__footer-btn:hover,
+.sklyvo-app a.sk-support__footer-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 16px -8px rgba(30, 70, 110, 0.26),
+    0 2px 4px rgba(30, 70, 110, 0.08),
+    inset 0 1px 0 #fff;
+}
+
+.sklyvo-app .sk-support__footer-btn:active,
+.sklyvo-app a.sk-support__footer-btn:active {
+  transform: translateY(1px);
+  background: var(--sk-sunken);
+  background-image: var(--sk-sunken);
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 -1px 0 var(--sk-highlight-soft);
+}
+
+.sklyvo-app .sk-support__footer-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.sklyvo-app .sk-support__chat-slot--teaser {
+  width: 100%;
+  flex: none;
+}
+
+.sklyvo-app .sk-support__chat-slot--expanded {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+.sklyvo-app .sk-support-chat {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--sk-radius-card-lg);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow:
+    0 4px 14px -6px rgba(30, 70, 110, 0.14),
+    0 1px 3px rgba(30, 70, 110, 0.06),
+    inset 0 1px 0 var(--sk-highlight);
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-support-chat--teaser {
+  min-height: 0;
+  height: auto;
+  flex: none;
+}
+
+.sklyvo-app .sk-support-chat--fullscreen {
+  height: 100%;
+  min-height: 0;
+}
+
+.sklyvo-app .sk-support-chat__teaser-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px 0;
+}
+
+.sklyvo-app .sk-support-chat__teaser-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px 0;
+}
+
+.sklyvo-app .sk-support-chat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-muted) 14%, transparent);
+}
+
+.sklyvo-app .sk-support-chat__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 11px;
   background: linear-gradient(
     165deg,
-    color-mix(in oklab, var(--sk-brand) 12%, var(--sk-mix-base)) 0%,
-    var(--sk-panel) 55%,
-    color-mix(in oklab, var(--sk-brand) 6%, var(--sk-mix-base)) 100%
+    color-mix(in oklab, var(--sk-brand) 22%, #fff) 0%,
+    color-mix(in oklab, var(--sk-brand) 8%, #fff) 100%
   );
   box-shadow:
-    0 16px 32px -16px rgba(30, 70, 110, 0.22),
-    inset 0 1px 0 var(--sk-highlight-soft);
-  color: var(--sk-ink);
+    0 6px 12px -8px rgba(2, 167, 255, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.sklyvo-app .sk-support-chat__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--sk-sunken);
+  box-shadow: inset 0 2px 4px rgba(90, 130, 165, 0.1);
+}
+
+.sklyvo-app .sk-support-chat__composer {
+  padding: 10px 12px 12px;
+  border-top: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent);
+  background: var(--sk-light-bg);
+}
+
+.sklyvo-app .sk-support-chat--teaser.sk-support-chat--input-only {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.sklyvo-app .sk-support-chat--input-only .sk-support-chat__composer {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* Single engraved pill — no nested raised shell + sunken input */
+.sklyvo-app .sk-support-chat--input-only .sk-support-chat__input-row {
+  min-height: 2.85rem;
+  padding: 0.3rem 0.35rem 0.3rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: var(--sk-sunken) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 1px 2px rgba(90, 130, 165, 0.16),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+}
+
+.sklyvo-app .sk-support-chat--input-only .sk-support-chat__input-row input {
+  height: 2.15rem !important;
+  font-size: 0.9rem !important;
+  border: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  padding-inline: 0 !important;
+}
+
+.sklyvo-app .sk-support-chat__input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 5px 3px 10px;
+  border-radius: var(--sk-radius-control);
+  background: var(--sk-sunken);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-help-contact h3 {
-  color: var(--sk-ink);
+  color: #fff;
 }
 
 .sklyvo-app .sk-help-contact .text-muted-foreground {
-  color: var(--sk-muted) !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+}
+
+/* Autopilot email gate — soft raised card, no warning-chrome */
+.sklyvo-app .sk-email-gate {
+  background: color-mix(in oklab, var(--sk-page-bg, oklch(0.98 0.006 235)) 55%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.sklyvo-app .sk-email-gate__card {
+  width: min(100%, 26rem);
+  padding: 22px 22px 20px;
+  border-radius: var(--sk-radius-card-lg);
+  border: none;
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-card-shadow);
+  color: var(--sk-ink);
+  text-align: center;
+}
+
+.sklyvo-app .sk-email-gate__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  color: var(--sk-ink);
+  background: var(--sk-sunken);
+  box-shadow: var(--sk-sunken-shadow);
 }
 
 .sklyvo-app .sk-help-modal {
@@ -3115,45 +4459,22 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
     inset 0 -1px 0 var(--sk-highlight-soft);
 }
 
-.dark .sklyvo-app .sk-help-contact {
-  background: linear-gradient(
-    165deg,
-    color-mix(in oklab, var(--sk-brand) 16%, oklch(0.22 0.016 250)) 0%,
-    oklch(0.2 0.014 250) 52%,
-    color-mix(in oklab, var(--sk-brand) 8%, oklch(0.175 0.014 250)) 100%
-  ) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  color: oklch(0.95 0.01 250) !important;
-}
-
-.dark .sklyvo-app .sk-help-contact h3 {
-  color: oklch(0.95 0.01 250) !important;
-}
-
-.dark .sklyvo-app .sk-help-contact .text-muted-foreground {
-  color: oklch(0.72 0.015 250) !important;
-}
-
-.dark .sklyvo-app .sk-help-modal {
-  background: var(--sk-glass) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  color: var(--sk-ink) !important;
-}
-
-.dark .sklyvo-app .sk-help-tip {
-  color: #9ae0ff !important;
-}
-
-.dark .sklyvo-app .sk-help-icon {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-help-accent, var(--sk-brand)) 28%, oklch(0.28 0.018 250)) 0%,
-    color-mix(in oklab, var(--sk-help-accent, var(--sk-brand)) 14%, oklch(0.22 0.015 250)) 100%
-  ) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-}
-
 /* --- CRM status pipeline pills --- */
+
+/* CRM status pill — no browser/Radix focus frame after menu closes */
+.sklyvo-app .sk-crm-status-pill,
+.sklyvo-app .sk-crm-status-pill:focus,
+.sklyvo-app .sk-crm-status-pill:focus-visible,
+.sklyvo-app .sk-crm-status-pill:active,
+.sklyvo-app .sk-crm-status-pill[data-state="open"],
+.sklyvo-app .sk-crm-status-pill[data-state="closed"] {
+  outline: none !important;
+  --tw-ring-width: 0 !important;
+  --tw-ring-offset-width: 0px !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+  --tw-ring-color: transparent !important;
+}
 
 .sklyvo-app .sk-crm-status {
   --sk-crm-accent: var(--sk-brand);
@@ -3280,24 +4601,6 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
     0 0 0 2px color-mix(in oklab, var(--sk-crm-accent) 40%, transparent);
 }
 
-.dark .sklyvo-app .sk-crm-status--active {
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--sk-crm-accent) 22%, oklch(0.24 0.016 250)) 0%,
-    color-mix(in oklab, var(--sk-crm-accent) 12%, oklch(0.19 0.014 250)) 100%
-  ) !important;
-  border-color: color-mix(in oklab, var(--sk-crm-accent) 35%, transparent) !important;
-}
-
-.dark .sklyvo-app .sk-crm-status--active .sk-crm-status__title,
-.dark .sklyvo-app .sk-crm-status--active .sk-crm-status__value {
-  color: oklch(0.95 0.01 250) !important;
-}
-
-.dark .sklyvo-app .sk-crm-status--active .sk-crm-status__count {
-  color: color-mix(in oklab, var(--sk-crm-accent) 70%, #fff) !important;
-}
-
 .sklyvo-app .sk-crm-status[data-status="new"] {
   --sk-crm-accent: #64748b;
 }
@@ -3355,15 +4658,20 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   text-transform: uppercase;
 }
 
+.sklyvo-app .sk-pricing__tabs .sk-view-toggle__item--active {
+  color: var(--sk-ink);
+}
+
 .sklyvo-app .sk-pricing__card {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 22px 20px 20px;
-  border-radius: 22px;
-  border: 1px solid var(--sk-border);
-  background: var(--sk-raised);
+  padding: var(--sk-pad-card-x) var(--sk-pad-card-y) var(--sk-pad-card-y);
+  border-radius: var(--sk-radius-card-lg);
+  border: none;
+  background: var(--sk-light-bg);
   box-shadow: var(--sk-raised-shadow);
+  color: var(--sk-ink);
   transition:
     transform 0.16s var(--sk-ease-pop),
     box-shadow 0.16s ease;
@@ -3374,11 +4682,20 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   box-shadow: var(--sk-shadow-raised-hover);
 }
 
+/* Popular = same light soft-UI card, distinguished by brand rim + badge */
 .sklyvo-app .sk-pricing__card--popular {
-  border-color: color-mix(in oklab, var(--sk-brand) 45%, var(--sk-mix-base));
+  border: 1.5px solid color-mix(in oklab, var(--sk-brand) 42%, var(--sk-border-soft));
+  background: var(--sk-light-bg);
+  color: var(--sk-ink);
   box-shadow:
     var(--sk-raised-shadow),
-    0 0 0 1.5px color-mix(in oklab, var(--sk-brand) 35%, transparent);
+    0 0 0 3px color-mix(in oklab, var(--sk-brand) 10%, transparent);
+}
+
+.sklyvo-app .sk-pricing__card--popular:hover {
+  box-shadow:
+    var(--sk-shadow-raised-hover),
+    0 0 0 3px color-mix(in oklab, var(--sk-brand) 14%, transparent);
 }
 
 .sklyvo-app .sk-pricing__badge {
@@ -3406,9 +4723,34 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
   padding: 10px 12px;
   border-radius: 14px;
   text-align: center;
-  border: 1px solid var(--sk-border);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   background: var(--sk-sunken);
   box-shadow: var(--sk-sunken-shadow);
+}
+
+/* Pricing CTA — same ink primary on all cards */
+.sklyvo-app .sk-pricing__cta {
+  min-height: 44px !important;
+  border-radius: var(--sk-radius-control) !important;
+  font-size: 13.5px !important;
+  font-weight: 650 !important;
+  border: none !important;
+  background-image: var(--sk-ink-bg) !important;
+  background-color: transparent !important;
+  color: #fff !important;
+  box-shadow: var(--sk-shadow-dark) !important;
+}
+
+.sklyvo-app .sk-pricing__cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--sk-shadow-dark-hover) !important;
+}
+
+.sklyvo-app .sk-pricing__cta:active:not(:disabled) {
+  transform: translateY(1px) !important;
+  box-shadow:
+    0 3px 8px -1px rgba(20, 32, 50, 0.28),
+    inset 0 2px 4px rgba(0, 0, 0, 0.45) !important;
 }
 
 /* --- Plan gate (locked premium tools) --- */
@@ -3828,217 +5170,489 @@ body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog > button.absolute:
 .sk-onboarding input:not([type="checkbox"]):not([type="radio"]),
 .sk-onboarding textarea,
 .sk-onboarding [data-slot="input"] {
-  border-radius: 14px !important;
-  border: 1px solid var(--sk-border) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
   background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  box-shadow: var(--sk-sunken-shadow) !important;
   color: var(--sk-ink) !important;
+  font-size: 14px !important;
 }
 
 .sk-onboarding input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 .sk-onboarding textarea:focus-visible {
   outline: none !important;
   box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 var(--sk-highlight-soft),
-    0 0 0 2px color-mix(in oklab, var(--sk-brand) 28%, transparent) !important;
+    var(--sk-sunken-shadow),
+    0 0 0 2px color-mix(in oklab, var(--sk-brand) 25%, transparent) !important;
   --tw-ring-shadow: 0 0 #0000 !important;
 }
 
-
-/* ===============================================================
-   Dark mode soft-UI — preserve raised/sunken via tokens above.
-   Extra overrides for literals that still force light chrome.
-   =============================================================== */
-
-.dark .sklyvo-app .bg-white,
-.dark .sklyvo-app .bg-white\/80,
-.dark .sklyvo-app .bg-white\/90,
-.dark .sklyvo-app .bg-white\/70,
-.dark .sklyvo-app main .rounded-2xl.bg-white,
-.dark .sklyvo-app main .rounded-xl.bg-white,
-.dark .sklyvo-app main .sk-data-panel.bg-white {
-  background-color: var(--sk-panel) !important;
-  background-image: none !important;
-}
-
-.dark .sklyvo-app .border-white\/70,
-.dark .sklyvo-app .border-white\/80,
-.dark .sklyvo-app .border-white\/75,
-.dark .sklyvo-app .border-white\/90 {
-  border-color: var(--sk-border) !important;
-}
-
-.dark .sklyvo-app thead tr {
-  background: var(--sk-panel) !important;
-}
-
-.dark body:has(.sklyvo-app) [data-radix-portal] .fixed.inset-0.bg-black\/80,
-.dark .sklyvo-app ~ [data-radix-portal] [data-state="open"].fixed.inset-0.bg-black\/80 {
-  background: var(--sk-overlay) !important;
-}
-
-.dark body:has(.sklyvo-app) [data-radix-portal] [role="dialog"],
-.dark body:has(.sklyvo-app) [data-radix-portal] .bg-popover,
-.dark body:has(.sklyvo-app) [data-radix-portal] .bg-card {
-  background: var(--sk-glass) !important;
-  border-color: var(--sk-border-soft) !important;
-  box-shadow: var(--sk-glass-shadow) !important;
-  color: var(--sk-ink) !important;
-}
-
-/* Portal switches inside settings inherit dark soft-UI */
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog button[role="switch"][data-state="unchecked"],
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog [role="switch"][data-state="unchecked"] {
-  background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
-}
-
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog button[role="switch"] span,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog [role="switch"] span {
-  background: var(--sk-thumb) !important;
-}
-
-.dark body:has(.sklyvo-app) [data-radix-portal] [role="dialog"].sk-settings-dialog,
-.dark body:has(.sklyvo-app) [data-radix-portal] .sk-settings-dialog[role="dialog"] {
-  background: var(--sk-glass) !important;
-}
-
-.dark .sklyvo-app .bg-blue-50 {
-  background: color-mix(in oklab, var(--sk-brand) 16%, var(--sk-mix-base)) !important;
-}
-
-.dark .sklyvo-app button[role="switch"][data-state="unchecked"],
-.dark .sklyvo-app [role="switch"][data-state="unchecked"] {
-  background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
-}
-
-.dark .sklyvo-app button[role="switch"] span,
-.dark .sklyvo-app [role="switch"] span {
-  background: var(--sk-thumb) !important;
-}
-
-.dark .sklyvo-driver-popover.driver-popover {
-  background: var(--sk-glass);
-  border-color: var(--sk-border-soft);
-  box-shadow: var(--sk-glass-shadow);
+/* Settings accordion row icons — soft sunken, same language as sidebar */
+.sklyvo-app .sk-settings-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: 12px;
+  border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
+  background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245)));
+  box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
   color: var(--sk-ink);
 }
 
-.dark .sklyvo-driver-popover .driver-popover-title {
-  color: var(--sk-ink);
+.sklyvo-app .sk-settings-row-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
-.dark .sklyvo-driver-popover .driver-popover-description,
-.dark .sklyvo-driver-popover .driver-popover-progress-text {
-  color: var(--sk-muted);
+/* Keep settings hero alias in sync with page badge */
+.sklyvo-app .sk-settings-row-icon--hero {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 14px;
 }
 
-.dark .sklyvo-driver-popover .driver-popover-arrow {
-  border-color: oklch(0.22 0.016 250);
+.sklyvo-app .sk-settings-row-icon--hero svg {
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
-.dark .sklyvo-driver-popover .driver-popover-arrow-side-left {
-  border-right-color: transparent;
-  border-bottom-color: transparent;
-  border-top-color: transparent;
+@media (min-width: 640px) {
+  .sklyvo-app .sk-settings-row-icon--hero {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 16px;
+  }
+  .sklyvo-app .sk-settings-row-icon--hero svg {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
 }
 
-.dark .sklyvo-driver-popover .driver-popover-arrow-side-right {
-  border-left-color: transparent;
-  border-bottom-color: transparent;
-  border-top-color: transparent;
-}
-
-.dark .sklyvo-driver-popover .driver-popover-arrow-side-top {
-  border-right-color: transparent;
-  border-bottom-color: transparent;
-  border-left-color: transparent;
-}
-
-.dark .sklyvo-driver-popover .driver-popover-arrow-side-bottom {
-  border-left-color: transparent;
-  border-top-color: transparent;
-  border-right-color: transparent;
-}
-
-.dark .sk-onboarding__card {
-  background: var(--sk-glass);
-  border-color: var(--sk-border-soft);
-  box-shadow: var(--sk-glass-shadow);
-}
-
-.dark .sk-onboarding__gate {
+/* ---------- Platform Admin (Sklyvo Ops) ---------- */
+.sklyvo-app.sk-admin {
   background:
-    radial-gradient(ellipse 50% 40% at 20% 15%, color-mix(in oklab, var(--sk-brand) 22%, transparent), transparent 70%),
-    radial-gradient(ellipse 40% 35% at 85% 80%, color-mix(in oklab, var(--sk-brand) 12%, transparent), transparent 65%),
-    color-mix(in oklab, oklch(0.14 0.02 250) 78%, transparent);
+    radial-gradient(ellipse 55% 40% at 12% 0%, color-mix(in oklab, var(--sk-brand) 10%, transparent), transparent 70%),
+    var(--sk-canvas, oklch(0.965 0.006 245));
+  color: var(--sk-ink);
 }
 
-.dark .sk-onboarding__chip {
+.sklyvo-app .sk-admin__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--sk-border);
+  background: color-mix(in oklab, var(--sk-light-bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.sklyvo-app .sk-admin__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 11rem;
+}
+
+.sklyvo-app .sk-admin__brand-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sklyvo-app .sk-admin__brand-sub {
+  margin: 0;
+  font-size: 0.7rem;
   color: var(--sk-muted);
 }
 
-.dark .sk-onboarding__chip.is-active {
+.sklyvo-app .sk-admin__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+}
+
+.sklyvo-app .sk-admin__nav-link {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--sk-muted);
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.sklyvo-app .sk-admin__nav-link:hover {
+  color: var(--sk-ink);
+  background: color-mix(in oklab, var(--sk-muted) 8%, transparent);
+}
+
+.sklyvo-app .sk-admin__nav-link.is-active {
+  color: var(--sk-ink);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sklyvo-app .sk-admin__top-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.sklyvo-app .sk-admin__ghost-btn {
+  height: 2rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sklyvo-app .sk-admin__main {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 2.5rem;
+}
+
+.sklyvo-app .sk-admin__page-head {
+  margin-bottom: 1.25rem;
+}
+
+.sklyvo-app .sk-admin__page-head--row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.sklyvo-app .sk-admin__h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2vw, 1.85rem);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.sklyvo-app .sk-admin__h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sklyvo-app .sk-admin__lede {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__back {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--sk-muted);
+  text-decoration: none;
+}
+
+.sklyvo-app .sk-admin__back:hover {
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-admin__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.sklyvo-app .sk-admin__stat {
+  display: block;
+  padding: 1rem 1.05rem;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.12s ease;
+}
+
+.sklyvo-app .sk-admin__stat:hover {
+  transform: translateY(-1px);
+}
+
+.sklyvo-app .sk-admin__stat-label {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__stat-value {
+  margin: 0.35rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.sklyvo-app .sk-admin__search {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sklyvo-app .sk-admin__search-input {
+  min-width: 14rem;
+  height: 2.35rem !important;
+}
+
+.sklyvo-app .sk-admin__table-wrap {
+  overflow-x: auto;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sklyvo-app .sk-admin__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.sklyvo-app .sk-admin__table th {
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent);
+}
+
+.sklyvo-app .sk-admin__table td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-muted) 8%, transparent);
+  vertical-align: top;
+}
+
+.sklyvo-app .sk-admin__table tr:last-child td {
+  border-bottom: none;
+}
+
+.sklyvo-app .sk-admin__link {
+  color: var(--sk-ink);
+  text-decoration: none;
+}
+
+.sklyvo-app .sk-admin__link:hover {
+  color: var(--sk-brand);
+}
+
+.sklyvo-app .sk-admin__muted {
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__empty {
+  text-align: center;
+  padding: 1.5rem !important;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  background: var(--sk-sunken);
+  color: var(--sk-ink);
+  box-shadow: var(--sk-sunken-shadow);
+}
+
+.sklyvo-app .sk-admin__pill--ok {
+  background: color-mix(in oklab, #22c55e 16%, var(--sk-light-bg));
+  color: #166534;
+}
+
+.sklyvo-app .sk-admin__pill--bad {
+  background: color-mix(in oklab, #ef4444 14%, var(--sk-light-bg));
+  color: #991b1b;
+}
+
+.sklyvo-app .sk-admin__cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 900px) {
+  .sklyvo-app .sk-admin__cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sklyvo-app .sk-admin__card--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.sklyvo-app .sk-admin__card {
+  padding: 1rem 1.1rem;
+  border-radius: var(--sk-radius-card);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sklyvo-app .sk-admin__dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.sklyvo-app .sk-admin__dl dt {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__dl dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.88rem;
+}
+
+.sklyvo-app .sk-admin__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.sklyvo-app .sk-admin__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.sk-admin-impersonation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.55rem 1rem;
+  background: linear-gradient(180deg, oklch(0.28 0.02 250), oklch(0.2 0.015 250));
   color: #fff;
+  font-size: 0.82rem;
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
 }
 
-
-/* Tailwind bg-white / dark:bg-zinc panels → soft panel (keep raised look) */
-.dark .sklyvo-app .dark\:bg-zinc-950,
-.dark .sklyvo-app .dark\:bg-zinc-900,
-.sklyvo-app .dark\:bg-zinc-950:is(.dark *),
-.sklyvo-app .dark\:bg-zinc-900:is(.dark *) {
-  background-color: var(--sk-panel) !important;
-  background-image: none !important;
-  color: var(--sk-ink);
+.sklyvo-app:has(.sk-admin-impersonation) {
+  padding-top: 2.5rem;
 }
 
-.dark .sklyvo-app .border-border,
-.dark .sklyvo-app .border-border\/60,
-.dark .sklyvo-app .border-border\/70 {
-  border-color: var(--sk-panel-edge) !important;
+/* ---------- Sklyvo Ops login ---------- */
+.sklyvo-app.sk-admin-login {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse 55% 40% at 15% 0%, color-mix(in oklab, var(--sk-brand) 14%, transparent), transparent 70%),
+    radial-gradient(ellipse 40% 35% at 90% 100%, color-mix(in oklab, var(--sk-brand) 8%, transparent), transparent 65%),
+    var(--sk-canvas, oklch(0.965 0.006 245));
 }
 
-.dark .sklyvo-app .text-foreground {
-  color: var(--sk-ink) !important;
+.sklyvo-app .sk-admin-login__card {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem 1.35rem 1.25rem;
+  border-radius: var(--sk-radius-card-lg, 1.25rem);
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
+  background: var(--sk-light-bg);
+  box-shadow: var(--sk-raised-shadow);
 }
 
-.dark .sklyvo-app .text-muted-foreground {
-  color: var(--sk-muted) !important;
+.sklyvo-app .sk-admin-login__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.dark .sklyvo-app .bg-muted,
-.dark .sklyvo-app .bg-muted\/40,
-.dark .sklyvo-app .bg-muted\/50,
-.dark .sklyvo-app .bg-secondary {
-  background: var(--sk-sunken) !important;
+.sklyvo-app .sk-admin-login__eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
 }
 
-.dark .sklyvo-app .bg-card,
-.dark .sklyvo-app .bg-background {
-  background: var(--sk-panel) !important;
+.sklyvo-app .sk-admin-login__title {
+  margin: 0.1rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
 }
 
-.dark .sklyvo-app .sk-surface,
-.dark .sklyvo-app .sk-stat {
-  color: var(--sk-ink);
+.sklyvo-app .sk-admin-login__lede {
+  margin: 0.85rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--sk-muted);
 }
 
-.dark .sklyvo-app .sk-stat__value,
-.dark .sklyvo-app .sk-page-head__title {
-  color: var(--sk-ink) !important;
+.sklyvo-app .sk-admin-login__error {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  background: color-mix(in oklab, #ef4444 12%, var(--sk-light-bg));
+  color: #991b1b;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
-.dark .sklyvo-app .sk-page-head__sub,
-.dark .sklyvo-app .sk-stat__label,
-.dark .sklyvo-app .sk-stat__suffix {
-  color: var(--sk-muted) !important;
+.sklyvo-app .sk-admin-login__form {
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
-.dark .sklyvo-app main {
+.sklyvo-app .sk-admin-login__foot {
+  margin: 1.1rem 0 0;
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.sklyvo-app .sk-admin-login__foot a {
+  color: var(--sk-muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sklyvo-app .sk-admin-login__foot a:hover {
   color: var(--sk-ink);
 }

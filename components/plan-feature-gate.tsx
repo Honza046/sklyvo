@@ -52,8 +52,12 @@ export function PlanFeatureGate({
           <div className="sk-plan-gate__icon mx-auto mb-3">
             <Lock className="h-5 w-5" aria-hidden />
           </div>
-          <p className="text-sm font-semibold text-[color:var(--sk-ink)] sm:text-base">{title}</p>
-          <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">{description}</p>
+          <p className="text-sm font-semibold text-[color:var(--sk-ink)] sm:text-base">
+            {title}
+          </p>
+          <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+            {description}
+          </p>
           <div className="mt-4 flex flex-col gap-2 sm:mt-5 sm:flex-row sm:justify-center">
             <Button asChild className="h-9 rounded-xl text-sm sm:h-10">
               <Link href="/pricing">{t("planGate.choosePlan")}</Link>

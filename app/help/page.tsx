@@ -1,27 +1,22 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/context/LanguageContext";
-import { getHelpFaqs } from "@/lib/i18n/help-faqs";
+import { getHelpFaqSections } from "@/lib/i18n/help-faqs";
 import { restartOnboardingTour } from "@/app/actions/onboarding-tour";
 import { toast } from "sonner";
 import {
-  LifeBuoy,
-  Search,
   Crosshair,
   Radio,
   Users,
   Mail,
-  MessageCircle,
-  ExternalLink,
-  BookOpen,
   X,
   Rocket,
   PlayCircle,
   Loader2,
+  ChevronRight,
+  LifeBuoy,
 } from "lucide-react";
 import {
   Accordion,
@@ -29,57 +24,48 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  SklyBotChat,
+  type SklyBotChatHandle,
+} from "@/components/support/skly-bot-chat";
+import { cn } from "@/lib/utils";
 
 type GuideId = "sniper" | "radar" | "crm" | "autopilot";
 
 const GUIDE_META: Record<
   GuideId,
-  { accent: string; icon: typeof Crosshair; titleKey: string; descKey: string }
+  { icon: typeof Crosshair; titleKey: string; descKey: string }
 > = {
   sniper: {
-    accent: "#02a7ff",
     icon: Crosshair,
     titleKey: "help.guideSniper",
     descKey: "help.guideSniperDesc",
   },
   radar: {
-    accent: "#059669",
     icon: Radio,
     titleKey: "help.guideRadar",
     descKey: "help.guideRadarDesc",
   },
   crm: {
-    accent: "#d97706",
     icon: Users,
     titleKey: "help.guideCrm",
     descKey: "help.guideCrmDesc",
   },
   autopilot: {
-    accent: "#02a7ff",
     icon: Rocket,
     titleKey: "help.guideAutopilot",
     descKey: "help.guideAutopilotDesc",
   },
 };
 
-export default function HelpCenterPage() {
+export default function SupportPage() {
   const { t, language } = useLanguage();
   const router = useRouter();
-  const allFAQs = getHelpFaqs(language);
+  const faqSections = getHelpFaqSections(language);
+  const chatRef = useRef<SklyBotChatHandle>(null);
+  const [chatExpanded, setChatExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState<GuideId | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isRestartingTour, setIsRestartingTour] = useState(false);
-
-  const filteredFAQs = allFAQs.filter(
-    (faq) =>
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (typeof faq.answer === "string" &&
-        faq.answer.toLowerCase().includes(searchQuery.toLowerCase())),
-  );
-
-  const trimmedSearch = searchQuery.trim();
-  const displayedFAQs = trimmedSearch === "" ? allFAQs.slice(0, 4) : filteredFAQs;
-  const showEmptySearch = trimmedSearch !== "" && filteredFAQs.length === 0;
 
   const handleRestartTour = async () => {
     setIsRestartingTour(true);
@@ -100,142 +86,139 @@ export default function HelpCenterPage() {
   };
 
   return (
-    <div className="flex min-h-full w-full flex-col items-center justify-start pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-0 md:pb-12">
-      <div
-        data-tour="onboarding-help-page"
-        className="mx-auto mb-4 w-full max-w-2xl space-y-3 text-center md:mb-8 md:space-y-6"
-      >
-        <div className="space-y-1 md:space-y-2">
-          <div className="mb-1 flex items-center justify-center md:mb-2">
-            <span className="sk-settings-icon !h-12 !w-12 !rounded-[14px]">
-              <LifeBuoy className="h-6 w-6" strokeWidth={2.25} />
-            </span>
+    <div
+      data-tour="onboarding-help-page"
+      className={cn(
+        "sk-support",
+        chatExpanded ? "sk-support--chat" : "sk-support--hub",
+      )}
+    >
+      {!chatExpanded && (
+        <header className="sk-support__hero mb-3 shrink-0 space-y-1 sm:mb-4 md:mb-5">
+          <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
+            <div className="sk-page-badge" aria-hidden>
+              <LifeBuoy strokeWidth={2} />
+            </div>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
-            {t("help.title")}
-          </h1>
-          <p className="px-2 text-xs text-muted-foreground md:text-sm">{t("help.subtitle")}</p>
-        </div>
+          <h1 className="sk-type-h1">{t("help.title")}</h1>
+          <p className="sk-type-body mx-auto mt-1 max-w-lg px-2">
+            {t("help.subtitle")}
+          </p>
+        </header>
+      )}
 
-        <div className="relative w-full">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70 sm:left-4 sm:h-5 sm:w-5" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t("help.searchPlaceholder")}
-            className="h-10 rounded-xl pl-10 text-sm sm:h-14 sm:rounded-2xl sm:pl-12 sm:text-base"
+      <div className="sk-support__stack">
+        <div
+          className={cn(
+            "sk-support__chat-slot",
+            chatExpanded
+              ? "sk-support__chat-slot--expanded"
+              : "sk-support__chat-slot--teaser",
+          )}
+        >
+          <SklyBotChat
+            ref={chatRef}
+            className={chatExpanded ? "min-h-0 flex-1" : undefined}
+            variant={chatExpanded ? "fullscreen" : "teaser"}
+            onExpand={() => setChatExpanded(true)}
+            onCollapse={() => setChatExpanded(false)}
           />
         </div>
-      </div>
 
-      <div className="flex w-full max-w-4xl flex-col gap-4 px-0 md:gap-8 md:px-4">
-        {searchQuery.trim() === "" && (
-          <>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
+        {!chatExpanded && (
+          <section className="sk-support__section">
+            <h2 className="sk-support__section-title">
+              {t("help.guidesTitle")}
+            </h2>
+            <div className="sk-support__topics">
               {(Object.keys(GUIDE_META) as GuideId[]).map((id) => {
                 const meta = GUIDE_META[id];
                 const Icon = meta.icon;
                 return (
-                  <div
+                  <button
                     key={id}
-                    role="button"
-                    tabIndex={0}
+                    type="button"
                     onClick={() => setActiveModal(id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setActiveModal(id);
-                      }
-                    }}
-                    className="sk-help-card p-3 text-left sm:p-6"
-                    style={{ ["--sk-help-accent" as string]: meta.accent }}
+                    className="sk-help-card sk-support__topic"
                   >
-                    <div className="sk-help-icon mb-2 sm:mb-4">
-                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </div>
-                    <h3 className="mb-0.5 text-sm font-bold text-[color:var(--sk-ink)] sm:mb-1 sm:text-base">
-                      {t(meta.titleKey)}
-                    </h3>
-                    <p className="text-[10px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
-                      {t(meta.descKey)}
-                    </p>
-                  </div>
+                    <span className="sk-help-icon sk-support__topic-icon">
+                      <Icon strokeWidth={2} />
+                    </span>
+                    <span className="sk-support__topic-copy">
+                      <span className="sk-support__topic-title">
+                        {t(meta.titleKey)}
+                      </span>
+                      <span className="sk-support__topic-desc">
+                        {t(meta.descKey)}
+                      </span>
+                    </span>
+                    <ChevronRight
+                      className="sk-support__topic-chevron"
+                      aria-hidden
+                      strokeWidth={2}
+                    />
+                  </button>
                 );
               })}
             </div>
-
-            <div className="my-1 h-px w-full bg-[rgba(210,225,238,0.7)] md:my-2" />
-          </>
+          </section>
         )}
 
-        <div>
-          <div className="mb-3 flex items-center gap-3 sm:mb-6">
-            <span className="sk-chip sk-chip--muted !h-9 !w-9 !rounded-xl">
-              <BookOpen className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
-            </span>
-            <h2 className="text-base font-bold sm:text-xl">{t("help.faqTitle")}</h2>
-          </div>
-
-          {showEmptySearch ? (
-            <p className="sk-surface--empty text-muted-foreground">{t("help.faqEmpty")}</p>
-          ) : (
-            <Accordion type="single" collapsible className="w-full space-y-2 sm:space-y-3">
-              {displayedFAQs.map((faq) => (
-                <AccordionItem
-                  key={faq.question}
-                  value={`faq-${allFAQs.findIndex((f) => f.question === faq.question)}`}
-                  className="sk-help-faq border-none px-3 py-1 sm:px-6 sm:py-2"
-                >
-                  <AccordionTrigger className="py-3 text-left text-sm font-semibold hover:no-underline sm:py-4">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3 text-xs leading-relaxed text-muted-foreground sm:pb-4 sm:text-sm">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
+        {!chatExpanded && (
+          <section className="sk-support__section sk-support__section--faq">
+            <h2 className="sk-support__section-title">{t("help.faqTitle")}</h2>
+            <div className="sk-support__faq-list">
+              {faqSections.map((section) => (
+                <div key={section.id} className="sk-support__faq-group">
+                  <h3 className="sk-support__faq-group-title">{section.title}</h3>
+                  <Accordion type="single" collapsible className="w-full">
+                    {section.items.map((faq, index) => (
+                      <AccordionItem
+                        key={faq.question}
+                        value={`${section.id}-${index}`}
+                        className="sk-support__faq-item"
+                      >
+                        <AccordionTrigger className="sk-support__faq-trigger">
+                          {faq.question}
+                        </AccordionTrigger>
+                        <AccordionContent className="sk-support__faq-answer">
+                          {faq.answer}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
               ))}
-            </Accordion>
-          )}
-        </div>
+            </div>
+          </section>
+        )}
 
-        <div className="sk-help-contact mt-4 mb-2 flex flex-col items-center justify-center p-4 text-center sm:mt-8 sm:mb-0 sm:p-8">
-          <span
-            className="sk-help-icon mb-2 sm:mb-4"
-            style={{ ["--sk-help-accent" as string]: "#02a7ff" }}
-          >
-            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
-          </span>
-          <h3 className="mb-1 text-base font-bold sm:mb-2 sm:text-lg">{t("help.contactTitle")}</h3>
-          <p className="mx-auto mb-3 max-w-md text-xs text-muted-foreground sm:mb-6 sm:text-sm">
-            {t("help.contactDesc")}
-          </p>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
-            <Button asChild className="h-9 rounded-xl px-4 text-sm sm:h-11 sm:px-6">
-              <a href="mailto:podpora@venegard.com?subject=Dotaz z aplikace">
-                <Mail className="mr-2 h-4 w-4" /> {t("help.contactEmail")}
+        {!chatExpanded && (
+          <footer className="sk-support__footer">
+            <div className="sk-support__footer-actions">
+              <a
+                href="mailto:podpora@venegard.com?subject=Dotaz z aplikace"
+                className="sk-support__footer-btn"
+              >
+                <Mail className="h-3.5 w-3.5" strokeWidth={2} />
+                {t("help.contactEmail")}
               </a>
-            </Button>
-            <Button asChild variant="outline" className="h-9 rounded-xl px-4 text-sm sm:h-11 sm:px-6">
-              <a href="https://youtube.com" target="_blank" rel="noreferrer">
-                <ExternalLink className="mr-2 h-4 w-4" /> {t("help.contactVideos")}
-              </a>
-            </Button>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={isRestartingTour}
-            onClick={() => void handleRestartTour()}
-            className="mt-3 h-auto px-0 text-xs font-medium text-[color:var(--sk-brand)] shadow-none hover:bg-transparent hover:text-[color:var(--sk-ink)]"
-          >
-            {isRestartingTour ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-            )}
-            Spustit UI prohlídku znovu
-          </Button>
-        </div>
+              <button
+                type="button"
+                disabled={isRestartingTour}
+                onClick={() => void handleRestartTour()}
+                className="sk-support__footer-btn"
+              >
+                {isRestartingTour ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <PlayCircle className="h-3.5 w-3.5" strokeWidth={2} />
+                )}
+                {t("help.restartTour")}
+              </button>
+            </div>
+          </footer>
+        )}
       </div>
 
       {activeModal !== null && (
@@ -249,9 +232,6 @@ export default function HelpCenterPage() {
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            style={{
-              ["--sk-help-accent" as string]: GUIDE_META[activeModal].accent,
-            }}
           >
             <button
               type="button"
@@ -263,123 +243,99 @@ export default function HelpCenterPage() {
             </button>
 
             {activeModal === "sniper" && (
-              <GuideBody title="Jak ovládat Snipera" icon={<Crosshair className="h-5 w-5" />}>
+              <GuideBody
+                title="Jak ovládat Snipera"
+                icon={<Crosshair strokeWidth={2} />}
+              >
                 <p>
-                  <strong>Sniper</strong> je váš hlavní nástroj pro direct outreach (cold e-mailing).
-                  Slouží k automatizovanému, ale vysoce personalizovanému oslovování potenciálních
-                  klientů.
+                  <strong>Sniper</strong> je váš hlavní nástroj pro direct
+                  outreach (cold e-mailing).
                 </p>
                 <ul className="list-disc space-y-2 pl-5">
                   <li>
-                    <strong>Výběr cílů:</strong> Do kampaně můžete zařadit leady z Radaru, nebo si
-                    nahrát vlastní seznam kontaktů (CSV).
+                    <strong>Výběr cílů:</strong> Leady z Radaru nebo vlastní
+                    CSV.
                   </li>
                   <li>
-                    <strong>Tvorba zpráv:</strong> Používejte proměnné jako <em>[Jméno]</em> nebo{" "}
-                    <em>[Firma]</em>, aby každá zpráva působila ručně psaná.
+                    <strong>Tvorba zpráv:</strong> Proměnné jako{" "}
+                    <em>[Jméno]</em> / <em>[Firma]</em>.
                   </li>
                   <li>
-                    <strong>Automatické Follow-upy:</strong> Sniper pošle další zprávu, pokud klient
-                    na tu první neodpoví.
-                  </li>
-                  <li>
-                    <strong>Ochrana domény:</strong> Systém rozesílá postupně a simuluje lidské
-                    chování.
+                    <strong>Follow-upy:</strong> Další zpráva, když klient
+                    neodpoví.
                   </li>
                 </ul>
                 <p className="sk-help-tip mt-4 p-3 text-sm">
-                  <strong>Profi tip:</strong> V prvním e-mailu buďte struční. Nesnažte se hned
-                  prodat — vyvolejte zvědavost a domluvte si hovor.
+                  <strong>Profi tip:</strong> V prvním e-mailu buďte struční.
                 </p>
               </GuideBody>
             )}
 
             {activeModal === "radar" && (
-              <GuideBody title="Jak na Radar" icon={<Radio className="h-5 w-5" />}>
+              <GuideBody
+                title="Jak na Radar"
+                icon={<Radio strokeWidth={2} />}
+              >
                 <p>
-                  <strong>Radar (Auto Prospector)</strong> najde relevantní firmy a kontakty na lidi,
-                  kteří o nich rozhodují.
+                  <strong>Radar</strong> najde relevantní firmy a rozhodovací
+                  kontakty.
                 </p>
                 <ul className="list-disc space-y-2 pl-5">
                   <li>
-                    <strong>Vyhledávání firem:</strong> Zadejte obor, klíčová slova nebo lokalitu.
+                    <strong>Vyhledávání:</strong> Obor, klíčová slova, lokalita.
                   </li>
                   <li>
-                    <strong>Deep Scan kontaktů:</strong> Dohledá e-maily, telefony a sociální
-                    profily.
+                    <strong>Deep Scan:</strong> E-maily, telefony, profily.
                   </li>
                   <li>
-                    <strong>Filtrování:</strong> Tříďte podle velikosti firmy nebo pozice.
-                  </li>
-                  <li>
-                    <strong>Odeslání do kampaně:</strong> Slibné kontakty pošlete jedním kliknutím do
-                    Snipera.
+                    <strong>Do kampaně:</strong> Jedním klikem do Snipera /
+                    Autopilota.
                   </li>
                 </ul>
-                <p className="sk-help-tip mt-4 p-3 text-sm">
-                  <strong>Profi tip:</strong> Čím specifičtější klíčová slova, tím relevantnější
-                  leady.
-                </p>
               </GuideBody>
             )}
 
             {activeModal === "crm" && (
-              <GuideBody title="CRM a Integrace" icon={<Users className="h-5 w-5" />}>
+              <GuideBody
+                title="CRM a Integrace"
+                icon={<Users strokeWidth={2} />}
+              >
                 <p>
-                  V této sekci udržujete pořádek ve rozehraných obchodech a propojujete systém s
-                  vašimi nástroji.
+                  Pipeline leadů a propojení s e-mailem i externími nástroji.
                 </p>
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-[color:var(--sk-ink)]">Zabudované CRM</h3>
-                    <p>
-                      Stavy leadů se aktualizují automaticky. Systém vás upozorní v sekci „K řešení“,
-                      když klient odepíše.
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[color:var(--sk-ink)]">Možnosti propojení</h3>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                      <li>
-                        <strong>E-mailové schránky:</strong> Google Workspace, Microsoft 365 nebo
-                        SMTP/IMAP.
-                      </li>
-                      <li>
-                        <strong>Externí CRM:</strong> Pipedrive, HubSpot a další.
-                      </li>
-                      <li>
-                        <strong>Make.com / Zapier:</strong> Pokročilé automatizace.
-                      </li>
-                    </ul>
-                  </div>
-                </div>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li>
+                    <strong>E-mail:</strong> Google, Microsoft 365, SMTP/IMAP.
+                  </li>
+                  <li>
+                    <strong>CRM:</strong> Pipedrive, HubSpot…
+                  </li>
+                  <li>
+                    <strong>Automatizace:</strong> Make.com / Zapier.
+                  </li>
+                </ul>
                 <p className="sk-help-tip mt-4 p-3 text-sm">
-                  <strong>Kde to najdu:</strong> Účty, API klíče a webhooky jsou v Nastavení →
-                  Integrace.
+                  <strong>Kde:</strong> Nastavení → Integrace.
                 </p>
               </GuideBody>
             )}
 
             {activeModal === "autopilot" && (
-              <GuideBody title="Jak na Autopilot" icon={<Rocket className="h-5 w-5" />}>
-                <p>
-                  <strong>Autopilot</strong> spojuje outreach do jednoho automatizovaného cyklu:
-                </p>
+              <GuideBody
+                title="Jak na Autopilot"
+                icon={<Rocket strokeWidth={2} />}
+              >
                 <ul className="list-disc space-y-2 pl-5">
                   <li>
-                    <strong>Sběr firem:</strong> Automatické vyhledávání leadů podle kritérií.
+                    <strong>Sběr firem:</strong> Automatické hledání leadů.
                   </li>
                   <li>
-                    <strong>Odesílání:</strong> Sekvence e-mailů a follow-upy bez ruční kontroly.
+                    <strong>Odesílání:</strong> Sekvence a follow-upy.
                   </li>
                   <li>
-                    <strong>Full Auto:</strong> Sběr i odesílání běží nepřetržitě na pozadí.
+                    <strong>Full Auto:</strong> Sběr i odesílání na pozadí.
                   </li>
                 </ul>
-                <p className="sk-help-tip mt-4 p-3 text-sm">
-                  <strong>Profi tip:</strong> Než zapnete Full Auto, otestujte texty ručně ve
-                  Sniperovi.
-                </p>
               </GuideBody>
             )}
           </div>
@@ -400,11 +356,13 @@ function GuideBody({
 }) {
   return (
     <div>
-      <h2 className="mb-4 flex items-center gap-3 text-xl font-bold text-[color:var(--sk-ink)]">
+      <h2 className="sk-type-h2 mb-4 flex items-center gap-3">
         <span className="sk-help-icon">{icon}</span>
         {title}
       </h2>
-      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">{children}</div>
+      <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </div>
     </div>
   );
 }

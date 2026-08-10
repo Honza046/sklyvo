@@ -2,27 +2,37 @@
 
 import { revalidatePath } from "next/cache";
 import { getSessionUser, getWorkspaceAccessState } from "@/app/actions/auth";
-import { AUTOMATED_RADAR_CONFIG, type AutomatedRadarRunResult } from "@/lib/automated-radar-config";
+import {
+  AUTOMATED_RADAR_CONFIG,
+  type AutomatedRadarRunResult,
+} from "@/lib/automated-radar-config";
 import { buildRadarSearchQueries } from "@/lib/radar-settings-meta";
-import { loadRadarSettingsPayloadForWorkspace } from "@/app/actions/radar-settings";
+import { loadRadarSettingsPayloadForWorkspace } from "@/lib/radar-settings-load";
 import { queueAutopilotLead } from "@/app/actions/autopilot";
-import { loadSheetsArchiveExclusionKeys, scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
-import { scrapeWebsiteContacts } from "@/lib/website-contacts";
+import {
+  loadSheetsArchiveExclusionKeys,
+  scheduleCrmSheetsSync,
+} from "@/lib/google-sheets-sync";
 import { prisma } from "@/lib/prisma";
+import { normalizeCountryCode } from "@/lib/country-language";
 import {
-  COUNTRY_LOCATION_BIAS,
-  addressMatchesCountry,
-  normalizeCountryCode,
-  placesLanguageFromCountry,
-  rewriteRadarQueryForPlaces,
-} from "@/lib/country-language";
-import {
-  broadenRadarQuery,
-  filterStandaloneCompanyPlaces,
-  isStandaloneCompanyWebsite,
-} from "@/lib/radar-website-quality";
-import { authorFromSessionUser, authorFromSessionName } from "@/lib/lead-provenance";
+  authorFromSessionUser,
+  authorFromSessionName,
+} from "@/lib/lead-provenance";
 import { inferLeadTags } from "@/lib/lead-tags";
+import {
+  normalizeCompanyName,
+  normalizeDomainFromWebsite,
+  normalizeLinkedInUrl,
+} from "@/lib/radar/normalize";
+import { orchestrateRadarSearch } from "@/lib/radar/orchestrate";
+import type { CrmExclusionKeys } from "@/lib/radar/providers/places";
+import type {
+  RadarDiscoverySource,
+  RadarLead,
+  RadarSourceFlags,
+} from "@/lib/radar/types";
+import { DEFAULT_RADAR_SOURCES } from "@/lib/radar/types";
 
 type RadarSearchInput = {
   query: string;
@@ -31,62 +41,15 @@ type RadarSearchInput = {
   excludeCrm?: boolean;
   /** ISO country for Places regionCode (e.g. CZ, DE). */
   regionCode?: string | null;
+  /** Deep Scan = thorough website contact scrape. */
+  deepScan?: boolean;
+  /** Multi-source toggles (Maps / Web / LinkedIn). */
+  sources?: Partial<RadarSourceFlags>;
 };
 
-type RadarLead = {
-  id: string;
-  name: string;
-  address: string;
-  rating: number | null;
-  placeId: string;
-  url: string;
-  phone: string;
-  email: string | null;
-  placeTypes: string[];
-};
-
-type GooglePlaceV2 = {
-  id?: string;
-  displayName?: { text?: string };
-  formattedAddress?: string;
-  websiteUri?: string;
-  internationalPhoneNumber?: string;
-  rating?: number;
-  primaryType?: string;
-  types?: string[];
-};
-
-type GoogleTextSearchV2Response = {
-  places?: GooglePlaceV2[];
-  nextPageToken?: string;
-  error?: { message?: string };
-};
-
-function normalizeCompanyName(name: string | null | undefined): string {
-  return (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-/** Hostname bez www, malá písmena — shodné s ukládáním domény v CRM. */
-function normalizeDomainFromWebsite(raw: string | null | undefined): string | null {
-  const s = (raw ?? "").trim();
-  if (!s) return null;
-  try {
-    const u = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
-    const host = u.hostname.toLowerCase().replace(/^www\./i, "");
-    return host || null;
-  } catch {
-    const cleaned = s.replace(/^https?:\/\//i, "").split("/")[0]?.trim().toLowerCase() ?? "";
-    return cleaned.replace(/^www\./i, "") || null;
-  }
-}
-
-type CrmExclusionKeys = {
-  placeIds: Set<string>;
-  domains: Set<string>;
-  names: Set<string>;
-};
-
-async function loadCrmExclusionKeys(workspaceId: string): Promise<CrmExclusionKeys> {
+async function loadCrmExclusionKeys(
+  workspaceId: string,
+): Promise<CrmExclusionKeys> {
   const leads = await prisma.lead.findMany({
     where: { workspaceId },
     select: { placeId: true, domain: true, companyName: true },
@@ -119,229 +82,6 @@ async function loadCrmExclusionKeys(workspaceId: string): Promise<CrmExclusionKe
   return { placeIds, domains, names };
 }
 
-function googlePlaceIsInCrm(item: GooglePlaceV2, keys: CrmExclusionKeys): boolean {
-  const pid = item.id?.trim();
-  if (pid && keys.placeIds.has(pid)) return true;
-
-  const nameKey = normalizeCompanyName(item.displayName?.text);
-  if (nameKey && keys.names.has(nameKey)) return true;
-
-  const dom = normalizeDomainFromWebsite(item.websiteUri);
-  if (dom && keys.domains.has(dom)) return true;
-
-  return false;
-}
-
-/** Text Search (New): max 20 výsledků na stránku; bereme víc stránek kvůli filtru vlastních webů. */
-const GOOGLE_SEARCH_PAGE_SIZE = 20;
-const GOOGLE_SEARCH_MAX_RAW_PLACES = 100;
-const GOOGLE_SEARCH_MAX_PAGES = 5;
-
-async function fetchGooglePlacesSearchTextPage(
-  apiKey: string,
-  textQuery: string,
-  pageToken?: string,
-  options?: { regionCode?: string | null; languageCode?: string | null },
-): Promise<{ places: GooglePlaceV2[]; nextPageToken?: string; error?: string }> {
-  const body: Record<string, unknown> = {
-    textQuery,
-    pageSize: GOOGLE_SEARCH_PAGE_SIZE,
-  };
-  if (pageToken) {
-    body.pageToken = pageToken;
-  }
-  const regionCode = normalizeCountryCode(options?.regionCode);
-  if (regionCode) {
-    body.regionCode = regionCode;
-    const bias = COUNTRY_LOCATION_BIAS[regionCode];
-    if (bias && !pageToken) {
-      // Soft bias — regionCode alone is too weak for brand names (e.g. Shoptet → Praha).
-      // Circle radius max is 50 km; use country viewport rectangle instead.
-      body.locationBias = {
-        rectangle: bias.viewport,
-      };
-    }
-  }
-  const languageCode = options?.languageCode?.trim();
-  if (languageCode) {
-    body.languageCode = languageCode;
-  }
-
-  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.internationalPhoneNumber,places.rating,places.primaryType,places.types",
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = (await response.json()) as GoogleTextSearchV2Response;
-
-  if (!response.ok) {
-    return {
-      places: [],
-      error: data.error?.message || `Google API chyba (${response.status}).`,
-    };
-  }
-
-  return {
-    places: data.places ?? [],
-    nextPageToken: data.nextPageToken,
-  };
-}
-
-function placeMatchesSelectedCountry(
-  place: GooglePlaceV2,
-  regionCode: string | null,
-): boolean {
-  if (!regionCode) return true;
-  return addressMatchesCountry(
-    place.formattedAddress,
-    place.internationalPhoneNumber,
-    regionCode,
-  );
-}
-
-async function collectGooglePlacesForQuery(
-  apiKey: string,
-  textQuery: string,
-  requestedLimit: number,
-  crmKeys: CrmExclusionKeys | null,
-  regionCode?: string | null,
-): Promise<{ places: GooglePlaceV2[]; error?: string }> {
-  const normalizedQuery = textQuery.trim();
-  if (!normalizedQuery) {
-    return { places: [], error: "Prázdný dotaz." };
-  }
-
-  const resolvedRegion = normalizeCountryCode(regionCode);
-  const placesOpts = {
-    regionCode: resolvedRegion,
-    languageCode: placesLanguageFromCountry(resolvedRegion) ?? null,
-  };
-
-  const collected: GooglePlaceV2[] = [];
-  const seenPlaceIds = new Set<string>();
-  let pageToken: string | undefined;
-  let pageIndex = 0;
-  let lastError: string | undefined;
-
-  const rewritten = rewriteRadarQueryForPlaces(normalizedQuery, resolvedRegion);
-  const queryVariants = Array.from(
-    new Set([rewritten, ...broadenRadarQuery(rewritten), ...broadenRadarQuery(normalizedQuery)]),
-  );
-
-  const usableFromCollected = () => {
-    let list = collected;
-    if (crmKeys) {
-      list = list.filter((place) => !googlePlaceIsInCrm(place, crmKeys));
-    }
-    list = list.filter((p) => isStandaloneCompanyWebsite(p.websiteUri));
-    list = list.filter((p) => placeMatchesSelectedCountry(p, resolvedRegion));
-    return filterStandaloneCompanyPlaces(list);
-  };
-
-  for (const variant of queryVariants) {
-    pageToken = undefined;
-    pageIndex = 0;
-
-    while (collected.length < GOOGLE_SEARCH_MAX_RAW_PLACES && pageIndex < GOOGLE_SEARCH_MAX_PAGES) {
-      pageIndex += 1;
-      const page = await fetchGooglePlacesSearchTextPage(
-        apiKey,
-        variant,
-        pageToken,
-        placesOpts,
-      );
-
-      if (page.error) {
-        lastError = page.error;
-        break;
-      }
-
-      for (const p of page.places) {
-        if (collected.length >= GOOGLE_SEARCH_MAX_RAW_PLACES) break;
-        const pid = p.id?.trim();
-        if (pid) {
-          if (seenPlaceIds.has(pid)) continue;
-          seenPlaceIds.add(pid);
-        } else {
-          const key = `${normalizeCompanyName(p.displayName?.text)}|${normalizeDomainFromWebsite(p.websiteUri) ?? ""}`;
-          if (seenPlaceIds.has(key)) continue;
-          seenPlaceIds.add(key);
-        }
-        collected.push(p);
-      }
-
-      const usable = usableFromCollected();
-      if (usable.length >= requestedLimit) {
-        return { places: usable.slice(0, requestedLimit) };
-      }
-      if (!page.nextPageToken) break;
-      if (page.places.length === 0) break;
-
-      pageToken = page.nextPageToken;
-      await new Promise((r) => setTimeout(r, 150));
-    }
-
-    const usableSoFar = usableFromCollected();
-    if (usableSoFar.length >= requestedLimit) {
-      return { places: usableSoFar.slice(0, requestedLimit) };
-    }
-  }
-
-  const usable = usableFromCollected();
-
-  if (usable.length === 0 && collected.length === 0 && lastError) {
-    return { places: [], error: lastError };
-  }
-
-  if (usable.length === 0 && resolvedRegion) {
-    return {
-      places: [],
-      error:
-        "V této zemi jsme nenašli firmy s vlastním webem. Zkus obecnější dotaz (např. „online shop London“) nebo jiný počet výsledků.",
-    };
-  }
-
-  return { places: usable.slice(0, requestedLimit) };
-}
-
-async function mapGooglePlaceToRadarLead(
-  item: GooglePlaceV2,
-  index: number,
-  scrapeWebsites = true,
-): Promise<RadarLead> {
-  const placeId = item.id || `place_${index}`;
-  const url = item.websiteUri ?? "";
-  let email: string | null = null;
-  let phone = (item.internationalPhoneNumber ?? "").trim();
-
-  if (scrapeWebsites && url) {
-    const scraped = await scrapeWebsiteContacts(url);
-    email = scraped.email;
-    if (!phone && scraped.phone) phone = scraped.phone;
-  }
-
-  return {
-    id: placeId,
-    name: item.displayName?.text || "Neznámá firma",
-    address: item.formattedAddress || "Adresa není k dispozici",
-    rating: typeof item.rating === "number" ? item.rating : null,
-    placeId,
-    url,
-    phone,
-    email,
-    placeTypes: [
-      ...(item.primaryType ? [item.primaryType] : []),
-      ...(Array.isArray(item.types) ? item.types : []),
-    ],
-  };
-}
 
 async function loadCrmEmailKeys(workspaceId: string): Promise<Set<string>> {
   const leads = await prisma.lead.findMany({
@@ -360,7 +100,9 @@ async function loadCrmEmailKeys(workspaceId: string): Promise<Set<string>> {
   return emails;
 }
 
-async function resolveWorkspaceLeadAuthor(workspaceId: string): Promise<string | null> {
+async function resolveWorkspaceLeadAuthor(
+  workspaceId: string,
+): Promise<string | null> {
   const owner = await prisma.user.findFirst({
     where: { workspaceId, role: "OWNER" },
     select: { name: true, email: true },
@@ -375,7 +117,9 @@ async function resolveWorkspaceLeadAuthor(workspaceId: string): Promise<string |
     select: { name: true, email: true },
     orderBy: { createdAt: "asc" },
   });
-  return authorFromSessionUser(anyMember) ?? authorFromSessionName(anyMember?.name);
+  return (
+    authorFromSessionUser(anyMember) ?? authorFromSessionName(anyMember?.name)
+  );
 }
 
 async function persistAutomatedRadarLeads(
@@ -393,12 +137,15 @@ async function persistAutomatedRadarLeads(
   let skipped = 0;
   const createdLeadIds: string[] = [];
   const resolvedCountry = normalizeCountryCode(countryCode);
-  const resolvedAuthor = author ?? (await resolveWorkspaceLeadAuthor(workspaceId));
+  const resolvedAuthor =
+    author ?? (await resolveWorkspaceLeadAuthor(workspaceId));
 
   const toCreate: Array<{
     companyName: string;
     domain: string | null;
     placeId: string | null;
+    linkedinUrl: string | null;
+    discoverySources: RadarDiscoverySource[];
     email: string | null;
     phone: string | null;
     contactPhone: string | null;
@@ -415,6 +162,30 @@ async function persistAutomatedRadarLeads(
   const inBatchPlaceIds = new Set<string>();
   const inBatchDomains = new Set<string>();
   const inBatchEmails = new Set<string>();
+  const inBatchLinkedIn = new Set<string>();
+
+  const candidateLinkedIn = Array.from(
+    new Set(
+      leads
+        .map((l) => normalizeLinkedInUrl(l.linkedinUrl))
+        .filter((u): u is string => Boolean(u)),
+    ),
+  );
+  const existingLinkedInRows =
+    candidateLinkedIn.length > 0
+      ? await prisma.lead.findMany({
+          where: {
+            workspaceId,
+            linkedinUrl: { in: candidateLinkedIn },
+          },
+          select: { linkedinUrl: true },
+        })
+      : [];
+  const existingLinkedIn = new Set(
+    existingLinkedInRows
+      .map((r) => r.linkedinUrl)
+      .filter((u): u is string => Boolean(u)),
+  );
 
   for (const lead of leads) {
     if (maxToCreate != null && toCreate.length >= maxToCreate) {
@@ -429,18 +200,32 @@ async function persistAutomatedRadarLeads(
 
     const placeId = lead.placeId?.trim() || null;
     const domain = normalizeDomainFromWebsite(lead.url);
+    const linkedinUrl = normalizeLinkedInUrl(lead.linkedinUrl);
     const email = lead.email?.trim() || null;
     const emailKey = email?.toLowerCase() ?? null;
     const contactPhone = lead.phone?.trim() || null;
+    const discoverySources =
+      lead.discoverySources?.length > 0
+        ? lead.discoverySources
+        : (["places"] as RadarDiscoverySource[]);
 
     const duplicateByPlaceId =
-      !!placeId && (crmKeys.placeIds.has(placeId) || inBatchPlaceIds.has(placeId));
+      !!placeId &&
+      (crmKeys.placeIds.has(placeId) || inBatchPlaceIds.has(placeId));
     const duplicateByDomain =
       !!domain && (crmKeys.domains.has(domain) || inBatchDomains.has(domain));
     const duplicateByEmail =
       !!emailKey && (crmEmails.has(emailKey) || inBatchEmails.has(emailKey));
+    const duplicateByLinkedIn =
+      !!linkedinUrl &&
+      (existingLinkedIn.has(linkedinUrl) || inBatchLinkedIn.has(linkedinUrl));
 
-    if (duplicateByPlaceId || duplicateByDomain || duplicateByEmail) {
+    if (
+      duplicateByPlaceId ||
+      duplicateByDomain ||
+      duplicateByEmail ||
+      duplicateByLinkedIn
+    ) {
       skipped += 1;
       continue;
     }
@@ -448,11 +233,14 @@ async function persistAutomatedRadarLeads(
     if (placeId) inBatchPlaceIds.add(placeId);
     if (domain) inBatchDomains.add(domain);
     if (emailKey) inBatchEmails.add(emailKey);
+    if (linkedinUrl) inBatchLinkedIn.add(linkedinUrl);
 
     toCreate.push({
       companyName,
       domain,
       placeId,
+      linkedinUrl,
+      discoverySources,
       email,
       phone: contactPhone,
       contactPhone,
@@ -480,14 +268,29 @@ async function persistAutomatedRadarLeads(
     const placeIds = toCreate
       .map((row) => row.placeId)
       .filter((id): id is string => Boolean(id));
+    const domains = toCreate
+      .map((row) => row.domain)
+      .filter((d): d is string => Boolean(d));
+    const linkedinUrls = toCreate
+      .map((row) => row.linkedinUrl)
+      .filter((u): u is string => Boolean(u));
 
-    if (placeIds.length > 0) {
-      const inserted = await prisma.lead.findMany({
-        where: { workspaceId, placeId: { in: placeIds } },
-        select: { id: true },
-      });
-      createdLeadIds.push(...inserted.map((lead) => lead.id));
-    }
+    const inserted = await prisma.lead.findMany({
+      where: {
+        workspaceId,
+        OR: [
+          ...(placeIds.length ? [{ placeId: { in: placeIds } }] : []),
+          ...(domains.length ? [{ domain: { in: domains } }] : []),
+          ...(linkedinUrls.length
+            ? [{ linkedinUrl: { in: linkedinUrls } }]
+            : []),
+        ],
+      },
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+      take: toCreate.length,
+    });
+    createdLeadIds.push(...inserted.map((lead) => lead.id));
 
     for (const row of toCreate) {
       if (row.placeId) crmKeys.placeIds.add(row.placeId);
@@ -504,7 +307,10 @@ async function persistAutomatedRadarLeads(
   return { created, skipped, createdLeadIds };
 }
 
-async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[]): Promise<number> {
+async function autoQueueOutreachForLeads(
+  workspaceId: string,
+  leadIds: string[],
+): Promise<number> {
   if (leadIds.length === 0) return 0;
 
   // Po automatickém Radaru řadíme ihned (scheduledAt = teď + drobný rozestup),
@@ -518,9 +324,9 @@ async function autoQueueOutreachForLeads(workspaceId: string, leadIds: string[])
       leadId: leadIds[index],
       scheduledAt: new Date(base + index * STAGGER_MS).toISOString(),
       workspaceId,
-      internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(
-        workspaceId,
-      ),
+      internalToken: (
+        await import("@/lib/internal-auth")
+      ).createInternalWorkspaceToken(workspaceId),
     });
     if ("success" in result && result.success) {
       queued += 1;
@@ -538,15 +344,12 @@ export async function runAutomatedRadarForWorkspace(
     /** AUTOPILOT = noční Sběr; FULL_AUTO = Full Auto pipeline */
     leadSource?: "AUTOPILOT" | "FULL_AUTO";
   },
-): Promise<(AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }> {
+): Promise<
+  (AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }
+> {
   const { verifyInternalWorkspaceToken } = await import("@/lib/internal-auth");
   if (!verifyInternalWorkspaceToken(workspaceId, options?.internalToken)) {
     return { error: "Neautorizováno." };
-  }
-
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) {
-    return { error: "Chybí GOOGLE_PLACES_API_KEY." };
   }
 
   const workspace = await prisma.workspace.findUnique({
@@ -575,9 +378,17 @@ export async function runAutomatedRadarForWorkspace(
     Math.max(1, radarSettings.maxCompaniesPerRun ?? 50),
     maxAffordableLeads,
   );
-  const minPerRun = Math.max(1, Math.min(radarSettings.minCompaniesPerRun ?? 1, maxPerRun));
+  const minPerRun = Math.max(
+    1,
+    Math.min(radarSettings.minCompaniesPerRun ?? 1, maxPerRun),
+  );
   const shouldAutoQueue =
     options?.forceAutoStartOutreach === true || radarSettings.autoStartOutreach;
+  const sources: RadarSourceFlags = {
+    places: true,
+    web: true,
+    linkedin: true,
+  };
 
   const crmKeys = await loadCrmExclusionKeys(workspaceId);
   const crmEmails = await loadCrmEmailKeys(workspaceId);
@@ -597,24 +408,19 @@ export async function runAutomatedRadarForWorkspace(
     queriesRun += 1;
 
     try {
-      const { places, error } = await collectGooglePlacesForQuery(
-        apiKey,
-        search.query,
-        search.limit,
-        crmKeys,
+      const { results: mapped, error } = await orchestrateRadarSearch({
+        query: search.query,
+        limit: search.limit,
         regionCode,
-      );
+        crmKeys,
+        deepScan: AUTOMATED_RADAR_CONFIG.scrapeWebsites,
+        sources,
+      });
 
-      if (error) {
+      if (error && mapped.length === 0) {
         errors.push(`"${search.query}" — ${error}`);
         continue;
       }
-
-      const mapped = await Promise.all(
-        places.map((item, index) =>
-          mapGooglePlaceToRadarLead(item, index, AUTOMATED_RADAR_CONFIG.scrapeWebsites),
-        ),
-      );
 
       const persist = await persistAutomatedRadarLeads(
         workspaceId,
@@ -672,195 +478,6 @@ export async function runAutomatedRadarForWorkspace(
   };
 }
 
-/** Prague wall-clock helpers for schedule matching (cron). */
-function getPragueParts(now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Prague",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
-  const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-  const weekday = weekdayMap[get("weekday")] ?? now.getDay();
-  const hour = Number(get("hour"));
-  const minute = Number(get("minute"));
-  const y = get("year");
-  const m = get("month");
-  const d = get("day");
-  return {
-    weekday,
-    minutesOfDay: hour * 60 + minute,
-    dateKey: `${y}-${m}-${d}`,
-  };
-}
-
-/**
- * Spustí naplánovaný Radar pro workspace, jejichž den (Europe/Prague)
- * sedí a dnes ještě neběžel.
- *
- * Pozn.: Na Vercel Hobby může cron běžet max 1× denně (typicky ~01:00 UTC ≈ 03:00 Praha v létě).
- * Proto nečekáme na přesné 10min okno — stačí shoda dne + max 1 běh / den.
- */
-export async function processScheduledRadarRuns(): Promise<{
-  ok: true;
-  checked: number;
-  ran: number;
-  results: Array<{ workspaceId: string; createdCount?: number; creditsCharged?: number; error?: string }>;
-}> {
-  const { weekday, dateKey } = getPragueParts();
-  const settings = await prisma.radarSettings.findMany({
-    where: { radarCronEnabled: true },
-    select: {
-      workspaceId: true,
-      scheduleDays: true,
-      scheduleTime: true,
-      lastScheduledRunAt: true,
-    },
-  });
-
-  const results: Array<{
-    workspaceId: string;
-    createdCount?: number;
-    creditsCharged?: number;
-    error?: string;
-  }> = [];
-  let ran = 0;
-
-  for (const row of settings) {
-    const days = row.scheduleDays?.length ? row.scheduleDays : [1, 4];
-    if (!days.includes(weekday)) continue;
-
-    if (row.lastScheduledRunAt) {
-      const last = getPragueParts(row.lastScheduledRunAt);
-      if (last.dateKey === dateKey) continue;
-    }
-
-    const { createInternalWorkspaceToken } = await import("@/lib/internal-auth");
-    const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
-      internalToken: createInternalWorkspaceToken(row.workspaceId),
-    });
-    if ("error" in run) {
-      results.push({ workspaceId: row.workspaceId, error: run.error });
-      continue;
-    }
-
-    await prisma.radarSettings.update({
-      where: { workspaceId: row.workspaceId },
-      data: { lastScheduledRunAt: new Date() },
-    });
-
-    ran += 1;
-    results.push({
-      workspaceId: row.workspaceId,
-      createdCount: run.createdCount,
-      creditsCharged: run.creditsCharged,
-    });
-  }
-
-  return { ok: true, checked: settings.length, ran, results };
-}
-
-const FULL_AUTO_DAYS: Record<string, number[]> = {
-  once_weekly: [1],
-  twice_weekly: [1, 4],
-  daily: [1, 2, 3, 4, 5],
-};
-
-/**
- * Full Auto cron: Radar (včetně fronty) + okamžité odeslání splatných e-mailů.
- * Frekvence once_weekly / twice_weekly / daily podle DB; max 1× denně.
- */
-export async function processScheduledFullAutoRuns(): Promise<{
-  ok: true;
-  checked: number;
-  ran: number;
-  results: Array<{
-    workspaceId: string;
-    createdCount?: number;
-    outreachQueued?: number;
-    emailsSent?: number;
-    error?: string;
-  }>;
-}> {
-  const { weekday, dateKey } = getPragueParts();
-  const settings = await prisma.radarSettings.findMany({
-    where: { fullAutoEnabled: true },
-    select: {
-      workspaceId: true,
-      fullAutoFrequency: true,
-      lastFullAutoRunAt: true,
-    },
-  });
-
-  const results: Array<{
-    workspaceId: string;
-    createdCount?: number;
-    outreachQueued?: number;
-    emailsSent?: number;
-    error?: string;
-  }> = [];
-  let ran = 0;
-
-  for (const row of settings) {
-    const freq = row.fullAutoFrequency || "twice_weekly";
-    const days = FULL_AUTO_DAYS[freq] ?? FULL_AUTO_DAYS.twice_weekly;
-    if (!days.includes(weekday)) continue;
-
-    if (row.lastFullAutoRunAt) {
-      const last = getPragueParts(row.lastFullAutoRunAt);
-      if (last.dateKey === dateKey) continue;
-    }
-
-    const { createInternalWorkspaceToken } = await import("@/lib/internal-auth");
-    const wsToken = createInternalWorkspaceToken(row.workspaceId);
-    const run = await runAutomatedRadarForWorkspace(row.workspaceId, {
-      forceAutoStartOutreach: true,
-      leadSource: "FULL_AUTO",
-      internalToken: wsToken,
-    });
-    if ("error" in run) {
-      results.push({ workspaceId: row.workspaceId, error: run.error });
-      continue;
-    }
-
-    const { processEmailQueue } = await import("@/app/actions/autopilot");
-    const send = await processEmailQueue(50, {
-      workspaceId: row.workspaceId,
-      ignoreSchedule: true,
-      internalToken: wsToken,
-    });
-
-    await prisma.radarSettings.update({
-      where: { workspaceId: row.workspaceId },
-      data: { lastFullAutoRunAt: new Date() },
-    });
-
-    ran += 1;
-    results.push({
-      workspaceId: row.workspaceId,
-      createdCount: run.createdCount,
-      outreachQueued: run.outreachQueued,
-      emailsSent: send.sent,
-    });
-  }
-
-  return { ok: true, checked: settings.length, ran, results };
-}
-
 export async function runAutomatedRadar(): Promise<
   (AutomatedRadarRunResult & { outreachQueued?: number }) | { error: string }
 > {
@@ -870,9 +487,9 @@ export async function runAutomatedRadar(): Promise<
   }
 
   return runAutomatedRadarForWorkspace(session.workspace.id, {
-    internalToken: (await import("@/lib/internal-auth")).createInternalWorkspaceToken(
-      session.workspace.id,
-    ),
+    internalToken: (
+      await import("@/lib/internal-auth")
+    ).createInternalWorkspaceToken(session.workspace.id),
   });
 }
 
@@ -903,40 +520,39 @@ export async function searchRadarLeads(input: RadarSearchInput) {
     return { error: "Vyhledávací dotaz je povinný." };
   }
 
-  const creditsLeft = (session.workspace.creditsTotal ?? 0) - (session.workspace.creditsUsed ?? 0);
+  const creditsLeft =
+    (session.workspace.creditsTotal ?? 0) -
+    (session.workspace.creditsUsed ?? 0);
   if (creditsLeft <= 0) {
     return { error: "Nemáte dostatek kreditů pro Radar vyhledávání." };
   }
 
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) {
-    return { error: "Chybí GOOGLE_PLACES_API_KEY." };
-  }
-
-  /** Počet výsledků, který si uživatel vybral v UI (přesně tolik jde zpět po filtraci, pokud to API dovolí). */
+  /** Počet výsledků, který si uživatel vybral v UI. */
   const requestedLimit = Math.max(1, input.limit);
   const excludeCrm = input.excludeCrm === true;
-  const crmKeys = excludeCrm ? await loadCrmExclusionKeys(session.workspace.id) : null;
+  const crmKeys = excludeCrm
+    ? await loadCrmExclusionKeys(session.workspace.id)
+    : null;
   const regionCode = normalizeCountryCode(input.regionCode);
+  const sources: Partial<RadarSourceFlags> = {
+    places: input.sources?.places ?? DEFAULT_RADAR_SOURCES.places,
+    web: input.sources?.web ?? DEFAULT_RADAR_SOURCES.web,
+    linkedin: input.sources?.linkedin ?? DEFAULT_RADAR_SOURCES.linkedin,
+  };
 
-  const { places: placesToMap, error: placesError } = await collectGooglePlacesForQuery(
-    apiKey,
-    normalizedQuery,
-    requestedLimit,
-    crmKeys,
+  const { results, error } = await orchestrateRadarSearch({
+    query: normalizedQuery,
+    limit: requestedLimit,
     regionCode,
-  );
+    excludeCrm,
+    crmKeys,
+    deepScan: input.deepScan === true,
+    sources,
+  });
 
-  if (placesError && placesToMap.length === 0) {
-    return { error: placesError };
+  if (error && results.length === 0) {
+    return { error };
   }
-
-  const mappedResults: RadarLead[] = await Promise.all(
-    placesToMap.map((item, index) => mapGooglePlaceToRadarLead(item, index, true)),
-  );
-
-  // Drop any leftovers without a real standalone website (safety net after scrape).
-  const standaloneResults = mappedResults.filter((r) => isStandaloneCompanyWebsite(r.url));
 
   await prisma.workspace.update({
     where: { id: session.workspace.id },
@@ -946,5 +562,5 @@ export async function searchRadarLeads(input: RadarSearchInput) {
   revalidatePath("/radar");
   revalidatePath("/");
 
-  return { results: standaloneResults };
+  return { results };
 }

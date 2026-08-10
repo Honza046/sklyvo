@@ -55,9 +55,9 @@ export function ExpandOverlay({
         />
 
         {/*
-          Wide popup in the content column (sidebar stays clear).
-          Sized to fit queue columns without horizontal scroll and show more rows.
-        */}
+ Wide popup in the content column (sidebar stays clear).
+ Sized to fit queue columns without horizontal scroll and show more rows.
+ */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 top-0 flex items-center justify-center px-3 py-3 sm:px-5 sm:py-4 md:px-6 md:py-5">
           <div
             role="dialog"
@@ -78,7 +78,9 @@ export function ExpandOverlay({
                   {title}
                 </h2>
                 {description ? (
-                  <p className="text-xs text-muted-foreground sm:text-sm">{description}</p>
+                  <p className="text-xs text-muted-foreground sm:text-sm">
+                    {description}
+                  </p>
                 ) : null}
               </div>
               <button
@@ -91,7 +93,9 @@ export function ExpandOverlay({
               </button>
             </div>
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-2 sm:px-4 sm:pb-4 sm:pt-3">
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {children}
+              </div>
             </div>
           </div>
         </div>

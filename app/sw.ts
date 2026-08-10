@@ -17,13 +17,33 @@ declare const self: ServiceWorkerGlobalScope;
  */
 const appRouterNetworkOnly = [
   {
-    matcher: ({ request, url: { pathname }, sameOrigin }: { request: Request; url: URL; sameOrigin: boolean }) =>
-      request.headers.get("RSC") === "1" && sameOrigin && !pathname.startsWith("/api/"),
+    matcher: ({
+      request,
+      url: { pathname },
+      sameOrigin,
+    }: {
+      request: Request;
+      url: URL;
+      sameOrigin: boolean;
+    }) =>
+      request.headers.get("RSC") === "1" &&
+      sameOrigin &&
+      !pathname.startsWith("/api/"),
     handler: new NetworkOnly(),
   },
   {
-    matcher: ({ request, url: { pathname }, sameOrigin }: { request: Request; url: URL; sameOrigin: boolean }) =>
-      request.mode === "navigate" && sameOrigin && !pathname.startsWith("/api/"),
+    matcher: ({
+      request,
+      url: { pathname },
+      sameOrigin,
+    }: {
+      request: Request;
+      url: URL;
+      sameOrigin: boolean;
+    }) =>
+      request.mode === "navigate" &&
+      sameOrigin &&
+      !pathname.startsWith("/api/"),
     handler: new NetworkOnly(),
   },
 ];

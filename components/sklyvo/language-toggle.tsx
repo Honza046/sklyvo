@@ -18,7 +18,9 @@ export function LanguageToggle() {
       style={
         single
           ? undefined
-          : ({ ["--sk-lang-count" as string]: toggleSlots.length } as React.CSSProperties)
+          : ({
+              ["--sk-lang-count" as string]: toggleSlots.length,
+            } as React.CSSProperties)
       }
     >
       <span

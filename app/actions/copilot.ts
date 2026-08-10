@@ -3,7 +3,11 @@
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { getSessionUser, getWorkspaceAccessState } from "@/app/actions/auth";
-import { parseCopilotActions, appendAction, type CopilotAction } from "@/lib/copilot/action-links";
+import {
+  parseCopilotActions,
+  appendAction,
+  type CopilotAction,
+} from "@/lib/copilot/action-links";
 import { SKLYVO_PRODUCT_KNOWLEDGE } from "@/lib/copilot/product-knowledge";
 import {
   buildEmailSetupGuide,
@@ -20,7 +24,7 @@ const google = createGoogleGenerativeAI({
 const COPILOT_MODEL =
   process.env.COPILOT_GEMINI_MODEL?.trim() ||
   process.env.SNIPER_GEMINI_MODEL?.trim() ||
-  "gemini-2.5-flash";
+  "gemini-3.5-flash";
 
 export type CopilotChatMessage = {
   role: "user" | "assistant";
@@ -41,10 +45,13 @@ function languageInstruction(language: "cz" | "en" | "es" | "de"): string {
   return "Odpovídej česky.";
 }
 
-function buildSystemPrompt(pathname: string, language: "cz" | "en" | "es" | "de"): string {
+function buildSystemPrompt(
+  pathname: string,
+  language: "cz" | "en" | "es" | "de",
+): string {
   const pageContext = buildSystemContextMessage(pathname, language);
   return [
-    "Jsi venesis, AI asistent ve Sklyvu (B2B outreach app).",
+    "Jsi Skly Bot, AI asistent ve Sklyvu (B2B outreach app).",
     "Pomáháš s Sklyvem: Sniper, Radar, CRM, Autopilot, kredity, napojení e-mailu, nastavení.",
     "Nikdy se nepředstavuj jako „produktový asistent“ a neříkej fráze typu „pomoc s produktem“ / „help with the product“.",
     "Na pozdrav (ahoj, čau…) odpověz krátce a přirozeně. Co řeší ve Sklyvu (např. e-mail, Autopilot, kredity). Bez marketingového pitchu.",
@@ -54,7 +61,7 @@ function buildSystemPrompt(pathname: string, language: "cz" | "en" | "es" | "de"
     "Nepoužívej dlouhé pomlčky (—) v odpovědích. Piš věty s tečkou nebo čárkou.",
     "Když pomůže navigace, přidej na konec tag [ACTION: /cesta|Text tlačítka].",
     "Příklad: [ACTION: /settings#email-integration|Otevřít nastavení e-mailu]",
-    "Nevymýšlej funkce, které ve Sklyvu nejsou. Pokud nevíš, řekni to a navrhni /help.",
+    "Nevymýšlej funkce, které ve Sklyvu nejsou. Pokud nevíš, řekni to a navrhni /help (Podpora).",
     languageInstruction(language),
     pageContext,
     "",
@@ -72,7 +79,7 @@ export async function askCopilot(input: {
   const session = await getSessionUser();
   if (!session.user?.id) {
     return {
-      content: "Pro chat s venesis se musíte přihlásit.",
+      content: "Pro chat se Skly Botem se musíte přihlásit.",
       actions: [],
       error: "unauthenticated",
     };
@@ -81,7 +88,8 @@ export async function askCopilot(input: {
   const access = await getWorkspaceAccessState();
   if (access.isBlocked) {
     return {
-      content: "Váš trial nebo předplatné není aktivní. Obnovte tarif v nastavení účtu.",
+      content:
+        "Váš trial nebo předplatné není aktivní. Obnovte tarif v nastavení účtu.",
       actions: [{ path: "/account", label: "Otevřít účet" }],
       error: "blocked",
     };
@@ -107,8 +115,9 @@ export async function askCopilot(input: {
 
   if (!process.env.GOOGLE_API_KEY) {
     return {
-      content: "AI asistent teď není dostupný (chybí API klíč). Zkuste to později nebo otevřete Nápovědu.",
-      actions: [{ path: "/help", label: "Otevřít nápovědu" }],
+      content:
+        "AI asistent teď není dostupný (chybí API klíč). Zkuste to později nebo otevřete Podporu.",
+      actions: [{ path: "/help", label: "Otevřít Podporu" }],
       error: "missing_api_key",
     };
   }
@@ -143,7 +152,9 @@ export async function askCopilot(input: {
     const parsed = parseCopilotActions(raw);
     const wantsEmailGuide =
       isEmailSetupQuestion(question) &&
-      /krok|step|app password|heslo aplikace|oauth|smtp|propoj/i.test(question + " " + raw);
+      /krok|step|app password|heslo aplikace|oauth|smtp|propoj/i.test(
+        question + " " + raw,
+      );
 
     let guide: CopilotGuideResponse | undefined;
     let content = parsed.text;

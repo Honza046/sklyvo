@@ -57,37 +57,6 @@ body::-webkit-scrollbar {
 
     --radius: 0.75rem;
   }
-
-  .dark {
-    /* Soft-UI dark — blue-slate, not pure black */
-    --background: 222 40% 9%;
-    --foreground: 210 40% 96%;
-
-    --card: 222 32% 12%;
-    --card-foreground: 210 40% 96%;
-
-    --popover: 222 32% 12%;
-    --popover-foreground: 210 40% 96%;
-
-    --primary: 199 100% 55%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 222 28% 16%;
-    --secondary-foreground: 210 40% 96%;
-
-    --muted: 222 28% 16%;
-    --muted-foreground: 215 16% 68%;
-
-    --accent: 222 28% 16%;
-    --accent-foreground: 210 40% 96%;
-
-    --destructive: 0 62.8% 40%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 222 24% 20%;
-    --input: 222 24% 20%;
-    --ring: 199 100% 55%;
-  }
 }
 
 @layer base {
@@ -135,14 +104,8 @@ body::-webkit-scrollbar {
   }
 }
 
-/* Toast above mobile bottom nav */
-@media (max-width: 767px) {
-  [data-sonner-toaster] {
-    bottom: calc(4.25rem + env(safe-area-inset-bottom)) !important;
-  }
-}
+/* Toast position */
 
-/* Driver.js — soft-UI tour (tokens follow :root / .dark) */
 .driver-popover.sklyvo-driver-popover {
   box-sizing: border-box !important;
   margin: 0;

@@ -12,6 +12,7 @@ import {
   Rocket,
   CreditCard,
   Lock,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isPremiumToolsLocked } from "@/components/plan-feature-gate";
@@ -26,10 +27,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggleMenuItem } from "@/components/theme-toggle";
 import { SklyvoOnboardingTour } from "@/components/sklyvo-onboarding-tour";
-import { AICopilotWidget } from "@/components/ai/AICopilotWidget";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
@@ -38,9 +38,7 @@ import {
   MAIN_NAV,
   TOOL_NAV_HREFS,
   WORK_NAV_HREFS,
-  MobileBottomNav,
-  MobileTopBar,
-} from "@/components/mobile-nav";
+} from "@/components/nav-config";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 
@@ -79,12 +77,8 @@ export function DashboardShell({
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   useEffect(() => {
     if (!pendingHref) return;
-    if (pendingHref === "/autopilot") {
-      if (pathname.startsWith("/autopilot")) setPendingHref(null);
-      return;
-    }
-    if (activeHref === pendingHref) setPendingHref(null);
-  }, [activeHref, pathname, pendingHref]);
+    if (normalizeActiveHref(pathname) === pendingHref) setPendingHref(null);
+  }, [pathname, pendingHref]);
 
   const markNavPending = useCallback((href: string) => {
     setPendingHref(normalizeActiveHref(href));
@@ -104,6 +98,13 @@ export function DashboardShell({
 
   const navActiveHref = pendingHref ?? activeHref;
   const isAutopilotActive = navActiveHref === "/autopilot";
+  /**
+   * Subnav open/close must follow the committed route only.
+   * If it follows pendingHref, collapsing Autopilot on pointerdown shifts
+   * Sniper/Radar under the cursor and the first click never navigates.
+   */
+  const showAutopilotSubnav =
+    activeHref === "/autopilot" || pathname.startsWith("/autopilot");
   const isWorkspaceSettingsActive = navActiveHref === "/settings";
 
   /** Flat order of [data-slide-item]: Overview → Autopilot → Sniper → Radar → CRM → Úložiště */
@@ -117,11 +118,10 @@ export function DashboardShell({
     const i = ordered.findIndex(({ href }) => navMatches(navActiveHref, href));
     return i >= 0 ? i + 2 : -1;
   }, [navActiveHref, isAutopilotActive]);
-  const { trackRef: sidebarNavRef, thumbStyle: sidebarThumbStyle } = useSlidingThumb(
-    sidebarSlideIndex,
-    [navActiveHref, isAutopilotActive],
-    { axis: "y" },
-  );
+  const { trackRef: sidebarNavRef, thumbStyle: sidebarThumbStyle } =
+    useSlidingThumb(sidebarSlideIndex, [navActiveHref, isAutopilotActive], {
+      axis: "y",
+    });
 
   /** Footer nav: Help → Workspace */
   const footerSlideIndex = useMemo(() => {
@@ -129,11 +129,12 @@ export function DashboardShell({
     if (isWorkspaceSettingsActive) return 1;
     return -1;
   }, [navActiveHref, pathname, isWorkspaceSettingsActive]);
-  const { trackRef: footerNavRef, thumbStyle: footerThumbStyle } = useSlidingThumb(
-    footerSlideIndex,
-    [navActiveHref, isWorkspaceSettingsActive],
-    { axis: "y" },
-  );
+  const { trackRef: footerNavRef, thumbStyle: footerThumbStyle } =
+    useSlidingThumb(
+      footerSlideIndex,
+      [navActiveHref, isWorkspaceSettingsActive],
+      { axis: "y" },
+    );
 
   const lockMainScroll =
     pathname.startsWith("/autopilot") ||
@@ -144,9 +145,12 @@ export function DashboardShell({
     pathname === "/uloziste" ||
     pathname.startsWith("/uloziste/") ||
     pathname === "/generator" ||
-    pathname.startsWith("/generator/");
+    pathname.startsWith("/generator/") ||
+    pathname === "/help" ||
+    pathname.startsWith("/help/");
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [subscriptionState, setSubscriptionState] = useState<{
     trialRemainingDays: number;
@@ -158,9 +162,12 @@ export function DashboardShell({
     trialEndsAtISO: string | null;
     subscriptionPeriodEndISO: string | null;
   } | null>(null);
-  const [onboardingTourCompleted, setOnboardingTourCompleted] = useState<boolean | null>(null);
+  const [onboardingTourCompleted, setOnboardingTourCompleted] = useState<
+    boolean | null
+  >(null);
   /** Firma ještě nemá companyName — nejdřív formulář, teprve potom tour. */
-  const [companyOnboardingPending, setCompanyOnboardingPending] = useState(true);
+  const [companyOnboardingPending, setCompanyOnboardingPending] =
+    useState(true);
   const [tourPreview, setTourPreview] = useState(false);
   /** Po zavření křížkem / Hotovo — nespouštět tour znovu v téže session (preview→live). */
   const [tourSuppressed, setTourSuppressed] = useState(false);
@@ -193,6 +200,7 @@ export function DashboardShell({
       avatarUrl: session.user.avatarUrl ?? null,
       image: session.user.image ?? null,
     });
+    setIsPlatformAdmin(Boolean(session.user.isPlatformAdmin));
     const w = session.workspace;
     const toISO = (v: Date | string | null | undefined) => {
       if (v == null) return null;
@@ -244,9 +252,15 @@ export function DashboardShell({
     const onCompanyOnboardingDone = () => {
       void loadWorkspaceSession();
     };
-    window.addEventListener("sklyvo-company-onboarding-done", onCompanyOnboardingDone);
+    window.addEventListener(
+      "sklyvo-company-onboarding-done",
+      onCompanyOnboardingDone,
+    );
     return () =>
-      window.removeEventListener("sklyvo-company-onboarding-done", onCompanyOnboardingDone);
+      window.removeEventListener(
+        "sklyvo-company-onboarding-done",
+        onCompanyOnboardingDone,
+      );
   }, [loadWorkspaceSession]);
 
   useEffect(() => {
@@ -283,9 +297,15 @@ export function DashboardShell({
       );
     };
 
-    window.addEventListener("avatar-updated", handleAvatarUpdate as EventListener);
+    window.addEventListener(
+      "avatar-updated",
+      handleAvatarUpdate as EventListener,
+    );
     return () => {
-      window.removeEventListener("avatar-updated", handleAvatarUpdate as EventListener);
+      window.removeEventListener(
+        "avatar-updated",
+        handleAvatarUpdate as EventListener,
+      );
     };
   }, []);
 
@@ -314,7 +334,8 @@ export function DashboardShell({
     handleOnboardingTourCompleted();
   }, [handleOnboardingTourCompleted]);
 
-  const hasSessionData = !isSessionLoading && !!sessionUser && !!subscriptionState;
+  const hasSessionData =
+    !isSessionLoading && !!sessionUser && !!subscriptionState;
 
   const trialDays = subscriptionState?.trialRemainingDays ?? 0;
   const isTrialActive = subscriptionState?.isTrial && trialDays > 0;
@@ -355,18 +376,22 @@ export function DashboardShell({
     subscriptionStatus !== "ACTIVE" &&
     !hasPaidPlanTier;
 
-  const creditsRemaining = Math.max(0, displayCreditsTotal - dbCreditsUsed);
-
   const creditsPercentage =
     displayCreditsTotal > 0
       ? Math.min(100, (dbCreditsUsed / displayCreditsTotal) * 100)
       : 0;
+  const usagePercentRounded = Math.round(creditsPercentage);
 
   const displayPlan = (() => {
     if (hasPaidPlanTier || subscriptionStatus === "ACTIVE") {
       return planTier ?? t("nav.planFree");
     }
-    if (!planTier || planTier === "NONE" || planTier === "FREE" || isTrialExpired) {
+    if (
+      !planTier ||
+      planTier === "NONE" ||
+      planTier === "FREE" ||
+      isTrialExpired
+    ) {
       if (isTrialExpired) return t("nav.planFree");
       if (isTrialActive && isFreePlanTier) return t("nav.planFreeTrial");
       return t("nav.planFree");
@@ -398,18 +423,11 @@ export function DashboardShell({
     return null;
   })();
 
-  const mobileCreditsLabel = hasSessionData
-    ? `${creditsRemaining.toLocaleString(dateLocale)} / ${displayCreditsTotal.toLocaleString(dateLocale)}`
-    : null;
-
   return (
     <div className="sklyvo-app flex h-dvh max-h-dvh w-full overflow-hidden">
-      
+      <ImpersonationBanner />
       {/* BOČNÍ PANEL */}
-      <aside
-        className="sk-sidebar hidden h-full w-64 flex-shrink-0 md:flex md:flex-col"
-      >
-        
+      <aside className="sk-sidebar flex h-full w-64 flex-shrink-0 flex-col">
         {/* LOGO */}
         <div className="flex h-14 shrink-0 items-center px-4 pl-5">
           <Link
@@ -422,125 +440,136 @@ export function DashboardShell({
             <span className="sk-lockup__word">Sklyvo</span>
           </Link>
         </div>
-        
+
         {/* NAV — Přehled stays outside overflow so active glow isn't clipped under the logo */}
         <nav
           ref={sidebarNavRef as RefObject<HTMLElement>}
           className="sk-nav-track relative flex min-h-0 flex-1 flex-col overflow-visible"
         >
-          <span className="sk-nav-thumb" style={sidebarThumbStyle} aria-hidden />
+          <span
+            className="sk-nav-thumb"
+            style={sidebarThumbStyle}
+            aria-hidden
+          />
 
           <div className="relative z-[1] shrink-0 px-3 pb-1 pt-1">
-            {MAIN_NAV.filter(({ href }) => href === "/").map(({ href, labelKey, icon: Icon }) => {
-              const active = navMatches(navActiveHref, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-slide-item
-                  data-tour="onboarding-overview"
-                  className={navItemClass(active)}
-                  aria-current={active ? "page" : undefined}
-                  {...navPendingProps(href)}
-                >
-                  <Icon className="sk-nav-icon" aria-hidden />
-                  {t(labelKey)}
-                </Link>
-              );
-            })}
+            {MAIN_NAV.filter(({ href }) => href === "/").map(
+              ({ href, labelKey, icon: Icon }) => {
+                const active = navMatches(navActiveHref, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    data-slide-item
+                    data-tour="onboarding-overview"
+                    className={navItemClass(active)}
+                    aria-current={active ? "page" : undefined}
+                    {...navPendingProps(href)}
+                  >
+                    <Icon className="sk-nav-icon" aria-hidden />
+                    {t(labelKey)}
+                  </Link>
+                );
+              },
+            )}
           </div>
 
           <div
             data-nav-scroll
             className="scrollbar-hide relative z-[1] flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 pb-2"
           >
-          <span className="sk-nav-label">{t("nav.tools")}</span>
-          <div className="flex flex-col gap-0.5">
-            <Link
-              href="/autopilot/radar"
-              data-slide-item
-              data-tour="onboarding-autopilot"
-              className={navItemClass(isAutopilotActive, premiumToolsLocked)}
-              aria-current={isAutopilotActive ? "page" : undefined}
-              {...navPendingProps("/autopilot/radar")}
-            >
-              <Rocket className="sk-nav-icon" aria-hidden />
-              {t("nav.autopilot")}
-              {premiumToolsLocked ? <Lock className="sk-nav-lock" aria-hidden /> : null}
-            </Link>
+            <span className="sk-nav-label">{t("nav.tools")}</span>
+            <div className="sk-nav-tree flex flex-col gap-0.5">
+              <Link
+                href="/autopilot/radar"
+                data-slide-item
+                data-tour="onboarding-autopilot"
+                className={navItemClass(isAutopilotActive, premiumToolsLocked)}
+                aria-current={isAutopilotActive ? "page" : undefined}
+                {...navPendingProps("/autopilot/radar")}
+              >
+                <Rocket className="sk-nav-icon" aria-hidden />
+                {t("nav.autopilot")}
+                {premiumToolsLocked ? (
+                  <Lock className="sk-nav-lock" aria-hidden />
+                ) : null}
+              </Link>
 
-            {isAutopilotActive && (
-              <div className="flex flex-col gap-0.5 pl-5">
-                {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
-                  const subActive =
-                    pathname === href || pathname.startsWith(`${href}/`);
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={cn(
-                        "sk-nav-sub",
-                        subActive && "is-active",
-                        premiumToolsLocked && "opacity-50",
-                      )}
-                    >
-                      <span className="sk-nav-dot" />
-                      {t(labelKey)}
-                    </Link>
-                  );
-                })}
-              </div>
+              {showAutopilotSubnav && (
+                <div className="sk-nav-tree__branch">
+                  {AUTOPILOT_SUB_NAV.map(({ href, labelKey }) => {
+                    const subActive =
+                      pathname === href || pathname.startsWith(`${href}/`);
+                    return (
+                      <Link
+                        key={href}
+                        href={href}
+                        className={cn(
+                          "sk-nav-sub",
+                          subActive && "is-active",
+                          premiumToolsLocked && "opacity-50",
+                        )}
+                      >
+                        <span className="sk-nav-dot" aria-hidden />
+                        {t(labelKey)}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)).map(
+              ({ href, labelKey, icon: Icon }) => {
+                const active = navMatches(navActiveHref, href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    data-slide-item
+                    data-tour={
+                      href === "/radar"
+                        ? "onboarding-radar"
+                        : href === "/sniper"
+                          ? "onboarding-sniper"
+                          : undefined
+                    }
+                    className={navItemClass(active)}
+                    aria-current={active ? "page" : undefined}
+                    {...navPendingProps(href)}
+                  >
+                    <Icon className="sk-nav-icon" aria-hidden />
+                    {t(labelKey)}
+                  </Link>
+                );
+              },
             )}
-          </div>
 
-          {MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)).map(
-            ({ href, labelKey, icon: Icon }) => {
-              const active = navMatches(navActiveHref, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-slide-item
-                  data-tour={
-                    href === "/radar"
-                      ? "onboarding-radar"
-                      : href === "/sniper"
-                        ? "onboarding-sniper"
-                        : undefined
-                  }
-                  className={navItemClass(active)}
-                  aria-current={active ? "page" : undefined}
-                  {...navPendingProps(href)}
-                >
-                  <Icon className="sk-nav-icon" aria-hidden />
-                  {t(labelKey)}
-                </Link>
-              );
-            },
-          )}
-
-          <span className="sk-nav-label">{t("nav.work")}</span>
-          {MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)).map(
-            ({ href, labelKey, icon: Icon }) => {
-              const active = navMatches(navActiveHref, href);
-              const locked = premiumToolsLocked && PREMIUM_NAV_HREFS.has(href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-slide-item
-                  data-tour={href === "/crm" ? "onboarding-crm" : undefined}
-                  className={navItemClass(active, locked)}
-                  aria-current={active ? "page" : undefined}
-                  {...navPendingProps(href)}
-                >
-                  <Icon className="sk-nav-icon" aria-hidden />
-                  {t(labelKey)}
-                  {locked ? <Lock className="sk-nav-lock" aria-hidden /> : null}
-                </Link>
-              );
-            },
-          )}
+            <span className="sk-nav-label">{t("nav.work")}</span>
+            {MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)).map(
+              ({ href, labelKey, icon: Icon }) => {
+                const active = navMatches(navActiveHref, href);
+                const locked =
+                  premiumToolsLocked && PREMIUM_NAV_HREFS.has(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    data-slide-item
+                    data-tour={href === "/crm" ? "onboarding-crm" : undefined}
+                    className={navItemClass(active, locked)}
+                    aria-current={active ? "page" : undefined}
+                    {...navPendingProps(href)}
+                  >
+                    <Icon className="sk-nav-icon" aria-hidden />
+                    {t(labelKey)}
+                    {locked ? (
+                      <Lock className="sk-nav-lock" aria-hidden />
+                    ) : null}
+                  </Link>
+                );
+              },
+            )}
           </div>
         </nav>
 
@@ -550,13 +579,19 @@ export function DashboardShell({
             ref={footerNavRef as RefObject<HTMLElement>}
             className="sk-nav-track sk-nav-track--flush relative flex flex-col gap-1"
           >
-            <span className="sk-nav-thumb" style={footerThumbStyle} aria-hidden />
+            <span
+              className="sk-nav-thumb"
+              style={footerThumbStyle}
+              aria-hidden
+            />
             <Link
               href="/help"
               data-slide-item
               data-tour="onboarding-help"
               className={navItemClass(navMatches(navActiveHref, "/help"))}
-              aria-current={navMatches(navActiveHref, "/help") ? "page" : undefined}
+              aria-current={
+                navMatches(navActiveHref, "/help") ? "page" : undefined
+              }
               {...navPendingProps("/help")}
             >
               <LifeBuoy className="sk-nav-icon size-4" aria-hidden />
@@ -577,13 +612,16 @@ export function DashboardShell({
 
           <div className="mb-2 flex flex-col gap-2">
             {hasSessionData && isTrialActive && isFreePlanTier && (
-              <div className="rounded-xl border border-amber-300/50 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-                {t("nav.trialEndsIn", { days: trialDays, dayWord: dayWord(trialDays) })}
+              <div className="rounded-xl border border-amber-300/50 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 ">
+                {t("nav.trialEndsIn", {
+                  days: trialDays,
+                  dayWord: dayWord(trialDays),
+                })}
               </div>
             )}
 
             {hasSessionData && isTrialExpired && (
-              <div className="rounded-xl border border-red-300/50 bg-red-50/70 px-3 py-2 text-xs text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+              <div className="rounded-xl border border-red-300/50 bg-red-50/70 px-3 py-2 text-xs text-red-800 ">
                 {t("nav.trialExpired")}
               </div>
             )}
@@ -602,11 +640,16 @@ export function DashboardShell({
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-[color:var(--sk-ink)]">
-                      {creditsRemaining.toLocaleString(dateLocale)} / {displayCreditsTotal.toLocaleString(dateLocale)}
+                      {t("nav.usagePercent", {
+                        pct: String(usagePercentRounded),
+                      })}
                     </span>
                   </div>
                   <div className="sk-meter__track">
-                    <div className="sk-meter__fill" style={{ width: `${creditsPercentage}%` }} />
+                    <div
+                      className="sk-meter__fill"
+                      style={{ width: `${creditsPercentage}%` }}
+                    />
                   </div>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--sk-muted)]">
                     {t("nav.plan")}: {displayPlan}
@@ -671,27 +714,43 @@ export function DashboardShell({
                   {t("nav.myProfile")}
                 </DropdownMenuLabel>
 
-                <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
+                >
                   <Link href="/account">
                     <User className="mr-2 h-4 w-4 text-muted-foreground" />
                     <span>{t("nav.accountSettings")}</span>
                   </Link>
                 </DropdownMenuItem>
 
-                <DropdownMenuItem asChild className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted">
+                <DropdownMenuItem
+                  asChild
+                  className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
+                >
                   <Link href="/pricing">
                     <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
                     <span>{t("nav.plansAndBilling")}</span>
                   </Link>
                 </DropdownMenuItem>
 
-                <ThemeToggleMenuItem />
+                {isPlatformAdmin ? (
+                  <DropdownMenuItem
+                    asChild
+                    className="cursor-pointer rounded-lg px-2 py-2 text-xs font-medium transition-colors hover:bg-muted"
+                  >
+                    <Link href="/admin/login">
+                      <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span>Sklyvo Ops</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
 
                 <DropdownMenuSeparator className="my-1 border-border/60 opacity-50" />
 
                 <DropdownMenuItem
                   onClick={() => void handleLogout()}
-                  className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 transition-colors focus:bg-red-50 focus:text-red-700 dark:text-red-500 dark:focus:bg-red-950/50"
+                  className="cursor-pointer rounded-lg px-2 py-2 text-xs font-bold text-red-600 transition-colors focus:bg-red-50 focus:text-red-700"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>{t("nav.logout")}</span>
@@ -699,7 +758,6 @@ export function DashboardShell({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
         </div>
       </aside>
 
@@ -713,21 +771,9 @@ export function DashboardShell({
             : "scrollbar-hide h-full overflow-y-auto",
         )}
       >
-        <MobileTopBar
-          creditsLabel={mobileCreditsLabel}
-          creditsHref={creditsWidgetHref}
-          displayName={displayName}
-          displayEmail={displayEmail}
-          avatarSrc={avatarSrc}
-          initials={initials}
-          onLogout={() => void handleLogout()}
-          premiumToolsLocked={premiumToolsLocked}
-        />
         <main
           className={cn(
-            pathname === "/"
-              ? "pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-[1.15rem]"
-              : "pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0",
+            "pb-[1.15rem]",
             lockMainScroll
               ? pathname === "/"
                 ? "flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-visible"
@@ -737,7 +783,6 @@ export function DashboardShell({
         >
           {children}
         </main>
-        <MobileBottomNav activeHref={navActiveHref} onNavigate={markNavPending} />
       </div>
       <SklyvoOnboardingTour
         active={
@@ -750,7 +795,6 @@ export function DashboardShell({
         userId={sessionUser?.id ?? null}
         onCompleted={handleTourFinished}
       />
-      {hasSessionData && <AICopilotWidget />}
     </div>
   );
 }

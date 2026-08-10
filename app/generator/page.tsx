@@ -130,7 +130,8 @@ function LiveDocPreview({
   const partyLabel = isContract ? "Smluvní strana" : "Klient";
   const displayCompany = clientCompany.trim() || "Název firmy";
   const displayName = clientName.trim() || "Kontaktní osoba";
-  const displaySubject = subject.trim() || (isContract ? "Předmět smlouvy" : "Předmět nabídky");
+  const displaySubject =
+    subject.trim() || (isContract ? "Předmět smlouvy" : "Předmět nabídky");
   const displayDesc =
     description.trim() ||
     (isContract
@@ -141,9 +142,7 @@ function LiveDocPreview({
   const hasAmount = Number.isFinite(net) && net > 0;
   const gross = hasAmount ? net * (1 + vat / 100) : 0;
   const netLabel = formatMoney(amount, currency);
-  const grossLabel = hasAmount
-    ? formatMoney(String(gross), currency)
-    : null;
+  const grossLabel = hasAmount ? formatMoney(String(gross), currency) : null;
 
   return (
     <div className="sk-generator-preview flex min-h-0 flex-1 flex-col">
@@ -165,20 +164,24 @@ function LiveDocPreview({
         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--sk-brand)]">
           Sklyvo
         </p>
-        <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm font-medium text-foreground/80">{displaySubject}</p>
+        <h2 className="sk-type-h2 mt-3">{title}</h2>
+        <p className="mt-1 text-sm font-medium text-foreground/80">
+          {displaySubject}
+        </p>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               {partyLabel}
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">{displayCompany}</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
+              {displayCompany}
+            </p>
             <p className="text-xs text-muted-foreground">{displayName}</p>
             {clientEmail.trim() ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">{clientEmail.trim()}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {clientEmail.trim()}
+              </p>
             ) : null}
             {(clientIco.trim() || clientDic.trim()) && (
               <p className="mt-1 text-[11px] text-muted-foreground">
@@ -193,17 +196,24 @@ function LiveDocPreview({
               Podmínky
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Splatnost: <span className="font-medium text-foreground">{paymentTerms}</span>
+              Splatnost:{" "}
+              <span className="font-medium text-foreground">
+                {paymentTerms}
+              </span>
             </p>
             {validUntil ? (
               <p className="text-xs text-muted-foreground">
                 Platnost do:{" "}
                 <span className="font-medium text-foreground">
-                  {new Date(`${validUntil}T12:00:00`).toLocaleDateString("cs-CZ")}
+                  {new Date(`${validUntil}T12:00:00`).toLocaleDateString(
+                    "cs-CZ",
+                  )}
                 </span>
               </p>
             ) : (
-              <p className="text-xs text-muted-foreground/70">Platnost neuvedena</p>
+              <p className="text-xs text-muted-foreground/70">
+                Platnost neuvedena
+              </p>
             )}
           </div>
         </div>
@@ -243,7 +253,9 @@ function LiveDocPreview({
             <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
               Poznámky
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{notes.trim()}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {notes.trim()}
+            </p>
           </div>
         ) : null}
       </div>
@@ -269,10 +281,8 @@ export default function GeneratorPage() {
   const router = useRouter();
   const [docType, setDocType] = useState<"offer" | "contract">("offer");
   const docTypeIndex = docType === "offer" ? 0 : 1;
-  const { trackRef: docTypeTrackRef, thumbStyle: docTypeThumbStyle } = useSlidingThumb(
-    docTypeIndex,
-    [docType],
-  );
+  const { trackRef: docTypeTrackRef, thumbStyle: docTypeThumbStyle } =
+    useSlidingThumb(docTypeIndex, [docType]);
   const [clientName, setClientName] = useState("");
   const [clientCompany, setClientCompany] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -334,7 +344,9 @@ export default function GeneratorPage() {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("googleConnected") === "1") {
-      toast.success("Google Docs propojeno. Dokumenty se zobrazí u vás i v Google.");
+      toast.success(
+        "Google Docs propojeno. Dokumenty se zobrazí u vás i v Google.",
+      );
       setGoogleConnected(true);
       params.delete("googleConnected");
       const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
@@ -490,7 +502,9 @@ export default function GeneratorPage() {
 
   const handleCreateFakturoidInvoice = async () => {
     if (!fakturoidConnected) {
-      toast.message("Nejdřív připojte Fakturoid v Pracovním prostoru → Integrace.");
+      toast.message(
+        "Nejdřív připojte Fakturoid v Pracovním prostoru → Integrace.",
+      );
       router.push("/settings#integrations");
       return;
     }
@@ -538,7 +552,7 @@ export default function GeneratorPage() {
       {!googleConnected ? (
         <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-border/70 bg-background/60 px-4 py-5">
           <p className="text-sm text-muted-foreground">
-            Propojte Google — dokumenty uvidíte tady i v Úložišti.
+            Propojte Google a dokumenty uvidíte tady i v Úložišti.
           </p>
           <Button
             type="button"
@@ -558,7 +572,7 @@ export default function GeneratorPage() {
       ) : (
         <>
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs text-emerald-800 dark:text-emerald-300">
+            <p className="text-xs text-emerald-800 ">
               Propojeno{googleEmail ? `: ${googleEmail}` : ""}
             </p>
             <Button
@@ -569,7 +583,9 @@ export default function GeneratorPage() {
               onClick={() => void refreshGoogleDocs(docsQuery)}
               title="Obnovit"
             >
-              <RefreshCw className={cn("h-4 w-4", docsLoading && "animate-spin")} />
+              <RefreshCw
+                className={cn("h-4 w-4", docsLoading && "animate-spin")}
+              />
             </Button>
           </div>
           <div className="mb-2 flex gap-2">
@@ -605,10 +621,15 @@ export default function GeneratorPage() {
             ) : (
               <ul className="divide-y divide-border/50">
                 {googleDocs.map((file) => (
-                  <li key={file.id} className="flex items-center gap-2 px-3 py-2.5">
+                  <li
+                    key={file.id}
+                    className="flex items-center gap-2 px-3 py-2.5"
+                  >
                     <FileText className="h-4 w-4 shrink-0 text-blue-600" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">{file.name}</p>
+                      <p className="truncate text-sm font-medium text-foreground">
+                        {file.name}
+                      </p>
                       <p className="text-[11px] text-muted-foreground">
                         {formatDocDate(file.modifiedTime) || "Google Doc"}
                       </p>
@@ -653,14 +674,22 @@ export default function GeneratorPage() {
   );
 
   const secondaryBusy =
-    isGeneratingDoc || googleConnecting || isGeneratingWord || microsoftConnecting || isGeneratingInvoice;
+    isGeneratingDoc ||
+    googleConnecting ||
+    isGeneratingWord ||
+    microsoftConnecting ||
+    isGeneratingInvoice;
 
   const typeToggle = (
     <div
       ref={docTypeTrackRef as RefObject<HTMLDivElement>}
       className="sk-segment flex w-full shrink-0 sm:w-auto"
     >
-      <span className="sk-segment__thumb" style={docTypeThumbStyle} aria-hidden />
+      <span
+        className="sk-segment__thumb"
+        style={docTypeThumbStyle}
+        aria-hidden
+      />
       {(
         [
           { id: "offer" as const, label: "Nabídka" },
@@ -782,7 +811,7 @@ export default function GeneratorPage() {
               <SelectTrigger className="h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-card dark:bg-zinc-950">
+              <SelectContent className="bg-card ">
                 <SelectItem value="CZK">CZK</SelectItem>
                 <SelectItem value="EUR">EUR</SelectItem>
                 <SelectItem value="USD">USD</SelectItem>
@@ -794,7 +823,7 @@ export default function GeneratorPage() {
               <SelectTrigger className="h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-card dark:bg-zinc-950">
+              <SelectContent className="bg-card ">
                 <SelectItem value="21">21 %</SelectItem>
                 <SelectItem value="12">12 %</SelectItem>
                 <SelectItem value="0">0 %</SelectItem>
@@ -824,7 +853,11 @@ export default function GeneratorPage() {
             showMore ? "grid" : "hidden sm:grid",
           )}
         >
-          <Field label="Platnost do" htmlFor="g-valid" className="sm:col-span-2">
+          <Field
+            label="Platnost do"
+            htmlFor="g-valid"
+            className="sm:col-span-2"
+          >
             <Input
               id="g-valid"
               type="date"
@@ -838,7 +871,7 @@ export default function GeneratorPage() {
               <SelectTrigger className="h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-card dark:bg-zinc-950">
+              <SelectContent className="bg-card ">
                 <SelectItem value="ihned">Ihned</SelectItem>
                 <SelectItem value="7 dní">7 dní</SelectItem>
                 <SelectItem value="14 dní">14 dní</SelectItem>
@@ -857,13 +890,17 @@ export default function GeneratorPage() {
               <SelectTrigger className="h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-card dark:bg-zinc-950">
+              <SelectContent className="bg-card ">
                 <SelectItem value="PERSONAL">Moje úložiště</SelectItem>
                 <SelectItem value="SHARED">Společné</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Poznámky / podmínky" htmlFor="g-notes" className="sm:col-span-6">
+          <Field
+            label="Poznámky / podmínky"
+            htmlFor="g-notes"
+            className="sm:col-span-6"
+          >
             <Input
               id="g-notes"
               value={notes}
@@ -959,7 +996,10 @@ export default function GeneratorPage() {
           <ChevronDown className="ml-1.5 h-3.5 w-3.5 opacity-70" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-50 w-56 border bg-white shadow-md dark:bg-zinc-950">
+      <DropdownMenuContent
+        align="end"
+        className="z-50 w-56 border bg-white shadow-md "
+      >
         <DropdownMenuItem
           disabled={isGeneratingDoc || googleConnecting}
           onClick={() => void handleCreateInGoogleDocs()}
@@ -970,7 +1010,9 @@ export default function GeneratorPage() {
         <DropdownMenuItem
           disabled={isGeneratingWord || microsoftConnecting}
           onClick={() =>
-            void (microsoftConnected ? handleGenerateWordDoc() : connectMicrosoft())
+            void (microsoftConnected
+              ? handleGenerateWordDoc()
+              : connectMicrosoft())
           }
         >
           <FileText className="mr-2 h-4 w-4" />
@@ -988,44 +1030,24 @@ export default function GeneratorPage() {
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col items-stretch overflow-hidden md:items-center">
-      {/* Mobile header */}
-      <div className="mb-3 flex shrink-0 items-center justify-between gap-2 px-1 md:hidden">
-        <div className="min-w-0">
-          <h1 className="text-[22px] font-semibold tracking-tight text-foreground">Generátor</h1>
-          <p className="mt-0.5 text-[12px] text-muted-foreground">
-            Nabídky a smlouvy do PDF i Docs
-          </p>
-        </div>
-        <Link
-          href="/uloziste"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-1.5 text-xs font-medium text-muted-foreground"
-        >
-          <FolderOpen className="h-3.5 w-3.5" />
-          Úložiště
-        </Link>
-      </div>
-
-      {/* Desktop hero */}
-      <div className="mb-2 hidden shrink-0 space-y-1 text-center md:block">
+    <div className="flex h-full min-h-0 w-full flex-col items-center overflow-hidden">
+      <div className="mb-2 shrink-0 space-y-1 text-center">
         <div className="mb-2 flex items-center justify-center gap-3">
-          <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-            <FileText className="h-8 w-8" />
+          <div className="sk-page-badge" aria-hidden>
+            <FileText strokeWidth={2} />
           </div>
         </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-          Generátor
-        </h1>
-        <p className="mx-auto max-w-lg text-sm text-muted-foreground">
-          Vytvořte nabídku nebo smlouvu — živý náhled vpravo, PDF jedním klikem.
+        <h1 className="sk-type-h1">Generátor</h1>
+        <p className="sk-type-body mx-auto max-w-lg">
+          Vytvořte nabídku nebo smlouvu. Živý náhled vpravo, PDF jedním klikem.
         </p>
       </div>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-0 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:px-2 md:pb-2">
+      <div className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden px-0 pb-2">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
           <div className="flex shrink-0 flex-col gap-3 border-b border-border/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-3.5">
             <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-              Vyplňte údaje — náhled se aktualizuje hned
+              Vyplňte údaje a náhled se aktualizuje hned
             </p>
             {typeToggle}
           </div>
@@ -1043,8 +1065,13 @@ export default function GeneratorPage() {
             </div>
           </div>
 
-          <div className="relative z-10 hidden shrink-0 items-center justify-between gap-3 border-t border-border/50 bg-muted/15 px-6 py-3 md:flex">
-            <Button type="button" variant="ghost" asChild className="h-9 px-2 text-sm">
+          <div className="relative z-10 flex shrink-0 items-center justify-between gap-3 border-t border-border/50 bg-muted/15 px-6 py-3">
+            <Button
+              type="button"
+              variant="ghost"
+              asChild
+              className="h-9 px-2 text-sm"
+            >
               <Link href="/uloziste">
                 <FolderOpen className="mr-1.5 h-4 w-4" />
                 Úložiště
@@ -1054,22 +1081,6 @@ export default function GeneratorPage() {
               {exportMenu()}
               {primaryPdfButton()}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile sticky action bar */}
-      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t border-border/60 bg-card/95 px-3 py-2.5 backdrop-blur-md md:hidden">
-        <div className="mx-auto flex max-w-lg flex-col gap-2">
-          {primaryPdfButton("h-11 w-full")}
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">{exportMenu()}</div>
-            <Button type="button" variant="ghost" asChild className="h-9 shrink-0 px-2 text-xs">
-              <Link href="/uloziste">
-                <FolderOpen className="mr-1 h-3.5 w-3.5" />
-                Úložiště
-              </Link>
-            </Button>
           </div>
         </div>
       </div>

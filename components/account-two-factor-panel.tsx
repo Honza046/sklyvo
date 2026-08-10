@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Fingerprint, KeyRound, Loader2, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  Fingerprint,
+  KeyRound,
+  Loader2,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -121,7 +127,9 @@ export function AccountTwoFactorPanel() {
         toast.error(begin.error);
         return;
       }
-      const attestation = await startRegistration({ optionsJSON: begin.options });
+      const attestation = await startRegistration({
+        optionsJSON: begin.options,
+      });
       const finish = await finishPasskeyRegistration({
         response: attestation,
         name: "Passkey",
@@ -177,10 +185,11 @@ export function AccountTwoFactorPanel() {
       <div>
         <div className="mb-1 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-[color:var(--sk-brand)]" />
-          <h3 className="text-sm font-bold">Dvoufázové ověření</h3>
+          <h3 className="sk-type-h3">Dvoufázové ověření</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Po hesle vyžaduj i kód z authenticatoru nebo passkey (Face ID / Touch ID / Windows Hello).
+          Po hesle vyžaduj i kód z authenticatoru nebo passkey (Face ID / Touch
+          ID / Windows Hello).
         </p>
       </div>
 
@@ -194,7 +203,7 @@ export function AccountTwoFactorPanel() {
             <p className="text-sm font-semibold">Authenticator app</p>
             <p className="text-xs text-muted-foreground">
               Google Authenticator, 1Password, Authy…
-              {totpEnabled ? " — zapnuto" : " — vypnuto"}
+              {totpEnabled ? " (zapnuto)" : " (vypnuto)"}
             </p>
           </div>
         </div>
@@ -207,7 +216,9 @@ export function AccountTwoFactorPanel() {
             disabled={totpBusy}
             onClick={() => void handleBeginTotp()}
           >
-            {totpBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {totpBusy ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
             Zapnout authenticator
           </Button>
         ) : null}
@@ -247,7 +258,9 @@ export function AccountTwoFactorPanel() {
                 disabled={totpBusy || totpCode.trim().length < 6}
                 onClick={() => void handleConfirmTotp()}
               >
-                {totpBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {totpBusy ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Potvrdit a zapnout
               </Button>
               <Button
@@ -314,7 +327,9 @@ export function AccountTwoFactorPanel() {
                 className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/60 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{pk.name || "Passkey"}</p>
+                  <p className="truncate text-sm font-medium">
+                    {pk.name || "Passkey"}
+                  </p>
                   <p className="text-[11px] text-muted-foreground">
                     Přidáno {new Date(pk.createdAt).toLocaleDateString("cs-CZ")}
                   </p>
@@ -363,7 +378,9 @@ export function AccountTwoFactorPanel() {
           disabled={passkeyBusy}
           onClick={() => void handleAddPasskey()}
         >
-          {passkeyBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {passkeyBusy ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
           Přidat passkey
         </Button>
       </div>

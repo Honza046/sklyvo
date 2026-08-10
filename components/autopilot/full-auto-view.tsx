@@ -24,8 +24,8 @@ import {
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
+  AutopilotIconButton,
   AutopilotSettingsIconButton,
-  AutopilotListEmptyState,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
   AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
@@ -65,9 +65,14 @@ function endOfLocalDay(value: string): Date | null {
 
 export function AutopilotFullAutoView() {
   const [fullAutoPage, setFullAutoPage] = useState(1);
-  const [fullAutoRows, setFullAutoRows] = useState<FullAutoProcessHistoryRow[]>([]);
-  const [isFullAutoHistoryLoading, setIsFullAutoHistoryLoading] = useState(true);
-  const [fullAutoHistoryError, setFullAutoHistoryError] = useState<string | null>(null);
+  const [fullAutoRows, setFullAutoRows] = useState<FullAutoProcessHistoryRow[]>(
+    [],
+  );
+  const [isFullAutoHistoryLoading, setIsFullAutoHistoryLoading] =
+    useState(true);
+  const [fullAutoHistoryError, setFullAutoHistoryError] = useState<
+    string | null
+  >(null);
   const [tableExpanded, setTableExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyWithEmail, setOnlyWithEmail] = useState(false);
@@ -142,7 +147,8 @@ export function AutopilotFullAutoView() {
       const hasEmail = Boolean(row.email?.trim());
       const matchEmail = !onlyWithEmail || hasEmail;
 
-      const matchStatus = statusFilter === "all" || row.automationStatus === statusFilter;
+      const matchStatus =
+        statusFilter === "all" || row.automationStatus === statusFilter;
 
       const processed = new Date(row.processedAt);
       const matchRange =
@@ -158,9 +164,18 @@ export function AutopilotFullAutoView() {
       if (dateSort === "oldest") return aTime - bTime;
       return bTime - aTime;
     });
-  }, [fullAutoRows, searchQuery, onlyWithEmail, statusFilter, dateSort, dateFrom, dateTo]);
+  }, [
+    fullAutoRows,
+    searchQuery,
+    onlyWithEmail,
+    statusFilter,
+    dateSort,
+    dateFrom,
+    dateTo,
+  ]);
 
-  const filterControlClass = "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
+  const filterControlClass =
+    "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
 
   const renderFilters = () => (
     <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
@@ -174,23 +189,43 @@ export function AutopilotFullAutoView() {
           autoComplete="off"
         />
       </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Jen s e-mailem
+        </span>
+        <Switch
+          checked={onlyWithEmail}
+          onCheckedChange={setOnlyWithEmail}
+          className="sk-switch--sm shrink-0"
+          aria-label="Jen s e-mailem"
+        />
+      </div>
       <Select
         value={statusFilter}
         onValueChange={(v) => setStatusFilter(v as FullAutoStatusFilter)}
       >
-        <SelectTrigger className={cn(filterControlClass, "w-full sm:w-[150px]")}>
+        <SelectTrigger
+          className={cn(filterControlClass, "w-full sm:w-[150px]")}
+        >
           <SelectValue placeholder="Stav" />
         </SelectTrigger>
         <SelectContent className="z-[220]">
           {FULL_AUTO_STATUS_FILTERS.map((status) => (
             <SelectItem key={status} value={status}>
-              {status === "all" ? "Všechny stavy" : FULL_AUTO_STATUS_BADGES[status].label}
+              {status === "all"
+                ? "Všechny stavy"
+                : FULL_AUTO_STATUS_BADGES[status].label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={dateSort} onValueChange={(v) => setDateSort(v as FullAutoDateSort)}>
-        <SelectTrigger className={cn(filterControlClass, "w-full sm:w-[130px]")}>
+      <Select
+        value={dateSort}
+        onValueChange={(v) => setDateSort(v as FullAutoDateSort)}
+      >
+        <SelectTrigger
+          className={cn(filterControlClass, "w-full sm:w-[130px]")}
+        >
           <SelectValue placeholder="Datum" />
         </SelectTrigger>
         <SelectContent className="z-[220]">
@@ -218,55 +253,26 @@ export function AutopilotFullAutoView() {
           />
         </div>
       ) : null}
-      <label htmlFor="full-auto-only-email" className={cn("sk-filter-chip shrink-0")}>
-        <span>Jen s e-mailem</span>
-        <Switch
-          id="full-auto-only-email"
-          checked={onlyWithEmail}
-          onCheckedChange={setOnlyWithEmail}
-          className="shrink-0"
-        />
-      </label>
     </div>
   );
 
   const fullAutoTotalItems = filteredRows.length;
-  const fullAutoTotalPages = Math.max(1, Math.ceil(fullAutoTotalItems / ITEMS_PER_PAGE));
+  const fullAutoTotalPages = Math.max(
+    1,
+    Math.ceil(fullAutoTotalItems / ITEMS_PER_PAGE),
+  );
   const fullAutoSafePage = Math.min(fullAutoPage, fullAutoTotalPages);
   const fullAutoPageStart = (fullAutoSafePage - 1) * ITEMS_PER_PAGE;
   const paginatedFullAutoRows = filteredRows.slice(
     fullAutoPageStart,
     fullAutoPageStart + ITEMS_PER_PAGE,
   );
-  const fullAutoShownFrom = fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + 1;
+  const fullAutoShownFrom =
+    fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + 1;
   const fullAutoShownTo =
-    fullAutoTotalItems === 0 ? 0 : fullAutoPageStart + paginatedFullAutoRows.length;
-
-  const mobileEmpty =
-    paginatedFullAutoRows.length === 0 ? (
-      <>
-        {isFullAutoHistoryLoading && (
-          <AutopilotListEmptyState>Načítám historii…</AutopilotListEmptyState>
-        )}
-        {!isFullAutoHistoryLoading && fullAutoHistoryError && (
-          <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
-            {fullAutoHistoryError}
-          </AutopilotListEmptyState>
-        )}
-        {!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0 && (
-          <AutopilotListEmptyState>
-            Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady ukážou jen firmy, které Full
-            Auto najde a pošle (ne ze Sběru / Odesílání).
-          </AutopilotListEmptyState>
-        )}
-        {!isFullAutoHistoryLoading &&
-          !fullAutoHistoryError &&
-          fullAutoRows.length > 0 &&
-          filteredRows.length === 0 && (
-            <AutopilotListEmptyState>Žádné firmy neodpovídají filtrům.</AutopilotListEmptyState>
-          )}
-      </>
-    ) : null;
+    fullAutoTotalItems === 0
+      ? 0
+      : fullAutoPageStart + paginatedFullAutoRows.length;
 
   const renderTable = (mode: "compact" | "expanded") => {
     const expanded = mode === "expanded";
@@ -279,43 +285,22 @@ export function AutopilotFullAutoView() {
       >
         <div
           className={cn(
-            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "sk-data-panel__scroll--mobile overflow-y-auto md:hidden",
-            "flex min-h-0 flex-1 flex-col",
-          )}
-        >
-          {paginatedFullAutoRows.map((row) => (
-            <div
-              key={`${mode}-m-${row.id}`}
-              className="sk-data-row"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold text-foreground">{row.company}</p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                  {row.email || "—"}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {formatProcessedDateTime(row.processedAt)}
-                </p>
-              </div>
-              <FullAutoStatusBadge status={row.automationStatus} />
-            </div>
-          ))}
-          {mobileEmpty}
-        </div>
-
-        <div
-          className={cn(
-            "sk-data-panel__scroll hidden min-h-0 flex-1 overflow-x-auto overflow-y-auto md:block",
+            "sk-data-panel__scroll min-h-0 flex-1 overflow-x-auto overflow-y-auto",
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
           )}
         >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+            <thead className="sticky top-0 z-20 bg-white ">
               <tr className="text-left">
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Zpracování</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
+                  Firma
+                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
+                  Kontakt
+                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
+                  Zpracování
+                </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[18%]")}>
                   Stav automatizace
                 </th>
@@ -326,7 +311,9 @@ export function AutopilotFullAutoView() {
                 <tr key={`${mode}-d-${row.id}`}>
                   <td className="px-6 py-3.5">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-foreground">{row.company}</p>
+                      <p className="truncate font-medium text-foreground">
+                        {row.company}
+                      </p>
                       {row.url ? (
                         <a
                           href={leadFullWebsiteUrl(row.url)}
@@ -343,8 +330,15 @@ export function AutopilotFullAutoView() {
                   <td className="px-6 py-3.5">
                     {row.email ? (
                       <div className="flex min-w-0 items-center gap-0.5">
-                        <CopyEmailButton email={row.email} size="sm" variant="ghost" />
-                        <span className="min-w-0 truncate text-xs text-muted-foreground" title={row.email}>
+                        <CopyEmailButton
+                          email={row.email}
+                          size="sm"
+                          variant="ghost"
+                        />
+                        <span
+                          className="min-w-0 truncate text-xs text-muted-foreground"
+                          title={row.email}
+                        >
                           {row.email}
                         </span>
                       </div>
@@ -363,19 +357,24 @@ export function AutopilotFullAutoView() {
               {paginatedFullAutoRows.length === 0 && (
                 <>
                   {isFullAutoHistoryLoading && (
-                    <AutopilotTableEmptyState colSpan={4}>Načítám historii…</AutopilotTableEmptyState>
+                    <AutopilotTableEmptyState colSpan={4}>
+                      Načítám historii…
+                    </AutopilotTableEmptyState>
                   )}
                   {!isFullAutoHistoryLoading && fullAutoHistoryError && (
                     <AutopilotTableEmptyState colSpan={4}>
                       {fullAutoHistoryError}
                     </AutopilotTableEmptyState>
                   )}
-                  {!isFullAutoHistoryLoading && !fullAutoHistoryError && fullAutoRows.length === 0 && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady ukážou jen firmy,
-                      které Full Auto najde a pošle (ne ze Sběru / Odesílání).
-                    </AutopilotTableEmptyState>
-                  )}
+                  {!isFullAutoHistoryLoading &&
+                    !fullAutoHistoryError &&
+                    fullAutoRows.length === 0 && (
+                      <AutopilotTableEmptyState colSpan={4}>
+                        Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady
+                        ukážou jen firmy, které Full Auto najde a pošle (ne ze
+                        Sběru / Odesílání).
+                      </AutopilotTableEmptyState>
+                    )}
                   {!isFullAutoHistoryLoading &&
                     !fullAutoHistoryError &&
                     fullAutoRows.length > 0 &&
@@ -396,7 +395,9 @@ export function AutopilotFullAutoView() {
           safePage={fullAutoSafePage}
           totalPages={fullAutoTotalPages}
           onPrevious={() => setFullAutoPage((p) => Math.max(1, p - 1))}
-          onNext={() => setFullAutoPage((p) => Math.min(fullAutoTotalPages, p + 1))}
+          onNext={() =>
+            setFullAutoPage((p) => Math.min(fullAutoTotalPages, p + 1))
+          }
         />
       </div>
     );
@@ -418,40 +419,37 @@ export function AutopilotFullAutoView() {
       />
 
       <div className="sk-autopilot__panel">
-      <AutopilotControlPanel
-        icon={<Sparkles className="h-5 w-5" />}
-        iconWrapClassName="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-        title="Plná automatizace (Full Auto)"
-        powerEnabled={featureEnabled}
-        description={
-          featureEnabled
-            ? "Cron kolem 8:00 najde firmy a pošle maily."
-            : "Cron neběží. Zapni, až budeš chtít celou smyčku."
-        }
-        actions={
-          <>
-            <AutopilotPowerButton
-              enabled={featureEnabled}
-              disabled={isTogglingPower}
-              accent="blue"
-              onClick={() => void toggleFeaturePower()}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setTableExpanded(true)}
-              className="h-9 w-9 shrink-0 rounded-lg p-0"
-              title="Zvětšit tabulku"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <AutopilotSettingsIconButton
-              label="Nastavení Full Auto"
-              onClick={openSettings}
-            />
-          </>
-        }
-      />
+        <AutopilotControlPanel
+          icon={<Sparkles className="h-5 w-5" />}
+          iconWrapClassName="sk-page-badge"
+          title="Plná automatizace (Full Auto)"
+          powerEnabled={featureEnabled}
+          description={
+            featureEnabled
+              ? "Cron kolem 8:00 najde firmy a pošle maily."
+              : "Cron neběží. Zapni, až budeš chtít celou smyčku."
+          }
+          actions={
+            <>
+              <AutopilotPowerButton
+                enabled={featureEnabled}
+                disabled={isTogglingPower}
+                accent="blue"
+                onClick={() => void toggleFeaturePower()}
+              />
+              <AutopilotIconButton
+                label="Zvětšit tabulku"
+                onClick={() => setTableExpanded(true)}
+              >
+                <Maximize2 className="h-4 w-4" />
+              </AutopilotIconButton>
+              <AutopilotSettingsIconButton
+                label="Nastavení Full Auto"
+                onClick={openSettings}
+              />
+            </>
+          }
+        />
       </div>
 
       {tableExpanded ? (
@@ -459,9 +457,7 @@ export function AutopilotFullAutoView() {
           Historie Full Auto je otevřená ve zvětšeném okně.
         </div>
       ) : (
-        <div className="sk-autopilot__table mt-0">
-          {renderTable("compact")}
-        </div>
+        <div className="sk-autopilot__table mt-0">{renderTable("compact")}</div>
       )}
 
       <ExpandOverlay
@@ -471,7 +467,9 @@ export function AutopilotFullAutoView() {
         description="Hledání a filtry jsou tady. Po zavření zůstane kompaktní tabulka na stránce."
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-          <div className="shrink-0 overflow-visible p-px">{renderFilters()}</div>
+          <div className="shrink-0 overflow-visible p-px">
+            {renderFilters()}
+          </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {renderTable("expanded")}
           </div>

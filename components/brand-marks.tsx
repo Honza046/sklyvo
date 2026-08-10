@@ -48,7 +48,10 @@ export function SklyvoWordmark({
 }) {
   return (
     <div className={cn("flex min-w-0 items-center gap-2.5", className)}>
-      <SklyvoBrandMark size={markSize} className={cn("text-blue-600", markClassName)} />
+      <SklyvoBrandMark
+        size={markSize}
+        className={cn("text-blue-600", markClassName)}
+      />
       {showText ? (
         <span
           className={cn(
@@ -74,7 +77,10 @@ export function AiMaskIcon({
   return (
     <span
       aria-hidden
-      className={cn("inline-flex shrink-0 items-center justify-center bg-current", className)}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center bg-current",
+        className,
+      )}
       style={{
         width: size,
         height: size,

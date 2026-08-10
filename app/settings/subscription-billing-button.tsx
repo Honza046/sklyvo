@@ -14,7 +14,9 @@ export function SubscriptionBillingButton({
     e.preventDefault();
     const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
     try {
-      const response = await fetch("/api/stripe/create-portal", { method: "POST" });
+      const response = await fetch("/api/stripe/create-portal", {
+        method: "POST",
+      });
       if (!response.ok) {
         throw new Error("Nepodařilo se vytvořit Stripe Portal Session.");
       }
@@ -24,9 +26,12 @@ export function SubscriptionBillingButton({
       }
       window.location.href = url;
     } catch {
-      toast.error("Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...", {
-        id: toastId,
-      });
+      toast.error(
+        "Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...",
+        {
+          id: toastId,
+        },
+      );
       setTimeout(() => {
         window.location.href = "/pricing";
       }, 2000);

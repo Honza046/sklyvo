@@ -1,16 +1,10 @@
 "use server";
 
 import type { SendEmailResult } from "@/lib/email-types";
-import { sendSystemEmail } from "@/lib/emails/send-system";
-import {
-  emailCodeBlock,
-  emailMuted,
-  emailParagraph,
-  renderSystemEmail,
-} from "@/lib/emails/layout";
 import { sendWorkspaceEmail } from "@/lib/workspace-mailer";
 import { verifyInternalWorkspaceToken } from "@/lib/internal-auth";
 import { getSessionUser } from "@/app/actions/auth";
+import { assertUserInWorkspace } from "@/lib/tenant";
 
 export type { SendEmailResult } from "@/lib/email-types";
 
@@ -19,7 +13,7 @@ type SendEmailInput = {
   subject: string;
   html: string;
   text?: string;
-  /** Preferovaná osobní schránka (jinak session user / workspace fallback). */
+  /** Preferovaná osobní schránka — jen vlastní user nebo člen workspace (ověřeno). */
   userId?: string;
   /** Pouze s platným internalToken (server-side). */
   workspaceId?: string;
@@ -29,6 +23,7 @@ type SendEmailInput = {
 /**
  * Odešle outreach e-mail přes propojený účet (osobní → workspace fallback).
  * Workspace ze session, nebo ověřený internal token (cron / fronta).
+ * Cizí userId mimo workspace = odmítnuto.
  */
 export async function sendEmail({
   to,
@@ -40,18 +35,36 @@ export async function sendEmail({
   internalToken,
 }: SendEmailInput): Promise<SendEmailResult> {
   let resolvedWorkspaceId: string | undefined;
-  let resolvedUserId: string | undefined = userId?.trim() || undefined;
+  let resolvedUserId: string | undefined;
 
   if (workspaceId?.trim()) {
     if (!verifyInternalWorkspaceToken(workspaceId, internalToken)) {
-      return { success: false, error: "Nejste přihlášen nebo chybí workspace." };
+      return {
+        success: false,
+        error: "Nejste přihlášen nebo chybí workspace.",
+      };
     }
     resolvedWorkspaceId = workspaceId.trim();
+    const requested = userId?.trim();
+    if (requested) {
+      if (!(await assertUserInWorkspace(requested, resolvedWorkspaceId))) {
+        return { success: false, error: "Nepovolený odesílatel." };
+      }
+      resolvedUserId = requested;
+    }
   } else {
     const session = await getSessionUser();
     resolvedWorkspaceId = session.user?.workspaceId ?? undefined;
-    if (!resolvedUserId) {
-      resolvedUserId = session.user?.id ?? undefined;
+    const sessionUserId = session.user?.id ?? undefined;
+    const requested = userId?.trim();
+    if (requested) {
+      // Session path: pouze vlastní schránka (ne cizí teammate ID z klienta).
+      if (!sessionUserId || requested !== sessionUserId) {
+        return { success: false, error: "Nepovolený odesílatel." };
+      }
+      resolvedUserId = sessionUserId;
+    } else {
+      resolvedUserId = sessionUserId;
     }
   }
 
@@ -66,71 +79,5 @@ export async function sendEmail({
     subject,
     html,
     text,
-  });
-}
-
-/**
- * Odešle 6místný ověřovací kód pro změnu e-mailu na NOVOU (skutečnou) adresu.
- * Na rozdíl od `sendEmail` zde NIKDY nepřesměrováváme příjemce – kód musí dorazit
- * na adresu, kterou si uživatel ověřuje.
- */
-export async function sendVerificationCodeEmail(
-  to: string,
-  code: string,
-): Promise<SendEmailResult> {
-  const html = renderSystemEmail({
-    preview: `Váš ověřovací kód: ${code}`,
-    title: "Ověření změny e-mailu",
-    bodyHtml: [
-      emailParagraph("Dobrý den,"),
-      emailParagraph(
-        "pro dokončení změny e-mailové adresy ve vašem účtu Sklyvo zadejte následující ověřovací kód:",
-      ),
-      emailCodeBlock(code),
-      emailMuted(
-        "Kód je platný <strong>15 minut</strong>. Pokud jste o změnu nežádali, tento e-mail ignorujte.",
-      ),
-    ].join(""),
-  });
-
-  return sendSystemEmail({
-    to,
-    subject: "Bezpečnostní kód pro změnu e-mailu — Sklyvo",
-    html,
-  });
-}
-
-/**
- * Odešle e-mail s odkazem pro obnovu zapomenutého hesla.
- * Produkce: nastav RESEND_FROM_EMAIL na adresu z ověřené domény v Resendu.
- */
-export async function sendPasswordResetEmail(
-  to: string,
-  resetLink: string,
-): Promise<SendEmailResult> {
-  const safeLink = resetLink.trim();
-  const html = renderSystemEmail({
-    preview: "Nastavte si nové heslo do Sklyvo",
-    title: "Obnova hesla",
-    bodyHtml: [
-      emailParagraph("Dobrý den,"),
-      emailParagraph(
-        "kliknutím na tlačítko níže si nastavíte nové heslo. Pokud jste o změnu nežádali, tento e-mail ignorujte.",
-      ),
-      emailMuted(
-        `Pokud tlačítko nefunguje, zkopírujte odkaz do prohlížeče:<br /><a href="${safeLink}" style="color:#02a7ff;word-break:break-all;">${safeLink}</a>`,
-      ),
-      emailMuted("Odkaz je platný <strong>60 minut</strong>."),
-    ].join(""),
-    cta: {
-      label: "Nastavit nové heslo",
-      href: safeLink,
-    },
-  });
-
-  return sendSystemEmail({
-    to,
-    subject: "Obnova zapomenutého hesla — Sklyvo",
-    html,
   });
 }

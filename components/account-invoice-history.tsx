@@ -33,23 +33,25 @@ function formatInvoiceDate(iso: string): string {
   }
 }
 
-function statusLabel(status: string | null): { text: string; className: string } {
+function statusLabel(status: string | null): {
+  text: string;
+  className: string;
+} {
   switch (status) {
     case "paid":
       return {
         text: "Zaplaceno",
-        className:
-          "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+        className: "bg-emerald-50 text-emerald-700 ",
       };
     case "open":
       return {
         text: "K úhradě",
-        className: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+        className: "bg-amber-50 text-amber-700 ",
       };
     case "uncollectible":
       return {
         text: "Neuhrazeno",
-        className: "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300",
+        className: "bg-rose-50 text-rose-700 ",
       };
     default:
       return {
@@ -90,7 +92,7 @@ export function AccountInvoiceHistory() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50/50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">
+      <div className="rounded-xl border border-rose-200 bg-rose-50/50 px-4 py-3 text-sm text-rose-700 ">
         {error}
       </div>
     );
@@ -139,7 +141,12 @@ export function AccountInvoiceHistory() {
             {openUrl ? (
               <div className="flex shrink-0 gap-1.5">
                 {inv.pdfUrl ? (
-                  <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-lg text-xs"
+                  >
                     <a href={inv.pdfUrl} target="_blank" rel="noreferrer">
                       <Download className="mr-1.5 h-3.5 w-3.5" />
                       PDF
@@ -147,7 +154,12 @@ export function AccountInvoiceHistory() {
                   </Button>
                 ) : null}
                 {inv.hostedUrl ? (
-                  <Button asChild variant="ghost" size="sm" className="h-8 rounded-lg text-xs">
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-lg text-xs"
+                  >
                     <a href={inv.hostedUrl} target="_blank" rel="noreferrer">
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                       Detail

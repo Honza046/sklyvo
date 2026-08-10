@@ -16,7 +16,11 @@ function runCommand(command: string) {
   document.execCommand(command, false);
 }
 
-export function EmailRichEditor({ value, onChange, className }: EmailRichEditorProps) {
+export function EmailRichEditor({
+  value,
+  onChange,
+  className,
+}: EmailRichEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,7 +44,7 @@ export function EmailRichEditor({ value, onChange, className }: EmailRichEditorP
     <div
       className={cn(
         "rounded-xl border border-border/50 bg-background transition-[border-color,box-shadow]",
-        "focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/25",
+        "focus-within:border-transparent focus-within:ring-0",
         className,
       )}
     >

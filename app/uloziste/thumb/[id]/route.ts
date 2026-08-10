@@ -46,7 +46,10 @@ export async function GET(
   }
 
   if (!isImageDocument(doc.mimeType, doc.fileName)) {
-    return NextResponse.json({ error: "Náhled není k dispozici." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Náhled není k dispozici." },
+      { status: 400 },
+    );
   }
 
   const result = await getOrCreateDocumentThumbnail(doc.storagePath);

@@ -45,6 +45,12 @@ export function useSlidingThumb(
     ready: false,
   });
 
+  /**
+   * Never spread variable-length arrays into effect deps — React requires
+   * a constant dependency count between renders.
+   */
+  const layoutEpoch = extraDeps.map(String).join("\u0001");
+
   const update = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -102,8 +108,7 @@ export function useSlidingThumb(
       ro?.disconnect();
       window.removeEventListener("resize", update);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [update, ...extraDeps]);
+  }, [update, layoutEpoch, axis]);
 
   const thumbStyle: CSSProperties =
     axis === "y"

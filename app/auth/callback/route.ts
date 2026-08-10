@@ -9,7 +9,10 @@ import {
 } from "@/lib/session";
 
 function resolveOrigin(request: NextRequest): string {
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const forwardedHost = request.headers
+    .get("x-forwarded-host")
+    ?.split(",")[0]
+    ?.trim();
   const forwardedProto =
     request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
   if (forwardedHost) {
@@ -51,8 +54,12 @@ export async function GET(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseKey) {
-    console.error("auth/callback: missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY");
-    return NextResponse.redirect(new URL("/login?oauth_error=exchange", origin));
+    console.error(
+      "auth/callback: missing NEXT_PUBLIC_SUPABASE_URL or ANON_KEY",
+    );
+    return NextResponse.redirect(
+      new URL("/login?oauth_error=exchange", origin),
+    );
   }
 
   // Cookies must be written onto the redirect response (PKCE code verifier + session).
@@ -71,14 +78,17 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  const { error: exchangeError } =
+    await supabase.auth.exchangeCodeForSession(code);
   if (exchangeError) {
     console.error("auth/callback exchangeCodeForSession:", {
       message: exchangeError.message,
       status: exchangeError.status,
       name: exchangeError.name,
     });
-    return NextResponse.redirect(new URL("/login?oauth_error=exchange", origin));
+    return NextResponse.redirect(
+      new URL("/login?oauth_error=exchange", origin),
+    );
   }
 
   const {
@@ -86,7 +96,10 @@ export async function GET(request: NextRequest) {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) {
-    console.error("auth/callback getUser:", userError?.message ?? "missing user");
+    console.error(
+      "auth/callback getUser:",
+      userError?.message ?? "missing user",
+    );
     return NextResponse.redirect(new URL("/login?oauth_error=user", origin));
   }
 
@@ -95,7 +108,9 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getSession();
 
   const meta = user.user_metadata ?? {};
-  const facebookIdentity = user.identities?.find((identity) => identity.provider === "facebook");
+  const facebookIdentity = user.identities?.find(
+    (identity) => identity.provider === "facebook",
+  );
   const linkedInIdentity = user.identities?.find(
     (identity) =>
       identity.provider === "linkedin_oidc" || identity.provider === "linkedin",
@@ -175,7 +190,10 @@ export async function GET(request: NextRequest) {
 
   if (!dbUser) {
     const linkedInName = [meta.given_name, meta.family_name]
-      .filter((part): part is string => typeof part === "string" && part.trim().length > 0)
+      .filter(
+        (part): part is string =>
+          typeof part === "string" && part.trim().length > 0,
+      )
       .join(" ")
       .trim();
 
@@ -208,6 +226,12 @@ export async function GET(request: NextRequest) {
         ...(avatarUrl ? { avatarUrl } : {}),
       },
     });
+  }
+
+  if (dbUser.disabledAt) {
+    const loginUrl = new URL("/login", origin);
+    loginUrl.searchParams.set("oauth_error", "disabled");
+    return NextResponse.redirect(loginUrl);
   }
 
   const token = await createSessionToken(dbUser.id);

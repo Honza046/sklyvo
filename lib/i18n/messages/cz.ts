@@ -26,15 +26,14 @@ export const cz = {
     autopilotCollect: "Sběr firem",
     autopilotSend: "Odesílání",
     autopilotFullAuto: "Full Auto",
-    help: "Centrum nápovědy",
+    help: "Podpora",
     workspace: "Pracovní prostor",
     myProfile: "Můj profil",
     accountSettings: "Nastavení účtu",
     plansAndBilling: "Tarify a předplatné",
-    lightMode: "Světlý režim",
-    darkMode: "Tmavý režim",
     logout: "Odhlásit se",
-    credits: "Kredity",
+    credits: "Spotřeba",
+    usagePercent: "{pct} %",
     plan: "Tarif",
     planFree: "Free verze",
     planFreeTrial: "Free verze (Trial)",
@@ -84,7 +83,8 @@ export const cz = {
     activityRecent: "{count} nejnovějších",
     activityPeriod: "Za poslední dobu",
     activityEmptyTitle: "Zatím žádná aktivita",
-    activityEmptyDesc: "Jakmile spustíte první akci, objeví se tady chronologie.",
+    activityEmptyDesc:
+      "Jakmile spustíte první akci, objeví se tady chronologie.",
     activityNewLead: "Přidán nový lead:",
     activityViewHistory: "Zobrazit celou historii v CRM →",
     quickActions: "Rychlé akce",
@@ -117,7 +117,8 @@ export const cz = {
     subtitle: "AI generátor personalizovaných cold e-mailů",
     generate: "Vygenerovat email",
     copySuccess: "Zkopírováno do schránky.",
-    selectService: "Prosím, vyberte nebo přidejte službu, kterou chcete nabízet.",
+    selectService:
+      "Prosím, vyberte nebo přidejte službu, kterou chcete nabízet.",
     generateFailed: "Generování e-mailu selhalo. Zkuste to prosím znovu.",
     generateSuccess: "E-mail byl úspěšně vygenerován.",
     insufficientCredits: "Nemáte dostatek kreditů pro tuto akci.",
@@ -207,7 +208,8 @@ export const cz = {
     description:
       "Centrum pro automatizované verze nástrojů Radar a Sniper. Manuální práci dělejte v příslušných sekcích menu, zde spouštějte hromadné a plně automatické procesy.",
     radarTitle: "Automatický sběr firem",
-    radarDescription: "Vyhledá nové firmy podle nastavených parametrů a uloží je do CRM.",
+    radarDescription:
+      "Vyhledá nové firmy podle nastavených parametrů a uloží je do CRM.",
     radarSettings: "Nastavení Radaru",
     loadLeadsError: "Nepodařilo se načíst firmy. Zkuste to prosím znovu.",
     startCollectError: "Nepodařilo se spustit automatický sběr.",
@@ -216,7 +218,8 @@ export const cz = {
     sniperTitle: "Automatické odesílání e-mailů",
     fullAutoTitle: "Plná automatizace (Full Auto)",
     activateFullAuto: "Aktivovat Full Auto",
-    fullAutoSoon: "Full Auto bude brzy dostupný. Nastavení si můžete uložit předem.",
+    fullAutoSoon:
+      "Full Auto bude brzy dostupný. Nastavení si můžete uložit předem.",
     runStatus: {
       pending: "Ve frontě",
       processing: "Generuji",
@@ -246,21 +249,31 @@ export const cz = {
       description:
         "Pro spuštění Autopilota je nutné nejdříve připojit váš firemní e-mail v Nastavení pracovního prostoru.",
       openSettings: "Otevřít nastavení",
-      askCopilot: "Požádat AI Asistenta o návod",
+      askCopilot: "Požádat Skly Bota o návod",
     },
   },
   help: {
-    title: "Jak vám můžeme pomoci?",
-    subtitle: "Projděte si návody k nástrojům, nejčastější dotazy nebo nám napište napřímo.",
-    searchPlaceholder: "Hledat v nápovědě (např. 'jak nastavit doménu')...",
-    faqTitle: "Nejčastější dotazy (FAQ)",
+    title: "Podpora",
+    heroTitle: "Jak vám můžeme pomoci?",
+    subtitle: "Projděte návody, nebo se rovnou zeptejte Skly Bota.",
+    searchPlaceholder: "Hledat v nápovědě…",
+    guidesTitle: "Procházet podle nástroje",
+    faqTitle: "Nejčastější dotazy",
     faqEmpty: "Pro tento dotaz jsme nic nenašli.",
+    chatCta: "Zeptej se Skly Bota",
+    chatCtaDesc: "Nenašli jste odpověď? Napište sem a otevře se chat s agentem.",
+    chatClose: "Zpět na nápovědu",
+    chatPlaceholder: "Zeptej se na cokoliv…",
+    restartTour: "Spustit UI prohlídku znovu",
     guideSniper: "Průvodce Sniperem",
-    guideSniperDesc: "Naučte se psát vysoce konverzní e-maily a spravovat cílové segmenty.",
+    guideSniperDesc:
+      "Naučte se psát vysoce konverzní e-maily a spravovat cílové segmenty.",
     guideRadar: "Jak na Radar",
-    guideRadarDesc: "Jak správně filtrovat leady a využívat Deep Scan pro dohledání kontaktů.",
+    guideRadarDesc:
+      "Jak správně filtrovat leady a využívat Deep Scan pro dohledání kontaktů.",
     guideCrm: "CRM a Integrace",
-    guideCrmDesc: "Napojení na Make.com, synchronizace s vaším stávajícím Pipedrive a další.",
+    guideCrmDesc:
+      "Napojení na Make.com, synchronizace s vaším stávajícím Pipedrive a další.",
     guideAutopilot: "Autopilot",
     guideAutopilotDesc: "Nastavení a správa automatizovaných outreach kampaní.",
     contactTitle: "Nenašli jste, co jste hledali?",
@@ -276,7 +289,8 @@ export const cz = {
   },
   settings: {
     title: "Pracovní prostor",
-    subtitle: "Spravujte nastavení projektu, integrace s vaším CRM a čerpání AI kreditů.",
+    subtitle:
+      "Spravujte nastavení projektu, integrace s vaším CRM a čerpání AI kreditů.",
     subscription: "Předplatné",
     noActivePlan: "Bez aktivního tarifu (Free verze)",
     freePlan: "Free verze",
@@ -286,8 +300,9 @@ export const cz = {
     companyProfileDesc:
       "Popis firmy, služeb a výhod, podle kterého Sniper personalizuje odchozí e-maily.",
     offeredServices: "Nabízené služby",
-    offeredServicesDesc: "Služby, které vaše firma nabízí. Sniper je používá při generování obchodních e-mailů.",
-    credits: "Spotřeba a Kredity",
+    offeredServicesDesc:
+      "Služby, které vaše firma nabízí. Sniper je používá při generování obchodních e-mailů.",
+    credits: "Spotřeba",
     integrations: "Integrace a Webhooky",
     aiBehavior: "Chování AI a Šablony",
     team: "Tým a přístupy",
@@ -295,18 +310,21 @@ export const cz = {
     saving: "Ukládám...",
     saveSuccess: "Nastavení projektu bylo úspěšně uloženo.",
     saveError: "Nepodařilo se uložit nastavení. Zkuste obnovit stránku.",
-    remainingCredits: "Zbývající kredity",
+    remainingCredits: "Spotřeba limitu",
     needMorePower: "Potřebujete více výkonu?",
-    creditsUsed: "Spotřebováno {used} z {total} kreditů",
+    creditsUsed: "Využito {pct} % limitu",
+    usagePercent: "{pct} %",
     creditsRenewTrial: "Zkušební doba končí za {days} {dayWord}.",
     creditsRenewMonthly: "Váš měsíční limit se obnoví za {days} {dayWord}.",
     connectEmail: {
       title: "Připojit novou e-mailovou schránku",
-      subtitle: "Vyberte poskytovatele e-mailu, kterého chcete integrovat se Sniperem pro odesílání kampaní.",
+      subtitle:
+        "Vyberte poskytovatele e-mailu, kterého chcete integrovat se Sniperem pro odesílání kampaní.",
       back: "Zpět do nastavení",
       preparing: "Integrace pro {provider} se připravuje.",
       smtpTitle: "Vlastní SMTP / IMAP",
-      smtpPlaceholder: "SMTP host, port, uživatelské jméno a heslo. Připravujeme.",
+      smtpPlaceholder:
+        "SMTP host, port, uživatelské jméno a heslo. Připravujeme.",
     },
     emailIntegration: {
       description:
@@ -336,7 +354,8 @@ export const cz = {
     personalData: "Osobní údaje",
     security: "Zabezpečení účtu",
     connectedEmails: "Propojené e-mailové účty",
-    connectedEmailsDesc: "Připojte své e-mailové schránky, aby mohl Sniper odesílat zprávy přímo z vaší adresy.",
+    connectedEmailsDesc:
+      "Připojte své e-mailové schránky, aby mohl Sniper odesílat zprávy přímo z vaší adresy.",
     addMailbox: "Přidat další schránku",
     connected: "Připojeno",
     billing: "Fakturace a předplatné",
@@ -344,15 +363,16 @@ export const cz = {
     userFallback: "Uživatel",
   },
   copilot: {
-    title: "venesis",
+    title: "Skly Bot",
     online: "Online",
-    open: "Otevřít AI asistenta",
+    open: "Otevřít Skly Bota",
     close: "Zavřít",
     clearChat: "Smazat chat",
     send: "Odeslat dotaz",
-    welcome: "Zeptej se na cokoliv ve Sklyvu: Sniper, Radar, Autopilot, kredity, e-mail…",
+    welcome:
+      "Ahoj, jsem Skly Bot. Zeptej se na cokoliv ve Sklyvu: Sniper, Radar, Autopilot, kredity, e-mail…",
     placeholder: "Zeptej se na cokoliv...",
-    analyzing: "AI Asistent analyzuje váš dotaz...",
+    analyzing: "Skly Bot přemýšlí...",
     prompt1: "Jak správně propojit firemní e-mail pro Autopilota?",
     prompt2: "Jak nastavit denní limity a časová okna odesílání?",
     prompt3: "Jak spustit první automatický sběr firem (Prospector)?",
@@ -376,10 +396,11 @@ export const cz = {
     slash: {
       statusDesc: "Zkontroluje stav Autopilota a e-mailů",
       statusMessage: "Zkontroluj stav mého Autopilota a e-mailů",
-      creditsDesc: "Zobrazí zbývající kredity a tarif",
-      creditsMessage: "Kolik mi zbývá kreditů a jaký mám tarif?",
+      creditsDesc: "Zobrazí spotřebu limitu a tarif",
+      creditsMessage: "Jaká je moje spotřeba limitu a jaký mám tarif?",
       stopDesc: "Nouzové pozastavení odesílání",
-      stopMessage: "Zastav všechny běžící Autopilot kampaně a navrhni nouzové pozastavení.",
+      stopMessage:
+        "Zastav všechny běžící Autopilot kampaně a navrhni nouzové pozastavení.",
     },
     replies: {
       apiKeys:
@@ -387,9 +408,8 @@ export const cz = {
       funnel:
         "Konverzní trychtýř na přehledu ukazuje průchod od návštěvníků přes kontakty až po uzavřené obchody. Sledujte poměr mezi jednotlivými kroky a porovnejte ho s minulým obdobím.",
       credits:
-        "Stav kreditů a tarif najdete v Pracovním prostoru v sekci kreditů a fakturace. Odtud můžete také změnit předplatné.",
-      stop:
-        "Pro nouzové pozastavení otevřete Autopilot, zastavte aktivní kampaně a dočasně odpojte firemní e-mail v nastavení propojení.",
+        "Spotřebu limitu a tarif najdete v Pracovním prostoru v sekci Spotřeba. Odtud můžete také změnit předplatné.",
+      stop: "Pro nouzové pozastavení otevřete Autopilot, zastavte aktivní kampaně a dočasně odpojte firemní e-mail v nastavení propojení.",
       status:
         "Zkontrolujte stav připojení e-mailu v Pracovním prostoru. Autopilot může odesílat pouze při stavu „Připojeno“. Aktivní kampaně spravujete v sekci Autopilot.",
       autopilotPage:
@@ -399,7 +419,7 @@ export const cz = {
     },
     actions: {
       openIntegrations: "⚙️ Otevřít integrace",
-      openCredits: "💳 Otevřít kredity a tarif",
+      openCredits: "💳 Otevřít spotřebu a tarif",
       openAutopilot: "🚀 Otevřít Autopilot",
     },
     fallback:

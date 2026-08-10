@@ -7,7 +7,10 @@ import { ArrowUp, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CopilotMessage } from "@/components/ai/copilot-message";
-import { CopilotSlashMenu, filterSlashCommands } from "@/components/ai/copilot-slash-menu";
+import {
+  CopilotSlashMenu,
+  filterSlashCommands,
+} from "@/components/ai/copilot-slash-menu";
 import { AiMaskIcon } from "@/components/brand-marks";
 import { useCopilot } from "@/context/CopilotContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -46,16 +49,19 @@ export function AICopilotWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [slashActiveIndex, setSlashActiveIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const desktopScrollRef = useRef<HTMLDivElement>(null);
 
-  const quickPrompts = useMemo(() => getContextualPrompts(pathname, t), [pathname, t]);
+  const quickPrompts = useMemo(
+    () => getContextualPrompts(pathname, t),
+    [pathname, t],
+  );
   const slashCommands = useMemo(() => getSlashCommands(t), [t]);
   const slashQuery = input.startsWith("/") ? input : "";
   const filteredSlashCommands = useMemo(
     () => filterSlashCommands(slashCommands, slashQuery),
     [slashCommands, slashQuery],
   );
-  const slashMenuOpen = open && slashQuery.length > 0 && filteredSlashCommands.length > 0;
+  const slashMenuOpen =
+    open && slashQuery.length > 0 && filteredSlashCommands.length > 0;
 
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
@@ -75,7 +81,12 @@ export function AICopilotWidget() {
 
       setMessages((prev) => [
         ...prev,
-        { id: createId(), role: "user", content: trimmed, createdAt: Date.now() },
+        {
+          id: createId(),
+          role: "user",
+          content: trimmed,
+          createdAt: Date.now(),
+        },
       ]);
       setInput("");
       setSlashActiveIndex(0);
@@ -102,7 +113,12 @@ export function AICopilotWidget() {
             },
           ]);
         } else {
-          const fallback = resolveCopilotResponse(trimmed, pathname, language, t);
+          const fallback = resolveCopilotResponse(
+            trimmed,
+            pathname,
+            language,
+            t,
+          );
           setMessages((prev) => [
             ...prev,
             {
@@ -144,10 +160,8 @@ export function AICopilotWidget() {
   }, [open, consumePendingPrompt, respondToUser]);
 
   useEffect(() => {
-    for (const ref of [scrollRef, desktopScrollRef]) {
-      if (!ref.current) continue;
-      ref.current.scrollTop = ref.current.scrollHeight;
-    }
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isThinking, open]);
 
   useEffect(() => {
@@ -166,7 +180,9 @@ export function AICopilotWidget() {
     const scrollRoots = [
       document.body,
       document.documentElement,
-      ...Array.from(document.querySelectorAll<HTMLElement>("[data-dashboard-scroll]")),
+      ...Array.from(
+        document.querySelectorAll<HTMLElement>("[data-dashboard-scroll]"),
+      ),
     ];
     const previous = scrollRoots.map((el) => ({
       el,
@@ -246,7 +262,7 @@ export function AICopilotWidget() {
     }
   };
 
-  const renderPanelBody = (variant: "mobile" | "desktop") => (
+  const renderPanelBody = () => (
     <>
       <div className="sk-copilot-head flex shrink-0 items-center justify-between px-3 py-2.5 text-white md:py-2">
         <div className="flex items-center gap-2.5">
@@ -254,7 +270,9 @@ export function AICopilotWidget() {
             <AiMaskIcon size={22} className="text-white" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold leading-tight">{t("copilot.title")}</p>
+            <p className="text-sm font-semibold leading-tight">
+              {t("copilot.title")}
+            </p>
             <p className="flex items-center gap-1.5 text-[11px] font-medium text-white/80">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -291,7 +309,7 @@ export function AICopilotWidget() {
       </div>
 
       <div
-        ref={variant === "mobile" ? scrollRef : desktopScrollRef}
+        ref={scrollRef}
         className="sk-copilot-panel__body min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {messages.length === 0 && !isThinking && (
@@ -385,7 +403,7 @@ export function AICopilotWidget() {
         className={cn(
           "fixed inset-0 z-[100] transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
           open
-            ? "pointer-events-auto opacity-100 bg-black/40 md:bg-black/20"
+            ? "pointer-events-auto opacity-100 bg-black/20"
             : "pointer-events-none opacity-0",
         )}
         onClick={handleClose}
@@ -394,46 +412,27 @@ export function AICopilotWidget() {
         aria-hidden={!open}
       />
 
-      {/* Mobile — panel nad spodní navigací */}
       <div
         role="dialog"
         aria-modal={open}
         aria-label={t("copilot.title")}
         aria-hidden={!open}
         className={cn(
-          "fixed inset-x-3 z-[101] mx-auto flex h-[min(78dvh,520px)] w-auto max-w-lg flex-col overflow-hidden rounded-2xl sk-copilot-panel transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:hidden",
-          "bottom-[calc(3.75rem+env(safe-area-inset-bottom))]",
-          open
-            ? "pointer-events-auto translate-y-0"
-            : "pointer-events-none invisible translate-y-[110%]",
-        )}
-      >
-        {renderPanelBody("mobile")}
-      </div>
-
-      {/* Desktop — přímo v pravém dolním rohu viewportu */}
-      <div
-        role="dialog"
-        aria-modal={open}
-        aria-label={t("copilot.title")}
-        aria-hidden={!open}
-        className={cn(
-          "fixed bottom-6 right-6 z-[101] hidden w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl sk-copilot-panel transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] md:flex",
+          "fixed bottom-6 right-6 z-[101] flex w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl sk-copilot-panel transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]",
           "h-[min(560px,calc(100dvh-3rem))] max-h-[calc(100dvh-3rem)] origin-bottom-right",
           open
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none invisible translate-y-2 scale-[0.98] opacity-0",
         )}
       >
-        {renderPanelBody("desktop")}
+        {renderPanelBody()}
       </div>
 
-      {/* Desktop FAB — soft-UI brand 3D */}
       <Button
         type="button"
         variant="ghost"
         className={cn(
-          "sk-fab fixed bottom-6 right-6 z-[99] hidden md:flex",
+          "sk-fab fixed bottom-6 right-6 z-[99] flex",
           "hover:bg-transparent hover:text-white",
           open && "pointer-events-none opacity-0",
         )}

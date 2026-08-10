@@ -23,6 +23,9 @@ export type RadarSettingsFormData = {
   radarRunTime: string;
   minCompaniesPerRun: number;
   maxCompaniesPerRun: number;
+  sourcePlaces: boolean;
+  sourceWeb: boolean;
+  sourceLinkedin: boolean;
 };
 
 export type FullAutoSettingsFormData = {
@@ -52,6 +55,9 @@ function formToPayload(form: RadarSettingsFormData): RadarSettingsPayload {
     resultsPerQuery: 20,
     minCompaniesPerRun,
     maxCompaniesPerRun,
+    sourcePlaces: form.sourcePlaces !== false,
+    sourceWeb: form.sourceWeb !== false,
+    sourceLinkedin: form.sourceLinkedin !== false,
   };
 }
 
@@ -66,6 +72,9 @@ function recordToForm(record: RadarSettingsPayload): RadarSettingsFormData {
     radarRunTime: record.scheduleTime,
     minCompaniesPerRun: record.minCompaniesPerRun,
     maxCompaniesPerRun: record.maxCompaniesPerRun,
+    sourcePlaces: record.sourcePlaces !== false,
+    sourceWeb: record.sourceWeb !== false,
+    sourceLinkedin: record.sourceLinkedin !== false,
   };
 }
 
@@ -94,6 +103,9 @@ export async function getRadarSettings(): Promise<
         radarRunTime: "03:00",
         minCompaniesPerRun: 20,
         maxCompaniesPerRun: 50,
+        sourcePlaces: true,
+        sourceWeb: true,
+        sourceLinkedin: true,
       },
     };
   }
@@ -115,7 +127,9 @@ export async function saveRadarSettings(
   const payload = formToPayload(form);
 
   if (payload.scheduleDays.length === 0) {
-    return { error: "Vyberte alespoň jeden den pro automatické spouštění Radaru." };
+    return {
+      error: "Vyberte alespoň jeden den pro automatické spouštění Radaru.",
+    };
   }
 
   await prisma.radarSettings.upsert({
@@ -124,7 +138,8 @@ export async function saveRadarSettings(
       workspaceId,
       targetIndustries: payload.targetIndustries,
       locations: payload.locations,
-      countryCode: payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
+      countryCode:
+        payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
       companySize: payload.companySize,
       autoStartOutreach: payload.autoStartOutreach,
       scheduleDays: payload.scheduleDays,
@@ -132,11 +147,15 @@ export async function saveRadarSettings(
       resultsPerQuery: payload.resultsPerQuery,
       minCompaniesPerRun: payload.minCompaniesPerRun,
       maxCompaniesPerRun: payload.maxCompaniesPerRun,
+      sourcePlaces: payload.sourcePlaces,
+      sourceWeb: payload.sourceWeb,
+      sourceLinkedin: payload.sourceLinkedin,
     },
     update: {
       targetIndustries: payload.targetIndustries,
       locations: payload.locations,
-      countryCode: payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
+      countryCode:
+        payload.countryCode.trim() === "" ? "" : payload.countryCode || "CZ",
       companySize: payload.companySize,
       autoStartOutreach: payload.autoStartOutreach,
       scheduleDays: payload.scheduleDays,
@@ -144,6 +163,9 @@ export async function saveRadarSettings(
       resultsPerQuery: payload.resultsPerQuery,
       minCompaniesPerRun: payload.minCompaniesPerRun,
       maxCompaniesPerRun: payload.maxCompaniesPerRun,
+      sourcePlaces: payload.sourcePlaces,
+      sourceWeb: payload.sourceWeb,
+      sourceLinkedin: payload.sourceLinkedin,
     },
   });
 
@@ -151,31 +173,6 @@ export async function saveRadarSettings(
   revalidatePath("/radar");
 
   return { ok: true };
-}
-
-export async function loadRadarSettingsPayloadForWorkspace(
-  workspaceId: string,
-): Promise<RadarSettingsPayload> {
-  const record = await prisma.radarSettings.findUnique({
-    where: { workspaceId },
-  });
-
-  if (!record) {
-    return toRadarSettingsPayload({
-      targetIndustries: DEFAULT_RADAR_INDUSTRIES,
-      locations: joinCommaSeparatedInput(DEFAULT_RADAR_LOCATIONS),
-      countryCode: "CZ",
-      companySize: "any",
-      autoStartOutreach: false,
-      scheduleDays: [1, 4],
-      scheduleTime: "03:00",
-      resultsPerQuery: 20,
-      minCompaniesPerRun: 20,
-      maxCompaniesPerRun: 50,
-    });
-  }
-
-  return toRadarSettingsPayload(record);
 }
 
 export async function getFullAutoSettings(): Promise<

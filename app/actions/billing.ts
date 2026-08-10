@@ -110,7 +110,9 @@ export async function startTrialCheckout(planTier: string, priceId: string) {
   } catch (error: unknown) {
     console.error("Stripe error:", error);
     const message =
-      error instanceof Error ? error.message : "Chyba při komunikaci se Stripe.";
+      error instanceof Error
+        ? error.message
+        : "Chyba při komunikaci se Stripe.";
     return { error: message };
   }
 }

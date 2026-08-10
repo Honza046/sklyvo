@@ -20,7 +20,7 @@ import {
   sessionCookieOptions,
   verifySessionToken,
 } from "@/lib/session";
-import { encryptTotpSecret, decryptTotpSecret } from "@/lib/totp-crypto";
+import { encryptTotpSecret, decryptTotpSecret, totpSecretNeedsReencrypt } from "@/lib/totp-crypto";
 import { SKLYVO_BRAND } from "@/lib/sklyvo-brand";
 import {
   PENDING_2FA_COOKIE,
@@ -67,7 +67,12 @@ function verifyTotpCode(secretBase32: string, code: string): boolean {
 export async function getTwoFactorStatus(): Promise<
   | {
       totpEnabled: boolean;
-      passkeys: { id: string; name: string | null; createdAt: string; lastUsedAt: string | null }[];
+      passkeys: {
+        id: string;
+        name: string | null;
+        createdAt: string;
+        lastUsedAt: string | null;
+      }[];
     }
   | { error: string }
 > {
@@ -147,7 +152,8 @@ export async function confirmTotpSetup(
   });
   if (!user) return { error: "Účet nebyl nalezen." };
   if (user.totpEnabled) return { error: "Authenticator je už zapnutý." };
-  if (!user.totpPendingEnc) return { error: "Nejdřív spusťte nastavení authenticatoru." };
+  if (!user.totpPendingEnc)
+    return { error: "Nejdřív spusťte nastavení authenticatoru." };
 
   const secret = decryptTotpSecret(user.totpPendingEnc);
   if (!secret) return { error: "Neplatný stav nastavení. Spusťte znovu." };
@@ -197,8 +203,7 @@ export async function disableTotp(input: {
 }
 
 export async function beginPasskeyRegistration(): Promise<
-  | { options: PublicKeyCredentialCreationOptionsJSON }
-  | { error: string }
+  { options: PublicKeyCredentialCreationOptionsJSON } | { error: string }
 > {
   const userId = await readSessionUserId();
   if (!userId) return { error: "Nejste přihlášeni." };
@@ -225,8 +230,7 @@ export async function beginPasskeyRegistration(): Promise<
     excludeCredentials: user.passkeys.map((p) => ({
       id: p.credentialId,
       transports: (p.transports?.split(",") ?? undefined) as
-        | AuthenticatorTransportFuture[]
-        | undefined,
+        AuthenticatorTransportFuture[] | undefined,
     })),
     authenticatorSelection: {
       residentKey: "preferred",
@@ -326,34 +330,6 @@ export async function deletePasskey(input: {
   return { success: true };
 }
 
-/** After password OK — used by loginUser. */
-export async function issuePending2faIfNeeded(userId: string): Promise<
-  | { requires2fa: false }
-  | {
-      requires2fa: true;
-      methods: ("totp" | "passkey")[];
-    }
-> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      totpEnabled: true,
-      _count: { select: { passkeys: true } },
-    },
-  });
-  if (!user) return { requires2fa: false };
-
-  const methods: ("totp" | "passkey")[] = [];
-  if (user.totpEnabled) methods.push("totp");
-  if (user._count.passkeys > 0) methods.push("passkey");
-  if (methods.length === 0) return { requires2fa: false };
-
-  const token = await createPending2faToken(userId);
-  const cookieStore = await cookies();
-  cookieStore.set(PENDING_2FA_COOKIE, token, pending2faCookieOptions());
-  return { requires2fa: true, methods };
-}
-
 export async function verifyLoginTotp(
   code: string,
 ): Promise<{ success: true } | { error: string }> {
@@ -361,19 +337,39 @@ export async function verifyLoginTotp(
   const userId = await verifyPending2faToken(
     cookieStore.get(PENDING_2FA_COOKIE)?.value,
   );
-  if (!userId) return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
+  if (!userId)
+    return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { totpEnabled: true, totpSecretEnc: true },
+    select: { totpEnabled: true, totpSecretEnc: true, disabledAt: true },
   });
   if (!user?.totpEnabled || !user.totpSecretEnc) {
-    return { error: "Authenticator není u tohoto účtu aktivní." };
+    return { error: "Authenticator není u tomto účtu aktivní." };
+  }
+  if (user.disabledAt) {
+    await clearPending2faCookie();
+    return { error: "Tento účet byl deaktivován. Kontaktujte podporu." };
   }
 
   const secret = decryptTotpSecret(user.totpSecretEnc);
-  if (!secret || !verifyTotpCode(secret, code)) {
+  if (!secret) {
+    console.error("[2fa] totpSecretEnc decrypt failed — SESSION_SECRET mismatch?");
+    return {
+      error:
+        "Authenticator secret nelze načíst (nesoulad SESSION_SECRET). V DB vypni 2FA nebo nastav stejný secret jako při zapnutí TOTP.",
+    };
+  }
+  if (!verifyTotpCode(secret, code)) {
     return { error: "Neplatný ověřovací kód." };
+  }
+
+  // Po rotaci SESSION_SECRET přepiš blob aktuálním klíčem.
+  if (totpSecretNeedsReencrypt(user.totpSecretEnc)) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { totpSecretEnc: encryptTotpSecret(secret) },
+    });
   }
 
   await clearPending2faCookie();
@@ -382,14 +378,14 @@ export async function verifyLoginTotp(
 }
 
 export async function beginLoginPasskey(): Promise<
-  | { options: PublicKeyCredentialRequestOptionsJSON }
-  | { error: string }
+  { options: PublicKeyCredentialRequestOptionsJSON } | { error: string }
 > {
   const cookieStore = await cookies();
   const userId = await verifyPending2faToken(
     cookieStore.get(PENDING_2FA_COOKIE)?.value,
   );
-  if (!userId) return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
+  if (!userId)
+    return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
 
   const passkeys = await prisma.passkeyCredential.findMany({
     where: { userId },
@@ -405,8 +401,7 @@ export async function beginLoginPasskey(): Promise<
     allowCredentials: passkeys.map((p) => ({
       id: p.credentialId,
       transports: (p.transports?.split(",") ?? undefined) as
-        | AuthenticatorTransportFuture[]
-        | undefined,
+        AuthenticatorTransportFuture[] | undefined,
     })),
     userVerification: "preferred",
   });
@@ -427,7 +422,8 @@ export async function finishLoginPasskey(input: {
   const userId = await verifyPending2faToken(
     cookieStore.get(PENDING_2FA_COOKIE)?.value,
   );
-  if (!userId) return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
+  if (!userId)
+    return { error: "Vypršela dvoufázová výzva. Přihlaste se znovu." };
 
   const raw = cookieStore.get(WEBAUTHN_CHALLENGE_COOKIE)?.value;
   cookieStore.delete(WEBAUTHN_CHALLENGE_COOKIE);
@@ -461,8 +457,7 @@ export async function finishLoginPasskey(input: {
         publicKey: new Uint8Array(cred.publicKey),
         counter: Number(cred.counter),
         transports: (cred.transports?.split(",") ?? undefined) as
-          | AuthenticatorTransportFuture[]
-          | undefined,
+          AuthenticatorTransportFuture[] | undefined,
       },
     });
   } catch {
@@ -470,6 +465,15 @@ export async function finishLoginPasskey(input: {
   }
 
   if (!verification.verified) return { error: "Ověření passkey selhalo." };
+
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { disabledAt: true },
+  });
+  if (target?.disabledAt) {
+    await clearPending2faCookie();
+    return { error: "Tento účet byl deaktivován. Kontaktujte podporu." };
+  }
 
   await prisma.passkeyCredential.update({
     where: { id: cred.id },

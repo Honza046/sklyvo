@@ -345,7 +345,12 @@ export function SklyvoMark({
   }, [size]);
 
   return (
-    <span ref={tileRef} className={className} style={tileStyle(size)} aria-hidden>
+    <span
+      ref={tileRef}
+      className={className}
+      style={tileStyle(size)}
+      aria-hidden
+    >
       <span style={plateStyle(size)} />
       <span ref={orbRef} style={orbStyle(size)} />
       <span ref={leftRef} style={eyeStyle(EYE_LEFT, size)} />

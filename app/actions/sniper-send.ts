@@ -39,7 +39,10 @@ export async function sendSniperEmailNow(input: {
   subject: string;
   body: string;
   targetUrl?: string;
-}): Promise<{ success: true; leadId: string } | { error: string; needsEmailSetup?: boolean }> {
+}): Promise<
+  | { success: true; leadId: string }
+  | { error: string; needsEmailSetup?: boolean }
+> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
   if (!workspaceId) {

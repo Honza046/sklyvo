@@ -250,7 +250,8 @@ export async function uploadWorkspaceDocument(formData: FormData) {
   } catch (error) {
     console.error("uploadWorkspaceDocument:", error);
     return {
-      error: error instanceof Error ? error.message : "Nepodařilo se nahrát soubor.",
+      error:
+        error instanceof Error ? error.message : "Nepodařilo se nahrát soubor.",
     };
   }
 }
@@ -290,10 +291,16 @@ export async function getWorkspaceDocumentDownloadUrl(documentId: string) {
     .createSignedUrl(doc.storagePath, 60 * 10);
 
   if (error || !data?.signedUrl) {
-    return { error: error?.message || "Nepodařilo se vytvořit odkaz ke stažení." };
+    return {
+      error: error?.message || "Nepodařilo se vytvořit odkaz ke stažení.",
+    };
   }
 
-  return { url: data.signedUrl, fileName: doc.fileName, external: false as const };
+  return {
+    url: data.signedUrl,
+    fileName: doc.fileName,
+    external: false as const,
+  };
 }
 
 /** Podepsaná URL plného obrázku pro dialog náhledu (ne miniaturu ze seznamu). */
@@ -325,7 +332,9 @@ export async function getWorkspaceDocumentFullPreviewUrl(documentId: string) {
     .createSignedUrl(doc.storagePath, 60 * 30);
 
   if (error || !data?.signedUrl) {
-    return { error: error?.message || "Nepodařilo se vytvořit odkaz k náhledu." };
+    return {
+      error: error?.message || "Nepodařilo se vytvořit odkaz k náhledu.",
+    };
   }
 
   return { url: data.signedUrl };
@@ -396,17 +405,17 @@ export async function generateOfferDocument(input: {
       notes: (input.notes || "").trim(),
       issuerName: session.user.name?.trim() || session.user.email || "",
       issuerCompany:
-        session.workspace.companyName?.trim() ||
-        session.workspace.name ||
-        "",
+        session.workspace.companyName?.trim() || session.workspace.name || "",
     };
 
     const pdfBytes = await buildOfferOrContractPdf(payload);
     const supabase = createSupabaseAdmin();
     if ("error" in supabase) return supabase;
 
-    const scope: DocumentScope = input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
-    const kind: DocumentKind = payload.type === "contract" ? "CONTRACT" : "OFFER";
+    const scope: DocumentScope =
+      input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
+    const kind: DocumentKind =
+      payload.type === "contract" ? "CONTRACT" : "OFFER";
     const documentId = crypto.randomUUID();
     const label = payload.type === "contract" ? "Smlouva" : "Nabidka";
     const fileName = sanitizeFileName(
@@ -467,7 +476,9 @@ export async function generateOfferDocument(input: {
     console.error("generateOfferDocument:", error);
     return {
       error:
-        error instanceof Error ? error.message : "Nepodařilo se vygenerovat dokument.",
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se vygenerovat dokument.",
     };
   }
 }

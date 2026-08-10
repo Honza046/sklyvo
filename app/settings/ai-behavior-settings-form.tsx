@@ -25,14 +25,20 @@ type AiBehaviorSettingsFormProps = {
 };
 
 type SettingsSaveRegistry = {
-  registerSaveHandler: (key: string, handler: () => Promise<boolean>) => () => void;
+  registerSaveHandler: (
+    key: string,
+    handler: () => Promise<boolean>,
+  ) => () => void;
   handlersRef: Map<string, () => Promise<boolean>>;
 };
 
 const SettingsSaveContext = createContext<SettingsSaveRegistry | null>(null);
 
 export function SettingsSaveProvider({ children }: { children: ReactNode }) {
-  const handlersRef = useMemo(() => new Map<string, () => Promise<boolean>>(), []);
+  const handlersRef = useMemo(
+    () => new Map<string, () => Promise<boolean>>(),
+    [],
+  );
 
   const registerSaveHandler = useCallback(
     (key: string, handler: () => Promise<boolean>) => {
@@ -44,9 +50,16 @@ export function SettingsSaveProvider({ children }: { children: ReactNode }) {
     [handlersRef],
   );
 
-  const value = useMemo(() => ({ registerSaveHandler, handlersRef }), [registerSaveHandler, handlersRef]);
+  const value = useMemo(
+    () => ({ registerSaveHandler, handlersRef }),
+    [registerSaveHandler, handlersRef],
+  );
 
-  return <SettingsSaveContext.Provider value={value}>{children}</SettingsSaveContext.Provider>;
+  return (
+    <SettingsSaveContext.Provider value={value}>
+      {children}
+    </SettingsSaveContext.Provider>
+  );
 }
 
 export function useSettingsSaveRegistry() {
@@ -100,17 +113,20 @@ export function AiBehaviorSettingsForm({
           htmlFor="email-signature"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Podpis — kontaktní šablona (Sniper)
+          Podpis (kontaktní šablona pro Sniper)
         </Label>
         <Textarea
           id="email-signature"
           value={emailSignature}
           onChange={(e) => setEmailSignature(e.target.value)}
-          placeholder={"S pozdravem,\n\nJan Sedlář\n\nvenegard.com\n+420 605 875 808\njan@venegard.com"}
+          placeholder={
+            "S pozdravem,\n\nJan Sedlář\n\nvenegard.com\n+420 605 875 808\njan@venegard.com"
+          }
           className="min-h-[100px] resize-none rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">
-          Jméno a e-mail v podpisu se berou z přihlášeného člena týmu. Tady nastavte hlavně společný web / telefon (šablona).
+          Jméno a e-mail v podpisu se berou z přihlášeného člena týmu. Tady
+          nastavte hlavně společný web / telefon (šablona).
         </p>
       </div>
 
@@ -129,8 +145,9 @@ export function AiBehaviorSettingsForm({
           placeholder="např. synergie, namontujeme, -"
           className="w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
-        <p className="mt-1 text-[10px] text-gray-500 dark:text-muted-foreground">
-          Tato slova AI nikdy nepoužije. Oddělujte čárkou (např. synergie, inovativní, zaručeně).
+        <p className="mt-1 text-[10px] text-gray-500 ">
+          Tato slova AI nikdy nepoužije. Oddělujte čárkou (např. synergie,
+          inovativní, zaručeně).
         </p>
       </div>
 

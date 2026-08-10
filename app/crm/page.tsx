@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CopyEmailButton } from "@/components/copy-email-button";
-import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,11 +45,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Search, 
-  Plus, 
-  Globe, 
-  Calendar, 
+import {
+  Search,
+  Plus,
+  Globe,
+  Calendar,
   MoreHorizontal,
   SlidersHorizontal,
   Pencil,
@@ -64,7 +69,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { leadProvenanceParts, shortLeadAuthorName, type LeadSourceValue } from "@/lib/lead-provenance";
+import {
+  leadProvenanceParts,
+  shortLeadAuthorName,
+  type LeadSourceValue,
+} from "@/lib/lead-provenance";
 import {
   bulkDeleteLeads,
   bulkUpdateLeads,
@@ -78,9 +87,15 @@ import {
   updateSingleLeadStatus,
   type LeadSentEmailRow,
 } from "@/app/actions/crm";
-import { sendOutreachEmailBulk, sendOutreachEmailNow } from "@/app/actions/outreach";
+import {
+  sendOutreachEmailBulk,
+  sendOutreachEmailNow,
+} from "@/app/actions/outreach";
 import { CrmKanbanBoard } from "@/app/crm/crm-kanban-board";
-import { AutopilotDialog, type AutopilotLead } from "@/app/crm/autopilot-dialog";
+import {
+  AutopilotDialog,
+  type AutopilotLead,
+} from "@/app/crm/autopilot-dialog";
 import { CompanyAvatar } from "@/components/crm/company-avatar";
 import { SlidingViewToggle } from "@/components/sklyvo/sliding-view-toggle";
 import { toast } from "sonner";
@@ -92,7 +107,14 @@ type Lead = {
   id: string;
   company: string;
   url: string;
-  status: "new" | "contacted" | "follow_up" | "communication" | "agreed" | "rejected" | "breakup";
+  status:
+    | "new"
+    | "contacted"
+    | "follow_up"
+    | "communication"
+    | "agreed"
+    | "rejected"
+    | "breakup";
   leadStatus:
     | "NEW"
     | "CONTACTED"
@@ -123,21 +145,66 @@ type Lead = {
 };
 
 const COLUMNS = [
-  { id: "new", title: "Nový lead", color: "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600", dot: "bg-slate-400 dark:bg-slate-500" },
-  { id: "contacted", title: "Kontaktováno", color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700", dot: "bg-blue-500 dark:bg-blue-400" },
-  { id: "follow_up", title: "Follow up", color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700", dot: "bg-amber-500 dark:bg-amber-400" },
-  { id: "communication", title: "Komunikace", color: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-700", dot: "bg-violet-500 dark:bg-violet-400" },
-  { id: "agreed", title: "Domluveno", color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700", dot: "bg-emerald-500 dark:bg-emerald-400" },
-  { id: "rejected", title: "Nedomluveno", color: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-700", dot: "bg-rose-500 dark:bg-rose-400" },
-  { id: "breakup", title: "Breakup", color: "bg-orange-50 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700", dot: "bg-orange-500 dark:bg-orange-400" },
+  {
+    id: "new",
+    title: "Nový lead",
+    color: "bg-slate-100 text-slate-700 border-slate-300 ",
+    dot: "bg-slate-400 ",
+  },
+  {
+    id: "contacted",
+    title: "Kontaktováno",
+    color: "bg-blue-50 text-blue-700 border-blue-200 ",
+    dot: "bg-blue-500 ",
+  },
+  {
+    id: "follow_up",
+    title: "Follow up",
+    color: "bg-amber-50 text-amber-700 border-amber-200 ",
+    dot: "bg-amber-500 ",
+  },
+  {
+    id: "communication",
+    title: "Komunikace",
+    color: "bg-violet-50 text-violet-700 border-violet-200 ",
+    dot: "bg-violet-500 ",
+  },
+  {
+    id: "agreed",
+    title: "Domluveno",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200 ",
+    dot: "bg-emerald-500 ",
+  },
+  {
+    id: "breakup",
+    title: "Breakup",
+    color: "bg-orange-50 text-orange-800 border-orange-200 ",
+    dot: "bg-orange-500 ",
+  },
+  {
+    id: "rejected",
+    title: "Nedomluveno",
+    color: "bg-rose-50 text-rose-700 border-rose-200 ",
+    dot: "bg-rose-500 ",
+  },
 ];
 
+const COLUMN_BY_ID = Object.fromEntries(
+  COLUMNS.map((col) => [col.id, col]),
+) as Record<(typeof COLUMNS)[number]["id"], (typeof COLUMNS)[number]>;
+
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat("cs-CZ", {
+    style: "currency",
+    currency: "CZK",
+    maximumFractionDigits: 0,
+  }).format(amount);
 };
 
 /** Čas pro řazení / filtr data: poslední odeslání, jinak přidání do CRM. */
-function leadActivityTime(lead: Pick<Lead, "lastContactedAt" | "createdAt">): number {
+function leadActivityTime(
+  lead: Pick<Lead, "lastContactedAt" | "createdAt">,
+): number {
   if (lead.lastContactedAt) {
     const t = new Date(lead.lastContactedAt).getTime();
     if (Number.isFinite(t)) return t;
@@ -153,7 +220,9 @@ function formatCsDate(isoOrDate: string): string {
 }
 
 /** Primární datum na kartě / v tabulce. */
-function leadPrimaryDateLabel(lead: Pick<Lead, "lastContactedAt" | "createdAt" | "date">): {
+function leadPrimaryDateLabel(
+  lead: Pick<Lead, "lastContactedAt" | "createdAt" | "date">,
+): {
   label: string;
   /** Krátký řádek s datem (pro tabulku bez překryvu). */
   dateLine: string;
@@ -211,13 +280,14 @@ function WebsiteVisitedGlobeButton({
             onFocus={() => setHintOpen(true)}
             onBlur={() => setHintOpen(false)}
             className={cn(
+              "sk-row-icon-btn",
               isSm
-                ? "h-8 w-8 rounded-full p-0 hover:bg-muted"
-                : "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm",
+                ? "h-8 w-8 rounded-full p-0 hover:bg-muted hover:translate-y-0"
+                : "h-8 w-8 shrink-0 rounded-lg p-0 shadow-sm hover:translate-y-0",
               visited
                 ? isSm
-                  ? "text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-950 dark:hover:text-emerald-200"
+                  ? "text-emerald-600 hover:text-emerald-700 "
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 "
                 : isSm
                   ? "text-muted-foreground hover:text-foreground"
                   : "border-border/60 bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -225,7 +295,7 @@ function WebsiteVisitedGlobeButton({
             aria-label={
               visited
                 ? who
-                  ? `Web prohlédnut — první návštěva webu: ${who}`
+                  ? `Web prohlédnut, první návštěva webu: ${who}`
                   : "Web prohlédnut"
                 : "Otevřít web firmy"
             }
@@ -240,11 +310,11 @@ function WebsiteVisitedGlobeButton({
         sideOffset={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
-        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-white px-3 py-2 opacity-100 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
+        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-white px-3 py-2 opacity-100 shadow-lg "
       >
         {visited ? (
           <>
-            <p className="text-xs font-semibold leading-snug text-emerald-700 dark:text-emerald-400">
+            <p className="text-xs font-semibold leading-snug text-emerald-700 ">
               Web už někdo prošel
             </p>
             <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
@@ -284,7 +354,8 @@ function buildSniperLeadHref(lead: Pick<Lead, "url" | "email">): string {
   return qs.length > 0 ? `/sniper?${qs.join("&")}` : "/sniper";
 }
 
-const SCRAPE_CONTACT_HINT = "Důkladně prohledá web a doplní e-mail nebo telefon";
+const SCRAPE_CONTACT_HINT =
+  "Důkladně prohledá web a doplní e-mail nebo telefon";
 
 function ScrapeContactButton({
   isLoading,
@@ -334,9 +405,11 @@ function ScrapeContactButton({
         sideOffset={8}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onCloseAutoFocus={(e) => e.preventDefault()}
-        className="w-auto max-w-[15rem] rounded-xl border-border/70 bg-white px-3 py-2 shadow-lg dark:border-zinc-700/90 dark:bg-zinc-950"
+        className="w-auto max-w-[15rem] rounded-xl border-border/70 bg-white px-3 py-2 shadow-lg "
       >
-        <p className="text-xs font-medium leading-snug text-foreground">{SCRAPE_CONTACT_HINT}</p>
+        <p className="text-xs font-medium leading-snug text-foreground">
+          {SCRAPE_CONTACT_HINT}
+        </p>
       </PopoverContent>
     </Popover>
   );
@@ -344,16 +417,30 @@ function ScrapeContactButton({
 
 function CrmPageContent() {
   const ITEMS_PER_PAGE = 50;
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "value_high" | "value_low">("newest");
-  const [statusFilter, setStatusFilter] = useState<"all" | Lead["leadStatus"]>("all");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "value_high" | "value_low"
+  >("newest");
+  const [statusFilter, setStatusFilter] = useState<"all" | Lead["leadStatus"]>(
+    "all",
+  );
   const [sourceFilter, setSourceFilter] = useState<
-    "all" | "radar" | "ap_radar" | "full_auto" | "ap_sniper" | "sniper" | "manual"
+    | "all"
+    | "radar"
+    | "ap_radar"
+    | "full_auto"
+    | "ap_sniper"
+    | "sniper"
+    | "manual"
   >("all");
-  const [dateFilter, setDateFilter] = useState<"all" | "last_7_days" | "last_30_days" | "this_year">("all");
+  const [dateFilter, setDateFilter] = useState<
+    "all" | "last_7_days" | "last_30_days" | "this_year"
+  >("all");
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [leadsToDelete, setLeadsToDelete] = useState<string[] | null>(null);
-  const [autopilotLeads, setAutopilotLeads] = useState<AutopilotLead[] | null>(null);
+  const [autopilotLeads, setAutopilotLeads] = useState<AutopilotLead[] | null>(
+    null,
+  );
   const [isBulkRunning, setIsBulkRunning] = useState(false);
   const [scrapingLeadIds, setScrapingLeadIds] = useState<string[]>([]);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
@@ -447,9 +534,8 @@ function CrmPageContent() {
       /* ignore */
     }
     void (async () => {
-      const { backfillAuthorsFromConnectedSheet } = await import(
-        "@/app/actions/google-sheets"
-      );
+      const { backfillAuthorsFromConnectedSheet } =
+        await import("@/app/actions/google-sheets");
       const result = await backfillAuthorsFromConnectedSheet();
       if ("updated" in result && (result.updated ?? 0) > 0) {
         await loadLeads();
@@ -492,7 +578,8 @@ function CrmPageContent() {
         lead.email.toLowerCase().includes(q) ||
         lead.phone.toLowerCase().includes(q);
 
-      const matchStatus = statusFilter === "all" || lead.leadStatus === statusFilter;
+      const matchStatus =
+        statusFilter === "all" || lead.leadStatus === statusFilter;
       const matchSource =
         sourceFilter === "all" ||
         (sourceFilter === "radar" &&
@@ -502,11 +589,14 @@ function CrmPageContent() {
           lead.source === "AUTOPILOT" &&
           !lead.contactedVia) ||
         (sourceFilter === "full_auto" && lead.source === "FULL_AUTO") ||
-        (sourceFilter === "ap_sniper" && lead.contactedVia === "AUTOPILOT_SNIPER") ||
+        (sourceFilter === "ap_sniper" &&
+          lead.contactedVia === "AUTOPILOT_SNIPER") ||
         (sourceFilter === "sniper" &&
           (lead.source === "SNIPER" || lead.contactedVia === "SNIPER") &&
           lead.contactedVia !== "AUTOPILOT_SNIPER") ||
-        (sourceFilter === "manual" && lead.source === "MANUAL" && !lead.contactedVia);
+        (sourceFilter === "manual" &&
+          lead.source === "MANUAL" &&
+          !lead.contactedVia);
 
       const activity = leadActivityTime(lead);
       const activityDate = new Date(activity);
@@ -514,7 +604,8 @@ function CrmPageContent() {
         dateFilter === "all" ||
         (dateFilter === "last_7_days" && activityDate >= sevenDaysAgo) ||
         (dateFilter === "last_30_days" && activityDate >= thirtyDaysAgo) ||
-        (dateFilter === "this_year" && activityDate.getFullYear() === now.getFullYear());
+        (dateFilter === "this_year" &&
+          activityDate.getFullYear() === now.getFullYear());
 
       const matchTag =
         tagFilter === "all" || (lead.tags ?? []).includes(tagFilter);
@@ -543,21 +634,35 @@ function CrmPageContent() {
     });
 
     return sorted;
-  }, [leads, searchQuery, sortBy, statusFilter, sourceFilter, dateFilter, tagFilter]);
+  }, [
+    leads,
+    searchQuery,
+    sortBy,
+    statusFilter,
+    sourceFilter,
+    dateFilter,
+    tagFilter,
+  ]);
 
   const totalItems = filteredLeads.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * ITEMS_PER_PAGE;
-  const paginatedLeads = filteredLeads.slice(pageStart, pageStart + ITEMS_PER_PAGE);
+  const paginatedLeads = filteredLeads.slice(
+    pageStart,
+    pageStart + ITEMS_PER_PAGE,
+  );
   const shownFrom = totalItems === 0 ? 0 : pageStart + 1;
   const shownTo = totalItems === 0 ? 0 : pageStart + paginatedLeads.length;
   const allPageSelected =
-    paginatedLeads.length > 0 && paginatedLeads.every((lead) => selectedLeads.includes(lead.id));
+    paginatedLeads.length > 0 &&
+    paginatedLeads.every((lead) => selectedLeads.includes(lead.id));
   const allFilteredSelected =
-    filteredLeads.length > 0 && filteredLeads.every((lead) => selectedLeads.includes(lead.id));
+    filteredLeads.length > 0 &&
+    filteredLeads.every((lead) => selectedLeads.includes(lead.id));
   const somePageSelected =
-    paginatedLeads.some((lead) => selectedLeads.includes(lead.id)) && !allPageSelected;
+    paginatedLeads.some((lead) => selectedLeads.includes(lead.id)) &&
+    !allPageSelected;
 
   const toggleRowSelection = (id: string) => {
     setSelectedLeads((prev) =>
@@ -567,10 +672,14 @@ function CrmPageContent() {
 
   const toggleAllOnPage = () => {
     if (allPageSelected) {
-      setSelectedLeads((prev) => prev.filter((id) => !paginatedLeads.some((lead) => lead.id === id)));
+      setSelectedLeads((prev) =>
+        prev.filter((id) => !paginatedLeads.some((lead) => lead.id === id)),
+      );
       return;
     }
-    setSelectedLeads((prev) => Array.from(new Set([...prev, ...paginatedLeads.map((lead) => lead.id)])));
+    setSelectedLeads((prev) =>
+      Array.from(new Set([...prev, ...paginatedLeads.map((lead) => lead.id)])),
+    );
   };
 
   const selectAllFiltered = () => {
@@ -592,13 +701,13 @@ function CrmPageContent() {
   };
 
   const statusColorMap: Record<Lead["status"], string> = {
-    new: COLUMNS[0].color,
-    contacted: COLUMNS[1].color,
-    follow_up: COLUMNS[2].color,
-    communication: COLUMNS[3].color,
-    agreed: COLUMNS[4].color,
-    rejected: COLUMNS[5].color,
-    breakup: COLUMNS[6].color,
+    new: COLUMN_BY_ID.new.color,
+    contacted: COLUMN_BY_ID.contacted.color,
+    follow_up: COLUMN_BY_ID.follow_up.color,
+    communication: COLUMN_BY_ID.communication.color,
+    agreed: COLUMN_BY_ID.agreed.color,
+    breakup: COLUMN_BY_ID.breakup.color,
+    rejected: COLUMN_BY_ID.rejected.color,
   };
 
   const dueOutreachLeads = useMemo(
@@ -606,7 +715,10 @@ function CrmPageContent() {
     [leads],
   );
 
-  const handleSendOutreach = async (leadId: string, kind: OutreachKindValue) => {
+  const handleSendOutreach = async (
+    leadId: string,
+    kind: OutreachKindValue,
+  ) => {
     const result = await sendOutreachEmailNow({ leadId, kind });
     if ("error" in result) {
       toast.error(result.error);
@@ -643,7 +755,10 @@ function CrmPageContent() {
   const handleBulkOutreach = async (kind: OutreachKindValue) => {
     if (selectedLeads.length === 0 || isBulkRunning) return;
     setIsBulkRunning(true);
-    const result = await sendOutreachEmailBulk({ leadIds: selectedLeads, kind });
+    const result = await sendOutreachEmailBulk({
+      leadIds: selectedLeads,
+      kind,
+    });
     setIsBulkRunning(false);
     if ("error" in result) {
       toast.error(result.error);
@@ -676,7 +791,9 @@ function CrmPageContent() {
   const handleBulkScrapeContacts = async () => {
     if (selectedLeads.length === 0 || isBulkRunning) return;
     setIsBulkRunning(true);
-    toast.message(`Deep scrape ${selectedLeads.length} webů… to může chvíli trvat.`);
+    toast.message(
+      `Deep scrape ${selectedLeads.length} webů… to může chvíli trvat.`,
+    );
     const result = await bulkScrapeLeadContacts(selectedLeads);
     setIsBulkRunning(false);
 
@@ -782,23 +899,32 @@ function CrmPageContent() {
     if (lead.websiteVisited) return;
 
     setLeads((prev) =>
-      prev.map((row) => (row.id === lead.id ? { ...row, websiteVisited: true } : row)),
+      prev.map((row) =>
+        row.id === lead.id ? { ...row, websiteVisited: true } : row,
+      ),
     );
 
     void markLeadWebsiteVisited(lead.id).then((result) => {
       if ("error" in result && result.error) {
         setLeads((prev) =>
           prev.map((row) =>
-            row.id === lead.id ? { ...row, websiteVisited: false, websiteVisitedBy: "" } : row,
+            row.id === lead.id
+              ? { ...row, websiteVisited: false, websiteVisitedBy: "" }
+              : row,
           ),
         );
         return;
       }
-      const who = ("websiteVisitedBy" in result ? result.websiteVisitedBy : "") || "";
+      const who =
+        ("websiteVisitedBy" in result ? result.websiteVisitedBy : "") || "";
       setLeads((prev) =>
         prev.map((row) =>
           row.id === lead.id
-            ? { ...row, websiteVisited: true, websiteVisitedBy: who || row.websiteVisitedBy || "" }
+            ? {
+                ...row,
+                websiteVisited: true,
+                websiteVisitedBy: who || row.websiteVisitedBy || "",
+              }
             : row,
         ),
       );
@@ -820,7 +946,9 @@ function CrmPageContent() {
     router.replace("/crm", { scroll: false });
   }, [isLoading, leads, searchParams, router, handleOpenEdit]);
 
-  const mapLeadStatusToUi = (leadStatus: Lead["leadStatus"]): Lead["status"] => {
+  const mapLeadStatusToUi = (
+    leadStatus: Lead["leadStatus"],
+  ): Lead["status"] => {
     if (leadStatus === "CONTACTED") return "contacted";
     if (leadStatus === "REPLIED") return "follow_up";
     if (leadStatus === "MEETING_SET") return "communication";
@@ -838,7 +966,11 @@ function CrmPageContent() {
     setLeads((prev) =>
       prev.map((lead) =>
         lead.id === leadId
-          ? { ...lead, leadStatus: nextStatus, status: mapLeadStatusToUi(nextStatus) }
+          ? {
+              ...lead,
+              leadStatus: nextStatus,
+              status: mapLeadStatusToUi(nextStatus),
+            }
           : lead,
       ),
     );
@@ -878,7 +1010,13 @@ function CrmPageContent() {
       }
       await loadLeads();
       setIsNewDealOpen(false);
-      setNewDealForm({ company: "", url: "", contactEmail: "", contactPhone: "", value: 0 });
+      setNewDealForm({
+        company: "",
+        url: "",
+        contactEmail: "",
+        contactPhone: "",
+        value: 0,
+      });
       toast.success("Deal úspěšně vytvořen");
     } finally {
       setIsCreating(false);
@@ -909,360 +1047,411 @@ function CrmPageContent() {
   };
 
   return (
-      <div className="flex h-full min-h-0 w-full flex-1 flex-col items-stretch overflow-hidden md:items-center">
-        
-        {/* Mobile header */}
-        <div className="mb-3 flex shrink-0 items-center justify-between gap-2 md:hidden">
-          <div className="min-w-0">
-            <h1 className="text-[22px] font-semibold tracking-tight text-foreground">CRM</h1>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">
-              {totalItems} {totalItems === 1 ? "firma" : "firem"} v pipeline
-            </p>
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center overflow-hidden">
+      <div className="mb-2 shrink-0 space-y-1 text-center">
+        <div className="mb-2 flex items-center justify-center gap-3">
+          <div className="sk-page-badge" aria-hidden>
+            <Users strokeWidth={2} />
           </div>
-          <Button
-            type="button"
-            size="sm"
-            className="h-9 shrink-0 rounded-full bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700"
-            onClick={() => setIsNewDealOpen(true)}
-          >
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Nový
-          </Button>
         </div>
+        <h1 className="sk-type-h1">CRM</h1>
+        <p className="sk-type-body mx-auto max-w-lg">
+          Sledujte stav oslovených firem a nenechte žádný potenciální deal
+          vychladnout.
+        </p>
+      </div>
 
-        {/* Desktop hero — stejný styl jako Radar / Sniper */}
-        <div className="mb-2 hidden shrink-0 space-y-1 text-center md:block">
-          <div className="mb-2 flex items-center justify-center gap-3">
-            <div className="rounded-2xl bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-              <Users className="h-8 w-8" />
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4">
+        {dueOutreachLeads.length > 0 && (
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <Bell className="mt-0.5 h-4 w-4 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold sm:text-sm">
+                  {dueOutreachLeads.length} leadů čeká na follow-up / breakup
+                </p>
+                <p className="hidden text-xs opacity-80 sm:block">
+                  Po 14 dnech follow-up, dalších 14 breakup. Pošli je přímo z
+                  CRM.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 border-amber-300 bg-white px-2 text-[11px] font-semibold sm:h-9 sm:px-3 sm:text-sm"
+                disabled={isBulkRunning}
+                onClick={() => {
+                  const ids = dueOutreachLeads
+                    .filter((l) => l.nextOutreachKind === "FOLLOW_UP")
+                    .map((l) => l.id);
+                  if (ids.length === 0) {
+                    toast.message("Žádný splatný follow-up.");
+                    return;
+                  }
+                  setSelectedLeads(ids);
+                  void handleBulkOutreach("FOLLOW_UP");
+                }}
+              >
+                Follow-upy
+              </Button>
+              <Button
+                size="sm"
+                className="h-8 bg-orange-700 px-2 text-[11px] font-semibold text-white hover:bg-orange-800 sm:h-9 sm:px-3 sm:text-sm"
+                disabled={isBulkRunning}
+                onClick={() => {
+                  const ids = dueOutreachLeads
+                    .filter((l) => l.nextOutreachKind === "BREAKUP")
+                    .map((l) => l.id);
+                  if (ids.length === 0) {
+                    toast.message("Žádný splatný breakup.");
+                    return;
+                  }
+                  setSelectedLeads(ids);
+                  void handleBulkOutreach("BREAKUP");
+                }}
+              >
+                Breakupy
+              </Button>
             </div>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-            CRM
-          </h1>
-          <p className="mx-auto max-w-lg text-sm text-muted-foreground">
-            Sledujte stav oslovených firem a nenechte žádný potenciální deal vychladnout.
-          </p>
-        </div>
+        )}
 
-        <div className="flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4 md:px-8">
-          {dueOutreachLeads.length > 0 && (
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-              <div className="flex min-w-0 items-start gap-2">
-                <Bell className="mt-0.5 h-4 w-4 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold sm:text-sm">
-                    {dueOutreachLeads.length} leadů čeká na follow-up / breakup
-                  </p>
-                  <p className="hidden text-xs opacity-80 sm:block">
-                    Po 14 dnech follow-up, dalších 14 breakup. Pošli je přímo z CRM.
-                  </p>
+        <div
+          className={cn(
+            "sk-surface sk-toolbar",
+            selectedLeads.length > 0 && "sk-toolbar--selection",
+          )}
+        >
+          {selectedLeads.length > 0 ? (
+            <div className="sk-selection flex w-full min-w-0 flex-col gap-2">
+              <div className="flex w-full min-w-0 flex-wrap items-center gap-2 md:gap-3">
+                <div className="sk-selection__count shrink-0">
+                  Vybráno:{" "}
+                  <strong>
+                    {selectedLeads.length}
+                    {allFilteredSelected ? ` / ${totalItems}` : ""}
+                  </strong>
+                </div>
+
+                <div className="sk-selection__actions flex min-w-0 flex-1 flex-wrap items-center gap-1.5 md:gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="sk-press-btn h-9"
+                    onClick={() => void handleBulkScrapeContacts()}
+                    disabled={isBulkRunning}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Kontakty z webu</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="sk-press-btn h-9"
+                    onClick={() => void handleBulkOutreach("FOLLOW_UP")}
+                    disabled={isBulkRunning}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Follow-up
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="sk-press-btn h-9"
+                    onClick={() => void handleBulkOutreach("BREAKUP")}
+                    disabled={isBulkRunning}
+                  >
+                    <Hand className="h-3.5 w-3.5" />
+                    Breakup
+                  </Button>
+
+                  <Select
+                    onValueChange={(v) =>
+                      void handleBulkStatusUpdate(v as Lead["leadStatus"])
+                    }
+                    disabled={isBulkRunning}
+                  >
+                    <SelectTrigger className="sk-selection__select h-9 w-[9.5rem] sm:w-[11.5rem]">
+                      <SelectValue placeholder="Změnit status" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border bg-white shadow-md ">
+                      <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
+                      <SelectItem value="CONTACTED">KONTAKTOVÁNO</SelectItem>
+                      <SelectItem value="REPLIED">FOLLOW UP</SelectItem>
+                      <SelectItem value="MEETING_SET">KOMUNIKACE</SelectItem>
+                      <SelectItem value="CLOSED_WON">DOMLUVENO</SelectItem>
+                      <SelectItem value="BREAK_UP">BREAKUP</SelectItem>
+                      <SelectItem value="CLOSED_LOST">NEDOMLUVENO</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => handleStartAutopilot()}
+                    disabled={isBulkRunning}
+                  >
+                    <Rocket className="h-3.5 w-3.5" />
+                    Autopilot
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="sk-press-btn sk-selection__danger h-9"
+                    onClick={() => handleBulkDelete()}
+                    disabled={isBulkRunning}
+                  >
+                    Odstranit
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="sk-selection__clear h-9"
+                    onClick={clearSelection}
+                    disabled={isBulkRunning}
+                  >
+                    Zrušit výběr
+                  </Button>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+
+              {!allFilteredSelected && totalItems > selectedLeads.length && (
+                <p className="sk-selection__hint">
+                  {allPageSelected
+                    ? `Vybraná je jen tato stránka (${paginatedLeads.length}).`
+                    : "Nejsou vybrané všechny firmy ve filtru."}{" "}
+                  <button type="button" onClick={selectAllFiltered}>
+                    Vybrat všech {totalItems} ve filtru
+                  </button>
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex w-full items-center gap-1.5 md:flex-row md:justify-between md:gap-4">
+              <div className="relative min-w-0 flex-1 md:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:h-4 md:w-4" />
+                <Input
+                  placeholder="Hledat firmu…"
+                  className="h-9 pl-9 text-[15px] md:text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
+                <Popover modal={false}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="sk-press-btn h-9 w-9 shrink-0 p-0 md:w-auto md:min-w-[7.5rem] md:px-3.5"
+                    >
+                      <SlidersHorizontal className="h-4 w-4 md:mr-0" />
+                      <span className="hidden md:inline">Filtry</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="z-[100] w-80 border border-border bg-white p-4 shadow-lg "
+                    align="end"
+                    onInteractOutside={(event) => {
+                      const target = event.target as HTMLElement | null;
+                      if (
+                        target?.closest(
+                          "[data-radix-select-content], [data-radix-popper-content-wrapper]",
+                        )
+                      ) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Status</Label>
+                        <Select
+                          value={statusFilter}
+                          onValueChange={(v) =>
+                            setStatusFilter(v as "all" | Lead["leadStatus"])
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background">
+                            <SelectValue placeholder="Status" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[220] border bg-white shadow-md ">
+                            <SelectItem value="all">Všechny statusy</SelectItem>
+                            <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
+                            <SelectItem value="CONTACTED">
+                              KONTAKTOVÁNO
+                            </SelectItem>
+                            <SelectItem value="REPLIED">FOLLOW UP</SelectItem>
+                            <SelectItem value="MEETING_SET">
+                              KOMUNIKACE
+                            </SelectItem>
+                            <SelectItem value="CLOSED_WON">
+                              DOMLUVENO
+                            </SelectItem>
+                            <SelectItem value="BREAK_UP">BREAKUP</SelectItem>
+                            <SelectItem value="CLOSED_LOST">
+                              NEDOMLUVENO
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Datum</Label>
+                        <Select
+                          value={dateFilter}
+                          onValueChange={(v) =>
+                            setDateFilter(
+                              v as
+                                | "all"
+                                | "last_7_days"
+                                | "last_30_days"
+                                | "this_year",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background">
+                            <SelectValue placeholder="Čas" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[220] border bg-white shadow-md ">
+                            <SelectItem value="all">Všechny datumy</SelectItem>
+                            <SelectItem value="last_7_days">
+                              Posledních 7 dní
+                            </SelectItem>
+                            <SelectItem value="last_30_days">
+                              Posledních 30 dní
+                            </SelectItem>
+                            <SelectItem value="this_year">Tento rok</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Obor</Label>
+                        <Select value={tagFilter} onValueChange={setTagFilter}>
+                          <SelectTrigger className="h-9 w-full bg-background">
+                            <SelectValue placeholder="Obor" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[220] border border-border bg-white shadow-lg ">
+                            <SelectItem value="all">Všechny obory</SelectItem>
+                            {availableTags.map(({ tag, label, count }) => (
+                              <SelectItem key={tag} value={tag}>
+                                {label} ({count})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Zdroj</Label>
+                        <Select
+                          value={sourceFilter}
+                          onValueChange={(v) =>
+                            setSourceFilter(
+                              v as
+                                | "all"
+                                | "radar"
+                                | "ap_radar"
+                                | "full_auto"
+                                | "ap_sniper"
+                                | "sniper"
+                                | "manual",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background">
+                            <SelectValue placeholder="Zdroj" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[220] border border-border bg-white shadow-lg ">
+                            <SelectItem value="all">Všechny zdroje</SelectItem>
+                            <SelectItem value="radar">Radar</SelectItem>
+                            <SelectItem value="ap_radar">
+                              Autopilot Radar
+                            </SelectItem>
+                            <SelectItem value="full_auto">Full Auto</SelectItem>
+                            <SelectItem value="ap_sniper">
+                              Autopilot Sniper
+                            </SelectItem>
+                            <SelectItem value="sniper">Sniper</SelectItem>
+                            <SelectItem value="manual">Manuálně</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Řazení</Label>
+                        <Select
+                          value={sortBy}
+                          onValueChange={(v) =>
+                            setSortBy(
+                              v as
+                                | "newest"
+                                | "oldest"
+                                | "value_high"
+                                | "value_low",
+                            )
+                          }
+                        >
+                          <SelectTrigger className="h-9 w-full bg-background">
+                            <SelectValue placeholder="Řazení" />
+                          </SelectTrigger>
+                          <SelectContent className="z-[220] border bg-white shadow-md ">
+                            <SelectItem value="newest">
+                              Nejnovější (odesláno)
+                            </SelectItem>
+                            <SelectItem value="oldest">
+                              Nejstarší (odesláno)
+                            </SelectItem>
+                            <SelectItem value="value_high">
+                              Hodnota: nejvyšší
+                            </SelectItem>
+                            <SelectItem value="value_low">
+                              Hodnota: nejnižší
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                <SlidingViewToggle view={view} onChange={setView} />
+
                 <Button
+                  type="button"
                   size="sm"
-                  variant="outline"
-                  className="h-8 border-amber-300 bg-white px-2 text-[11px] font-semibold dark:bg-transparent sm:h-9 sm:px-3 sm:text-sm"
-                  disabled={isBulkRunning}
-                  onClick={() => {
-                    const ids = dueOutreachLeads
-                      .filter((l) => l.nextOutreachKind === "FOLLOW_UP")
-                      .map((l) => l.id);
-                    if (ids.length === 0) {
-                      toast.message("Žádný splatný follow-up.");
-                      return;
-                    }
-                    setSelectedLeads(ids);
-                    void handleBulkOutreach("FOLLOW_UP");
-                  }}
+                  className="hidden h-9 md:inline-flex"
+                  onClick={() => setIsNewDealOpen(true)}
                 >
-                  Follow-upy
-                </Button>
-                <Button
-                  size="sm"
-                  className="h-8 bg-orange-700 px-2 text-[11px] font-semibold text-white hover:bg-orange-800 sm:h-9 sm:px-3 sm:text-sm"
-                  disabled={isBulkRunning}
-                  onClick={() => {
-                    const ids = dueOutreachLeads
-                      .filter((l) => l.nextOutreachKind === "BREAKUP")
-                      .map((l) => l.id);
-                    if (ids.length === 0) {
-                      toast.message("Žádný splatný breakup.");
-                      return;
-                    }
-                    setSelectedLeads(ids);
-                    void handleBulkOutreach("BREAKUP");
-                  }}
-                >
-                  Breakupy
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nový deal
                 </Button>
               </div>
             </div>
           )}
-          
-          <div className="flex min-h-0 shrink-0 items-center rounded-2xl border border-border/60 bg-muted/40 p-1.5 shadow-none dark:bg-muted/20 md:p-3">
-            {selectedLeads.length > 0 ? (
-              <div className="flex w-full flex-col gap-2 rounded-md bg-blue-50 p-2 dark:bg-blue-900/20">
-                <div className="flex w-full flex-wrap items-center justify-between gap-2">
-                  <span className="px-2 text-sm font-semibold text-blue-700 dark:text-blue-300">
-                    Vybráno: {selectedLeads.length}
-                    {allFilteredSelected ? ` z ${totalItems}` : ""} firem
-                  </span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void handleBulkScrapeContacts()}
-                      disabled={isBulkRunning}
-                      className="border-blue-200 bg-background font-semibold text-blue-700 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-300 dark:hover:bg-blue-900/30"
-                    >
-                      <Globe className="mr-2 h-4 w-4" />
-                      Doplnit kontakty z webu
-                    </Button>
-                      <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void handleBulkOutreach("FOLLOW_UP")}
-                      disabled={isBulkRunning}
-                      className="border-amber-200 bg-background font-semibold text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300"
-                    >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Follow-up
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void handleBulkOutreach("BREAKUP")}
-                      disabled={isBulkRunning}
-                      className="border-orange-200 bg-background font-semibold text-orange-800 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300"
-                    >
-                      <Hand className="mr-2 h-4 w-4" />
-                      Breakup
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStartAutopilot()}
-                      disabled={isBulkRunning}
-                      className="bg-blue-600 font-semibold text-white hover:bg-blue-700"
-                    >
-                      <Rocket className="mr-2 h-4 w-4" />
-                      Spustit Autopilota
-                    </Button>
-                    <Select onValueChange={(v) => void handleBulkStatusUpdate(v as Lead["leadStatus"])} disabled={isBulkRunning}>
-                      <SelectTrigger className="h-8 w-[190px] bg-background">
-                        <SelectValue placeholder="Změnit status" />
-                      </SelectTrigger>
-                      <SelectContent className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                        <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
-                        <SelectItem value="CONTACTED">KONTAKTOVÁNO</SelectItem>
-                        <SelectItem value="REPLIED">FOLLOW UP</SelectItem>
-                        <SelectItem value="MEETING_SET">KOMUNIKACE</SelectItem>
-                        <SelectItem value="CLOSED_WON">DOMLUVENO</SelectItem>
-                        <SelectItem value="CLOSED_LOST">NEDOMLUVENO</SelectItem>
-                        <SelectItem value="BREAK_UP">BREAKUP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkDelete()}
-                      disabled={isBulkRunning}
-                      className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-900/30"
-                    >
-                      Odstranit vybrané
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearSelection}
-                      disabled={isBulkRunning}
-                      className="text-blue-700 hover:bg-blue-100/80 dark:text-blue-300 dark:hover:bg-blue-900/40"
-                    >
-                      Zrušit výběr
-                    </Button>
-                  </div>
-                </div>
-                {!allFilteredSelected && totalItems > selectedLeads.length && (
-                  <div className="flex flex-wrap items-center gap-2 border-t border-blue-200/70 px-2 pt-2 text-xs text-blue-800 dark:border-blue-800 dark:text-blue-200">
-                    <span>
-                      {allPageSelected
-                        ? `Vybraná je jen tato stránka (${paginatedLeads.length}).`
-                        : "Nejsou vybrané všechny firmy ve filtru."}
-                    </span>
-                    <button
-                      type="button"
-                      className="font-semibold underline underline-offset-2 hover:no-underline"
-                      onClick={selectAllFiltered}
-                    >
-                      Vybrat všech {totalItems} ve filtru
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex w-full items-center gap-1.5 md:flex-row md:justify-between md:gap-4">
-                <div className="relative min-w-0 flex-1 md:max-w-xs">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:h-4 md:w-4" />
-                  <Input 
-                    placeholder="Hledat firmu…" 
-                    className="h-9 border-0 bg-transparent pl-9 text-[15px] shadow-none focus-visible:ring-0 md:h-9 md:rounded-xl md:border md:border-border/50 md:bg-background md:pl-9 md:text-sm md:shadow-sm"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
+        </div>
 
-                <div className="flex shrink-0 items-center gap-1 md:gap-3">
-                  <Popover modal={false}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 w-9 shrink-0 rounded-xl p-0 text-muted-foreground md:h-9 md:w-auto md:px-3.5 md:text-sm"
-                      >
-                        <SlidersHorizontal className="h-4 w-4 md:mr-2" />
-                        <span className="hidden md:inline">Filtry</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="z-[100] w-80 border border-border bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-950"
-                      align="end"
-                      onInteractOutside={(event) => {
-                        const target = event.target as HTMLElement | null;
-                        if (
-                          target?.closest(
-                            "[data-radix-select-content], [data-radix-popper-content-wrapper]",
-                          )
-                        ) {
-                          event.preventDefault();
-                        }
-                      }}
-                    >
-                      <div className="flex flex-col gap-4">
-                        <div className="space-y-1.5">
-                          <Label>Status</Label>
-                          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "all" | Lead["leadStatus"])}>
-                            <SelectTrigger className="h-9 w-full bg-background">
-                              <SelectValue placeholder="Status" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
-                              <SelectItem value="all">Všechny statusy</SelectItem>
-                              <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
-                              <SelectItem value="CONTACTED">KONTAKTOVÁNO</SelectItem>
-                              <SelectItem value="REPLIED">FOLLOW UP</SelectItem>
-                              <SelectItem value="MEETING_SET">KOMUNIKACE</SelectItem>
-                              <SelectItem value="CLOSED_WON">DOMLUVENO</SelectItem>
-                              <SelectItem value="CLOSED_LOST">NEDOMLUVENO</SelectItem>
-                              <SelectItem value="BREAK_UP">BREAKUP</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label>Datum</Label>
-                          <Select value={dateFilter} onValueChange={(v) => setDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")}>
-                            <SelectTrigger className="h-9 w-full bg-background">
-                              <SelectValue placeholder="Čas" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
-                              <SelectItem value="all">Všechny datumy</SelectItem>
-                              <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-                              <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
-                              <SelectItem value="this_year">Tento rok</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label>Obor</Label>
-                          <Select value={tagFilter} onValueChange={setTagFilter}>
-                            <SelectTrigger className="h-9 w-full bg-background">
-                              <SelectValue placeholder="Obor" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[220] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-                              <SelectItem value="all">Všechny obory</SelectItem>
-                              {availableTags.map(({ tag, label, count }) => (
-                                <SelectItem key={tag} value={tag}>
-                                  {label} ({count})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label>Zdroj</Label>
-                          <Select
-                            value={sourceFilter}
-                            onValueChange={(v) =>
-                              setSourceFilter(
-                                v as
-                                  | "all"
-                                  | "radar"
-                                  | "ap_radar"
-                                  | "full_auto"
-                                  | "ap_sniper"
-                                  | "sniper"
-                                  | "manual",
-                              )
-                            }
-                          >
-                            <SelectTrigger className="h-9 w-full bg-background">
-                              <SelectValue placeholder="Zdroj" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[220] border border-border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-950">
-                              <SelectItem value="all">Všechny zdroje</SelectItem>
-                              <SelectItem value="radar">Radar</SelectItem>
-                              <SelectItem value="ap_radar">Autopilot Radar</SelectItem>
-                              <SelectItem value="full_auto">Full Auto</SelectItem>
-                              <SelectItem value="ap_sniper">Autopilot Sniper</SelectItem>
-                              <SelectItem value="sniper">Sniper</SelectItem>
-                              <SelectItem value="manual">Manuálně</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label>Řazení</Label>
-                          <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "oldest" | "value_high" | "value_low")}>
-                            <SelectTrigger className="h-9 w-full bg-background">
-                              <SelectValue placeholder="Řazení" />
-                            </SelectTrigger>
-                            <SelectContent className="z-[220] border bg-white shadow-md dark:bg-zinc-950">
-                              <SelectItem value="newest">Nejnovější (odesláno)</SelectItem>
-                              <SelectItem value="oldest">Nejstarší (odesláno)</SelectItem>
-                              <SelectItem value="value_high">Hodnota: nejvyšší</SelectItem>
-                              <SelectItem value="value_low">Hodnota: nejnižší</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <SlidingViewToggle view={view} onChange={setView} />
-
-                  <Button
-                    type="button"
-                    className="hidden h-9 rounded-xl px-4 text-sm md:inline-flex"
-                    onClick={() => setIsNewDealOpen(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nový deal
-                  </Button>
-                </div>
-              </div>
+        {boardMounted && (
+          <div
+            className={cn(
+              "flex min-h-0 w-full flex-1 flex-col overflow-x-visible overflow-y-hidden",
+              view !== "board" && "hidden",
             )}
-          </div>
-
-          {boardMounted && (
-            <div
-              className={cn(
-                "flex min-h-0 w-full flex-1 flex-col overflow-x-visible overflow-y-hidden",
-                view !== "board" && "hidden",
-              )}
-              aria-hidden={view !== "board"}
-            >
+            aria-hidden={view !== "board"}
+          >
             <CrmKanbanBoard
               columns={COLUMNS}
               leads={filteredLeads}
@@ -1300,475 +1489,297 @@ function CrmPageContent() {
                 const companyWeb = leadFullWebsiteUrl(lead.url);
 
                 return (
-                <div
-                  ref={!overlay && drag ? drag.ref : undefined}
-                  style={!overlay ? drag?.style : undefined}
-                  {...(!overlay && drag ? drag.listeners : {})}
-                  {...(!overlay && drag ? drag.attributes : {})}
-                  className={cn(
-                    "sk-data-row group h-full w-full min-w-0 flex-col gap-1.5 !p-2.5 touch-none transition-opacity sm:!p-3",
-                    !overlay &&
-                      "cursor-grab active:cursor-grabbing hover:brightness-[0.98]",
-                    overlay &&
-                      "cursor-grabbing opacity-70 ring-2 ring-blue-500/25 grayscale-[20%]",
-                    drag?.isDragging && "opacity-40 grayscale-[35%]",
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-1.5">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <CompanyAvatar
-                        name={lead.company}
-                        initials={lead.avatar}
-                        faviconUrl={lead.faviconUrl}
-                        sizeClassName="h-7 w-7"
-                        textClassName="text-[9px]"
-                      />
-                      <div className="min-w-0">
-                        <h4 className="mb-0.5 truncate text-[13px] font-bold leading-tight text-foreground">
-                          {lead.company}
-                        </h4>
-                        {(() => {
-                          const { sourceLabel, authorLabel } = leadProvenanceParts(
-                            lead.source,
-                            lead.author,
-                            lead.contactedVia,
-                          );
-                          if (!sourceLabel && !authorLabel) return null;
-                          return (
-                            <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
-                              {sourceLabel}
-                              {authorLabel ? (
-                                <>
-                                  {" · "}
-                                  <span className="font-semibold text-foreground/80">{authorLabel}</span>
-                                </>
-                              ) : null}
-                            </p>
-                          );
-                        })()}
-                        {companyWeb ? (
-                        <a
-                          href={companyWeb}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center text-[9px] text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors truncate"
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <Globe className="mr-1 h-2.5 w-2.5 shrink-0" />
-                          <span className="truncate">{lead.url}</span>
-                        </a>
-                        ) : (
-                          <span className="flex items-center text-[9px] text-muted-foreground truncate">
-                            <Globe className="mr-1 h-2.5 w-2.5 shrink-0 opacity-50" />
-                            –
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground p-1 hover:bg-muted rounded-md"
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950"
-                      >
-                        <DropdownMenuItem onClick={() => onEdit()}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Upravit deal
-                        </DropdownMenuItem>
-                        {(lead.lastContactedAt || lead.contactedVia) && (
-                          <DropdownMenuItem
-                            disabled={isLoadingSentEmails}
-                            onClick={() => void handleViewSentEmails(lead)}
-                            className="whitespace-nowrap"
-                          >
-                            <Mail className="mr-2 h-4 w-4 shrink-0" />
-                            Zobrazit odeslaný e-mail
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem asChild>
-                          <Link href={buildSniperLeadHref(lead)} className="flex cursor-pointer items-center">
-                            <Target className="mr-2 h-4 w-4" />
-                            Odeslat do Snipera
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
-                        >
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Poslat follow-up
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
-                        >
-                          <Hand className="mr-2 h-4 w-4" />
-                          Poslat breakup
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onDelete()}
-                          className="text-red-600 focus:text-red-700"
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          Smazat
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="mt-0.5 flex items-center justify-between gap-2 pt-1.5">
-                    <div className="flex min-w-0 flex-col gap-0.5">
-                      {(() => {
-                        const d = leadPrimaryDateLabel(lead);
-                        return (
-                          <div
-                            className="flex items-center truncate text-[10px] font-medium text-muted-foreground"
-                            title={d.title}
-                          >
-                            {d.isSent ? (
-                              <Mail className="mr-1 h-3 w-3 shrink-0" />
-                            ) : (
-                              <Calendar className="mr-1 h-3 w-3 shrink-0" />
-                            )}
-                            <span className="truncate">{d.label}</span>
-                          </div>
-                        );
-                      })()}
-                      {lead.outreachDue && lead.nextOutreachKind ? (
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                          {OUTREACH_KIND_LABELS[lead.nextOutreachKind]} splatný
-                        </span>
-                      ) : null}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          className={cn(
-                            "shrink-0 cursor-pointer rounded-md border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-opacity hover:opacity-80",
-                            col.color,
-                          )}
-                          onPointerDown={(e) => e.stopPropagation()}
-                        >
-                          {col.title}
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                        <DropdownMenuItem onClick={() => onQuickStatus("NEW")}>NOVÝ LEAD</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("CONTACTED")}>
-                          KONTAKTOVÁNO
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("REPLIED")}>FOLLOW UP</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("MEETING_SET")}>
-                          KOMUNIKACE
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("CLOSED_LOST")}>
-                          NEDOMLUVENO
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onQuickStatus("BREAK_UP")}>BREAKUP</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-                );
-              }}
-            />
-            </div>
-          )}
-
-          <div
-            className={cn(
-              "sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm",
-              view !== "list" && "hidden",
-            )}
-            aria-hidden={view !== "list"}
-          >
-              {/* Mobile native list — karty: celý název + email/telefon na vlastních řádcích */}
-              <div className="sk-data-panel__scroll--mobile flex min-h-0 flex-1 flex-col overflow-y-auto scrollbar-hide md:hidden">
-                {paginatedLeads.map((lead) => {
-                  const companyWeb = leadFullWebsiteUrl(lead.url);
-                  const emailTrim = (lead.email ?? "").trim();
-                  const phoneTrim = (lead.phone ?? "").trim();
-                  const needsContactScrape = Boolean(companyWeb) && (!emailTrim || !phoneTrim);
-                  const { sourceLabel, authorLabel } = leadProvenanceParts(
-                    lead.source,
-                    lead.author,
-                    lead.contactedVia,
-                  );
-                  return (
-                    <div
-                      key={lead.id}
-                      className="sk-data-row active:opacity-90"
-                    >
-                      <Checkbox
-                        checked={selectedLeads.includes(lead.id)}
-                        onCheckedChange={() => toggleRowSelection(lead.id)}
-                        className="mt-1 shrink-0"
-                      />
-                      <CompanyAvatar
-                        name={lead.company}
-                        initials={lead.avatar}
-                        faviconUrl={lead.faviconUrl}
-                        shape="circle"
-                        sizeClassName="mt-0.5 h-9 w-9"
-                        textClassName="text-[10px]"
-                      />
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-start gap-2">
-                          <p className="min-w-0 flex-1 break-words text-[14px] font-semibold leading-snug text-foreground">
+                  <div
+                    ref={!overlay && drag ? drag.ref : undefined}
+                    style={!overlay ? drag?.style : undefined}
+                    {...(!overlay && drag ? drag.listeners : {})}
+                    {...(!overlay && drag ? drag.attributes : {})}
+                    className={cn(
+                      "sk-data-row group h-full w-full min-w-0 flex-col gap-1.5 !p-2.5 touch-none transition-opacity sm:!p-3",
+                      !overlay &&
+                        "cursor-grab active:cursor-grabbing hover:brightness-[0.98]",
+                      overlay &&
+                        "cursor-grabbing opacity-70 ring-2 ring-blue-500/25 grayscale-[20%]",
+                      drag?.isDragging && "opacity-40 grayscale-[35%]",
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CompanyAvatar
+                          name={lead.company}
+                          initials={lead.avatar}
+                          faviconUrl={lead.faviconUrl}
+                          sizeClassName="h-7 w-7"
+                          textClassName="text-[9px]"
+                        />
+                        <div className="min-w-0">
+                          <h4 className="mb-0.5 truncate text-[13px] font-bold leading-tight text-foreground">
                             {lead.company}
-                          </p>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className={cn(
-                                  "mt-0.5 shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide",
-                                  statusColorMap[lead.status],
-                                )}
-                              >
-                                {statusLabelMap[lead.status]}
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "BREAK_UP")}>BREAKUP</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {(sourceLabel || authorLabel) && (
-                          <p className="text-[10px] leading-snug text-muted-foreground">
-                            {sourceLabel}
-                            {authorLabel ? (
-                              <>
-                                {" · "}
-                                <span className="font-semibold text-foreground/80">{authorLabel}</span>
-                              </>
-                            ) : null}
-                          </p>
-                        )}
-
-                        {emailTrim ? (
-                          <div className="flex items-start gap-1">
-                            <CopyEmailButton email={emailTrim} size="sm" variant="ghost" />
+                          </h4>
+                          {(() => {
+                            const { sourceLabel, authorLabel } =
+                              leadProvenanceParts(
+                                lead.source,
+                                lead.author,
+                                lead.contactedVia,
+                              );
+                            if (!sourceLabel && !authorLabel) return null;
+                            return (
+                              <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
+                                {sourceLabel}
+                                {authorLabel ? (
+                                  <>
+                                    {" · "}
+                                    <span className="font-semibold text-foreground/80">
+                                      {authorLabel}
+                                    </span>
+                                  </>
+                                ) : null}
+                              </p>
+                            );
+                          })()}
+                          {companyWeb ? (
                             <a
-                              href={`mailto:${emailTrim}`}
-                              className="min-w-0 flex-1 break-all text-[12px] leading-snug text-foreground/90 underline-offset-2 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
+                              href={companyWeb}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center text-[9px] text-muted-foreground hover:text-blue-600 transition-colors truncate"
+                              onPointerDown={(e) => e.stopPropagation()}
                             >
-                              {emailTrim}
+                              <Globe className="mr-1 h-2.5 w-2.5 shrink-0" />
+                              <span className="truncate">{lead.url}</span>
                             </a>
-                          </div>
-                        ) : (
-                          <p className="text-[12px] leading-snug text-muted-foreground">Bez e-mailu</p>
-                        )}
-
-                        {phoneTrim ? (
-                          <a
-                            href={`tel:${phoneTrim.replace(/\s+/g, "")}`}
-                            className="block break-all text-[12px] leading-snug text-foreground/90 underline-offset-2 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
+                          ) : (
+                            <span className="flex items-center text-[9px] text-muted-foreground truncate">
+                              <Globe className="mr-1 h-2.5 w-2.5 shrink-0 opacity-50" />
+                              –
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground p-1 hover:bg-muted rounded-md"
+                            onPointerDown={(e) => e.stopPropagation()}
                           >
-                            {phoneTrim}
-                          </a>
-                        ) : (
-                          <p className="text-[12px] leading-snug text-muted-foreground">Bez telefonu</p>
-                        )}
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="z-50 min-w-[15.5rem] border bg-white shadow-md "
+                        >
+                          <DropdownMenuItem onClick={() => onEdit()}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Upravit deal
+                          </DropdownMenuItem>
+                          {(lead.lastContactedAt || lead.contactedVia) && (
+                            <DropdownMenuItem
+                              disabled={isLoadingSentEmails}
+                              onClick={() => void handleViewSentEmails(lead)}
+                              className="whitespace-nowrap"
+                            >
+                              <Mail className="mr-2 h-4 w-4 shrink-0" />
+                              Zobrazit odeslaný e-mail
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={buildSniperLeadHref(lead)}
+                              className="flex cursor-pointer items-center"
+                            >
+                              <Target className="mr-2 h-4 w-4" />
+                              Odeslat do Snipera
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              void handleSendOutreach(lead.id, "FOLLOW_UP")
+                            }
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Poslat follow-up
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              void handleSendOutreach(lead.id, "BREAKUP")
+                            }
+                          >
+                            <Hand className="mr-2 h-4 w-4" />
+                            Poslat breakup
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onDelete()}
+                            className="text-red-600 focus:text-red-700"
+                          >
+                            <Trash className="mr-2 h-4 w-4" />
+                            Smazat
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
+                    <div className="mt-0.5 flex items-center justify-between gap-2 pt-1.5">
+                      <div className="flex min-w-0 flex-col gap-0.5">
                         {(() => {
                           const d = leadPrimaryDateLabel(lead);
                           return (
-                            <p
-                              className="pt-0.5 text-[11px] font-medium text-muted-foreground"
+                            <div
+                              className="flex items-center truncate text-[10px] font-medium text-muted-foreground"
                               title={d.title}
                             >
-                              {d.label}
-                            </p>
+                              {d.isSent ? (
+                                <Mail className="mr-1 h-3 w-3 shrink-0" />
+                              ) : (
+                                <Calendar className="mr-1 h-3 w-3 shrink-0" />
+                              )}
+                              <span className="truncate">{d.label}</span>
+                            </div>
                           );
                         })()}
-
-                        <div className="-ml-1 flex flex-wrap items-center gap-0.5 pt-0.5">
-                          {needsContactScrape ? (
-                            <ScrapeContactButton
-                              isLoading={scrapingLeadIds.includes(lead.id)}
-                              disabled={isBulkRunning}
-                              onClick={() => void handleScrapeLeadContacts(lead)}
-                              variant="ghost"
-                              className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50"
-                            />
-                          ) : null}
-                          <Button
-                            asChild
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 rounded-full p-0 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/50"
-                            title="Sniper"
-                          >
-                            <Link href={buildSniperLeadHref(lead)}>
-                              <Send className="h-3.5 w-3.5" />
-                            </Link>
-                          </Button>
-                          {companyWeb ? (
-                            <WebsiteVisitedGlobeButton
-                              visited={lead.websiteVisited}
-                              visitedBy={lead.websiteVisitedBy}
-                              onOpen={() => handleOpenWebsite(lead, companyWeb)}
-                              size="sm"
-                            />
-                          ) : null}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(lead)}
-                            className="h-8 w-8 rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            title="Upravit deal"
-                            aria-label="Upravit deal"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0 text-muted-foreground">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950">
-                              {needsContactScrape ? (
-                                <DropdownMenuItem
-                                  disabled={scrapingLeadIds.includes(lead.id)}
-                                  onClick={() => void handleScrapeLeadContacts(lead)}
-                                >
-                                  <ScanSearch className="mr-2 h-4 w-4" />
-                                  Doplnit kontakt z webu
-                                </DropdownMenuItem>
-                              ) : null}
-                              {(lead.lastContactedAt || lead.contactedVia) && (
-                                <DropdownMenuItem
-                                  disabled={isLoadingSentEmails}
-                                  onClick={() => void handleViewSentEmails(lead)}
-                                  className="whitespace-nowrap"
-                                >
-                                  <Mail className="mr-2 h-4 w-4 shrink-0" />
-                                  Zobrazit odeslaný e-mail
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Poslat follow-up
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}>
-                                <Hand className="mr-2 h-4 w-4" />
-                                Poslat breakup
-                              </DropdownMenuItem>
-                              {companyWeb ? (
-                                <DropdownMenuItem onClick={() => handleOpenWebsite(lead, companyWeb)}>
-                                  <Globe
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      lead.websiteVisited && "text-emerald-600 dark:text-emerald-400",
-                                    )}
-                                  />
-                                  {lead.websiteVisited
-                                    ? `Web prohlédnut${
-                                        shortLeadAuthorName(lead.websiteVisitedBy)
-                                          ? ` · ${shortLeadAuthorName(lead.websiteVisitedBy)}`
-                                          : ""
-                                      }`
-                                    : "Otevřít web"}
-                                </DropdownMenuItem>
-                              ) : null}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => handleDeleteSingleLead(lead.id)}
-                                className="text-red-600 focus:text-red-700"
-                              >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Smazat
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
+                        {lead.outreachDue && lead.nextOutreachKind ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wide text-amber-700 ">
+                            {OUTREACH_KIND_LABELS[lead.nextOutreachKind]}{" "}
+                            splatný
+                          </span>
+                        ) : null}
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              "sk-crm-status-pill shrink-0 cursor-pointer rounded-md border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest transition-opacity hover:opacity-80",
+                              col.color,
+                            )}
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            {col.title}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="z-50 border bg-white shadow-md "
+                        >
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("NEW")}
+                          >
+                            NOVÝ LEAD
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("CONTACTED")}
+                          >
+                            KONTAKTOVÁNO
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("REPLIED")}
+                          >
+                            FOLLOW UP
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("MEETING_SET")}
+                          >
+                            KOMUNIKACE
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("CLOSED_WON")}
+                          >
+                            DOMLUVENO
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("BREAK_UP")}
+                          >
+                            BREAKUP
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onQuickStatus("CLOSED_LOST")}
+                          >
+                            NEDOMLUVENO
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  );
-                })}
-                {!isLoading && paginatedLeads.length === 0 && (
-                  <div className="flex min-h-[50vh] flex-1 items-center justify-center text-sm text-muted-foreground">
-                    Žádné firmy neodpovídají hledání.
                   </div>
-                )}
-                {isLoading && (
-                  <div className="flex min-h-[50vh] flex-1 items-center justify-center text-sm text-muted-foreground">
-                    Načítám dealy...
-                  </div>
-                )}
-              </div>
+                );
+              }}
+            />
+          </div>
+        )}
 
-              {/* Desktop table */}
-              {isLoading ? (
-                <div className="hidden min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground md:flex">
-                  Načítám dealy...
-                </div>
-              ) : (
-              <div className="sk-data-panel__scroll hidden min-h-0 flex-1 overflow-y-auto overflow-x-hidden md:block [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <table className="w-full table-fixed text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
-                      <th className="sticky top-0 z-10 w-[44px] bg-transparent px-3 py-3 text-center font-semibold">
-                        <div className="flex justify-center">
-                          <Checkbox
-                            checked={
-                              allFilteredSelected
+        <div
+          className={cn(
+            "sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm",
+            view !== "list" && "hidden",
+          )}
+          aria-hidden={view !== "list"}
+        >
+          {/* Desktop table */}
+          {isLoading ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
+              Načítám dealy...
+            </div>
+          ) : (
+            <div className="sk-data-panel__scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <table className="w-full table-fixed text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="sticky top-0 z-10 w-[44px] bg-transparent px-3 py-3 text-center font-semibold">
+                      <div className="flex justify-center">
+                        <Checkbox
+                          checked={
+                            allFilteredSelected
+                              ? true
+                              : allPageSelected
                                 ? true
-                                : allPageSelected
-                                  ? true
-                                  : somePageSelected
-                                    ? "indeterminate"
-                                    : false
+                                : somePageSelected
+                                  ? "indeterminate"
+                                  : false
+                          }
+                          onCheckedChange={() => {
+                            if (allFilteredSelected || allPageSelected) {
+                              clearSelection();
+                            } else {
+                              toggleAllOnPage();
                             }
-                            onCheckedChange={() => {
-                              if (allFilteredSelected || allPageSelected) {
-                                clearSelection();
-                              } else {
-                                toggleAllOnPage();
-                              }
-                            }}
-                            aria-label="Vybrat vše na stránce"
-                          />
-                        </div>
-                      </th>
-                      <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[34%]">Firma</th>
-                      <th className="sticky top-0 z-10 w-[7.25rem] bg-transparent px-2 py-3 font-semibold">Datum</th>
-                      <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[24%] min-w-0">KONTAKT</th>
-                      <th className="sticky top-0 z-10 min-w-[9.75rem] bg-transparent px-3 py-3 pl-3 font-semibold w-[14%]">Status</th>
-                      <th className="sticky top-0 z-10 w-[10.5rem] bg-transparent px-2 py-3 pl-2 text-right font-semibold">Akce</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedLeads.map((lead) => {
-                      const companyWeb = leadFullWebsiteUrl(lead.url);
-                      const emailTrim = (lead.email ?? "").trim();
-                      const phoneTrim = (lead.phone ?? "").trim();
-                      return (
+                          }}
+                          aria-label="Vybrat vše na stránce"
+                        />
+                      </div>
+                    </th>
+                    <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[34%]">
+                      Firma
+                    </th>
+                    <th className="sticky top-0 z-10 w-[7.25rem] bg-transparent px-2 py-3 font-semibold">
+                      Datum
+                    </th>
+                    <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[24%] min-w-0">
+                      KONTAKT
+                    </th>
+                    <th className="sticky top-0 z-10 min-w-[9.75rem] bg-transparent px-3 py-3 pl-3 font-semibold w-[14%]">
+                      Status
+                    </th>
+                    <th className="sticky top-0 z-10 w-[10.5rem] bg-transparent px-2 py-3 pl-2 text-left font-semibold">
+                      Akce
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedLeads.map((lead) => {
+                    const companyWeb = leadFullWebsiteUrl(lead.url);
+                    const emailTrim = (lead.email ?? "").trim();
+                    const phoneTrim = (lead.phone ?? "").trim();
+                    return (
                       <tr key={lead.id}>
                         <td className="px-3 py-3 text-center">
                           <div className="flex justify-center">
                             <Checkbox
                               checked={selectedLeads.includes(lead.id)}
-                              onCheckedChange={() => toggleRowSelection(lead.id)}
+                              onCheckedChange={() =>
+                                toggleRowSelection(lead.id)
+                              }
                             />
                           </div>
                         </td>
@@ -1782,19 +1793,28 @@ function CrmPageContent() {
                               textClassName="text-[10px]"
                             />
                             <div className="min-w-0 flex-1">
-                              <p className="truncate font-semibold text-foreground" title={lead.company}>
+                              <p
+                                className="truncate font-semibold text-foreground"
+                                title={lead.company}
+                              >
                                 {lead.company}
                               </p>
                               {(() => {
-                                const { sourceLabel, authorLabel } = leadProvenanceParts(
-                                  lead.source,
-                                  lead.author,
-                                  lead.contactedVia,
-                                );
+                                const { sourceLabel, authorLabel } =
+                                  leadProvenanceParts(
+                                    lead.source,
+                                    lead.author,
+                                    lead.contactedVia,
+                                  );
                                 if (!sourceLabel && !authorLabel) return null;
-                                const provenance = [sourceLabel, authorLabel].filter(Boolean).join(" · ");
+                                const provenance = [sourceLabel, authorLabel]
+                                  .filter(Boolean)
+                                  .join(" · ");
                                 return (
-                                  <p className="truncate text-xs text-muted-foreground" title={provenance}>
+                                  <p
+                                    className="truncate text-xs text-muted-foreground"
+                                    title={provenance}
+                                  >
                                     {sourceLabel}
                                     {authorLabel ? (
                                       <>
@@ -1814,7 +1834,10 @@ function CrmPageContent() {
                           {(() => {
                             const d = leadPrimaryDateLabel(lead);
                             return (
-                              <div className="min-w-0 max-w-full leading-tight" title={d.title}>
+                              <div
+                                className="min-w-0 max-w-full leading-tight"
+                                title={d.title}
+                              >
                                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                                   {d.kindLine}
                                 </p>
@@ -1844,7 +1867,9 @@ function CrmPageContent() {
                               <p
                                 className={cn(
                                   "truncate text-sm leading-snug",
-                                  emailTrim ? "text-foreground" : "text-muted-foreground",
+                                  emailTrim
+                                    ? "text-foreground"
+                                    : "text-muted-foreground",
                                 )}
                                 title={emailTrim || undefined}
                               >
@@ -1867,8 +1892,10 @@ function CrmPageContent() {
                               <ScrapeContactButton
                                 isLoading={scrapingLeadIds.includes(lead.id)}
                                 disabled={isBulkRunning}
-                                onClick={() => void handleScrapeLeadContacts(lead)}
-                                className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300"
+                                onClick={() =>
+                                  void handleScrapeLeadContacts(lead)
+                                }
+                                className="mt-0.5 h-8 w-8 shrink-0 rounded-lg border-border/60 p-0 text-muted-foreground hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 "
                               />
                             ) : null}
                           </div>
@@ -1879,31 +1906,76 @@ function CrmPageContent() {
                               <button
                                 type="button"
                                 className={cn(
-                                  "inline-flex shrink-0 items-center whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide hover:opacity-80 transition-opacity cursor-pointer",
+                                  "sk-crm-status-pill inline-flex shrink-0 items-center whitespace-nowrap rounded-md border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition-opacity hover:opacity-80 cursor-pointer",
                                   statusColorMap[lead.status],
                                 )}
                               >
                                 {statusLabelMap[lead.status]}
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="z-50 border bg-white shadow-md dark:bg-zinc-950">
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "NEW")}>NOVÝ LEAD</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CONTACTED")}>KONTAKTOVÁNO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "REPLIED")}>FOLLOW UP</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "MEETING_SET")}>KOMUNIKACE</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_WON")}>DOMLUVENO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "CLOSED_LOST")}>NEDOMLUVENO</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => void handleQuickStatus(lead.id, "BREAK_UP")}>BREAKUP</DropdownMenuItem>
+                            <DropdownMenuContent
+                              align="start"
+                              className="z-50 border bg-white shadow-md "
+                            >
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "NEW")
+                                }
+                              >
+                                NOVÝ LEAD
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "CONTACTED")
+                                }
+                              >
+                                KONTAKTOVÁNO
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "REPLIED")
+                                }
+                              >
+                                FOLLOW UP
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "MEETING_SET")
+                                }
+                              >
+                                KOMUNIKACE
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "CLOSED_WON")
+                                }
+                              >
+                                DOMLUVENO
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "BREAK_UP")
+                                }
+                              >
+                                BREAKUP
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  void handleQuickStatus(lead.id, "CLOSED_LOST")
+                                }
+                              >
+                                NEDOMLUVENO
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
-                        <td className="w-[10.5rem] px-2 py-3 pl-2 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="w-[10.5rem] px-2 py-3 pl-2 text-left whitespace-nowrap">
+                          <div className="flex items-center justify-start gap-1.5">
                             <Button
                               asChild
                               variant="outline"
                               size="sm"
-                              className="h-8 w-8 shrink-0 rounded-lg border-blue-200 bg-blue-50 p-0 text-blue-700 shadow-sm hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-200"
+                              className="sk-row-icon-btn h-8 w-8 shrink-0 rounded-lg border-blue-200 bg-blue-50 p-0 text-blue-700 shadow-sm hover:translate-y-0 hover:bg-blue-100 hover:text-blue-800"
                             >
                               <Link
                                 href={buildSniperLeadHref(lead)}
@@ -1918,7 +1990,9 @@ function CrmPageContent() {
                               <WebsiteVisitedGlobeButton
                                 visited={lead.websiteVisited}
                                 visitedBy={lead.websiteVisitedBy}
-                                onOpen={() => handleOpenWebsite(lead, companyWeb)}
+                                onOpen={() =>
+                                  handleOpenWebsite(lead, companyWeb)
+                                }
                                 size="md"
                               />
                             ) : null}
@@ -1927,7 +2001,7 @@ function CrmPageContent() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenEdit(lead)}
-                              className="h-8 w-8 shrink-0 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:bg-muted hover:text-foreground"
+                              className="sk-row-icon-btn h-8 w-8 shrink-0 rounded-lg border-border/60 bg-background p-0 text-muted-foreground shadow-sm hover:translate-y-0 hover:bg-muted hover:text-foreground"
                               title="Upravit deal"
                               aria-label="Upravit deal"
                             >
@@ -1935,24 +2009,36 @@ function CrmPageContent() {
                             </Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 px-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="sk-row-icon-btn h-8 px-2 hover:translate-y-0"
+                                >
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="z-50 min-w-[15.5rem] border bg-white shadow-md dark:bg-zinc-950">
+                              <DropdownMenuContent
+                                align="end"
+                                className="z-50 min-w-[15.5rem] border bg-white shadow-md "
+                              >
                                 {companyWeb && (!emailTrim || !phoneTrim) ? (
                                   <DropdownMenuItem
                                     disabled={scrapingLeadIds.includes(lead.id)}
-                                    onClick={() => void handleScrapeLeadContacts(lead)}
+                                    onClick={() =>
+                                      void handleScrapeLeadContacts(lead)
+                                    }
                                   >
                                     <ScanSearch className="mr-2 h-4 w-4" />
                                     Doplnit kontakt z webu
                                   </DropdownMenuItem>
                                 ) : null}
-                                {(lead.lastContactedAt || lead.contactedVia) && (
+                                {(lead.lastContactedAt ||
+                                  lead.contactedVia) && (
                                   <DropdownMenuItem
                                     disabled={isLoadingSentEmails}
-                                    onClick={() => void handleViewSentEmails(lead)}
+                                    onClick={() =>
+                                      void handleViewSentEmails(lead)
+                                    }
                                     className="whitespace-nowrap"
                                   >
                                     <Mail className="mr-2 h-4 w-4 shrink-0" />
@@ -1960,20 +2046,29 @@ function CrmPageContent() {
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
-                                  onClick={() => void handleSendOutreach(lead.id, "FOLLOW_UP")}
+                                  onClick={() =>
+                                    void handleSendOutreach(
+                                      lead.id,
+                                      "FOLLOW_UP",
+                                    )
+                                  }
                                 >
                                   <RefreshCw className="mr-2 h-4 w-4" />
                                   Poslat follow-up
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  onClick={() => void handleSendOutreach(lead.id, "BREAKUP")}
+                                  onClick={() =>
+                                    void handleSendOutreach(lead.id, "BREAKUP")
+                                  }
                                 >
                                   <Hand className="mr-2 h-4 w-4" />
                                   Poslat breakup
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  onClick={() => handleDeleteSingleLead(lead.id)}
+                                  onClick={() =>
+                                    handleDeleteSingleLead(lead.id)
+                                  }
                                   className="text-red-600 focus:text-red-700"
                                 >
                                   <Trash className="mr-2 h-4 w-4" />
@@ -1984,149 +2079,167 @@ function CrmPageContent() {
                           </div>
                         </td>
                       </tr>
-                      );
-                    })}
-                    {!isLoading && paginatedLeads.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="p-0">
-                          <div className="flex min-h-[min(50vh,28rem)] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
-                            Žádné firmy neodpovídají hledání.
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              )}
-
-              <div className="sk-pager mt-0 flex shrink-0 items-center justify-between gap-2 border-0 bg-transparent px-3 py-2 md:gap-3 md:px-4 md:py-2.5">
-                <p className="text-[11px] leading-none text-muted-foreground md:text-xs">
-                  <span className="md:hidden">{shownFrom}–{shownTo} / {totalItems}</span>
-                  <span className="hidden md:inline">
-                    Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
-                  </span>
-                </p>
-                <div className="flex items-center gap-0.5 md:gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={safePage <= 1}
-                  >
-                    <ChevronLeft className="!size-3.5 shrink-0" />
-                    <span className="hidden md:inline">Předchozí</span>
-                  </Button>
-                  <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground md:text-xs">
-                    {safePage}/{totalPages}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={safePage >= totalPages}
-                  >
-                    <span className="hidden md:inline">Následující</span>
-                    <ChevronRight className="!size-3.5 shrink-0" />
-                  </Button>
-                </div>
-              </div>
+                    );
+                  })}
+                  {!isLoading && paginatedLeads.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="p-0">
+                        <div className="flex min-h-[min(50vh,28rem)] w-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                          Žádné firmy neodpovídají hledání.
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
+          )}
 
-        </div>
-
-        <Dialog
-          open={!!editingLead}
-          onOpenChange={(open) => {
-            if (!open) setEditingLead(null);
-          }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Upravit deal</DialogTitle>
-              <DialogDescription>
-                Upravte detaily firmy a hodnotu dealu.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Název firmy</Label>
-                <Input
-                  value={editForm.company}
-                  onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
-                  placeholder="Název firmy"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Webová adresa (url)</Label>
-                <Input
-                  value={editForm.url}
-                  onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
-                  placeholder="např. example.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>E-mail</Label>
-                <Input
-                  value={editForm.contactEmail}
-                  onChange={(e) => setEditForm({ ...editForm, contactEmail: e.target.value })}
-                  placeholder="např. info@example.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Telefon</Label>
-                <Input
-                  value={editForm.contactPhone}
-                  onChange={(e) => setEditForm({ ...editForm, contactPhone: e.target.value })}
-                  placeholder="např. +420 123 456 789"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Hodnota dealu</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={editForm.value}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, value: Number(e.target.value) || 0 })
-                  }
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-6 border-t border-border/40 mt-4">
-              <Button type="button" variant="outline" onClick={() => setEditingLead(null)}>
-                Zrušit
-              </Button>
+          <div className="sk-pager mt-0 flex shrink-0 items-center justify-between gap-2 border-0 bg-transparent px-3 py-2 md:gap-3 md:px-4 md:py-2.5">
+            <p className="text-xs leading-none text-muted-foreground">
+              Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+            </p>
+            <div className="flex items-center gap-0.5 md:gap-1">
               <Button
                 type="button"
-                onClick={handleSaveDialog}
-                disabled={isSaving}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                variant="ghost"
+                size="sm"
+                className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
               >
-                {isSaving ? "Ukládám..." : "Uložit změny"}
+                <ChevronLeft className="!size-3.5 shrink-0" />
+                Předchozí
+              </Button>
+              <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground md:text-xs">
+                {safePage}/{totalPages}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="sk-pager-btn h-7 gap-0.5 rounded-lg px-1.5 text-[11px] font-medium text-muted-foreground shadow-none hover:text-foreground md:px-2 md:text-xs"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages, p + 1))
+                }
+                disabled={safePage >= totalPages}
+              >
+                Následující
+                <ChevronRight className="!size-3.5 shrink-0" />
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
+      </div>
 
-        <Dialog
-          open={sentEmailPreview !== null}
-          onOpenChange={(open) => {
-            if (!open) setSentEmailPreview(null);
-          }}
-        >
-          <DialogContent className="flex max-h-[88vh] w-full max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl">
-            {sentEmailPreview && (() => {
+      <Dialog
+        open={!!editingLead}
+        onOpenChange={(open) => {
+          if (!open) setEditingLead(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upravit deal</DialogTitle>
+            <DialogDescription>
+              Upravte detaily firmy a hodnotu dealu.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="sk-fields">
+            <div className="space-y-1.5">
+              <Label>Název firmy</Label>
+              <Input
+                value={editForm.company}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, company: e.target.value })
+                }
+                placeholder="Název firmy"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Webová adresa (url)</Label>
+              <Input
+                value={editForm.url}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, url: e.target.value })
+                }
+                placeholder="např. example.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>E-mail</Label>
+              <Input
+                value={editForm.contactEmail}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, contactEmail: e.target.value })
+                }
+                placeholder="např. info@example.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefon</Label>
+              <Input
+                value={editForm.contactPhone}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, contactPhone: e.target.value })
+                }
+                placeholder="např. +420 123 456 789"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Odhadovaná hodnota (Kč)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={editForm.value}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    value: Number(e.target.value) || 0,
+                  })
+                }
+                placeholder="0"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Odhadovaná cena zakázky. Ve fázích nahoře se sčítá automaticky.
+              </p>
+            </div>
+          </div>
+
+          <div className="sk-dialog-actions gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setEditingLead(null)}
+            >
+              Zrušit
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleSaveDialog}
+              disabled={isSaving}
+            >
+              {isSaving ? "Ukládám..." : "Uložit změny"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={sentEmailPreview !== null}
+        onOpenChange={(open) => {
+          if (!open) setSentEmailPreview(null);
+        }}
+      >
+        <DialogContent className="flex max-h-[88vh] w-full max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl">
+          {sentEmailPreview &&
+            (() => {
               const active =
-                sentEmailPreview.emails.find((e) => e.id === sentEmailPreview.activeId) ??
-                sentEmailPreview.emails[0]!;
+                sentEmailPreview.emails.find(
+                  (e) => e.id === sentEmailPreview.activeId,
+                ) ?? sentEmailPreview.emails[0]!;
               const bodyText = htmlBodyToEditablePlainText(active.htmlBody);
               return (
                 <>
@@ -2163,7 +2276,9 @@ function CrmPageContent() {
                             )}
                           >
                             {OUTREACH_KIND_LABELS[email.kind]}
-                            {sentEmailPreview.emails.length > 1 ? ` #${index + 1}` : ""}
+                            {sentEmailPreview.emails.length > 1
+                              ? ` #${index + 1}`
+                              : ""}
                           </button>
                         );
                       })}
@@ -2175,7 +2290,9 @@ function CrmPageContent() {
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Předmět
                       </p>
-                      <p className="text-sm font-medium text-foreground">{active.subject}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {active.subject}
+                      </p>
                     </div>
                     <div className="space-y-1.5">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -2189,121 +2306,147 @@ function CrmPageContent() {
                 </>
               );
             })()}
-          </DialogContent>
-        </Dialog>
+        </DialogContent>
+      </Dialog>
 
-        <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nový deal</DialogTitle>
-              <DialogDescription>Zadejte údaje o firmě a hodnotě dealu.</DialogDescription>
-            </DialogHeader>
+      <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nový deal</DialogTitle>
+            <DialogDescription>
+              Zadejte údaje o firmě a hodnotě dealu.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Název firmy</Label>
-                <Input
-                  value={newDealForm.company}
-                  onChange={(e) => setNewDealForm({ ...newDealForm, company: e.target.value })}
-                  placeholder="Název firmy"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Webová adresa (url)</Label>
-                <Input
-                  value={newDealForm.url}
-                  onChange={(e) => setNewDealForm({ ...newDealForm, url: e.target.value })}
-                  placeholder="např. example.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>E-mail</Label>
-                <Input
-                  value={newDealForm.contactEmail}
-                  onChange={(e) => setNewDealForm({ ...newDealForm, contactEmail: e.target.value })}
-                  placeholder="např. info@example.com"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Telefon</Label>
-                <Input
-                  value={newDealForm.contactPhone}
-                  onChange={(e) => setNewDealForm({ ...newDealForm, contactPhone: e.target.value })}
-                  placeholder="např. +420 123 456 789"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Hodnota dealu</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={newDealForm.value}
-                  onChange={(e) =>
-                    setNewDealForm({ ...newDealForm, value: Number(e.target.value) || 0 })
-                  }
-                  placeholder="0"
-                />
-              </div>
+          <div className="sk-fields">
+            <div className="space-y-1.5">
+              <Label>Název firmy</Label>
+              <Input
+                value={newDealForm.company}
+                onChange={(e) =>
+                  setNewDealForm({ ...newDealForm, company: e.target.value })
+                }
+                placeholder="Název firmy"
+              />
             </div>
-
-            <div className="flex flex-col gap-3 pt-6 border-t border-border/40 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setIsNewDealOpen(false)}
-                disabled={isCreating}
-              >
-                Zrušit
-              </Button>
-              <Button
-                type="button"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-                disabled={isCreating}
-                onClick={() => void handleCreateDeal()}
-              >
-                {isCreating ? "Vytvářím..." : "Vytvořit deal"}
-              </Button>
+            <div className="space-y-1.5">
+              <Label>Webová adresa (url)</Label>
+              <Input
+                value={newDealForm.url}
+                onChange={(e) =>
+                  setNewDealForm({ ...newDealForm, url: e.target.value })
+                }
+                placeholder="např. example.com"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
+            <div className="space-y-1.5">
+              <Label>E-mail</Label>
+              <Input
+                value={newDealForm.contactEmail}
+                onChange={(e) =>
+                  setNewDealForm({
+                    ...newDealForm,
+                    contactEmail: e.target.value,
+                  })
+                }
+                placeholder="např. info@example.com"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Telefon</Label>
+              <Input
+                value={newDealForm.contactPhone}
+                onChange={(e) =>
+                  setNewDealForm({
+                    ...newDealForm,
+                    contactPhone: e.target.value,
+                  })
+                }
+                placeholder="např. +420 123 456 789"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Odhadovaná hodnota (Kč)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={newDealForm.value}
+                onChange={(e) =>
+                  setNewDealForm({
+                    ...newDealForm,
+                    value: Number(e.target.value) || 0,
+                  })
+                }
+                placeholder="0"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Odhadovaná cena zakázky. Ve fázích nahoře se sčítá automaticky.
+              </p>
+            </div>
+          </div>
 
-        <AutopilotDialog
-          open={autopilotLeads !== null}
-          onOpenChange={(open) => {
-            if (!open) setAutopilotLeads(null);
-          }}
-          leads={autopilotLeads ?? []}
-          onFinished={() => {
-            setSelectedLeads([]);
-            void loadLeads();
-          }}
-        />
+          <div className="sk-dialog-actions gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isCreating}
+              onClick={() => setIsNewDealOpen(false)}
+            >
+              Zrušit
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={isCreating}
+              onClick={() => void handleCreateDeal()}
+            >
+              {isCreating ? "Vytvářím..." : "Vytvořit deal"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        <AlertDialog open={leadsToDelete !== null} onOpenChange={(open) => !open && setLeadsToDelete(null)}>
-          <AlertDialogContent className="bg-card dark:bg-zinc-950 border shadow-md">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Opravdu chcete odstranit vybrané dealy?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tuto akci nelze vrátit zpět. Dojde k trvalému odstranění {leadsToDelete?.length} záznamů z vaší
-                databáze.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Zrušit</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={(e) => {
-                  e.preventDefault();
-                  void executeDelete();
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {isBulkRunning ? "Mažu..." : "Smazat"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+      <AutopilotDialog
+        open={autopilotLeads !== null}
+        onOpenChange={(open) => {
+          if (!open) setAutopilotLeads(null);
+        }}
+        leads={autopilotLeads ?? []}
+        onFinished={() => {
+          setSelectedLeads([]);
+          void loadLeads();
+        }}
+      />
+
+      <AlertDialog
+        open={leadsToDelete !== null}
+        onOpenChange={(open) => !open && setLeadsToDelete(null)}
+      >
+        <AlertDialogContent className="bg-card border shadow-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Opravdu chcete odstranit vybrané dealy?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tuto akci nelze vrátit zpět. Dojde k trvalému odstranění{" "}
+              {leadsToDelete?.length} záznamů z vaší databáze.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void executeDelete();
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isBulkRunning ? "Mažu..." : "Smazat"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 

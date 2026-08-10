@@ -27,15 +27,14 @@ export const en: MessageTree = {
     autopilotCollect: "Lead collection",
     autopilotSend: "Sending",
     autopilotFullAuto: "Full Auto",
-    help: "Help Center",
+    help: "Support",
     workspace: "Workspace",
     myProfile: "My profile",
     accountSettings: "Account settings",
     plansAndBilling: "Plans & billing",
-    lightMode: "Light mode",
-    darkMode: "Dark mode",
     logout: "Log out",
-    credits: "Credits",
+    credits: "Usage",
+    usagePercent: "{pct}%",
     plan: "Plan",
     planFree: "Free plan",
     planFreeTrial: "Free plan (Trial)",
@@ -85,7 +84,8 @@ export const en: MessageTree = {
     activityRecent: "{count} most recent",
     activityPeriod: "Recently",
     activityEmptyTitle: "No activity yet",
-    activityEmptyDesc: "Once you run your first action, a timeline will appear here.",
+    activityEmptyDesc:
+      "Once you run your first action, a timeline will appear here.",
     activityNewLead: "New lead added:",
     activityViewHistory: "View full history in CRM →",
     quickActions: "Quick actions",
@@ -208,7 +208,8 @@ export const en: MessageTree = {
     description:
       "Hub for automated Radar and Sniper workflows. Do manual work in the respective menu sections; run bulk and fully automated processes here.",
     radarTitle: "Automatic lead collection",
-    radarDescription: "Finds new companies based on your settings and saves them to CRM.",
+    radarDescription:
+      "Finds new companies based on your settings and saves them to CRM.",
     radarSettings: "Radar settings",
     loadLeadsError: "Failed to load companies. Please try again.",
     startCollectError: "Failed to start automatic collection.",
@@ -247,17 +248,25 @@ export const en: MessageTree = {
       description:
         "To run Autopilot you must first connect your company mailbox in Workspace settings.",
       openSettings: "Open settings",
-      askCopilot: "Ask AI Assistant for a guide",
+      askCopilot: "Ask Skly Bot for a guide",
     },
   },
   help: {
-    title: "How can we help?",
-    subtitle: "Browse tool guides, FAQs, or contact us directly.",
-    searchPlaceholder: "Search help (e.g. 'how to set up domain')...",
-    faqTitle: "Frequently asked questions (FAQ)",
-    faqEmpty: "We found nothing for this query.",
+    title: "Support",
+    heroTitle: "How can we help?",
+    subtitle: "Browse guides, or ask Skly Bot right away.",
+    searchPlaceholder: "Search help…",
+    guidesTitle: "Browse by tool",
+    faqTitle: "Frequently asked questions",
+    faqEmpty: "Nothing matched this search.",
+    chatCta: "Ask Skly Bot",
+    chatCtaDesc: "Couldn't find an answer? Type here to open a chat with the agent.",
+    chatClose: "Back to help",
+    chatPlaceholder: "Ask anything…",
+    restartTour: "Restart the UI tour",
     guideSniper: "Sniper guide",
-    guideSniperDesc: "Learn to write high-converting emails and manage target segments.",
+    guideSniperDesc:
+      "Learn to write high-converting emails and manage target segments.",
     guideRadar: "How to use Radar",
     guideRadarDesc: "Filter leads and use Deep Scan to find contacts.",
     guideCrm: "CRM & integrations",
@@ -265,7 +274,8 @@ export const en: MessageTree = {
     guideAutopilot: "Autopilot",
     guideAutopilotDesc: "Set up and manage automated outreach campaigns.",
     contactTitle: "Didn't find what you need?",
-    contactDesc: "Our support team is available on weekdays 9:00–17:00. We usually reply within two hours.",
+    contactDesc:
+      "Our support team is available on weekdays 9:00–17:00. We usually reply within two hours.",
     contactEmail: "Email support",
     contactVideos: "Video tutorials",
     modalAutopilotTitle: "How to use Autopilot",
@@ -283,10 +293,12 @@ export const en: MessageTree = {
     choosePlan: "Choose plan",
     manageSubscription: "Manage subscription",
     companyProfile: "Company profile",
-    companyProfileDesc: "Company, services and value props used by Sniper to personalize outbound emails.",
+    companyProfileDesc:
+      "Company, services and value props used by Sniper to personalize outbound emails.",
     offeredServices: "Offered services",
-    offeredServicesDesc: "Services your company offers. Sniper uses them when writing sales emails.",
-    credits: "Usage & credits",
+    offeredServicesDesc:
+      "Services your company offers. Sniper uses them when writing sales emails.",
+    credits: "Usage",
     integrations: "Integrations & webhooks",
     aiBehavior: "AI behavior & templates",
     team: "Team & access",
@@ -294,14 +306,16 @@ export const en: MessageTree = {
     saving: "Saving...",
     saveSuccess: "Workspace settings saved successfully.",
     saveError: "Failed to save settings. Please refresh the page.",
-    remainingCredits: "Credits remaining",
+    remainingCredits: "Limit usage",
     needMorePower: "Need more power?",
-    creditsUsed: "Used {used} of {total} credits",
+    creditsUsed: "{pct}% of limit used",
+    usagePercent: "{pct}%",
     creditsRenewTrial: "Trial ends in {days} {dayWord}.",
     creditsRenewMonthly: "Monthly limit renews in {days} {dayWord}.",
     connectEmail: {
       title: "Connect new mailbox",
-      subtitle: "Choose an email provider to integrate with Sniper for campaign sending.",
+      subtitle:
+        "Choose an email provider to integrate with Sniper for campaign sending.",
       back: "Back to settings",
       preparing: "Integration for {provider} is coming soon.",
       smtpTitle: "Custom SMTP / IMAP",
@@ -335,7 +349,8 @@ export const en: MessageTree = {
     personalData: "Personal details",
     security: "Account security",
     connectedEmails: "Connected email accounts",
-    connectedEmailsDesc: "Connect mailboxes so Sniper can send from your address.",
+    connectedEmailsDesc:
+      "Connect mailboxes so Sniper can send from your address.",
     addMailbox: "Add another mailbox",
     connected: "Connected",
     billing: "Billing & subscription",
@@ -343,15 +358,16 @@ export const en: MessageTree = {
     userFallback: "User",
   },
   copilot: {
-    title: "venesis",
+    title: "Skly Bot",
     online: "Online",
-    open: "Open AI assistant",
+    open: "Open Skly Bot",
     close: "Close",
     clearChat: "Clear chat",
     send: "Send question",
-    welcome: "Ask anything about Sklyvo — we're here to help.",
+    welcome:
+      "Hi, I'm Skly Bot. Ask anything about Sklyvo — Sniper, Radar, Autopilot, credits, email…",
     placeholder: "Ask anything about Sklyvo...",
-    analyzing: "AI Assistant is analyzing your question...",
+    analyzing: "Skly Bot is thinking...",
     prompt1: "How do I correctly connect a company email for Autopilot?",
     prompt2: "How do I set daily limits and sending time windows?",
     prompt3: "How do I run the first automatic company discovery (Prospector)?",
@@ -375,10 +391,11 @@ export const en: MessageTree = {
     slash: {
       statusDesc: "Check Autopilot and email status",
       statusMessage: "Check the status of my Autopilot and emails",
-      creditsDesc: "Show remaining credits and plan",
-      creditsMessage: "How many credits do I have left and what plan am I on?",
+      creditsDesc: "Show usage percent and plan",
+      creditsMessage: "What is my usage percent and what plan am I on?",
       stopDesc: "Emergency pause for sending",
-      stopMessage: "Stop all running Autopilot campaigns and suggest an emergency pause.",
+      stopMessage:
+        "Stop all running Autopilot campaigns and suggest an emergency pause.",
     },
     replies: {
       apiKeys:
@@ -386,9 +403,8 @@ export const en: MessageTree = {
       funnel:
         "The conversion funnel on your dashboard shows flow from visitors through contacts to closed deals. Watch step-to-step ratios and compare with prior periods.",
       credits:
-        "Credits and billing are in Workspace under credits and subscription. You can change your plan from there.",
-      stop:
-        "For an emergency stop, open Autopilot, pause active campaigns, and temporarily disconnect company email in connection settings.",
+        "Usage and billing are in Workspace under Usage. You can change your plan from there.",
+      stop: "For an emergency stop, open Autopilot, pause active campaigns, and temporarily disconnect company email in connection settings.",
       status:
         "Check email connection status in Workspace. Autopilot can only send when status is Connected. Manage active campaigns in Autopilot.",
       autopilotPage:
@@ -398,7 +414,7 @@ export const en: MessageTree = {
     },
     actions: {
       openIntegrations: "⚙️ Open integrations",
-      openCredits: "💳 Open credits & billing",
+      openCredits: "💳 Open usage & billing",
       openAutopilot: "🚀 Open Autopilot",
     },
     fallback:

@@ -3,9 +3,7 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/app/actions/auth";
 import { DashboardBody } from "@/app/dashboard-body";
 import { DashboardBodySkeleton } from "@/components/dashboard-loading";
-import {
-  DashboardLoadingSubtitle,
-} from "@/components/dashboard/dashboard-loading-client";
+import { DashboardLoadingSubtitle } from "@/components/dashboard/dashboard-loading-client";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-page-header";
 import { DashboardOnboardingGate } from "@/components/dashboard-onboarding-gate";
 
@@ -23,7 +21,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardOnboardingGate needsOnboarding={needsOnboarding}>
-      <div className="sk-dashboard-frame mx-auto flex h-full min-h-0 w-full max-w-7xl flex-col gap-2 md:gap-3">
+      <div className="sk-dashboard-frame flex h-full min-h-0 w-full flex-col gap-2 md:gap-3">
         <DashboardPageHeader firstName={firstName} />
 
         <Suspense

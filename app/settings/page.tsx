@@ -5,8 +5,19 @@ import { getEmailConnectionState } from "@/app/actions/email-connection";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
-  Settings, Bot, Users, Zap, Coins, Link as LinkIcon, Briefcase, Mail, CreditCard, Shield
+  Settings,
+  Users,
+  Zap,
+  Briefcase,
+  Mail,
+  CreditCard,
+  Shield,
+  Building2,
+  Gauge,
+  Sparkles,
+  Plug,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   AccordionContent,
   AccordionItem,
@@ -31,6 +42,13 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+function SettingsRowIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <span className="sk-settings-row-icon" aria-hidden>
+      <Icon strokeWidth={2} />
+    </span>
+  );
+}
 export default async function SettingsPage() {
   const session = await getSessionUser();
   const workspace = session.workspace;
@@ -134,9 +152,9 @@ export default async function SettingsPage() {
     <div className="flex min-h-full w-full flex-col items-center justify-start pb-24 pt-0 md:pb-28">
       <div className="mb-2 space-y-1 px-1 text-center sm:mb-6 sm:space-y-2">
         <div className="mb-1 flex items-center justify-center gap-2 sm:mb-2 sm:gap-3">
-          <div className="rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-2xl sm:p-3">
-            <Settings className="h-5 w-5 sm:h-8 sm:w-8" />
-          </div>
+          <span className="sk-page-badge" aria-hidden>
+            <Settings strokeWidth={2} />
+          </span>
         </div>
         <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-3xl md:text-4xl">
           Pracovní prostor
@@ -154,41 +172,50 @@ export default async function SettingsPage() {
           {isWorkspaceReady ? (
             <div className="flex flex-col gap-4 p-3.5 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
               <div className="flex min-w-0 flex-1 gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-sm shadow-blue-600/20 sm:h-12 sm:w-12">
-                  <CreditCard className="h-5 w-5" />
-                </div>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <CreditCard strokeWidth={2} />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Předplatné
                   </p>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                    <p className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
-                      {workspace?.subscriptionStatus === "FREE" || isFreePlanTier
-                        ? "Free verze"
-                        : workspace?.planTier}
-                    </p>
+                  <p className="mt-0.5 text-lg font-bold tracking-tight text-foreground sm:text-xl">
+                    {workspace?.subscriptionStatus === "FREE" || isFreePlanTier
+                      ? "Free verze"
+                      : workspace?.planTier}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     {workspace?.subscriptionStatus === "FREE" || isFreePlanTier ? (
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Zkušební
-                      </span>
+                      <span>Zkušební účet</span>
                     ) : (
-                      <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
+                          aria-hidden
+                        />
                         Aktivní
                       </span>
                     )}
                     {isAgencyPlan ? (
-                      <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50/80 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200">
-                        <Shield className="h-3 w-3 shrink-0" />
-                        <span className="truncate">
-                          Správce: {billingManagerName?.trim() || "vlastník"}
+                      <>
+                        <span aria-hidden className="text-muted-foreground/40">
+                          ·
                         </span>
-                      </span>
+                        <span className="inline-flex min-w-0 items-center gap-1">
+                          <Shield className="h-3 w-3 shrink-0 opacity-70" strokeWidth={2} />
+                          <span className="truncate">
+                            Správce {billingManagerName?.trim() || "vlastník"}
+                          </span>
+                        </span>
+                      </>
                     ) : null}
-                  </div>
+                  </p>
                   {subscriptionDateLine ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{subscriptionDateLine}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground/80">
+                      {subscriptionDateLine}
+                    </p>
                   ) : workspace?.subscriptionStatus === "FREE" ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
+                    <p className="mt-0.5 text-xs text-muted-foreground/80">
                       Bez aktivního placeného tarifu
                     </p>
                   ) : null}
@@ -226,9 +253,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                  <Bot className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Building2} />
                 <h2 className="text-sm font-bold sm:text-lg">Profil vaší firmy</h2>
               </div>
             </AccordionTrigger>
@@ -255,9 +280,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                  <Briefcase className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Briefcase} />
                 <h2 className="text-sm font-bold sm:text-lg">Nabízené služby</h2>
               </div>
             </AccordionTrigger>
@@ -287,35 +310,30 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger id="credits-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-amber-50 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                  <Coins className="h-5 w-5" />
-                </div>
-                <h2 className="text-sm font-bold sm:text-lg">Spotřeba a Kredity</h2>
+                <SettingsRowIcon icon={Gauge} />
+                <h2 className="text-sm font-bold sm:text-lg">Spotřeba</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-6 pb-6 pt-2">
               <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-background p-5">
                 {isWorkspaceReady && creditsLeft !== null && creditsTotal !== undefined ? (
                   <>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <div>
-                        <h4 className="text-sm font-semibold">Zbývající kredity</h4>
+                        <h4 className="text-sm font-semibold">Využití limitu</h4>
                         {creditsRenewalSubline ? (
                           <p className="mt-0.5 text-xs text-muted-foreground">{creditsRenewalSubline}</p>
                         ) : null}
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-foreground">
-                          {creditsLeft} <span className="text-sm font-medium text-muted-foreground">/ {creditsTotal}</span>
-                        </p>
-                      </div>
+                      <p className="text-2xl font-bold tabular-nums text-foreground">
+                        {creditPercentage.toFixed(0)}&nbsp;%
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Progress value={creditPercentage} className="h-2.5 rounded-full" />
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        <span>Vyčerpáno {creditPercentage.toFixed(0)} %</span>
-                        <span>{creditsTotal} Max</span>
-                      </div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Vyčerpáno {creditPercentage.toFixed(0)} %
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -325,16 +343,10 @@ export default async function SettingsPage() {
                         <Skeleton className="h-4 w-32" />
                         <Skeleton className="h-3 w-44" />
                       </div>
-                      <div className="space-y-2 text-right">
-                        <Skeleton className="h-7 w-24" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
+                      <Skeleton className="h-7 w-14" />
                     </div>
                     <Skeleton className="h-2.5 w-full rounded-full" />
-                    <div className="flex justify-between">
-                      <Skeleton className="h-3 w-24" />
-                      <Skeleton className="h-3 w-12" />
-                    </div>
+                    <Skeleton className="h-3 w-28" />
                   </>
                 )}
               </div>
@@ -364,9 +376,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger id="email-integration-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <Mail className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Mail} />
                 <h2 className="text-sm font-bold sm:text-lg">Propojení firemního e-mailu</h2>
               </div>
             </AccordionTrigger>
@@ -392,9 +402,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger id="integrations-trigger" className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                  <LinkIcon className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Plug} />
                 <h2 className="text-sm font-bold sm:text-lg">Integrace a Webhooky</h2>
               </div>
             </AccordionTrigger>
@@ -412,9 +420,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                  <Bot className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Sparkles} />
                 <h2 className="text-sm font-bold sm:text-lg">Chování AI a Šablony</h2>
               </div>
             </AccordionTrigger>
@@ -442,9 +448,7 @@ export default async function SettingsPage() {
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                  <Users className="h-5 w-5" />
-                </div>
+                <SettingsRowIcon icon={Users} />
                 <h2 className="text-sm font-bold sm:text-lg">Tým a přístupy</h2>
               </div>
             </AccordionTrigger>

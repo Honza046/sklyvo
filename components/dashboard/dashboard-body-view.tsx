@@ -51,13 +51,13 @@ export type DashboardBodyViewProps = {
 function AttentionTaskIcon({ status }: { status: LeadStatus }) {
   if (status === "NEW") {
     return (
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 ">
         <Clock className="h-4 w-4" />
       </div>
     );
   }
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 ">
       <MessageCircleWarning className="h-4 w-4" />
     </div>
   );
@@ -111,62 +111,58 @@ export function DashboardBodyView({
   };
 
   const attentionTaskSubtitle = (status: LeadStatus) =>
-    status === "NEW" ? t("dashboard.attentionNewLead") : t("dashboard.attentionReplied");
+    status === "NEW"
+      ? t("dashboard.attentionNewLead")
+      : t("dashboard.attentionReplied");
 
   return (
     <div className="scrollbar-hide flex min-h-0 w-full flex-1 flex-col gap-2 overflow-y-auto sm:gap-3 lg:overflow-hidden">
       <div className="grid shrink-0 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
-            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
+            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 sm:rounded-lg sm:p-2">
               <Target className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
-              {t("dashboard.statsNewLeads")}
-            </h3>
+            <h3 className="sk-type-label">{t("dashboard.statsNewLeads")}</h3>
           </div>
-          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{leadsCount}</p>
+          <p className="sk-type-h2 tabular-nums">{leadsCount}</p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
-            <div className="rounded-md bg-emerald-50 p-1.5 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 sm:rounded-lg sm:p-2">
+            <div className="rounded-md bg-emerald-50 p-1.5 text-emerald-600 sm:rounded-lg sm:p-2">
               <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
-              {t("dashboard.statsEmailsSent")}
-            </h3>
+            <h3 className="sk-type-label">{t("dashboard.statsEmailsSent")}</h3>
           </div>
-          <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{emailsSent}</p>
+          <p className="sk-type-h2 tabular-nums">{emailsSent}</p>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
-            <div className="rounded-md bg-amber-50 p-1.5 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 sm:rounded-lg sm:p-2">
+            <div className="rounded-md bg-amber-50 p-1.5 text-amber-600 sm:rounded-lg sm:p-2">
               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
-              {t("dashboard.statsActiveDeals")}
-            </h3>
+            <h3 className="sk-type-label">{t("dashboard.statsActiveDeals")}</h3>
           </div>
           <div className="flex items-end justify-between gap-2">
-            <p className="text-base font-bold tabular-nums text-foreground sm:text-xl">{activeDeals}</p>
-            <p className="mb-0.5 shrink-0 text-right text-[9px] font-medium leading-tight text-muted-foreground sm:text-[10px]">
+            <p className="sk-type-h2 tabular-nums">{activeDeals}</p>
+            <p className="sk-type-small mb-0.5 shrink-0 text-right font-medium">
               {t("dashboard.statsInCrm")}
             </p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group dark:hover:border-blue-800 sm:rounded-2xl sm:p-4">
+        <div className="rounded-xl border border-border/60 bg-card p-2.5 shadow-sm transition-all hover:border-blue-200 group sm:rounded-2xl sm:p-4">
           <div className="mb-1 flex items-center gap-1.5 sm:mb-1.5 sm:gap-2">
-            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 sm:rounded-lg sm:p-2">
+            <div className="rounded-md bg-blue-50 p-1.5 text-blue-600 sm:rounded-lg sm:p-2">
               <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-widest">
+            <h3 className="sk-type-label">
               {t("dashboard.statsPipelineValue")}
             </h3>
           </div>
-          <p className="text-base font-bold tabular-nums leading-tight text-foreground sm:text-xl">
+          <p className="sk-type-h2 tabular-nums leading-tight">
             {formatCurrency(pipelineValue)}
           </p>
         </div>
@@ -178,25 +174,33 @@ export function DashboardBodyView({
             <DashboardConversionFunnel initialCounts={funnelInitialCounts} />
           </div>
 
-          <div className={`order-3 max-h-[260px] lg:order-none lg:max-h-none ${DASHBOARD_PANEL_CARD}`}>
+          <div
+            className={`order-3 max-h-[260px] lg:order-none lg:max-h-none ${DASHBOARD_PANEL_CARD}`}
+          >
             <div className="flex shrink-0 items-center justify-between gap-3">
-              <h3 className="m-0 shrink-0 font-semibold text-foreground">{t("dashboard.activityTitle")}</h3>
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <h3 className="sk-type-h3 shrink-0">
+                {t("dashboard.activityTitle")}
+              </h3>
+              <span className="sk-type-small shrink-0">
                 {recentActivity.length > 0
-                  ? t("dashboard.activityRecent", { count: recentActivity.length })
+                  ? t("dashboard.activityRecent", {
+                      count: recentActivity.length,
+                    })
                   : t("dashboard.activityPeriod")}
               </span>
             </div>
 
             {recentActivity.length === 0 ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-lg border border-border/40 bg-muted/30 p-6 text-center dark:bg-muted/20">
-                <h4 className="mb-2 m-0 text-base font-semibold text-foreground">
+              <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-lg border border-border/40 bg-muted/30 p-6 text-center ">
+                <h4 className="sk-type-h3 mb-2">
                   {t("dashboard.activityEmptyTitle")}
                 </h4>
-                <p className="m-0 text-sm text-muted-foreground">{t("dashboard.activityEmptyDesc")}</p>
+                <p className="sk-type-body">
+                  {t("dashboard.activityEmptyDesc")}
+                </p>
               </div>
             ) : (
-              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border/40 bg-muted/20 dark:bg-muted/15">
+              <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border/40 bg-muted/20 ">
                 <div className={DASHBOARD_PANEL_LIST_SCROLL}>
                   <ul className="divide-y divide-border/50">
                     {recentActivity.map((item) => (
@@ -205,12 +209,12 @@ export function DashboardBodyView({
                           {t("dashboard.activityNewLead")}{" "}
                           <Link
                             href="/crm"
-                            className="font-semibold text-foreground underline-offset-4 hover:text-blue-600 hover:underline dark:hover:text-blue-400"
+                            className="font-semibold text-foreground underline-offset-4 hover:text-blue-600 hover:underline "
                           >
                             {item.companyName}
                           </Link>
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="sk-type-small mt-1">
                           {formatActivityTime(item.createdAt)}
                         </p>
                       </li>
@@ -224,20 +228,24 @@ export function DashboardBodyView({
 
         <div className="contents lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:gap-3">
           <div className="order-2 flex shrink-0 flex-col rounded-2xl border border-border/60 bg-card p-3 shadow-sm md:p-4 lg:order-none">
-            <h2 className="mb-2 shrink-0 text-base font-bold">{t("dashboard.quickActions")}</h2>
+            <h2 className="sk-type-h3 mb-2 shrink-0">
+              {t("dashboard.quickActions")}
+            </h2>
 
             <div className="flex shrink-0 flex-col gap-2">
               <Link
                 href="/radar"
-                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800"
+                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm "
               >
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-blue-50 p-2 text-blue-600 transition-transform group-hover:scale-110 dark:bg-blue-900/30 dark:text-blue-400">
+                  <div className="rounded-lg bg-blue-50 p-2 text-blue-600 transition-transform group-hover:scale-110 ">
                     <Zap className="h-4 w-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold">{t("dashboard.quickRadarTitle")}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <p className="sk-type-h3">
+                      {t("dashboard.quickRadarTitle")}
+                    </p>
+                    <p className="sk-type-label">
                       {t("dashboard.quickRadarDesc")}
                     </p>
                   </div>
@@ -247,15 +255,17 @@ export function DashboardBodyView({
 
               <Link
                 href="/sniper"
-                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-800"
+                className="group flex items-center justify-between rounded-xl border border-border/60 bg-background p-2.5 transition-all hover:border-blue-300 hover:shadow-sm "
               >
                 <div className="flex items-center gap-3">
-                  <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 transition-transform group-hover:scale-110 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 transition-transform group-hover:scale-110 ">
                     <Mail className="h-4 w-4" />
                   </div>
                   <div className="text-left">
-                    <p className="text-sm font-semibold">{t("dashboard.quickSniperTitle")}</p>
-                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    <p className="sk-type-h3">
+                      {t("dashboard.quickSniperTitle")}
+                    </p>
+                    <p className="sk-type-label">
                       {t("dashboard.quickSniperDesc")}
                     </p>
                   </div>
@@ -265,8 +275,12 @@ export function DashboardBodyView({
             </div>
           </div>
 
-          <div className={`order-4 mb-1 max-h-[280px] lg:order-none lg:mb-0 lg:max-h-none ${DASHBOARD_PANEL_CARD}`}>
-            <h3 className="shrink-0 font-semibold text-foreground">{t("dashboard.attentionTitle")}</h3>
+          <div
+            className={`order-4 mb-1 max-h-[280px] lg:order-none lg:mb-0 lg:max-h-none ${DASHBOARD_PANEL_CARD}`}
+          >
+            <h3 className="sk-type-h3 shrink-0">
+              {t("dashboard.attentionTitle")}
+            </h3>
             <div className={DASHBOARD_PANEL_LIST_SCROLL}>
               {attentionRows.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-6 text-center">
@@ -274,10 +288,10 @@ export function DashboardBodyView({
                     <ClipboardList className="h-8 w-8" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-foreground">
+                    <p className="sk-type-h3">
                       {t("dashboard.attentionEmptyTitle")}
                     </p>
-                    <p className="max-w-[260px] text-xs text-muted-foreground">
+                    <p className="sk-type-small max-w-[260px]">
                       {t("dashboard.attentionEmptyDesc")}
                     </p>
                   </div>
@@ -292,13 +306,20 @@ export function DashboardBodyView({
                       <div className="flex min-w-0 items-center gap-3">
                         <AttentionTaskIcon status={task.status} />
                         <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="truncate text-sm font-medium">{task.companyName}</span>
+                          <span className="truncate text-sm font-medium">
+                            {task.companyName}
+                          </span>
                           <span className="text-[10px] text-muted-foreground">
                             {attentionTaskSubtitle(task.status)}
                           </span>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        asChild
+                      >
                         <Link href="/crm">{t("common.resolve")}</Link>
                       </Button>
                     </div>

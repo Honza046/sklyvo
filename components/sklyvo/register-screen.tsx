@@ -140,9 +140,7 @@ export function RegisterScreen() {
               type="button"
               className="sklyvo-field__reveal"
               aria-label={
-                showPassword
-                  ? t.register.hidePassword
-                  : t.register.showPassword
+                showPassword ? t.register.hidePassword : t.register.showPassword
               }
               aria-pressed={showPassword}
               onClick={() => setShowPassword((value) => !value)}

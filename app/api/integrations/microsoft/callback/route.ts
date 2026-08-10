@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { decryptSecret, encryptSecret } from "@/lib/email-connection-crypto";
 import {
   decodeMicrosoftOAuthState,
   getMicrosoftOAuthConfig,
@@ -32,7 +33,19 @@ export async function GET(request: NextRequest) {
   if (!code || !workspaceId) {
     redirectBase.searchParams.set(
       "msError",
-      encodeURIComponent("Chybí autorizační kód od Microsoftu."),
+      encodeURIComponent("Neplatný nebo vypršelý autorizační odkaz."),
+    );
+    return NextResponse.redirect(redirectBase);
+  }
+
+  const workspaceExists = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { id: true },
+  });
+  if (!workspaceExists) {
+    redirectBase.searchParams.set(
+      "msError",
+      encodeURIComponent("Workspace pro Microsoft propojení nebyl nalezen."),
     );
     return NextResponse.redirect(redirectBase);
   }
@@ -68,7 +81,9 @@ export async function GET(request: NextRequest) {
     if (!tokenResponse.ok || !tokenJson.access_token) {
       redirectBase.searchParams.set(
         "msError",
-        encodeURIComponent(tokenJson.error_description ?? "Microsoft token exchange selhal."),
+        encodeURIComponent(
+          tokenJson.error_description ?? "Microsoft token exchange selhal.",
+        ),
       );
       return NextResponse.redirect(redirectBase);
     }
@@ -91,16 +106,17 @@ export async function GET(request: NextRequest) {
       where: { workspaceId },
       select: { msRefreshToken: true },
     });
-    const refreshToken =
-      tokenJson.refresh_token ?? existing?.msRefreshToken ?? null;
+    const existingRefresh = decryptSecret(existing?.msRefreshToken);
+    const refreshPlain =
+      tokenJson.refresh_token ?? existingRefresh ?? null;
 
     await prisma.workspaceMicrosoftConnection.upsert({
       where: { workspaceId },
       create: {
         workspaceId,
         status: "CONNECTED",
-        msAccessToken: tokenJson.access_token,
-        msRefreshToken: refreshToken,
+        msAccessToken: encryptSecret(tokenJson.access_token),
+        msRefreshToken: refreshPlain ? encryptSecret(refreshPlain) : null,
         msTokenExpiresAt: expiresAt,
         msAccountEmail:
           profile.mail?.trim() || profile.userPrincipalName?.trim() || null,
@@ -110,11 +126,11 @@ export async function GET(request: NextRequest) {
       },
       update: {
         status: "CONNECTED",
-        msAccessToken: tokenJson.access_token,
+        msAccessToken: encryptSecret(tokenJson.access_token),
         ...(tokenJson.refresh_token
-          ? { msRefreshToken: tokenJson.refresh_token }
-          : refreshToken
-            ? { msRefreshToken: refreshToken }
+          ? { msRefreshToken: encryptSecret(tokenJson.refresh_token) }
+          : refreshPlain
+            ? { msRefreshToken: encryptSecret(refreshPlain) }
             : {}),
         msTokenExpiresAt: expiresAt,
         msAccountEmail:

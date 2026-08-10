@@ -1,7 +1,10 @@
 "use server";
 
 import { getSessionUser } from "@/app/actions/auth";
-import { buildGoogleSheetsAuthorizeUrl, getGoogleSheetsOAuthConfig } from "@/lib/google-sheets-oauth";
+import {
+  buildGoogleSheetsAuthorizeUrl,
+  getGoogleSheetsOAuthConfig,
+} from "@/lib/google-sheets-oauth";
 import {
   extractGoogleSpreadsheetId,
   fetchSpreadsheetValues,
@@ -13,7 +16,6 @@ import { normalizeLeadAuthor } from "@/lib/lead-author";
 import { inferLeadTags } from "@/lib/lead-tags";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
 
 export type GoogleSheetsConnectionState = {
   connected: boolean;
@@ -35,7 +37,9 @@ export type GoogleSheetsConnectionState = {
   crmLeadCount: number;
 };
 
-function disconnectedState(oauthConfigured: boolean): GoogleSheetsConnectionState {
+function disconnectedState(
+  oauthConfigured: boolean,
+): GoogleSheetsConnectionState {
   return {
     connected: false,
     status: "DISCONNECTED",
@@ -234,7 +238,9 @@ export async function setSheetsArchiveSpreadsheet(spreadsheetUrlOrId: string) {
     error?: { message?: string };
   };
   if (!metaRes.ok) {
-    return { error: meta.error?.message ?? "Nepodařilo se otevřít archivní Sheet." };
+    return {
+      error: meta.error?.message ?? "Nepodařilo se otevřít archivní Sheet.",
+    };
   }
 
   const url =
@@ -276,7 +282,7 @@ export async function clearCrmLeadsKeepSheetsArchive(confirm: string) {
     return { error: "Nejste přihlášen." };
   }
   if (confirm.trim().toUpperCase() !== "SMAZAT") {
-    return { error: 'Pro potvrzení napiš SMAZAT.' };
+    return { error: "Pro potvrzení napiš SMAZAT." };
   }
 
   const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
@@ -302,11 +308,22 @@ export async function clearCrmLeadsKeepSheetsArchive(confirm: string) {
 
 function mapLegacySheetStatus(
   raw: string,
-): "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP" {
+):
+  | "NEW"
+  | "CONTACTED"
+  | "REPLIED"
+  | "MEETING_SET"
+  | "CLOSED_WON"
+  | "CLOSED_LOST"
+  | "BREAK_UP" {
   const s = raw.trim().toLowerCase();
   if (!s || s === "nový lead" || s === "novy lead") return "NEW";
   if (s.includes("break")) return "BREAK_UP";
-  if (s.includes("nedomluv") || s.includes("ztracen") || s.includes("closed lost")) {
+  if (
+    s.includes("nedomluv") ||
+    s.includes("ztracen") ||
+    s.includes("closed lost")
+  ) {
     return "CLOSED_LOST";
   }
   if (s.includes("domluv") || s.includes("won")) return "CLOSED_WON";
@@ -326,7 +343,12 @@ function toDomainFromUrl(value: string | null | undefined) {
     const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
     return new URL(withProtocol).hostname.replace(/^www\./i, "");
   } catch {
-    return raw.replace(/^https?:\/\//i, "").split("/")[0]?.replace(/^www\./i, "") ?? "";
+    return (
+      raw
+        .replace(/^https?:\/\//i, "")
+        .split("/")[0]
+        ?.replace(/^www\./i, "") ?? ""
+    );
   }
 }
 
@@ -366,18 +388,18 @@ export async function importHistoricalOutreachSheet(input: {
     };
   }
 
-  const sheetsToImport: Array<{ name: string; source: "RADAR" | "SNIPER" }> = input.sheetName?.trim()
-    ? [
-        {
-          name: input.sheetName.trim(),
-          source:
-            /sniper/i.test(input.sheetName) ? "SNIPER" : "RADAR",
-        },
-      ]
-    : [
-        { name: "Radar", source: "RADAR" },
-        { name: "Sniper", source: "SNIPER" },
-      ];
+  const sheetsToImport: Array<{ name: string; source: "RADAR" | "SNIPER" }> =
+    input.sheetName?.trim()
+      ? [
+          {
+            name: input.sheetName.trim(),
+            source: /sniper/i.test(input.sheetName) ? "SNIPER" : "RADAR",
+          },
+        ]
+      : [
+          { name: "Radar", source: "RADAR" },
+          { name: "Sniper", source: "SNIPER" },
+        ];
 
   const existing = await prisma.lead.findMany({
     where: { workspaceId },
@@ -398,7 +420,14 @@ export async function importHistoricalOutreachSheet(input: {
     phone: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
-    status: "NEW" | "CONTACTED" | "REPLIED" | "MEETING_SET" | "CLOSED_WON" | "CLOSED_LOST" | "BREAK_UP";
+    status:
+      | "NEW"
+      | "CONTACTED"
+      | "REPLIED"
+      | "MEETING_SET"
+      | "CLOSED_WON"
+      | "CLOSED_LOST"
+      | "BREAK_UP";
     source: "RADAR" | "SNIPER";
     author: string | null;
     workspaceId: string;
@@ -423,7 +452,8 @@ export async function importHistoricalOutreachSheet(input: {
         range: `'${sheet.name.replace(/'/g, "''")}'!A1:I`,
       });
     } catch (e) {
-      lastError = e instanceof Error ? e.message : "Sheet se nepodařilo načíst.";
+      lastError =
+        e instanceof Error ? e.message : "Sheet se nepodařilo načíst.";
       continue;
     }
     if (rows.length <= 1) continue;
@@ -432,13 +462,27 @@ export async function importHistoricalOutreachSheet(input: {
 
     const header = rows[0]!.map((h) => h.trim().toLowerCase());
     const idx = {
-      firma: header.findIndex((h) => h === "firma" || h === "company" || h === "název"),
+      firma: header.findIndex(
+        (h) => h === "firma" || h === "company" || h === "název",
+      ),
       email: header.findIndex((h) => h === "email" || h === "e-mail"),
-      telefon: header.findIndex((h) => h === "telefon" || h === "phone" || h === "tel"),
-      url: header.findIndex((h) => h === "url" || h === "web" || h === "website"),
+      telefon: header.findIndex(
+        (h) => h === "telefon" || h === "phone" || h === "tel",
+      ),
+      url: header.findIndex(
+        (h) => h === "url" || h === "web" || h === "website",
+      ),
       status: header.findIndex((h) => h === "status" || h === "stav"),
-      nastroj: header.findIndex((h) => h === "nástroj" || h === "nastroj" || h === "source"),
-      autor: header.findIndex((h) => h === "autor" || h === "author" || h === "vytvořil" || h === "vytvoril"),
+      nastroj: header.findIndex(
+        (h) => h === "nástroj" || h === "nastroj" || h === "source",
+      ),
+      autor: header.findIndex(
+        (h) =>
+          h === "autor" ||
+          h === "author" ||
+          h === "vytvořil" ||
+          h === "vytvoril",
+      ),
     };
     if (idx.firma < 0) {
       return { error: `V listu ${sheet.name} chybí sloupec Firma.` };
@@ -454,8 +498,11 @@ export async function importHistoricalOutreachSheet(input: {
       const url = idx.url >= 0 ? (row[idx.url] ?? "").trim() : "";
       const domain = toDomainFromUrl(url) || null;
       const email =
-        idx.email >= 0 ? (row[idx.email] ?? "").trim().toLowerCase() || null : null;
-      const phone = idx.telefon >= 0 ? (row[idx.telefon] ?? "").trim() || null : null;
+        idx.email >= 0
+          ? (row[idx.email] ?? "").trim().toLowerCase() || null
+          : null;
+      const phone =
+        idx.telefon >= 0 ? (row[idx.telefon] ?? "").trim() || null : null;
       const statusRaw = idx.status >= 0 ? (row[idx.status] ?? "") : "";
       const status = mapLegacySheetStatus(statusRaw);
       const author =
@@ -471,7 +518,8 @@ export async function importHistoricalOutreachSheet(input: {
       if (
         (nameKey && (existingNames.has(nameKey) || batchNames.has(nameKey))) ||
         (domain &&
-          (existingDomains.has(domain.toLowerCase()) || batchDomains.has(domain.toLowerCase())))
+          (existingDomains.has(domain.toLowerCase()) ||
+            batchDomains.has(domain.toLowerCase())))
       ) {
         skipped += 1;
         continue;
@@ -607,11 +655,19 @@ export async function backfillAuthorsFromOutreachSheet(input: {
 
     const header = rows[0]!.map((h) => h.trim().toLowerCase());
     const idx = {
-      firma: header.findIndex((h) => h === "firma" || h === "company" || h === "název"),
+      firma: header.findIndex(
+        (h) => h === "firma" || h === "company" || h === "název",
+      ),
       email: header.findIndex((h) => h === "email" || h === "e-mail"),
-      url: header.findIndex((h) => h === "url" || h === "web" || h === "website"),
+      url: header.findIndex(
+        (h) => h === "url" || h === "web" || h === "website",
+      ),
       autor: header.findIndex(
-        (h) => h === "autor" || h === "author" || h === "vytvořil" || h === "vytvoril",
+        (h) =>
+          h === "autor" ||
+          h === "author" ||
+          h === "vytvořil" ||
+          h === "vytvoril",
       ),
     };
     if (idx.firma < 0 || idx.autor < 0) continue;
@@ -624,7 +680,9 @@ export async function backfillAuthorsFromOutreachSheet(input: {
       withAuthor += 1;
 
       const email =
-        idx.email >= 0 ? (row[idx.email] ?? "").trim().toLowerCase() || null : null;
+        idx.email >= 0
+          ? (row[idx.email] ?? "").trim().toLowerCase() || null
+          : null;
       const domain =
         idx.url >= 0 ? toDomainFromUrl(row[idx.url] ?? "") || null : null;
       const nameKey = normalizeCompanyKey(companyName);
@@ -638,7 +696,8 @@ export async function backfillAuthorsFromOutreachSheet(input: {
       matched += 1;
 
       // Master má prioritu — nepřepisuj Sedlář/Pazdera/Retzl slabším zdrojem
-      if (match.author && sheetName !== "Master" && sheetName !== "Sheet1") continue;
+      if (match.author && sheetName !== "Master" && sheetName !== "Sheet1")
+        continue;
       if (match.author === author) continue;
       await prisma.lead.update({
         where: { id: match.id },
@@ -701,7 +760,9 @@ export async function backfillAuthorsFromConnectedSheet() {
     };
   }
 
-  const result = await backfillAuthorsFromOutreachSheet({ spreadsheetUrlOrId: ref });
+  const result = await backfillAuthorsFromOutreachSheet({
+    spreadsheetUrlOrId: ref,
+  });
   if ("error" in result && result.error) {
     return { error: result.error, updated: 0 };
   }

@@ -35,13 +35,17 @@ const integrations = [
     id: "make",
     name: "Make.com",
     description: "Webhook do Make.com.",
-    fields: [{ label: "Webhook URL", placeholder: "https://hook.eu1.make.com/..." }],
+    fields: [
+      { label: "Webhook URL", placeholder: "https://hook.eu1.make.com/..." },
+    ],
   },
   {
     id: "zapier",
     name: "Zapier",
     description: "Propojení přes Zapier.",
-    fields: [{ label: "Webhook URL", placeholder: "https://hooks.zapier.com/..." }],
+    fields: [
+      { label: "Webhook URL", placeholder: "https://hooks.zapier.com/..." },
+    ],
   },
   {
     id: "pipedrive",
@@ -64,7 +68,7 @@ const cardClass =
   "w-full cursor-pointer rounded-2xl border border-[color:var(--sk-panel-edge)] bg-[image:var(--sk-raised)] p-4 text-left text-[color:var(--sk-ink)] shadow-[var(--sk-raised-shadow)] transition-all hover:-translate-y-px hover:shadow-[var(--sk-shadow-raised-hover)]";
 
 const statusBoxClass =
-  "rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2.5 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100";
+  "rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2.5 text-xs text-emerald-950 ";
 
 const btnSm = "h-8 rounded-xl px-3 text-xs";
 
@@ -80,17 +84,27 @@ function formatSyncedAt(iso: string | null) {
 export function IntegrationsPanel() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [integrationValues, setIntegrationValues] = useState<Record<string, string>>({
+  const [integrationValues, setIntegrationValues] = useState<
+    Record<string, string>
+  >({
     make: "",
     zapier: "",
     pipedrive: "",
     hubspot: "",
   });
-  const [expandedIntegration, setExpandedIntegration] = useState<string | null>("google-sheets");
+  const [expandedIntegration, setExpandedIntegration] = useState<string | null>(
+    "google-sheets",
+  );
   const [isTesting, setIsTesting] = useState<string | null>(null);
-  const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(null);
-  const [microsoft, setMicrosoft] = useState<MicrosoftConnectionState | null>(null);
-  const [fakturoid, setFakturoid] = useState<FakturoidConnectionState | null>(null);
+  const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(
+    null,
+  );
+  const [microsoft, setMicrosoft] = useState<MicrosoftConnectionState | null>(
+    null,
+  );
+  const [fakturoid, setFakturoid] = useState<FakturoidConnectionState | null>(
+    null,
+  );
   const [fakturoidClientId, setFakturoidClientId] = useState("");
   const [fakturoidClientSecret, setFakturoidClientSecret] = useState("");
   const [fakturoidSlug, setFakturoidSlug] = useState("");
@@ -155,7 +169,10 @@ export function IntegrationsPanel() {
     setExpandedIntegration((prev) => (prev === id ? null : id));
   };
 
-  const handleTestConnection = (id: string, e: MouseEvent<HTMLButtonElement>) => {
+  const handleTestConnection = (
+    id: string,
+    e: MouseEvent<HTMLButtonElement>,
+  ) => {
     e.stopPropagation();
     const value = integrationValues[id];
     if (!value || value.trim() === "") {
@@ -180,7 +197,9 @@ export function IntegrationsPanel() {
     if (!opened) {
       window.location.href = href;
     } else {
-      toast.message("Otevřel se Google v novém okně (ideálně v Chrome). Po povolení se vrátíš sem.");
+      toast.message(
+        "Otevřel se Google v novém okně (ideálně v Chrome). Po povolení se vrátíš sem.",
+      );
     }
   };
 
@@ -204,7 +223,9 @@ export function IntegrationsPanel() {
         toast.error(result.error);
         return;
       }
-      toast.success(enabled ? "Automatický sync zapnutý." : "Automatický sync vypnutý.");
+      toast.success(
+        enabled ? "Automatický sync zapnutý." : "Automatický sync vypnutý.",
+      );
       refreshSheetsState();
     });
   };
@@ -356,14 +377,16 @@ export function IntegrationsPanel() {
         return;
       }
       toast.success(`CRM exportováno do OneDrive: ${result.fileName}`);
-      if (result.webUrl) window.open(result.webUrl, "_blank", "noopener,noreferrer");
+      if (result.webUrl)
+        window.open(result.webUrl, "_blank", "noopener,noreferrer");
     });
   };
 
   return (
-    <div className="max-w-3xl pb-2 pt-1">
+    <div className="w-full pb-2 pt-1">
       <p className="mb-3 text-xs text-muted-foreground">
-        Live sheet zrcadlí CRM. Starý outreach sheet slouží jako archiv pro Radar.
+        Live sheet zrcadlí CRM. Starý outreach sheet slouží jako archiv pro
+        Radar.
       </p>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -381,14 +404,14 @@ export function IntegrationsPanel() {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-foreground">Google Sheets</h3>
+              <h3 className="sk-type-h3">Google Sheets</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 Live zrcadlo CRM podle stavů + list Vše.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <span
-                className={`h-2 w-2 rounded-full ${sheetsActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                className={`h-2 w-2 rounded-full ${sheetsActive ? "bg-emerald-500" : "bg-gray-300 "}`}
                 aria-hidden
               />
               <span className="text-[11px] font-medium text-muted-foreground">
@@ -403,30 +426,32 @@ export function IntegrationsPanel() {
               className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
             >
               {!sheets?.oauthConfigured && (
-                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 ">
                   Chybí Google OAuth (CLIENT_ID / SECRET). Redirect:{" "}
-                  <code className="text-[10px]">/api/integrations/google-sheets/callback</code>
+                  <code className="text-[10px]">
+                    /api/integrations/google-sheets/callback
+                  </code>
                 </p>
               )}
 
               {sheetsActive ? (
                 <>
                   <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                    <p className="font-semibold text-emerald-900 ">
                       {sheets?.spreadsheetTitle ?? "Sklyvo CRM"}
                     </p>
                     {sheets?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                      <p className="mt-0.5 text-emerald-800/90 ">
                         {sheets.accountEmail}
                       </p>
                     )}
                     {formatSyncedAt(sheets?.lastSyncedAt ?? null) && (
-                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                      <p className="mt-0.5 text-emerald-800/90 ">
                         Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
                       </p>
                     )}
                     {sheets?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
+                      <p className="mt-1.5 font-medium text-rose-700 ">
                         Chyba: {sheets.lastError}
                       </p>
                     )}
@@ -445,8 +470,17 @@ export function IntegrationsPanel() {
 
                   <div className="flex flex-wrap gap-1.5">
                     {sheets?.spreadsheetUrl && (
-                      <Button type="button" variant="outline" className={btnSm} asChild>
-                        <a href={sheets.spreadsheetUrl} target="_blank" rel="noreferrer">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={btnSm}
+                        asChild
+                      >
+                        <a
+                          href={sheets.spreadsheetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
                           <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                           Otevřít
                         </a>
@@ -474,7 +508,8 @@ export function IntegrationsPanel() {
                   </div>
 
                   <p className="text-[11px] leading-snug text-muted-foreground">
-                    Sloupce: Firma, Web, E-mail, Telefon, Stav… Listy podle CRM + Vše.
+                    Sloupce: Firma, Web, E-mail, Telefon, Stav… Listy podle CRM
+                    + Vše.
                   </p>
 
                   <div className="sk-data-row flex-col gap-2.5">
@@ -485,7 +520,7 @@ export function IntegrationsPanel() {
                       Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
                     </p>
                     {sheets?.archiveSpreadsheetUrl && (
-                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300">
+                      <p className="text-[11px] text-emerald-800 ">
                         Archiv:{" "}
                         <a
                           href={sheets.archiveSpreadsheetUrl}
@@ -538,7 +573,7 @@ export function IntegrationsPanel() {
                     </div>
                     <div className="space-y-2 border-t border-[color:var(--sk-panel-edge)] pt-2.5">
                       <p className="text-[11px] text-muted-foreground">
-                        Vyčistit CRM v appce — napiš <strong>SMAZAT</strong>.
+                        Vyčistit CRM v appce. Napiš <strong>SMAZAT</strong>.
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         <input
@@ -552,8 +587,11 @@ export function IntegrationsPanel() {
                         <Button
                           type="button"
                           variant="outline"
-                          className={`${btnSm} border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300`}
-                          disabled={isPending || clearConfirm.trim().toUpperCase() !== "SMAZAT"}
+                          className={`${btnSm} border-rose-300 text-rose-700 hover:bg-rose-50 `}
+                          disabled={
+                            isPending ||
+                            clearConfirm.trim().toUpperCase() !== "SMAZAT"
+                          }
                           onClick={handleClearCrm}
                         >
                           Vyčistit CRM
@@ -561,11 +599,14 @@ export function IntegrationsPanel() {
                       </div>
                     </div>
                     {sheets?.splitBySource &&
-                      !/(?:sklyvo|venegard)\s*crm/i.test(sheets.spreadsheetTitle ?? "") && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                        Sync míří do staré tabulky. Odpoj a znovu připoj Sheets.
-                      </p>
-                    )}
+                      !/(?:sklyvo|venegard)\s*crm/i.test(
+                        sheets.spreadsheetTitle ?? "",
+                      ) && (
+                        <p className="text-[11px] text-amber-700 ">
+                          Sync míří do staré tabulky. Odpoj a znovu připoj
+                          Sheets.
+                        </p>
+                      )}
                   </div>
                 </>
               ) : (
@@ -601,14 +642,14 @@ export function IntegrationsPanel() {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-foreground">Microsoft 365</h3>
+              <h3 className="sk-type-h3">Microsoft 365</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 OneDrive, Excel a Word.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <span
-                className={`h-2 w-2 rounded-full ${msActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                className={`h-2 w-2 rounded-full ${msActive ? "bg-emerald-500" : "bg-gray-300 "}`}
                 aria-hidden
               />
               <span className="text-[11px] font-medium text-muted-foreground">
@@ -623,25 +664,27 @@ export function IntegrationsPanel() {
               className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
             >
               {!microsoft?.oauthConfigured && (
-                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 ">
                   Chybí Microsoft OAuth (CLIENT_ID / SECRET). Redirect:{" "}
-                  <code className="text-[10px]">/api/integrations/microsoft/callback</code>
+                  <code className="text-[10px]">
+                    /api/integrations/microsoft/callback
+                  </code>
                 </p>
               )}
 
               {msActive ? (
                 <>
                   <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                    <p className="font-semibold text-emerald-900 ">
                       {microsoft?.displayName || "Microsoft 365"}
                     </p>
                     {microsoft?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                      <p className="mt-0.5 text-emerald-800/90 ">
                         {microsoft.accountEmail}
                       </p>
                     )}
                     {microsoft?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
+                      <p className="mt-1.5 font-medium text-rose-700 ">
                         Chyba: {microsoft.lastError}
                       </p>
                     )}
@@ -676,7 +719,7 @@ export function IntegrationsPanel() {
                   </p>
                   <Button
                     type="button"
-                    className={`${btnSm} bg-[#2F2F2F] text-white hover:bg-black`}
+                    className={btnSm}
                     disabled={!microsoft?.oauthConfigured || isPending}
                     onClick={handleConnectMicrosoft}
                   >
@@ -702,14 +745,14 @@ export function IntegrationsPanel() {
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-foreground">Fakturoid</h3>
+              <h3 className="sk-type-h3">Fakturoid</h3>
               <p className="mt-1 text-xs text-muted-foreground">
                 Faktury z Generátoru.
               </p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
               <span
-                className={`h-2 w-2 rounded-full ${fakturoidActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                className={`h-2 w-2 rounded-full ${fakturoidActive ? "bg-emerald-500" : "bg-gray-300 "}`}
                 aria-hidden
               />
               <span className="text-[11px] font-medium text-muted-foreground">
@@ -726,21 +769,21 @@ export function IntegrationsPanel() {
               {fakturoidActive ? (
                 <>
                   <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 dark:text-emerald-100">
+                    <p className="font-semibold text-emerald-900 ">
                       {fakturoid?.accountName || "Fakturoid"}
                     </p>
                     {fakturoid?.accountSlug && (
-                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                      <p className="mt-0.5 text-emerald-800/90 ">
                         {fakturoid.accountSlug}
                       </p>
                     )}
                     {fakturoid?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 dark:text-emerald-200/90">
+                      <p className="mt-0.5 text-emerald-800/90 ">
                         {fakturoid.accountEmail}
                       </p>
                     )}
                     {fakturoid?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 dark:text-rose-300">
+                      <p className="mt-1.5 font-medium text-rose-700 ">
                         Chyba: {fakturoid.lastError}
                       </p>
                     )}
@@ -756,7 +799,12 @@ export function IntegrationsPanel() {
                       <Unplug className="mr-1.5 h-3.5 w-3.5" />
                       Odpojit
                     </Button>
-                    <Button type="button" variant="outline" className={btnSm} asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={btnSm}
+                      asChild
+                    >
                       <a
                         href={
                           fakturoid?.accountSlug
@@ -800,7 +848,9 @@ export function IntegrationsPanel() {
                         autoComplete="off"
                         className={`${inputClass} font-mono text-[11px]`}
                         value={fakturoidClientSecret}
-                        onChange={(e) => setFakturoidClientSecret(e.target.value)}
+                        onChange={(e) =>
+                          setFakturoidClientSecret(e.target.value)
+                        }
                         placeholder="••••••••"
                       />
                     </div>
@@ -856,10 +906,10 @@ export function IntegrationsPanel() {
               }}
             >
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-sm font-bold text-foreground">{item.name}</h3>
+                <h3 className="sk-type-h3">{item.name}</h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <span
-                    className={`h-2 w-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-300 dark:bg-muted-foreground/50"}`}
+                    className={`h-2 w-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-300 "}`}
                     aria-hidden
                   />
                   <span className="text-[11px] font-medium text-muted-foreground">
@@ -867,7 +917,9 @@ export function IntegrationsPanel() {
                   </span>
                 </div>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {item.description}
+              </p>
 
               {isExpanded && (
                 <div
@@ -876,18 +928,28 @@ export function IntegrationsPanel() {
                 >
                   {item.fields.map((field) => (
                     <div key={field.label}>
-                      <label className="sr-only" htmlFor={`${item.id}-${field.label}`}>
+                      <label
+                        className="sr-only"
+                        htmlFor={`${item.id}-${field.label}`}
+                      >
                         {field.label}
                       </label>
                       <input
                         id={`${item.id}-${field.label}`}
-                        type={item.id === "pipedrive" || item.id === "hubspot" ? "password" : "text"}
+                        type={
+                          item.id === "pipedrive" || item.id === "hubspot"
+                            ? "password"
+                            : "text"
+                        }
                         placeholder={field.placeholder}
                         className={`${inputClass} mt-3 font-mono text-[11px]`}
                         autoComplete="off"
                         value={integrationValues[item.id] || ""}
                         onChange={(e) =>
-                          setIntegrationValues({ ...integrationValues, [item.id]: e.target.value })
+                          setIntegrationValues({
+                            ...integrationValues,
+                            [item.id]: e.target.value,
+                          })
                         }
                       />
                     </div>

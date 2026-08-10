@@ -1,3 +1,8 @@
+import {
+  createSignedOAuthState,
+  verifySignedOAuthState,
+} from "@/lib/oauth-state";
+
 const GOOGLE_WORKSPACE_SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
@@ -20,36 +25,38 @@ export function getGoogleSheetsOAuthConfig() {
     process.env.GOOGLE_SHEETS_REDIRECT_URI?.trim() ||
     `${appUrl}/api/integrations/google-sheets/callback`;
 
-  return { appUrl, clientId, clientSecret, redirectUri, scope: GOOGLE_WORKSPACE_SCOPES };
+  return {
+    appUrl,
+    clientId,
+    clientSecret,
+    redirectUri,
+    scope: GOOGLE_WORKSPACE_SCOPES,
+  };
 }
 
-/** Encode workspace + optional return path into OAuth `state`. */
-export function encodeGoogleOAuthState(workspaceId: string, returnPath?: string | null) {
-  const path = (returnPath || "").trim();
-  if (!path || path === "/settings") return workspaceId;
-  return `${workspaceId}|${encodeURIComponent(path)}`;
+export function encodeGoogleOAuthState(
+  workspaceId: string,
+  returnPath?: string | null,
+) {
+  return createSignedOAuthState({
+    kind: "google_sheets",
+    workspaceId,
+    returnPath,
+  });
 }
 
 export function decodeGoogleOAuthState(state: string | null): {
   workspaceId: string | null;
   returnPath: string;
 } {
-  if (!state) return { workspaceId: null, returnPath: "/settings#integrations" };
-  const sep = state.indexOf("|");
-  if (sep === -1) {
-    return { workspaceId: state, returnPath: "/settings#integrations" };
+  const claims = verifySignedOAuthState(state, "google_sheets");
+  if (!claims) {
+    return { workspaceId: null, returnPath: "/settings#integrations" };
   }
-  const workspaceId = state.slice(0, sep);
-  let returnPath = "/settings#integrations";
-  try {
-    returnPath = decodeURIComponent(state.slice(sep + 1)) || returnPath;
-  } catch {
-    // keep default
-  }
-  if (!returnPath.startsWith("/")) {
-    returnPath = "/settings#integrations";
-  }
-  return { workspaceId, returnPath };
+  return {
+    workspaceId: claims.workspaceId,
+    returnPath: claims.returnPath || "/settings#integrations",
+  };
 }
 
 export function buildGoogleSheetsAuthorizeUrl(
@@ -65,7 +72,6 @@ export function buildGoogleSheetsAuthorizeUrl(
     redirect_uri: redirectUri,
     response_type: "code",
     access_type: "offline",
-    // consent alone; avoid select_account — Safari often breaks the account picker UI
     prompt: "consent",
     scope,
     state: encodeGoogleOAuthState(workspaceId, returnPath),

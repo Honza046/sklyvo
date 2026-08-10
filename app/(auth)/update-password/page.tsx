@@ -74,8 +74,8 @@ export default function UpdatePasswordPage() {
 
   if (sessionOk === null) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 dark:bg-background">
-        <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] dark:bg-blue-600/20" />
+      <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 ">
+        <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] " />
         <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
         <div className="relative z-10 w-full max-w-[400px] rounded-3xl border border-border/60 bg-card p-8 shadow-xl">
           <Skeleton className="mx-auto mb-4 h-8 w-48" />
@@ -86,26 +86,28 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 dark:bg-background">
-      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] dark:bg-blue-600/20" />
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 ">
+      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] " />
       <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
 
       <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
         <div className="flex justify-center">
-          <SklyvoWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
+          <SklyvoWordmark
+            markSize={36}
+            textClassName="text-xl tracking-[0.2em]"
+          />
         </div>
 
         <div className="flex flex-col gap-8 rounded-3xl border border-border/60 bg-card p-8 shadow-xl">
           <div className="space-y-1.5 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Nové heslo
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Zadejte nové heslo pro svůj účet.
-            </p>
+            <h1 className="sk-type-h1">Nové heslo</h1>
+            <p className="sk-type-body">Zadejte nové heslo pro svůj účet.</p>
           </div>
 
-          <form onSubmit={(ev) => void handleUpdatePassword(ev)} className="space-y-5">
+          <form
+            onSubmit={(ev) => void handleUpdatePassword(ev)}
+            className="space-y-5"
+          >
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 Nové heslo
@@ -140,7 +142,7 @@ export default function UpdatePasswordPage() {
         <p className="text-center text-xs text-muted-foreground">
           <Link
             href="/login"
-            className="font-bold text-blue-600 hover:underline dark:text-blue-400"
+            className="font-bold text-blue-600 hover:underline "
           >
             Zpět na přihlášení
           </Link>

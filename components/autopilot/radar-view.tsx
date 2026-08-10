@@ -20,8 +20,8 @@ import { leadTagLabel, LEAD_TAG_ORDER } from "@/lib/lead-tags";
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
+  AutopilotIconButton,
   AutopilotSettingsIconButton,
-  AutopilotListEmptyState,
   AutopilotTableEmptyState,
   AutopilotTablePagination,
   AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
@@ -42,7 +42,8 @@ const RADAR_ITEMS_PER_PAGE = 50;
 const RADAR_COMPACT_VIEWPORT_CLASS =
   "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
 /** Zvětšené okno — vyplní dostupnou výšku, patička zůstane dole. */
-const RADAR_EXPANDED_VIEWPORT_CLASS = "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
+const RADAR_EXPANDED_VIEWPORT_CLASS =
+  "min-h-0 flex-1 overflow-x-auto overflow-y-auto";
 
 type RadarDateSort = "newest" | "oldest" | "range";
 type RadarPresetFilter = "all" | "with_email" | "without_email";
@@ -125,7 +126,15 @@ export function AutopilotRadarView() {
 
   useEffect(() => {
     setRadarPage(1);
-  }, [workspaceLeads.length, searchQuery, tagFilter, presetFilter, dateSort, dateFrom, dateTo]);
+  }, [
+    workspaceLeads.length,
+    searchQuery,
+    tagFilter,
+    presetFilter,
+    dateSort,
+    dateFrom,
+    dateTo,
+  ]);
 
   const availableTags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -154,7 +163,8 @@ export function AutopilotRadarView() {
         lead.email.toLowerCase().includes(q) ||
         lead.phone.toLowerCase().includes(q);
 
-      const matchTag = tagFilter === "all" || (lead.tags ?? []).includes(tagFilter);
+      const matchTag =
+        tagFilter === "all" || (lead.tags ?? []).includes(tagFilter);
 
       const hasEmail = Boolean(lead.email?.trim());
       const matchPreset =
@@ -176,9 +186,18 @@ export function AutopilotRadarView() {
       if (dateSort === "oldest") return aTime - bTime;
       return bTime - aTime;
     });
-  }, [workspaceLeads, searchQuery, tagFilter, presetFilter, dateSort, dateFrom, dateTo]);
+  }, [
+    workspaceLeads,
+    searchQuery,
+    tagFilter,
+    presetFilter,
+    dateSort,
+    dateFrom,
+    dateTo,
+  ]);
 
-  const filterControlClass = "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
+  const filterControlClass =
+    "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
 
   const renderFilters = () => (
     <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
@@ -192,8 +211,13 @@ export function AutopilotRadarView() {
           autoComplete="off"
         />
       </div>
-      <Select value={presetFilter} onValueChange={(v) => setPresetFilter(v as RadarPresetFilter)}>
-        <SelectTrigger className={cn(filterControlClass, "w-full sm:w-[130px]")}>
+      <Select
+        value={presetFilter}
+        onValueChange={(v) => setPresetFilter(v as RadarPresetFilter)}
+      >
+        <SelectTrigger
+          className={cn(filterControlClass, "w-full sm:w-[130px]")}
+        >
           <SelectValue placeholder="Kontakt" />
         </SelectTrigger>
         <SelectContent className="z-[220]">
@@ -203,7 +227,9 @@ export function AutopilotRadarView() {
         </SelectContent>
       </Select>
       <Select value={tagFilter} onValueChange={setTagFilter}>
-        <SelectTrigger className={cn(filterControlClass, "w-full sm:w-[150px]")}>
+        <SelectTrigger
+          className={cn(filterControlClass, "w-full sm:w-[150px]")}
+        >
           <SelectValue placeholder="Obor" />
         </SelectTrigger>
         <SelectContent className="z-[220]">
@@ -215,8 +241,13 @@ export function AutopilotRadarView() {
           ))}
         </SelectContent>
       </Select>
-      <Select value={dateSort} onValueChange={(v) => setDateSort(v as RadarDateSort)}>
-        <SelectTrigger className={cn(filterControlClass, "w-full sm:w-[130px]")}>
+      <Select
+        value={dateSort}
+        onValueChange={(v) => setDateSort(v as RadarDateSort)}
+      >
+        <SelectTrigger
+          className={cn(filterControlClass, "w-full sm:w-[130px]")}
+        >
           <SelectValue placeholder="Datum" />
         </SelectTrigger>
         <SelectContent className="z-[220]">
@@ -248,7 +279,10 @@ export function AutopilotRadarView() {
   );
 
   const radarTotalItems = filteredLeads.length;
-  const radarTotalPages = Math.max(1, Math.ceil(radarTotalItems / RADAR_ITEMS_PER_PAGE));
+  const radarTotalPages = Math.max(
+    1,
+    Math.ceil(radarTotalItems / RADAR_ITEMS_PER_PAGE),
+  );
   const radarSafePage = Math.min(radarPage, radarTotalPages);
   const radarPageStart = (radarSafePage - 1) * RADAR_ITEMS_PER_PAGE;
   const paginatedRadarLeads = filteredLeads.slice(
@@ -258,25 +292,6 @@ export function AutopilotRadarView() {
   const radarShownFrom = radarTotalItems === 0 ? 0 : radarPageStart + 1;
   const radarShownTo =
     radarTotalItems === 0 ? 0 : radarPageStart + paginatedRadarLeads.length;
-
-  const emptyStates = (
-    <>
-      {isLoading && <AutopilotListEmptyState>Načítám historii sběru…</AutopilotListEmptyState>}
-      {!isLoading && loadError && (
-        <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
-          {loadError}
-        </AutopilotListEmptyState>
-      )}
-      {!isLoading && !loadError && workspaceLeads.length === 0 && (
-        <AutopilotListEmptyState>
-          Zatím žádné nalezené firmy. Spusťte automatický sběr nebo přidejte leady v Radaru.
-        </AutopilotListEmptyState>
-      )}
-      {!isLoading && !loadError && workspaceLeads.length > 0 && filteredLeads.length === 0 && (
-        <AutopilotListEmptyState>Žádné firmy neodpovídají filtrům.</AutopilotListEmptyState>
-      )}
-    </>
-  );
 
   const renderTable = (mode: "compact" | "expanded") => {
     const expanded = mode === "expanded";
@@ -292,52 +307,23 @@ export function AutopilotRadarView() {
       >
         <div
           className={cn(
-            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "sk-data-panel__scroll--mobile flex flex-col md:hidden",
-            viewportClass,
-          )}
-        >
-          {paginatedRadarLeads.map((lead) => (
-            <div
-              key={`${mode}-m-${lead.id}`}
-              className="sk-data-row"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                  {lead.email || t("common.noEmail")}
-                  {lead.phone ? ` · ${lead.phone}` : ""}
-                </p>
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  {formatFoundDate(lead.createdAt, dateLocale)}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  "shrink-0 pt-0.5 text-[11px] font-semibold",
-                  leadStatusClassName(lead.leadStatus),
-                )}
-              >
-                {leadStatusLabel(lead.leadStatus)}
-              </span>
-            </div>
-          ))}
-          {paginatedRadarLeads.length === 0 && emptyStates}
-        </div>
-
-        <div
-          className={cn(
-            "sk-data-panel__scroll hidden md:block",
+            "sk-data-panel__scroll",
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
             viewportClass,
           )}
         >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+            <thead className="sticky top-0 z-20 bg-white ">
               <tr className="text-left">
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>Firma</th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>Kontakt</th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>Datum nalezení</th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
+                  Firma
+                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
+                  Kontakt
+                </th>
+                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
+                  Datum nalezení
+                </th>
                 <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Status</th>
               </tr>
             </thead>
@@ -347,7 +333,9 @@ export function AutopilotRadarView() {
                 return (
                   <tr key={`${mode}-d-${lead.id}`}>
                     <td className="px-3 py-2.5">
-                      <p className="break-words text-[13px] font-semibold text-foreground">{lead.company}</p>
+                      <p className="break-words text-[13px] font-semibold text-foreground">
+                        {lead.company}
+                      </p>
                       <span className="mt-0.5 flex items-center break-words text-[11px] text-muted-foreground">
                         <Globe className="mr-1 h-3 w-3 shrink-0" />
                         {lead.url || web || "–"}
@@ -356,14 +344,20 @@ export function AutopilotRadarView() {
                     <td className="px-3 py-2.5">
                       <div className="flex min-w-0 items-center gap-0.5">
                         {lead.email ? (
-                          <CopyEmailButton email={lead.email} size="sm" variant="ghost" />
+                          <CopyEmailButton
+                            email={lead.email}
+                            size="sm"
+                            variant="ghost"
+                          />
                         ) : (
                           <Mail className="mr-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         )}
                         <span
                           className={cn(
                             "min-w-0 truncate text-[13px]",
-                            lead.email ? "text-foreground" : "text-muted-foreground",
+                            lead.email
+                              ? "text-foreground"
+                              : "text-muted-foreground",
                           )}
                           title={lead.email || undefined}
                         >
@@ -373,7 +367,9 @@ export function AutopilotRadarView() {
                       <span
                         className={cn(
                           "mt-0.5 flex break-words text-[11px]",
-                          lead.phone ? "text-foreground" : "text-muted-foreground",
+                          lead.phone
+                            ? "text-foreground"
+                            : "text-muted-foreground",
                         )}
                       >
                         <Phone className="mr-1.5 h-3.5 w-3.5 shrink-0" />
@@ -404,14 +400,17 @@ export function AutopilotRadarView() {
                     </AutopilotTableEmptyState>
                   )}
                   {!isLoading && loadError && (
-                    <AutopilotTableEmptyState colSpan={4} className="text-rose-600 dark:text-rose-400">
+                    <AutopilotTableEmptyState
+                      colSpan={4}
+                      className="text-rose-600 "
+                    >
                       {loadError}
                     </AutopilotTableEmptyState>
                   )}
                   {!isLoading && !loadError && workspaceLeads.length === 0 && (
                     <AutopilotTableEmptyState colSpan={4}>
-                      Zatím žádné nalezené firmy. Spusťte automatický sběr nebo přidejte leady v
-                      Radaru.
+                      Zatím žádné nalezené firmy. Spusťte automatický sběr nebo
+                      přidejte leady v Radaru.
                     </AutopilotTableEmptyState>
                   )}
                   {!isLoading &&
@@ -457,40 +456,37 @@ export function AutopilotRadarView() {
       />
 
       <div className="sk-autopilot__panel">
-      <AutopilotControlPanel
-        icon={<Radio className="h-5 w-5" />}
-        iconWrapClassName="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
-        title={t("autopilot.radarTitle")}
-        powerEnabled={featureEnabled}
-        description={
-          featureEnabled
-            ? "Cron hledá firmy podle nastavení (~3:00 Praha)."
-            : "Cron vypnutý. Ruční hledání je v sekci Radar."
-        }
-        actions={
-          <>
-            <AutopilotPowerButton
-              enabled={featureEnabled}
-              disabled={isTogglingPower}
-              accent="emerald"
-              onClick={() => void toggleFeaturePower()}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setTableExpanded(true)}
-              className="h-9 w-9 shrink-0 rounded-lg p-0"
-              title="Zvětšit tabulku"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-            <AutopilotSettingsIconButton
-              label={t("autopilot.radarSettings")}
-              onClick={openSettings}
-            />
-          </>
-        }
-      />
+        <AutopilotControlPanel
+          icon={<Radio className="h-5 w-5" />}
+          iconWrapClassName="sk-page-badge"
+          title={t("autopilot.radarTitle")}
+          powerEnabled={featureEnabled}
+          description={
+            featureEnabled
+              ? "Cron hledá firmy podle nastavení (~3:00 Praha)."
+              : "Cron vypnutý. Ruční hledání je v sekci Radar."
+          }
+          actions={
+            <>
+              <AutopilotPowerButton
+                enabled={featureEnabled}
+                disabled={isTogglingPower}
+                accent="blue"
+                onClick={() => void toggleFeaturePower()}
+              />
+              <AutopilotIconButton
+                label="Zvětšit tabulku"
+                onClick={() => setTableExpanded(true)}
+              >
+                <Maximize2 className="h-4 w-4" />
+              </AutopilotIconButton>
+              <AutopilotSettingsIconButton
+                label={t("autopilot.radarSettings")}
+                onClick={openSettings}
+              />
+            </>
+          }
+        />
       </div>
 
       {tableExpanded ? (
@@ -498,9 +494,7 @@ export function AutopilotRadarView() {
           Historie sběru je otevřená ve zvětšeném okně.
         </div>
       ) : (
-        <div className="sk-autopilot__table mt-0">
-          {renderTable("compact")}
-        </div>
+        <div className="sk-autopilot__table mt-0">{renderTable("compact")}</div>
       )}
 
       <ExpandOverlay
@@ -510,7 +504,9 @@ export function AutopilotRadarView() {
         description="Hledání a filtry jsou tady. Po zavření zůstane kompaktní tabulka na stránce."
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-          <div className="shrink-0 overflow-visible p-px">{renderFilters()}</div>
+          <div className="shrink-0 overflow-visible p-px">
+            {renderFilters()}
+          </div>
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {renderTable("expanded")}
           </div>

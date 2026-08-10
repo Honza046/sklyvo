@@ -55,7 +55,8 @@ export function CopyEmailButton({
         variant === "ghost"
           ? "h-6 w-6 rounded-md border-0 bg-transparent shadow-none hover:bg-muted/60"
           : "border-border/60 bg-background shadow-sm hover:bg-muted",
-        variant === "outline" && (size === "icon" ? "h-8 w-8 rounded-lg" : "h-7 w-7 rounded-md"),
+        variant === "outline" &&
+          (size === "icon" ? "h-8 w-8 rounded-lg" : "h-7 w-7 rounded-md"),
         className,
       )}
       title={`Kopírovat ${trimmed}`}

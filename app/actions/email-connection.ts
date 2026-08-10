@@ -207,7 +207,10 @@ export async function disconnectEmailConnection() {
 
 export async function getGoogleEmailOAuthUrl() {
   const session = await getSessionUser();
-  if (!session.user?.id) {
+  const userId = session.user?.id?.trim();
+  const workspaceId =
+    session.workspace?.id?.trim() || session.user?.workspaceId?.trim();
+  if (!userId || !workspaceId) {
     return { error: "Nejste přihlášen." };
   }
 
@@ -223,6 +226,7 @@ export async function getGoogleEmailOAuthUrl() {
     };
   }
 
+  const { createSignedOAuthState } = await import("@/lib/oauth-state");
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -233,7 +237,12 @@ export async function getGoogleEmailOAuthUrl() {
       "https://www.googleapis.com/auth/gmail.send",
       "https://www.googleapis.com/auth/userinfo.email",
     ].join(" "),
-    state: `user:${session.user.id}`,
+    state: createSignedOAuthState({
+      kind: "email_google",
+      workspaceId,
+      userId,
+      returnPath: "/settings#email-integration",
+    }),
   });
 
   return {

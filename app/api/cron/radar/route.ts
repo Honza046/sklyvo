@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { processScheduledRadarRuns } from "@/app/actions/radar";
+import { processScheduledRadarRuns } from "@/lib/cron/radar-jobs";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 
 export const dynamic = "force-dynamic";

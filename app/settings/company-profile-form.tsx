@@ -14,7 +14,9 @@ type CompanyProfileFormProps = {
   initialContext: string;
 };
 
-export function CompanyProfileForm({ initialContext }: CompanyProfileFormProps) {
+export function CompanyProfileForm({
+  initialContext,
+}: CompanyProfileFormProps) {
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
   const [companyContext, setCompanyContext] = useState(initialContext);
@@ -61,8 +63,9 @@ export function CompanyProfileForm({ initialContext }: CompanyProfileFormProps) 
           className="min-h-[180px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Zde podrobně popište, co vaše firma dělá, jaké služby nabízíte, vaše hlavní výhody a rychlost
-          dodání. AI tyto informace použije jako kontext pro psaní e-mailů.
+          Zde podrobně popište, co vaše firma dělá, jaké služby nabízíte, vaše
+          hlavní výhody a rychlost dodání. AI tyto informace použije jako
+          kontext pro psaní e-mailů.
         </p>
       </div>
       <div className="flex justify-end">

@@ -1,4 +1,4 @@
-/* Scoped Sklyvo login styles — soft-UI tokens inherit from :root / .dark. */
+/* Scoped Sklyvo login styles — soft-UI tokens inherit from :root. */
 
 .sklyvo-login {
   --sk-glass: linear-gradient(
@@ -34,26 +34,6 @@
   );
 }
 
-.dark .sklyvo-login {
-  --sk-glass: linear-gradient(
-    165deg,
-    oklch(0.26 0.02 240 / 0.92) 0%,
-    oklch(0.22 0.016 250 / 0.97) 55%,
-    oklch(0.2 0.014 250) 100%
-  );
-  --sk-glass-shadow:
-    0 40px 70px -24px rgba(0, 0, 0, 0.55),
-    0 12px 24px -14px rgba(0, 0, 0, 0.4),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1.5px 2px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(
-    180deg,
-    oklch(0.16 0.04 250) 0%,
-    oklch(0.14 0.03 245) 40%,
-    oklch(0.12 0.02 250) 100%
-  );
-}
-
 .sklyvo-login a {
   color: oklch(0.45 0.02 250);
   text-decoration: none;
@@ -61,14 +41,6 @@
 
 .sklyvo-login a:hover {
   color: oklch(0.28 0.02 250);
-}
-
-.dark .sklyvo-login a {
-  color: oklch(0.78 0.03 230);
-}
-
-.dark .sklyvo-login a:hover {
-  color: oklch(0.9 0.02 230);
 }
 
 .sklyvo-login input {
@@ -314,6 +286,33 @@
   flex: 0 0 auto;
 }
 
+/* 2FA step: slightly shorter than login, center crest + form as one block. */
+.sklyvo-login .sklyvo-auth[data-step="2fa"] .sklyvo-card--form {
+  justify-content: center;
+}
+
+.sklyvo-login .sklyvo-auth[data-step="2fa"] .sklyvo-card__body {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.sklyvo-login .sklyvo-auth[data-step="2fa"] .sklyvo-form__aside {
+  display: block;
+  height: 10px;
+  margin: 0;
+  padding: 0;
+  min-height: 10px;
+  pointer-events: none;
+}
+
+.sklyvo-login .sklyvo-auth[data-step="2fa"] .sklyvo-btn-primary {
+  margin-top: 0;
+}
+
+.sklyvo-login .sklyvo-auth[data-step="2fa"] .sklyvo-form__footer {
+  margin-top: 18px;
+}
+
 .sklyvo-login .sklyvo-auth[data-mode="recovery"] .sklyvo-form__aside {
   /* Same 10px as .sklyvo-fields gap (email ↔ password on login). */
   display: block;
@@ -515,7 +514,7 @@
 }
 
 .sklyvo-login .sklyvo-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1.5px);
+  transform: translateY(-1px);
   box-shadow:
     0 16px 28px -12px rgba(20, 32, 50, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -607,11 +606,11 @@
 }
 
 .sklyvo-login .sklyvo-btn-provider:hover:not(:disabled) {
-  transform: translateY(-1.5px);
+  transform: translateY(-1px);
 }
 
 .sklyvo-login .sklyvo-btn-provider:active:not(:disabled) {
-  transform: translateY(0);
+  transform: translateY(1px);
   background: var(--sk-sunken);
   box-shadow:
     inset 0 2px 5px rgba(90, 130, 165, 0.38),

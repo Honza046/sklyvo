@@ -60,14 +60,12 @@ function ObnovaHeslaForm() {
   return (
     <div className="flex flex-col gap-8 rounded-3xl border border-border/60 bg-card p-8 shadow-xl">
       <div className="space-y-1.5 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Nové heslo</h1>
-        <p className="text-sm text-muted-foreground">
-          Zadejte nové heslo pro svůj Sklyvo účet.
-        </p>
+        <h1 className="sk-type-h1">Nové heslo</h1>
+        <p className="sk-type-body">Zadejte nové heslo pro svůj Sklyvo účet.</p>
       </div>
 
       {!token ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 ">
           Odkaz je neplatný.{" "}
           <Link href="/recovery" className="font-semibold underline">
             Požádat o nový
@@ -119,12 +117,12 @@ function ObnovaHeslaForm() {
           </div>
 
           {error ? (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300">
+            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 ">
               {error}
             </p>
           ) : null}
           {message ? (
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 ">
               {message}
             </p>
           ) : null}
@@ -145,13 +143,16 @@ function ObnovaHeslaForm() {
 
 export default function ObnovaHeslaPage() {
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 dark:bg-background">
-      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] dark:bg-blue-600/20" />
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 ">
+      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] " />
       <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
 
       <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
         <div className="flex justify-center">
-          <SklyvoWordmark markSize={36} textClassName="text-xl tracking-[0.2em]" />
+          <SklyvoWordmark
+            markSize={36}
+            textClassName="text-xl tracking-[0.2em]"
+          />
         </div>
         <Suspense
           fallback={

@@ -91,14 +91,18 @@ function buildPoints(): Point[] {
 
 function tagLand(points: Point[], land: LandMask) {
   for (const point of points) {
-    const lonDeg = ((((point.lon * 180) / Math.PI + 180) % 360) + 360) % 360 - 180;
+    const lonDeg =
+      (((((point.lon * 180) / Math.PI + 180) % 360) + 360) % 360) - 180;
     const x = Math.min(
       land.w - 1,
       Math.max(0, Math.round(((lonDeg + 180) / 360) * land.w)),
     );
     const y = Math.min(
       land.h - 1,
-      Math.max(0, Math.round(((90 - (point.lat * 180) / Math.PI) / 180) * land.h)),
+      Math.max(
+        0,
+        Math.round(((90 - (point.lat * 180) / Math.PI) / 180) * land.h),
+      ),
     );
     point.land = land.mask[y * land.w + x];
   }
@@ -141,7 +145,10 @@ export function Globe({
 
     // dots are bucketed by rounded radius + alpha, so the whole globe draws in
     // a couple of dozen fill() calls instead of one per dot
-    const buckets = new Map<number, { r: number; alpha: number; xy: number[] }>();
+    const buckets = new Map<
+      number,
+      { r: number; alpha: number; xy: number[] }
+    >();
 
     const draw = () => {
       ctx.clearRect(0, 0, size, size);

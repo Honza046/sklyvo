@@ -34,7 +34,10 @@ export function AutopilotSubNav() {
   const { trackRef, thumbStyle } = useSlidingThumb(activeIndex, [pathname]);
 
   return (
-    <nav ref={trackRef as RefObject<HTMLElement>} className="sk-segment mb-0 flex w-full shrink-0">
+    <nav
+      ref={trackRef as RefObject<HTMLElement>}
+      className="sk-segment mb-0 flex w-full shrink-0"
+    >
       <span className="sk-segment__thumb" style={thumbStyle} aria-hidden />
       {AUTOPILOT_SUB_NAV.map(({ href, labelKey }, i) => {
         const active = i === activeIndex;

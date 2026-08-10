@@ -23,7 +23,9 @@ function mapSubscriptionStatus(status: Stripe.Subscription.Status) {
   return status.toUpperCase();
 }
 
-function extractCheckoutSessionPriceIds(session: Stripe.Checkout.Session): string[] {
+function extractCheckoutSessionPriceIds(
+  session: Stripe.Checkout.Session,
+): string[] {
   const li = session.line_items as unknown;
   if (!li || typeof li !== "object" || !("data" in (li as object))) return [];
   const data = (li as { data: unknown[] }).data ?? [];
@@ -117,7 +119,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
   const data: Prisma.WorkspaceUpdateInput = {
     stripeCustomerId: customerId ?? workspace.stripeCustomerId ?? undefined,
-    stripeSubscriptionId: subscriptionId ?? workspace.stripeSubscriptionId ?? undefined,
+    stripeSubscriptionId:
+      subscriptionId ?? workspace.stripeSubscriptionId ?? undefined,
     planTier: tier,
     creditsTotal,
     subscriptionStatus: "ACTIVE",
@@ -144,7 +147,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
         invoiceId: invoice.id,
         amountPaid,
         currency: invoice.currency,
-        firstLinePriceId: lines[0] ? getInvoiceLinePriceIdForLog(lines[0]) : null,
+        firstLinePriceId: lines[0]
+          ? getInvoiceLinePriceIdForLog(lines[0])
+          : null,
         planTier: tier,
         creditsTotal,
         subscriptionStatus: "ACTIVE",
@@ -157,7 +162,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   );
 }
 
-function getInvoiceLinePriceIdForLog(line: Stripe.InvoiceLineItem): string | null {
+function getInvoiceLinePriceIdForLog(
+  line: Stripe.InvoiceLineItem,
+): string | null {
   const pd = line.pricing?.price_details?.price;
   if (pd) return typeof pd === "string" ? pd : pd.id;
   const legacy = (line as unknown as { price?: string | { id: string } }).price;
@@ -166,10 +173,13 @@ function getInvoiceLinePriceIdForLog(line: Stripe.InvoiceLineItem): string | nul
   return null;
 }
 
-function getCheckoutSubscriptionId(session: Stripe.Checkout.Session): string | null {
+function getCheckoutSubscriptionId(
+  session: Stripe.Checkout.Session,
+): string | null {
   const sub = session.subscription;
   if (typeof sub === "string") return sub;
-  if (sub && typeof sub === "object" && "id" in sub) return (sub as Stripe.Subscription).id;
+  if (sub && typeof sub === "object" && "id" in sub)
+    return (sub as Stripe.Subscription).id;
   return null;
 }
 
@@ -179,7 +189,8 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   if (parentSub && typeof parentSub === "object" && "id" in parentSub) {
     return (parentSub as Stripe.Subscription).id;
   }
-  const legacy = (invoice as unknown as { subscription?: unknown }).subscription;
+  const legacy = (invoice as unknown as { subscription?: unknown })
+    .subscription;
   if (typeof legacy === "string") return legacy;
 
   const lines = invoice.lines?.data ?? [];
@@ -193,14 +204,14 @@ function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
   return null;
 }
 
-async function resolveWorkspaceId(session: Stripe.Checkout.Session): Promise<string | null> {
+async function resolveWorkspaceId(
+  session: Stripe.Checkout.Session,
+): Promise<string | null> {
   const fromMeta = session.metadata?.workspaceId;
   if (fromMeta) return fromMeta;
 
   const email =
-    session.customer_email ??
-    session.customer_details?.email ??
-    null;
+    session.customer_email ?? session.customer_details?.email ?? null;
   if (!email?.trim()) return null;
 
   const user = await prisma.user.findFirst({
@@ -210,7 +221,9 @@ async function resolveWorkspaceId(session: Stripe.Checkout.Session): Promise<str
   return user?.workspaceId ?? null;
 }
 
-async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Session) {
+async function handleCheckoutSessionCompleted(
+  rawSession: Stripe.Checkout.Session,
+) {
   let session: Stripe.Checkout.Session = rawSession;
   try {
     session = await stripe.checkout.sessions.retrieve(rawSession.id, {
@@ -240,7 +253,9 @@ async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Sessio
     if (sm) planTier = sm.toUpperCase();
   }
   if (!planTier || planTier === "NONE") {
-    const fromPrices = resolvePlanTierFromStripePriceIds(extractCheckoutSessionPriceIds(session));
+    const fromPrices = resolvePlanTierFromStripePriceIds(
+      extractCheckoutSessionPriceIds(session),
+    );
     if (fromPrices) planTier = fromPrices;
   }
   if (!planTier || planTier === "NONE") {
@@ -257,7 +272,9 @@ async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Sessio
   const customerId =
     typeof session.customer === "string"
       ? session.customer
-      : session.customer && typeof session.customer === "object" && "id" in session.customer
+      : session.customer &&
+          typeof session.customer === "object" &&
+          "id" in session.customer
         ? (session.customer as Stripe.Customer).id
         : null;
 
@@ -275,7 +292,9 @@ async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Sessio
       select: { workspaceId: true },
     });
     if (!user) {
-      console.error("checkout.session.completed: uživatel nenalezen", { userId });
+      console.error("checkout.session.completed: uživatel nenalezen", {
+        userId,
+      });
       return;
     }
 
@@ -298,7 +317,9 @@ async function handleCheckoutSessionCompleted(rawSession: Stripe.Checkout.Sessio
       "[stripe webhook] checkout.session.completed OK",
       JSON.stringify(
         {
-          phase: isTrialStart ? "trial_start" : "checkout_no_trial_or_post_trial",
+          phase: isTrialStart
+            ? "trial_start"
+            : "checkout_no_trial_or_post_trial",
           workspaceId: user.workspaceId,
           userId,
           sessionId: session.id,
@@ -440,7 +461,8 @@ export async function POST(req: Request) {
         await prisma.workspace.update({
           where: { id: workspace.id },
           data: {
-            stripeCustomerId: customerId ?? workspace.stripeCustomerId ?? undefined,
+            stripeCustomerId:
+              customerId ?? workspace.stripeCustomerId ?? undefined,
             stripeSubscriptionId: subscription.id,
             subscriptionStatus: newStatus,
             planTier: tier,

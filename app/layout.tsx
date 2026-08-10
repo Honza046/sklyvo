@@ -9,7 +9,7 @@ import { UnregisterServiceWorker } from "@/components/unregister-service-worker"
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-jakarta",
 });
 
@@ -48,7 +48,13 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: [{ url: "/brand/sklyvo-mark.png", type: "image/png" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [
+      {
+        url: "/icons/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
   openGraph: {
     type: "website",
@@ -62,10 +68,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#02a7ff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0288d4" },
-  ],
+  themeColor: "#02a7ff",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -77,10 +80,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="cs" suppressHydrationWarning>
+    <html lang="cs">
       <body
         className={`${jakarta.variable} ${jetbrains.variable} min-h-dvh font-sans`}
-        style={{ fontFamily: "var(--font-jakarta), Helvetica, Arial, sans-serif" }}
+        style={{
+          fontFamily: "var(--font-jakarta), Helvetica, Arial, sans-serif",
+        }}
       >
         <UnregisterServiceWorker />
         <AppProviders>

@@ -35,42 +35,59 @@ async function requireSession() {
   return session;
 }
 
-async function getValidAccessToken(workspaceId: string): Promise<{
-  accessToken: string;
-  slug: string;
-} | { error: string }> {
+async function getValidAccessToken(workspaceId: string): Promise<
+  | {
+      accessToken: string;
+      slug: string;
+    }
+  | { error: string }
+> {
   const record = await prisma.workspaceFakturoidConnection.findUnique({
     where: { workspaceId },
   });
 
-  if (!record || record.status === "DISCONNECTED" || !record.clientId || !record.clientSecretEnc) {
-    return { error: "Fakturoid není připojen. Propojte ho v Pracovním prostoru → Integrace." };
+  if (
+    !record ||
+    record.status === "DISCONNECTED" ||
+    !record.clientId ||
+    !record.clientSecretEnc
+  ) {
+    return {
+      error:
+        "Fakturoid není připojen. Propojte ho v Pracovním prostoru → Integrace.",
+    };
   }
 
   if (!record.accountSlug) {
-    return { error: "Chybí Fakturoid účet (slug). Odpojte a znovu připojte integraci." };
+    return {
+      error: "Chybí Fakturoid účet (slug). Odpojte a znovu připojte integraci.",
+    };
   }
 
   const secret = decryptEmailSecret(record.clientSecretEnc);
   if (!secret) {
-    return { error: "Nepodařilo se načíst Fakturoid credentials. Připojte účet znovu." };
+    return {
+      error: "Nepodařilo se načíst Fakturoid credentials. Připojte účet znovu.",
+    };
   }
 
   const expiresAt = record.tokenExpiresAt?.getTime() ?? 0;
-  const stillValid =
-    record.accessToken && expiresAt > Date.now() + 60_000;
+  const stillValid = record.accessToken && expiresAt > Date.now() + 60_000;
 
   if (stillValid && record.accessToken) {
-    return { accessToken: record.accessToken, slug: record.accountSlug };
+    const plain = decryptEmailSecret(record.accessToken) ?? record.accessToken;
+    return { accessToken: plain, slug: record.accountSlug };
   }
 
   try {
     const token = await fetchFakturoidToken(record.clientId, secret);
-    const expires = new Date(Date.now() + Math.max(60, token.expires_in - 30) * 1000);
+    const expires = new Date(
+      Date.now() + Math.max(60, token.expires_in - 30) * 1000,
+    );
     await prisma.workspaceFakturoidConnection.update({
       where: { workspaceId },
       data: {
-        accessToken: token.access_token,
+        accessToken: encryptEmailSecret(token.access_token),
         tokenExpiresAt: expires,
         status: "CONNECTED",
         lastError: null,
@@ -78,7 +95,8 @@ async function getValidAccessToken(workspaceId: string): Promise<{
     });
     return { accessToken: token.access_token, slug: record.accountSlug };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Obnova tokenu selhala.";
+    const message =
+      error instanceof Error ? error.message : "Obnova tokenu selhala.";
     await prisma.workspaceFakturoidConnection.update({
       where: { workspaceId },
       data: { status: "ERROR", lastError: message },
@@ -149,9 +167,8 @@ export async function connectFakturoid(input: {
 
     const preferred = input.accountSlug?.trim();
     const account =
-      (preferred
-        ? accounts.find((a) => a.slug === preferred)
-        : undefined) ?? accounts[0];
+      (preferred ? accounts.find((a) => a.slug === preferred) : undefined) ??
+      accounts[0];
 
     if (!account) {
       return {
@@ -159,7 +176,9 @@ export async function connectFakturoid(input: {
       };
     }
 
-    const expires = new Date(Date.now() + Math.max(60, token.expires_in - 30) * 1000);
+    const expires = new Date(
+      Date.now() + Math.max(60, token.expires_in - 30) * 1000,
+    );
 
     await prisma.workspaceFakturoidConnection.upsert({
       where: { workspaceId: session.workspace.id },
@@ -168,7 +187,7 @@ export async function connectFakturoid(input: {
         status: "CONNECTED",
         clientId,
         clientSecretEnc: encryptEmailSecret(clientSecret),
-        accessToken: token.access_token,
+        accessToken: encryptEmailSecret(token.access_token),
         tokenExpiresAt: expires,
         accountSlug: account.slug,
         accountName: account.name,
@@ -180,7 +199,7 @@ export async function connectFakturoid(input: {
         status: "CONNECTED",
         clientId,
         clientSecretEnc: encryptEmailSecret(clientSecret),
-        accessToken: token.access_token,
+        accessToken: encryptEmailSecret(token.access_token),
         tokenExpiresAt: expires,
         accountSlug: account.slug,
         accountName: account.name,
@@ -200,7 +219,10 @@ export async function connectFakturoid(input: {
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Připojení Fakturoidu selhalo.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Připojení Fakturoidu selhalo.",
     };
   }
 }
@@ -279,11 +301,18 @@ export async function createFakturoidInvoiceFromOffer(input: {
 
     const searchQuery = ico || companyName;
     try {
-      const found = await searchFakturoidSubjects(auth.accessToken, auth.slug, searchQuery);
+      const found = await searchFakturoidSubjects(
+        auth.accessToken,
+        auth.slug,
+        searchQuery,
+      );
       const match =
         found.find(
           (s) =>
-            (ico && s.registration_no && s.registration_no.replace(/\s/g, "") === ico.replace(/\s/g, "")) ||
+            (ico &&
+              s.registration_no &&
+              s.registration_no.replace(/\s/g, "") ===
+                ico.replace(/\s/g, "")) ||
             s.name.trim().toLowerCase() === companyName.toLowerCase(),
         ) ?? found[0];
       if (match?.id) subjectId = match.id;
@@ -292,13 +321,18 @@ export async function createFakturoidInvoiceFromOffer(input: {
     }
 
     if (!subjectId) {
-      const created = await createFakturoidSubject(auth.accessToken, auth.slug, {
-        name: companyName,
-        full_name: personName && personName !== companyName ? personName : undefined,
-        email: email || undefined,
-        registration_no: ico || undefined,
-        vat_no: dic || undefined,
-      });
+      const created = await createFakturoidSubject(
+        auth.accessToken,
+        auth.slug,
+        {
+          name: companyName,
+          full_name:
+            personName && personName !== companyName ? personName : undefined,
+          email: email || undefined,
+          registration_no: ico || undefined,
+          vat_no: dic || undefined,
+        },
+      );
       subjectId = created.id;
     }
 
@@ -311,9 +345,10 @@ export async function createFakturoidInvoiceFromOffer(input: {
       subject_id: subjectId,
       currency: (input.currency || "CZK").trim().toUpperCase(),
       due,
-      note: [input.notes?.trim(), lineDesc && lineDesc !== lineName ? lineDesc : ""]
-        .filter(Boolean)
-        .join("\n") || undefined,
+      note:
+        [input.notes?.trim(), lineDesc && lineDesc !== lineName ? lineDesc : ""]
+          .filter(Boolean)
+          .join("\n") || undefined,
       lines: [
         {
           name: lineName,
@@ -325,7 +360,8 @@ export async function createFakturoidInvoiceFromOffer(input: {
     });
 
     const url = invoicePublicUrl(invoice, auth.slug);
-    const scope: DocumentScope = input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
+    const scope: DocumentScope =
+      input.saveTo === "SHARED" ? "SHARED" : "PERSONAL";
     const label = invoice.number
       ? `Faktura ${invoice.number}`
       : `Faktura ${companyName}`;
@@ -368,7 +404,10 @@ export async function createFakturoidInvoiceFromOffer(input: {
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Vytvoření faktury ve Fakturoidu selhalo.",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Vytvoření faktury ve Fakturoidu selhalo.",
     };
   }
 }

@@ -60,7 +60,10 @@ import {
   type AutopilotEmailQueueRow,
 } from "@/app/actions/autopilot";
 import { getLeads } from "@/app/actions/crm";
-import { computeScheduledTimes, formatSchedulePreview } from "@/lib/email-scheduling";
+import {
+  computeScheduledTimes,
+  formatSchedulePreview,
+} from "@/lib/email-scheduling";
 import { getActiveScheduleWindows } from "@/lib/autopilot-settings";
 import { htmlBodyToEditablePlainText } from "@/lib/email-format";
 import { leadTagLabel, LEAD_TAG_ORDER } from "@/lib/lead-tags";
@@ -69,6 +72,7 @@ import { toast } from "sonner";
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
+  AutopilotIconButton,
   AutopilotSettingsIconButton,
   AutopilotListEmptyState,
   AutopilotTableEmptyState,
@@ -107,7 +111,9 @@ export function AutopilotSniperView() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeSubTab, setActiveSubTab] = useState<"selection" | "queue">("selection");
+  const [activeSubTab, setActiveSubTab] = useState<"selection" | "queue">(
+    "selection",
+  );
   const [queueExpanded, setQueueExpanded] = useState(false);
   const [selectionExpanded, setSelectionExpanded] = useState(false);
   const [selectionDateFilter, setSelectionDateFilter] = useState<
@@ -119,17 +125,24 @@ export function AutopilotSniperView() {
   const [isRunning, setIsRunning] = useState(false);
   const [isClearingQueue, setIsClearingQueue] = useState(false);
   const [isForceSending, setIsForceSending] = useState(false);
-  const [forceSendingQueueId, setForceSendingQueueId] = useState<string | null>(null);
+  const [forceSendingQueueId, setForceSendingQueueId] = useState<string | null>(
+    null,
+  );
   const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [states, setStates] = useState<Record<string, RunState>>({});
-  const [queueStatusFilter, setQueueStatusFilter] = useState<"all" | "queued" | "error">("all");
+  const [queueStatusFilter, setQueueStatusFilter] = useState<
+    "all" | "queued" | "error"
+  >("all");
   const [queueSearch, setQueueSearch] = useState("");
   const [queueCurrentPage, setQueueCurrentPage] = useState(1);
-  const [activePreviewEmail, setActivePreviewEmail] = useState<ActivePreviewEmail | null>(null);
+  const [activePreviewEmail, setActivePreviewEmail] =
+    useState<ActivePreviewEmail | null>(null);
   const [editedSubject, setEditedSubject] = useState("");
   const [editedBody, setEditedBody] = useState("");
   const [isSavingPreview, setIsSavingPreview] = useState(false);
-  const [savingEmailLeadId, setSavingEmailLeadId] = useState<string | null>(null);
+  const [savingEmailLeadId, setSavingEmailLeadId] = useState<string | null>(
+    null,
+  );
 
   const {
     settingsOpen,
@@ -266,7 +279,13 @@ export function AutopilotSniperView() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [workspaceLeads.length, selectionDateFilter, selectionTagFilter, selectionSearch, onlyWithEmail]);
+  }, [
+    workspaceLeads.length,
+    selectionDateFilter,
+    selectionTagFilter,
+    selectionSearch,
+    onlyWithEmail,
+  ]);
 
   /** Stejný základ jako tabulka (NEW + e-mail + datum), bez tagu a hledání — počty ve filtru = co uvidíš. */
   const selectionBaseLeads = useMemo(() => {
@@ -281,7 +300,8 @@ export function AutopilotSniperView() {
       if (onlyWithEmail && !lead.email?.trim()) return false;
       const created = new Date(lead.createdAt);
       if (selectionDateFilter === "last_7_days") return created >= sevenDaysAgo;
-      if (selectionDateFilter === "last_30_days") return created >= thirtyDaysAgo;
+      if (selectionDateFilter === "last_30_days")
+        return created >= thirtyDaysAgo;
       if (selectionDateFilter === "this_year") {
         return created.getFullYear() === now.getFullYear();
       }
@@ -317,7 +337,10 @@ export function AutopilotSniperView() {
           lead.company.toLowerCase().includes(q) ||
           lead.url.toLowerCase().includes(q) ||
           lead.email.toLowerCase().includes(q) ||
-          (lead.tags ?? []).some((tag) => leadTagLabel(tag).toLowerCase().includes(q) || tag.includes(q))
+          (lead.tags ?? []).some(
+            (tag) =>
+              leadTagLabel(tag).toLowerCase().includes(q) || tag.includes(q),
+          )
         );
       })
       .map(({ id, company, url, email, phone, createdAt }) => ({
@@ -347,10 +370,13 @@ export function AutopilotSniperView() {
   const shownTo = totalItems === 0 ? 0 : pageStart + paginatedLeads.length;
 
   const allPageSelected =
-    paginatedLeads.length > 0 && paginatedLeads.every((lead) => selectedIds.includes(lead.id));
+    paginatedLeads.length > 0 &&
+    paginatedLeads.every((lead) => selectedIds.includes(lead.id));
   const somePageSelected =
-    paginatedLeads.some((lead) => selectedIds.includes(lead.id)) && !allPageSelected;
-  const allDatabaseSelected = totalItems > 0 && selectedIds.length === totalItems;
+    paginatedLeads.some((lead) => selectedIds.includes(lead.id)) &&
+    !allPageSelected;
+  const allDatabaseSelected =
+    totalItems > 0 && selectedIds.length === totalItems;
 
   const showSelectAllBanner =
     allPageSelected && totalItems > ITEMS_PER_PAGE && !allDatabaseSelected;
@@ -386,7 +412,11 @@ export function AutopilotSniperView() {
       if (s === "queued") queued += 1;
       if (s === "error") error += 1;
     }
-    return { processedCount: processed, queuedCount: queued, errorCount: error };
+    return {
+      processedCount: processed,
+      queuedCount: queued,
+      errorCount: error,
+    };
   }, [campaignLeads, states]);
 
   const total = campaignLeads.length;
@@ -425,14 +455,19 @@ export function AutopilotSniperView() {
   }, [activePreviewEmail]);
 
   const openEmailPreview = (preview: ActivePreviewEmail) => {
-    const plainBody = preview.htmlBody ? htmlBodyToEditablePlainText(preview.htmlBody) : "";
+    const plainBody = preview.htmlBody
+      ? htmlBodyToEditablePlainText(preview.htmlBody)
+      : "";
     setEditedSubject(preview.subject);
     setEditedBody(plainBody);
     setActivePreviewEmail(preview);
   };
 
   const queueTotalItems = filteredCampaignLeads.length;
-  const queueTotalPages = Math.max(1, Math.ceil(queueTotalItems / ITEMS_PER_PAGE));
+  const queueTotalPages = Math.max(
+    1,
+    Math.ceil(queueTotalItems / ITEMS_PER_PAGE),
+  );
   const queueSafePage = Math.min(queueCurrentPage, queueTotalPages);
   const queuePageStart = (queueSafePage - 1) * ITEMS_PER_PAGE;
   const paginatedQueueLeads = filteredCampaignLeads.slice(
@@ -440,7 +475,8 @@ export function AutopilotSniperView() {
     queuePageStart + ITEMS_PER_PAGE,
   );
   const queueShownFrom = queueTotalItems === 0 ? 0 : queuePageStart + 1;
-  const queueShownTo = queueTotalItems === 0 ? 0 : queuePageStart + paginatedQueueLeads.length;
+  const queueShownTo =
+    queueTotalItems === 0 ? 0 : queuePageStart + paginatedQueueLeads.length;
 
   const queueFilterTabs = [
     { id: "all" as const, label: "Vše", count: campaignLeads.length },
@@ -504,7 +540,11 @@ export function AutopilotSniperView() {
     }
   };
 
-  const handleSaveRecipientEmail = async (leadId: string, nextEmail: string, previousEmail: string) => {
+  const handleSaveRecipientEmail = async (
+    leadId: string,
+    nextEmail: string,
+    previousEmail: string,
+  ) => {
     const trimmed = nextEmail.trim();
     if (trimmed.toLowerCase() === previousEmail.trim().toLowerCase()) {
       return;
@@ -519,13 +559,17 @@ export function AutopilotSniperView() {
       if ("error" in result) {
         toast.error(result.error);
         setCampaignLeads((prev) =>
-          prev.map((lead) => (lead.id === leadId ? { ...lead, email: previousEmail } : lead)),
+          prev.map((lead) =>
+            lead.id === leadId ? { ...lead, email: previousEmail } : lead,
+          ),
         );
         return;
       }
 
       setCampaignLeads((prev) =>
-        prev.map((lead) => (lead.id === leadId ? { ...lead, email: result.email } : lead)),
+        prev.map((lead) =>
+          lead.id === leadId ? { ...lead, email: result.email } : lead,
+        ),
       );
 
       if (result.requeued) {
@@ -537,30 +581,24 @@ export function AutopilotSniperView() {
     } catch {
       toast.error("Nepodařilo se uložit e-mail.");
       setCampaignLeads((prev) =>
-        prev.map((lead) => (lead.id === leadId ? { ...lead, email: previousEmail } : lead)),
+        prev.map((lead) =>
+          lead.id === leadId ? { ...lead, email: previousEmail } : lead,
+        ),
       );
     } finally {
       setSavingEmailLeadId(null);
     }
   };
 
-  const renderQueueRecipientCell = (
-    lead: AutopilotLead,
-    state: RunState,
-    variant: "mobile" | "desktop",
-  ) => {
+  const renderQueueRecipientCell = (lead: AutopilotLead, state: RunState) => {
     const canEdit =
-      (state.status === "queued" || state.status === "error") && Boolean(state.queueId);
+      (state.status === "queued" || state.status === "error") &&
+      Boolean(state.queueId);
     const isSaving = savingEmailLeadId === lead.id;
 
     if (!canEdit) {
       return (
-        <p
-          className={cn(
-            "truncate text-muted-foreground",
-            variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
-          )}
-        >
+        <p className="truncate text-xs text-muted-foreground">
           {lead.email || "Bez e-mailu"}
         </p>
       );
@@ -575,7 +613,11 @@ export function AutopilotSniperView() {
         aria-label={`E-mail příjemce pro ${lead.company}`}
         title="Změňte e-mail a potvrďte Enterem nebo odkliknutím"
         onBlur={(event) => {
-          void handleSaveRecipientEmail(lead.id, event.target.value, lead.email);
+          void handleSaveRecipientEmail(
+            lead.id,
+            event.target.value,
+            lead.email,
+          );
         }}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
@@ -589,34 +631,25 @@ export function AutopilotSniperView() {
         }}
         className={cn(
           "sk-plain-field w-full max-w-[260px] truncate border-0 bg-transparent p-0 text-foreground shadow-none outline-none ring-0 transition-colors",
-          "underline decoration-transparent underline-offset-2 hover:text-[color:var(--sk-brand)] hover:decoration-[color:var(--sk-brand)]/40",
-          "focus:text-[color:var(--sk-brand)] focus:decoration-[color:var(--sk-brand)]/50",
-          "disabled:opacity-60",
-          variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
+          "hover:text-foreground/80",
+          "focus:text-foreground",
+          "disabled:opacity-60 text-xs",
         )}
       />
     );
   };
 
-  const renderQueueStatusCell = (
-    state: RunState,
-    variant: "mobile" | "desktop",
-  ) => {
+  const renderQueueStatusCell = (state: RunState) => {
     const meta = STATUS_META[state.status];
     const errorDetail =
       state.status === "error"
-        ? state.message?.trim() || "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail."
+        ? state.message?.trim() ||
+          "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail."
         : null;
 
     if (!errorDetail) {
       return (
-        <span
-          className={cn(
-            "font-semibold",
-            meta.className,
-            variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
-          )}
-        >
+        <span className={cn("text-xs font-semibold", meta.className)}>
           {meta.label}
         </span>
       );
@@ -626,10 +659,7 @@ export function AutopilotSniperView() {
       <QueueErrorStatus
         label={meta.label}
         detail={errorDetail}
-        className={cn(
-          meta.className,
-          variant === "mobile" ? "mt-0.5 text-[11px]" : "text-xs",
-        )}
+        className={cn(meta.className, "text-xs")}
       />
     );
   };
@@ -667,7 +697,9 @@ export function AutopilotSniperView() {
       );
 
       if (windows.length === 0) {
-        toast.error("Nastavte alespoň jedno platné časové okno v nastavení automatizace.");
+        toast.error(
+          "Nastavte alespoň jedno platné časové okno v nastavení automatizace.",
+        );
         openSettings();
         return;
       }
@@ -678,7 +710,10 @@ export function AutopilotSniperView() {
         return;
       }
 
-      const batchSize = Math.max(1, Math.min(automationSettings.maxEmailsPerBatch, 500));
+      const batchSize = Math.max(
+        1,
+        Math.min(automationSettings.maxEmailsPerBatch, 500),
+      );
 
       try {
         scheduledTimes = computeScheduledTimes(
@@ -689,7 +724,8 @@ export function AutopilotSniperView() {
           automationSettings.sendDays,
         );
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Neplatná nastavení plánování.";
+        const message =
+          e instanceof Error ? e.message : "Neplatná nastavení plánování.";
         toast.error(message);
         return;
       }
@@ -697,7 +733,9 @@ export function AutopilotSniperView() {
 
     setCampaignLeads(queue);
     setStates(
-      Object.fromEntries(queue.map((lead) => [lead.id, { status: "pending" as RunStatus }])),
+      Object.fromEntries(
+        queue.map((lead) => [lead.id, { status: "pending" as RunStatus }]),
+      ),
     );
     setActiveSubTab("queue");
     setIsRunning(true);
@@ -744,7 +782,9 @@ export function AutopilotSniperView() {
 
     if (shouldForceSendNow) {
       try {
-        const response = await fetch("/api/autopilot/force-send", { method: "POST" });
+        const response = await fetch("/api/autopilot/force-send", {
+          method: "POST",
+        });
         const result = (await response.json()) as {
           error?: string;
           sent?: number;
@@ -752,7 +792,10 @@ export function AutopilotSniperView() {
         };
 
         if (!response.ok) {
-          toast.error(result.error ?? "E-maily jsou ve frontě, ale okamžité odeslání selhalo.");
+          toast.error(
+            result.error ??
+              "E-maily jsou ve frontě, ale okamžité odeslání selhalo.",
+          );
           return;
         }
 
@@ -762,7 +805,9 @@ export function AutopilotSniperView() {
         if (sent > 0 && failed === 0) {
           toast.success(`${sent} e-mailů bylo vygenerováno a odesláno.`);
         } else if (sent > 0 && failed > 0) {
-          toast.warning(`Odesláno ${sent} e-mailů, ${failed} se nepodařilo odeslat.`);
+          toast.warning(
+            `Odesláno ${sent} e-mailů, ${failed} se nepodařilo odeslat.`,
+          );
         } else if (failed > 0) {
           toast.error(`Žádný e-mail se nepodařilo odeslat (${failed} chyb).`);
         } else {
@@ -776,7 +821,7 @@ export function AutopilotSniperView() {
 
     if (isImmediate && !featureEnabled) {
       toast.success(
-        "E-maily jsou ve frontě. Automatika je vypnutá — neodeslaly se. Zapni odesílání nebo pošli ručně z fronty.",
+        "E-maily jsou ve frontě. Automatika je vypnutá, takže se neodeslaly. Zapni odesílání nebo pošli ručně z fronty.",
       );
       return;
     }
@@ -794,7 +839,9 @@ export function AutopilotSniperView() {
 
     setIsForceSending(true);
     try {
-      const response = await fetch("/api/autopilot/force-send", { method: "POST" });
+      const response = await fetch("/api/autopilot/force-send", {
+        method: "POST",
+      });
       const result = (await response.json()) as {
         error?: string;
         sent?: number;
@@ -815,14 +862,17 @@ export function AutopilotSniperView() {
       }
 
       if (failed > 0) {
-        toast.warning(`Odesláno ${sent} e-mailů, ${failed} se nepodařilo odeslat.`);
+        toast.warning(
+          `Odesláno ${sent} e-mailů, ${failed} se nepodařilo odeslat.`,
+        );
       } else {
         toast.success(`Odesláno ${sent} e-mailů ihned.`);
       }
 
       await loadQueue();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Nepodařilo se odeslat e-maily ihned.";
+      const message =
+        e instanceof Error ? e.message : "Nepodařilo se odeslat e-maily ihned.";
       toast.error(message);
     } finally {
       setIsForceSending(false);
@@ -861,7 +911,8 @@ export function AutopilotSniperView() {
       toast.info("Položka už nebyla ve frontě k odeslání.");
       await loadQueue();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Nepodařilo se odeslat e-mail.";
+      const message =
+        e instanceof Error ? e.message : "Nepodařilo se odeslat e-mail.";
       toast.error(message);
     } finally {
       setForceSendingQueueId(null);
@@ -882,10 +933,14 @@ export function AutopilotSniperView() {
       if (scope === "failed") {
         const errorLeadIds = new Set(
           campaignLeads
-            .filter((lead) => (states[lead.id]?.status ?? "pending") === "error")
+            .filter(
+              (lead) => (states[lead.id]?.status ?? "pending") === "error",
+            )
             .map((lead) => lead.id),
         );
-        setCampaignLeads((prev) => prev.filter((lead) => !errorLeadIds.has(lead.id)));
+        setCampaignLeads((prev) =>
+          prev.filter((lead) => !errorLeadIds.has(lead.id)),
+        );
         setStates((prev) => {
           const next = { ...prev };
           for (const id of errorLeadIds) delete next[id];
@@ -909,7 +964,8 @@ export function AutopilotSniperView() {
 
       await loadQueue();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Nepodařilo se vyčistit frontu.";
+      const message =
+        e instanceof Error ? e.message : "Nepodařilo se vyčistit frontu.";
       toast.error(message);
     } finally {
       setIsClearingQueue(false);
@@ -926,68 +982,10 @@ export function AutopilotSniperView() {
           expanded ? "mt-0 h-full min-h-0 sm:mt-0" : "mt-3 sm:mt-4",
         )}
       >
-        {/* Mobile list */}
         <div
           className={cn(
             AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "sk-data-panel__scroll--mobile min-h-0 flex-1 flex-col gap-2 overflow-y-auto md:hidden",
-            SNIPER_SELECTION_VIEWPORT_CLASS,
-          )}
-        >
-          {paginatedLeads.map((lead) => {
-            const checked = selectedIds.includes(lead.id);
-            return (
-              <div
-                key={`${mode}-m-${lead.id}`}
-                role="button"
-                tabIndex={0}
-                onClick={() => toggleOne(lead.id)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleOne(lead.id);
-                  }
-                }}
-                className="sk-data-row w-full cursor-pointer text-left"
-              >
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={() => toggleOne(lead.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-foreground">{lead.company}</p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    {lead.email || "Bez e-mailu"}
-                    {lead.phone ? ` · ${lead.phone}` : ""}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-          {paginatedLeads.length === 0 && (
-            <>
-              {isLoading && <AutopilotListEmptyState>Načítám firmy…</AutopilotListEmptyState>}
-              {!isLoading && loadError && (
-                <AutopilotListEmptyState className="text-rose-600 dark:text-rose-400">
-                  {loadError}
-                </AutopilotListEmptyState>
-              )}
-              {!isLoading && !loadError && leads.length === 0 && (
-                <AutopilotListEmptyState>
-                  Žádné neoslovené firmy. Přidejte leady v Radaru nebo CRM.
-                </AutopilotListEmptyState>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Desktop table */}
-        <div
-          className={cn(
-            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-            "sk-data-panel__scroll hidden md:block",
+            "sk-data-panel__scroll",
             SNIPER_SELECTION_VIEWPORT_CLASS,
           )}
         >
@@ -1000,7 +998,7 @@ export function AutopilotSniperView() {
               <col className="w-[22%]" />
               <col className="w-[7rem]" />
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+            <thead className="sticky top-0 z-20 bg-white ">
               <tr className="text-left">
                 <th
                   className={cn(
@@ -1011,7 +1009,11 @@ export function AutopilotSniperView() {
                   <div className="flex h-full items-center justify-center">
                     <Checkbox
                       checked={
-                        allPageSelected ? true : somePageSelected ? "indeterminate" : false
+                        allPageSelected
+                          ? true
+                          : somePageSelected
+                            ? "indeterminate"
+                            : false
                       }
                       onCheckedChange={toggleAllOnPage}
                       disabled={paginatedLeads.length === 0}
@@ -1019,7 +1021,12 @@ export function AutopilotSniperView() {
                   </div>
                 </th>
                 <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Firma</th>
-                <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "px-2 text-center")}>
+                <th
+                  className={cn(
+                    AUTOPILOT_TABLE_HEAD_CELL_CLASS,
+                    "px-2 text-center",
+                  )}
+                >
                   Web
                 </th>
                 <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>E-mail</th>
@@ -1049,7 +1056,10 @@ export function AutopilotSniperView() {
                       </div>
                     </td>
                     <td className="min-w-0 px-3 py-2.5">
-                      <p className="truncate font-semibold text-foreground" title={lead.company}>
+                      <p
+                        className="truncate font-semibold text-foreground"
+                        title={lead.company}
+                      >
                         {lead.company}
                       </p>
                     </td>
@@ -1080,8 +1090,15 @@ export function AutopilotSniperView() {
                     >
                       {lead.email ? (
                         <div className="flex min-w-0 items-center gap-0.5">
-                          <CopyEmailButton email={lead.email} size="sm" variant="ghost" />
-                          <span className="min-w-0 truncate text-sm text-foreground" title={lead.email}>
+                          <CopyEmailButton
+                            email={lead.email}
+                            size="sm"
+                            variant="ghost"
+                          />
+                          <span
+                            className="min-w-0 truncate text-sm text-foreground"
+                            title={lead.email}
+                          >
                             {lead.email}
                           </span>
                         </div>
@@ -1095,7 +1112,10 @@ export function AutopilotSniperView() {
                       {lead.phone ? (
                         <span className="flex min-w-0 items-center text-sm text-foreground">
                           <Phone className="mr-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="truncate tabular-nums" title={lead.phone}>
+                          <span
+                            className="truncate tabular-nums"
+                            title={lead.phone}
+                          >
                             {lead.phone}
                           </span>
                         </span>
@@ -1112,16 +1132,22 @@ export function AutopilotSniperView() {
               {paginatedLeads.length === 0 && (
                 <>
                   {isLoading && (
-                    <AutopilotTableEmptyState colSpan={6}>Načítám firmy…</AutopilotTableEmptyState>
+                    <AutopilotTableEmptyState colSpan={6}>
+                      Načítám firmy…
+                    </AutopilotTableEmptyState>
                   )}
                   {!isLoading && loadError && (
-                    <AutopilotTableEmptyState colSpan={6} className="text-rose-600 dark:text-rose-400">
+                    <AutopilotTableEmptyState
+                      colSpan={6}
+                      className="text-rose-600 "
+                    >
                       {loadError}
                     </AutopilotTableEmptyState>
                   )}
                   {!isLoading && !loadError && leads.length === 0 && (
                     <AutopilotTableEmptyState colSpan={6}>
-                      Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo CRM.
+                      Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo
+                      CRM.
                     </AutopilotTableEmptyState>
                   )}
                 </>
@@ -1158,7 +1184,9 @@ export function AutopilotSniperView() {
               : "mt-3 sm:mt-6",
           )}
         >
-          <AutopilotListEmptyState>Načítám naplánovanou frontu…</AutopilotListEmptyState>
+          <AutopilotListEmptyState>
+            Načítám naplánovanou frontu…
+          </AutopilotListEmptyState>
         </div>
       );
     }
@@ -1175,7 +1203,8 @@ export function AutopilotSniperView() {
           )}
         >
           <AutopilotListEmptyState>
-            Zatím nemáte naplánovanou frontu. Označ firmy a klikni na „Vygenerovat a naplánovat“.
+            Zatím nemáte naplánovanou frontu. Označ firmy a klikni na
+            „Vygenerovat a naplánovat“.
           </AutopilotListEmptyState>
         </div>
       );
@@ -1185,15 +1214,15 @@ export function AutopilotSniperView() {
       <>
         <div
           className={cn(
-            "shrink-0 overflow-hidden rounded-xl border border-border/60 bg-white shadow-sm sm:rounded-2xl",
-            !expanded && "mt-3 sm:mt-6",
+            "sk-toolbar sk-surface shrink-0 overflow-hidden",
+            !expanded && "mt-3 sm:mt-4",
           )}
         >
-          <div className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
               <span className="flex shrink-0 items-center gap-2 text-xs font-semibold leading-none text-foreground sm:text-sm">
                 {isRunning ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 ) : (
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 )}
@@ -1213,26 +1242,28 @@ export function AutopilotSniperView() {
               {!expanded && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => setQueueExpanded(true)}
-                  className="inline-flex h-7 w-fit items-center px-2.5 py-0 text-xs leading-none"
+                  className="sk-press-btn h-8 gap-1.5 rounded-[12px] px-3 text-xs"
                 >
-                  <Maximize2 className="mr-1 h-3 w-3" />
+                  <Maximize2 className="h-3.5 w-3.5" />
                   Zvětšit
                 </Button>
               )}
               {queuedCount > 0 && (
                 <Button
                   type="button"
-                  variant="outline"
-                  disabled={isRunning || isForceSending || forceSendingQueueId !== null}
+                  variant="secondary"
+                  disabled={
+                    isRunning || isForceSending || forceSendingQueueId !== null
+                  }
                   onClick={() => void handleForceSendQueue()}
-                  className="inline-flex h-7 w-fit shrink-0 items-center border-emerald-200 px-2.5 py-0 text-xs leading-none text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 dark:border-emerald-900/50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                  className="sk-press-btn sk-selection__success h-8 gap-1.5 rounded-[12px] px-3 text-xs"
                 >
                   {isForceSending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Send className="mr-1 h-3 w-3" />
+                    <Send className="h-3.5 w-3.5" />
                   )}
                   Odeslat vše
                 </Button>
@@ -1242,25 +1273,29 @@ export function AutopilotSniperView() {
                   <AlertDialogTrigger asChild>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       disabled={isRunning || isClearingQueue}
-                      className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                      className="sk-press-btn sk-selection__danger h-8 gap-1.5 rounded-[12px] px-3 text-xs"
                     >
                       {isClearingQueue ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Trash2 className="mr-1 h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       )}
                       Smazat chyby
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent className="border bg-card shadow-md dark:bg-zinc-950">
+                  <AlertDialogContent className="border bg-card shadow-md ">
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Smazat všechny chyby ve frontě?</AlertDialogTitle>
+                      <AlertDialogTitle>
+                        Smazat všechny chyby ve frontě?
+                      </AlertDialogTitle>
                       <AlertDialogDescription>
                         Odstraní se {errorCount}{" "}
-                        {errorCount === 1 ? "položka se stavem Chyba" : "položek se stavem Chyba"}.
-                        Potvrzené e-maily ve frontě zůstanou.
+                        {errorCount === 1
+                          ? "položka se stavem Chyba"
+                          : "položek se stavem Chyba"}
+                        . Potvrzené e-maily ve frontě zůstanou.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -1279,24 +1314,28 @@ export function AutopilotSniperView() {
                 <AlertDialogTrigger asChild>
                   <Button
                     type="button"
-                    variant="outline"
-                    disabled={isRunning || isClearingQueue || campaignLeads.length === 0}
-                    className="inline-flex h-7 w-fit shrink-0 items-center border-red-200 px-2.5 py-0 text-xs leading-none text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    variant="secondary"
+                    disabled={
+                      isRunning || isClearingQueue || campaignLeads.length === 0
+                    }
+                    className="sk-press-btn sk-selection__danger h-8 gap-1.5 rounded-[12px] px-3 text-xs"
                   >
                     {isClearingQueue ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="mr-1 h-3 w-3" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     )}
                     Vyčistit
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="border bg-card shadow-md dark:bg-zinc-950">
+                <AlertDialogContent className="border bg-card shadow-md ">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Opravdu chcete vyčistit frontu?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      Opravdu chcete vyčistit frontu?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Smažou se všechny položky ve frontě včetně chyb ({campaignLeads.length}).
-                      Tuto akci nelze vrátit.
+                      Smažou se všechny položky ve frontě včetně chyb (
+                      {campaignLeads.length}). Tuto akci nelze vrátit.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -1313,7 +1352,10 @@ export function AutopilotSniperView() {
             </div>
           </div>
           {(isRunning || isForceSending) && (
-            <Progress value={progressValue} className="h-1 rounded-none" />
+            <Progress
+              value={progressValue}
+              className="h-1 w-full basis-full rounded-none"
+            />
           )}
         </div>
 
@@ -1327,28 +1369,30 @@ export function AutopilotSniperView() {
         >
           <div className="shrink-0 px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3">
             <div className="mb-2 flex flex-col gap-2 sm:mb-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-semibold text-foreground sm:text-sm">Fronta k odeslání</p>
-              <div className="relative min-w-0 sm:w-56">
+              <p className="text-xs font-semibold text-foreground sm:text-sm">
+                Fronta k odeslání
+              </p>
+              <div className="relative min-w-0 w-full sm:w-72 sm:max-w-none">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={queueSearch}
                   onChange={(event) => setQueueSearch(event.target.value)}
                   placeholder="Hledat firmu, e-mail, autora…"
-                  className="h-8 pl-8 text-xs"
+                  className="h-8 w-full pl-8 text-xs"
                 />
               </div>
             </div>
-            <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:flex-wrap sm:items-center sm:gap-4">
+            <div className="flex gap-1 overflow-x-auto sm:flex-wrap sm:items-center sm:gap-4">
               {queueFilterTabs.map(({ id, label, count }) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setQueueStatusFilter(id)}
                   className={cn(
-                    "-mb-px flex shrink-0 items-baseline gap-1.5 border-b-2 px-2 pb-2 text-xs font-semibold transition-colors sm:px-0 sm:text-sm",
+                    "flex shrink-0 items-baseline gap-1.5 px-2 py-1 text-xs font-semibold transition-colors sm:px-0 sm:text-sm",
                     queueStatusFilter === id
-                      ? "border-[color:var(--sk-brand)] text-[color:var(--sk-brand)]"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   <span>{label}</span>
@@ -1356,106 +1400,16 @@ export function AutopilotSniperView() {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-              E-maily ve sloupci Kontakt můžete upravit kliknutím — platí, dokud se zpráva
-              neodešle. U chyby po opravě e-mailu se položka znovu zařadí do fronty.
+            <p className="mt-2 text-[11px] leading-snug text-blue-800">
+              E-maily ve sloupci Kontakt můžete upravit kliknutím. Platí, dokud
+              se zpráva neodešle. U chyby po opravě e-mailu se položka znovu
+              zařadí do fronty.
             </p>
           </div>
 
           <div
             className={cn(
-              "sk-data-panel__scroll--mobile flex flex-col overflow-y-auto scrollbar-hide md:hidden",
-              expanded ? "min-h-0 flex-1" : "max-h-[min(35dvh,190px)] min-h-[140px]",
-            )}
-          >
-            {paginatedQueueLeads.map((lead) => {
-              const state = states[lead.id] ?? { status: "pending" as RunStatus };
-              const canPreview =
-                state.status === "queued" && Boolean(state.subject && state.queueId);
-
-              return (
-                <div
-                  key={`${mode}-m-${lead.id}`}
-                  className="sk-data-row"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold text-foreground">
-                      {lead.company}
-                    </p>
-                    {renderQueueRecipientCell(lead, state, "mobile")}
-                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                      {[
-                        lead.author || null,
-                        featureEnabled && lead.scheduledAt
-                          ? `odeslat ${formatSchedulePreview(new Date(lead.scheduledAt))}`
-                          : null,
-                        lead.createdAt
-                          ? `vytvořeno ${formatQueueDateTime(lead.createdAt)}`
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "—"}
-                    </p>
-                    {renderQueueStatusCell(state, "mobile")}
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    {canPreview ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openEmailPreview({
-                            leadId: lead.id,
-                            queueId: state.queueId!,
-                            companyName: lead.company,
-                            subject: state.subject!,
-                            htmlBody: state.htmlBody ?? "",
-                          })
-                        }
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        Náhled
-                      </button>
-                    ) : null}
-                    {canPreview ? (
-                      <button
-                        type="button"
-                        disabled={
-                          isRunning ||
-                          isForceSending ||
-                          forceSendingQueueId === state.queueId
-                        }
-                        onClick={() => void handleForceSendOne(state.queueId!, lead.id)}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1.5 text-[11px] font-medium text-emerald-700 disabled:opacity-60 dark:bg-emerald-900/30 dark:text-emerald-300"
-                      >
-                        {forceSendingQueueId === state.queueId ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Send className="h-3.5 w-3.5" />
-                        )}
-                        Odeslat
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            })}
-            {paginatedQueueLeads.length === 0 && (
-              <AutopilotListEmptyState className="min-h-[140px] py-6 text-xs">
-                {queueSearch.trim()
-                  ? "Žádné výsledky pro hledaný výraz."
-                  : queueStatusFilter === "all"
-                    ? "Fronta je prázdná."
-                    : queueStatusFilter === "queued"
-                      ? "Zatím žádné potvrzené e-maily ve frontě."
-                      : "Zatím žádné chyby."}
-              </AutopilotListEmptyState>
-            )}
-          </div>
-
-          <div
-            className={cn(
-              "sk-data-panel__scroll hidden md:block",
+              "sk-data-panel__scroll",
               expanded
                 ? "min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 : cn(
@@ -1470,7 +1424,7 @@ export function AutopilotSniperView() {
                 expanded ? "table-auto" : "min-w-[980px] table-fixed",
               )}
             >
-              <thead className="sticky top-0 z-20 bg-white dark:bg-zinc-950">
+              <thead className="sticky top-0 z-20 bg-white ">
                 <tr className="text-left">
                   <th
                     className={cn(
@@ -1508,7 +1462,7 @@ export function AutopilotSniperView() {
                     title={
                       featureEnabled
                         ? "Plánovaný čas odeslání (automatický cron)"
-                        : "Automatické odesílání je vypnuté — použij Odeslat u řádku"
+                        : "Automatické odesílání je vypnuté. Použij Odeslat u řádku"
                     }
                   >
                     Odeslat
@@ -1541,11 +1495,15 @@ export function AutopilotSniperView() {
               </thead>
               <tbody>
                 {paginatedQueueLeads.map((lead) => {
-                  const state = states[lead.id] ?? { status: "pending" as RunStatus };
+                  const state = states[lead.id] ?? {
+                    status: "pending" as RunStatus,
+                  };
                   const canPreview =
-                    state.status === "queued" && Boolean(state.subject && state.queueId);
+                    state.status === "queued" &&
+                    Boolean(state.subject && state.queueId);
                   const isSendingThis =
-                    Boolean(state.queueId) && forceSendingQueueId === state.queueId;
+                    Boolean(state.queueId) &&
+                    forceSendingQueueId === state.queueId;
 
                   return (
                     <tr key={`${mode}-d-${lead.id}`}>
@@ -1555,7 +1513,7 @@ export function AutopilotSniperView() {
                         </p>
                       </td>
                       <td className="px-3 py-2.5">
-                        {renderQueueRecipientCell(lead, state, "desktop")}
+                        {renderQueueRecipientCell(lead, state)}
                       </td>
                       <td className="px-3 py-2.5">
                         <p className="whitespace-nowrap text-xs text-foreground">
@@ -1575,11 +1533,11 @@ export function AutopilotSniperView() {
                         </p>
                       </td>
                       <td className="px-3 py-2.5">
-                        {renderQueueStatusCell(state, "desktop")}
+                        {renderQueueStatusCell(state)}
                       </td>
                       <td className="px-3 py-2.5">
                         {canPreview ? (
-                          <div className="flex flex-col items-start gap-1.5">
+                          <div className="flex flex-row flex-nowrap items-center gap-1">
                             <button
                               type="button"
                               onClick={() =>
@@ -1591,27 +1549,35 @@ export function AutopilotSniperView() {
                                   htmlBody: state.htmlBody ?? "",
                                 })
                               }
-                              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-blue-600 transition-colors hover:text-blue-800 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+                              title="Náhled"
+                              aria-label="Náhled"
+                              className="sk-row-text-btn inline-flex h-7 w-7 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
                             >
                               <Eye className="h-4 w-4 shrink-0" />
-                              Náhled
                             </button>
                             <button
                               type="button"
-                              disabled={isRunning || isForceSending || isSendingThis}
-                              onClick={() => void handleForceSendOne(state.queueId!, lead.id)}
-                              className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs font-medium text-emerald-600 transition-colors hover:text-emerald-800 hover:underline disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-400 dark:hover:text-emerald-300"
+                              title="Odeslat"
+                              aria-label="Odeslat"
+                              disabled={
+                                isRunning || isForceSending || isSendingThis
+                              }
+                              onClick={() =>
+                                void handleForceSendOne(state.queueId!, lead.id)
+                              }
+                              className="sk-row-text-btn inline-flex h-7 w-7 cursor-pointer items-center justify-center text-emerald-600 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               {isSendingThis ? (
                                 <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
                               ) : (
                                 <Send className="h-4 w-4 shrink-0" />
                               )}
-                              Odeslat
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -1645,7 +1611,9 @@ export function AutopilotSniperView() {
             safePage={queueSafePage}
             totalPages={queueTotalPages}
             onPrevious={() => setQueueCurrentPage((p) => Math.max(1, p - 1))}
-            onNext={() => setQueueCurrentPage((p) => Math.min(queueTotalPages, p + 1))}
+            onNext={() =>
+              setQueueCurrentPage((p) => Math.min(queueTotalPages, p + 1))
+            }
           />
         </div>
       </>
@@ -1668,162 +1636,162 @@ export function AutopilotSniperView() {
       />
 
       <div className="sk-autopilot__panel">
-      <AutopilotControlPanel
-        icon={<Send className="h-5 w-5" />}
-        iconWrapClassName="bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-        title="Automatické odesílání e-mailů"
-        powerEnabled={featureEnabled}
-        description={
-          featureEnabled
-            ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
-            : "Cron vypnutý. Maily z fronty se neodešlou, dokud nezapneš."
-        }
-        actions={
-          <>
-            <AutopilotPowerButton
-              enabled={featureEnabled}
-              disabled={isTogglingPower}
-              accent="blue"
-              onClick={() => void toggleFeaturePower()}
-            />
-            <AutopilotSettingsIconButton
-              label="Nastavení odesílání"
-              onClick={openSettings}
-            />
-          </>
-        }
-      />
+        <AutopilotControlPanel
+          icon={<Send className="h-5 w-5" />}
+          iconWrapClassName="sk-page-badge"
+          title="Automatické odesílání e-mailů"
+          powerEnabled={featureEnabled}
+          description={
+            featureEnabled
+              ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
+              : "Cron vypnutý. Maily z fronty se neodešlou, dokud nezapneš."
+          }
+          actions={
+            <>
+              <AutopilotPowerButton
+                enabled={featureEnabled}
+                disabled={isTogglingPower}
+                accent="blue"
+                onClick={() => void toggleFeaturePower()}
+              />
+              <AutopilotSettingsIconButton
+                label="Nastavení odesílání"
+                onClick={openSettings}
+              />
+            </>
+          }
+        />
       </div>
 
       <div className="sk-autopilot__table mt-0 flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="mt-0 flex shrink-0 gap-1 overflow-x-auto border-b border-border/60 pb-0 sm:gap-5">
-        <button
-          type="button"
-          onClick={() => {
-            setQueueExpanded(false);
-            setActiveSubTab("selection");
-          }}
-          className={cn(
-            "-mb-px shrink-0 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:px-0 sm:pb-2.5 sm:text-sm",
-            activeSubTab === "selection"
-              ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Výběr firem
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveSubTab("queue")}
-          className={cn(
-            "-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-2 pb-2 text-xs font-medium transition-colors sm:gap-2 sm:px-0 sm:pb-2.5 sm:text-sm",
-            activeSubTab === "queue"
-              ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-              : "border-transparent text-muted-foreground hover:text-foreground",
-          )}
-        >
-          Fronta
-          {queuedCount > 0 && (
-            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-              {queuedCount}
-            </span>
-          )}
-        </button>
-      </div>
+        <div className="mt-0 flex shrink-0 gap-1 overflow-x-auto sm:gap-5">
+          <button
+            type="button"
+            onClick={() => {
+              setQueueExpanded(false);
+              setActiveSubTab("selection");
+            }}
+            className={cn(
+              "shrink-0 px-2 pb-1 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
+              activeSubTab === "selection"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Výběr firem
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab("queue")}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 px-2 pb-1 text-xs font-medium transition-colors sm:gap-2 sm:px-0 sm:text-sm",
+              activeSubTab === "queue"
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Fronta
+            {queuedCount > 0 && (
+              <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                {queuedCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-      {activeSubTab === "selection" ? (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-white px-3 py-2.5 shadow-sm sm:mt-4 sm:gap-3 sm:px-4">
-            <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
-              {selectedIds.length > 0
-                ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
-                : "Označ firmy k oslovení"}
-            </p>
-            <label
-              htmlFor="sniper-only-email"
-              className="sk-filter-chip shrink-0"
-            >
-              <span className="hidden sm:inline">Jen s e-mailem</span>
-              <span className="sm:hidden">E-mail</span>
-              <Switch
-                id="sniper-only-email"
-                checked={onlyWithEmail}
-                onCheckedChange={setOnlyWithEmail}
-                className="shrink-0"
-              />
-            </label>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setSelectionExpanded(true)}
-              className="h-8 w-8 shrink-0 rounded-lg p-0"
-              title="Zvětšit výběr firem"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </Button>
-            <Button
-              type="button"
-              disabled={selectedIds.length === 0 || isRunning}
-              onClick={() => void handleStart()}
-              className="h-8 shrink-0 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white hover:bg-blue-700"
-            >
-              {isRunning ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Generuji…
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-1.5 h-3.5 w-3.5" />
-                  {selectedIds.length > 0
-                    ? automationSettings.sendingStrategy === "queue"
-                      ? `Do fronty (${selectedIds.length})`
-                      : automationSettings.sendingStrategy === "immediate"
-                        ? `Vygenerovat (${selectedIds.length})`
-                        : `Naplánovat (${selectedIds.length})`
-                    : automationSettings.sendingStrategy === "queue"
-                      ? "Do fronty"
-                      : automationSettings.sendingStrategy === "immediate"
-                        ? "Vygenerovat"
-                        : "Naplánovat"}
-                </>
-              )}
-            </Button>
-          </div>
-
-          {showSelectAllBanner && (
-            <div className="mt-3 shrink-0 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-300 sm:mt-4 sm:px-4 sm:py-3 sm:text-sm">
-              Jsou vybrány všechny firmy na této stránce ({paginatedLeads.length}).{" "}
-              <button
-                type="button"
-                onClick={selectAllInDatabase}
-                className="font-semibold underline underline-offset-2 hover:text-blue-900 dark:hover:text-blue-200"
+        {activeSubTab === "selection" ? (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="sk-toolbar sk-surface mt-3 sm:mt-4">
+              <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+                {selectedIds.length > 0
+                  ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
+                  : "Označ firmy k oslovení"}
+              </p>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="hidden text-[11px] font-medium text-muted-foreground sm:inline">
+                  Jen s e-mailem
+                </span>
+                <span className="text-[11px] font-medium text-muted-foreground sm:hidden">
+                  E-mail
+                </span>
+                <Switch
+                  checked={onlyWithEmail}
+                  onCheckedChange={setOnlyWithEmail}
+                  className="sk-switch--sm shrink-0"
+                  aria-label="Jen s e-mailem"
+                />
+              </div>
+              <AutopilotIconButton
+                label="Zvětšit výběr firem"
+                onClick={() => setSelectionExpanded(true)}
+                className="h-8 w-8"
               >
-                Vybrat všechny neoslovené ({totalItems})
-              </button>
+                <Maximize2 className="h-3.5 w-3.5" />
+              </AutopilotIconButton>
+              <Button
+                type="button"
+                variant="default"
+                disabled={selectedIds.length === 0 || isRunning}
+                onClick={() => void handleStart()}
+                className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
+              >
+                {isRunning ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Generuji…
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+                    {selectedIds.length > 0
+                      ? automationSettings.sendingStrategy === "queue"
+                        ? `Do fronty (${selectedIds.length})`
+                        : automationSettings.sendingStrategy === "immediate"
+                          ? `Vygenerovat (${selectedIds.length})`
+                          : `Naplánovat (${selectedIds.length})`
+                      : automationSettings.sendingStrategy === "queue"
+                        ? "Do fronty"
+                        : automationSettings.sendingStrategy === "immediate"
+                          ? "Vygenerovat"
+                          : "Naplánovat"}
+                  </>
+                )}
+              </Button>
             </div>
-          )}
 
-          {selectionExpanded ? (
-            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
-              Výběr firem je otevřený ve zvětšeném okně.
-            </div>
-          ) : (
-            renderSelectionTable("compact")
-          )}
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          {queueExpanded ? (
-            <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
-              Fronta je otevřená ve zvětšeném okně.
-            </div>
-          ) : (
-            renderQueuePanel("compact")
-          )}
-        </div>
-      )}
+            {showSelectAllBanner && (
+              <div className="mt-3 shrink-0 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-xs text-foreground sm:mt-4 sm:px-4 sm:py-3 sm:text-sm">
+                Jsou vybrány všechny firmy na této stránce (
+                {paginatedLeads.length}).{" "}
+                <button
+                  type="button"
+                  onClick={selectAllInDatabase}
+                  className="font-semibold text-foreground underline underline-offset-2 hover:text-foreground/80"
+                >
+                  Vybrat všechny neoslovené ({totalItems})
+                </button>
+              </div>
+            )}
 
+            {selectionExpanded ? (
+              <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
+                Výběr firem je otevřený ve zvětšeném okně.
+              </div>
+            ) : (
+              renderSelectionTable("compact")
+            )}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {queueExpanded ? (
+              <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
+                Fronta je otevřená ve zvětšeném okně.
+              </div>
+            ) : (
+              renderQueuePanel("compact")
+            )}
+          </div>
+        )}
       </div>
 
       <ExpandOverlay
@@ -1848,7 +1816,21 @@ export function AutopilotSniperView() {
                   className="sk-filter-chip h-9 w-full py-0 pl-8 text-xs shadow-none"
                 />
               </div>
-              <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  Jen s e-mailem
+                </span>
+                <Switch
+                  checked={onlyWithEmail}
+                  onCheckedChange={setOnlyWithEmail}
+                  className="sk-switch--sm shrink-0"
+                  aria-label="Jen s e-mailem"
+                />
+              </div>
+              <Select
+                value={selectionTagFilter}
+                onValueChange={setSelectionTagFilter}
+              >
                 <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[180px]">
                   <SelectValue placeholder="Obor / tag" />
                 </SelectTrigger>
@@ -1864,7 +1846,9 @@ export function AutopilotSniperView() {
               <Select
                 value={selectionDateFilter}
                 onValueChange={(v) =>
-                  setSelectionDateFilter(v as "all" | "last_7_days" | "last_30_days" | "this_year")
+                  setSelectionDateFilter(
+                    v as "all" | "last_7_days" | "last_30_days" | "this_year",
+                  )
                 }
               >
                 <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[170px]">
@@ -1873,7 +1857,9 @@ export function AutopilotSniperView() {
                 <SelectContent className="z-[220]">
                   <SelectItem value="all">Všechna data</SelectItem>
                   <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-                  <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
+                  <SelectItem value="last_30_days">
+                    Posledních 30 dní
+                  </SelectItem>
                   <SelectItem value="this_year">Tento rok</SelectItem>
                 </SelectContent>
               </Select>
@@ -1957,9 +1943,10 @@ export function AutopilotSniperView() {
                 </Button>
                 <Button
                   type="button"
+                  variant="default"
                   onClick={() => void handleSavePreview()}
                   disabled={isSavingPreview}
-                  className="h-9 rounded-lg bg-blue-600 px-4 font-medium text-white transition-colors hover:bg-blue-700"
+                  className="h-9 rounded-lg px-4 font-medium"
                 >
                   {isSavingPreview ? "Ukládám…" : "Uložit změny"}
                 </Button>
@@ -2011,9 +1998,9 @@ function QueueErrorStatus({
           <div
             role="tooltip"
             style={{ top: tip.top, left: tip.left }}
-            className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-rose-200 bg-white p-3 text-left shadow-lg dark:border-rose-900/60 dark:bg-zinc-950"
+            className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-rose-200 bg-white p-3 text-left shadow-lg "
           >
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-400">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600 ">
               Důvod chyby
             </p>
             <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-normal leading-relaxed text-foreground">

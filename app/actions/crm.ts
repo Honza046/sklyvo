@@ -3,7 +3,11 @@
 import { getSessionUser } from "@/app/actions/auth";
 import { scheduleCrmSheetsSync } from "@/lib/google-sheets-sync";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
-import { authorFromSessionUser, type ContactedViaValue, type LeadSourceValue } from "@/lib/lead-provenance";
+import {
+  authorFromSessionUser,
+  type ContactedViaValue,
+  type LeadSourceValue,
+} from "@/lib/lead-provenance";
 import { inferLeadTags } from "@/lib/lead-tags";
 import { mapPool, scrapeWebsiteContacts } from "@/lib/website-contacts";
 import { prisma } from "@/lib/prisma";
@@ -143,7 +147,11 @@ export async function getLeads() {
     try {
       leadsRaw = await prisma.lead.findMany({
         where: { workspaceId },
-        orderBy: [{ lastContactedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+        orderBy: [
+          { lastContactedAt: "desc" },
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
         select: {
           id: true,
           companyName: true,
@@ -172,7 +180,11 @@ export async function getLeads() {
       // Stale Prisma client / schema drift — načti bez contactedVia / tags
       const fallback = await prisma.lead.findMany({
         where: { workspaceId },
-        orderBy: [{ lastContactedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+        orderBy: [
+          { lastContactedAt: "desc" },
+          { createdAt: "desc" },
+          { id: "desc" },
+        ],
         select: {
           id: true,
           companyName: true,
@@ -199,7 +211,9 @@ export async function getLeads() {
     }
 
     // Jednorázový backfill prázdných tagů (max 150 / request).
-    const needsTags = leadsRaw.filter((lead) => !lead.tags || lead.tags.length === 0);
+    const needsTags = leadsRaw.filter(
+      (lead) => !lead.tags || lead.tags.length === 0,
+    );
     if (needsTags.length > 0) {
       const batch = needsTags.slice(0, 150);
       await Promise.all(
@@ -228,12 +242,14 @@ export async function getLeads() {
       const nextAt = lead.nextOutreachAt?.getTime() ?? null;
       const outreachDue = Boolean(
         nextAt != null &&
-          nextAt <= now &&
-          (lead.nextOutreachKind === "FOLLOW_UP" || lead.nextOutreachKind === "BREAKUP"),
+        nextAt <= now &&
+        (lead.nextOutreachKind === "FOLLOW_UP" ||
+          lead.nextOutreachKind === "BREAKUP"),
       );
       const source = (lead.source ?? "MANUAL") as LeadSourceValue;
       const contactedVia =
-        lead.contactedVia === "SNIPER" || lead.contactedVia === "AUTOPILOT_SNIPER"
+        lead.contactedVia === "SNIPER" ||
+        lead.contactedVia === "AUTOPILOT_SNIPER"
           ? (lead.contactedVia as ContactedViaValue)
           : ("" as const);
       return {
@@ -280,6 +296,8 @@ type AddLeadFromRadarInput = {
   phone?: string;
   address?: string;
   placeId?: string;
+  linkedinUrl?: string | null;
+  discoverySources?: string[] | null;
   countryCode?: string | null;
   /** Text query z Radaru (např. „fitka Praha“) — pro neviditelné tagy. */
   searchQuery?: string | null;
@@ -309,11 +327,22 @@ export async function addLeadFromRadar(input: AddLeadFromRadarInput) {
     searchQuery: input.searchQuery,
     placeTypes: input.placeTypes,
   });
+  const linkedinUrl = input.linkedinUrl?.trim() || null;
+  const discoverySources = Array.from(
+    new Set(
+      (input.discoverySources ?? [])
+        .map((s) => s.trim())
+        .filter((s) => s === "places" || s === "web" || s === "linkedin"),
+    ),
+  );
+
   const lead = await prisma.lead.create({
     data: {
       companyName,
       domain,
       placeId: input.placeId?.trim() || null,
+      linkedinUrl,
+      discoverySources,
       email,
       phone: contactPhone,
       contactEmail: email,
@@ -404,6 +433,8 @@ type ImportLeadInput = {
   email?: string;
   phone?: string;
   placeId?: string;
+  linkedinUrl?: string | null;
+  discoverySources?: string[] | null;
   countryCode?: string | null;
   searchQuery?: string | null;
   placeTypes?: string[] | null;
@@ -430,13 +461,33 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       const email = lead.email?.trim() || null;
       const contactPhone = lead.phone?.trim() || null;
       const countryCode = normalizeCountryCode(lead.countryCode);
+      const linkedinUrl = lead.linkedinUrl?.trim() || null;
+      const discoverySources = Array.from(
+        new Set(
+          (lead.discoverySources ?? [])
+            .map((s) => (typeof s === "string" ? s.trim() : ""))
+            .filter(
+              (s) => s === "places" || s === "web" || s === "linkedin",
+            ),
+        ),
+      );
       const tags = inferLeadTags({
         companyName,
         domain,
         searchQuery: lead.searchQuery,
         placeTypes: lead.placeTypes,
       });
-      return { companyName, placeId, domain, email, contactPhone, countryCode, tags };
+      return {
+        companyName,
+        placeId,
+        domain,
+        email,
+        contactPhone,
+        countryCode,
+        linkedinUrl,
+        discoverySources,
+        tags,
+      };
     })
     .filter((lead) => lead.companyName.length > 0);
 
@@ -445,10 +496,23 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
   }
 
   const placeIds = Array.from(
-    new Set(normalized.map((lead) => lead.placeId).filter((id): id is string => Boolean(id))),
+    new Set(
+      normalized
+        .map((lead) => lead.placeId)
+        .filter((id): id is string => Boolean(id)),
+    ),
   );
   const domains = Array.from(
-    new Set(normalized.map((lead) => lead.domain).filter((domain) => Boolean(domain))),
+    new Set(
+      normalized.map((lead) => lead.domain).filter((domain) => Boolean(domain)),
+    ),
+  );
+  const linkedinUrls = Array.from(
+    new Set(
+      normalized
+        .map((lead) => lead.linkedinUrl)
+        .filter((url): url is string => Boolean(url)),
+    ),
   );
 
   const existingRaw = await prisma.lead.findMany({
@@ -457,21 +521,38 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       OR: [
         ...(placeIds.length > 0 ? [{ placeId: { in: placeIds } }] : []),
         ...(domains.length > 0 ? [{ domain: { in: domains } }] : []),
+        ...(linkedinUrls.length > 0
+          ? [{ linkedinUrl: { in: linkedinUrls } }]
+          : []),
       ],
     } as any,
-    select: { placeId: true, domain: true } as any,
+    select: { placeId: true, domain: true, linkedinUrl: true } as any,
   });
-  const existing = existingRaw as unknown as Array<{ placeId: string | null; domain: string }>;
+  const existing = existingRaw as unknown as Array<{
+    placeId: string | null;
+    domain: string;
+    linkedinUrl: string | null;
+  }>;
 
-  const existingPlaceIds = new Set(existing.map((lead) => lead.placeId).filter(Boolean) as string[]);
-  const existingDomains = new Set(existing.map((lead) => lead.domain).filter(Boolean));
+  const existingPlaceIds = new Set(
+    existing.map((lead) => lead.placeId).filter(Boolean) as string[],
+  );
+  const existingDomains = new Set(
+    existing.map((lead) => lead.domain).filter(Boolean),
+  );
+  const existingLinkedIn = new Set(
+    existing.map((lead) => lead.linkedinUrl).filter(Boolean) as string[],
+  );
   const inBatchPlaceIds = new Set<string>();
   const inBatchDomains = new Set<string>();
+  const inBatchLinkedIn = new Set<string>();
 
   const toCreate: Array<{
     companyName: string;
     domain: string;
     placeId: string | null;
+    linkedinUrl: string | null;
+    discoverySources: string[];
     email: string | null;
     phone: string | null;
     contactPhone: string | null;
@@ -488,11 +569,17 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
 
   for (const lead of normalized) {
     const duplicateByPlaceId =
-      !!lead.placeId && (existingPlaceIds.has(lead.placeId) || inBatchPlaceIds.has(lead.placeId));
+      !!lead.placeId &&
+      (existingPlaceIds.has(lead.placeId) || inBatchPlaceIds.has(lead.placeId));
     const duplicateByDomain =
-      !!lead.domain && (existingDomains.has(lead.domain) || inBatchDomains.has(lead.domain));
+      !!lead.domain &&
+      (existingDomains.has(lead.domain) || inBatchDomains.has(lead.domain));
+    const duplicateByLinkedIn =
+      !!lead.linkedinUrl &&
+      (existingLinkedIn.has(lead.linkedinUrl) ||
+        inBatchLinkedIn.has(lead.linkedinUrl));
 
-    if (duplicateByPlaceId || duplicateByDomain) {
+    if (duplicateByPlaceId || duplicateByDomain || duplicateByLinkedIn) {
       skippedCount += 1;
       continue;
     }
@@ -501,6 +588,8 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
       companyName: lead.companyName,
       domain: lead.domain,
       placeId: lead.placeId,
+      linkedinUrl: lead.linkedinUrl,
+      discoverySources: lead.discoverySources,
       email: lead.email,
       phone: lead.contactPhone,
       contactPhone: lead.contactPhone,
@@ -516,6 +605,7 @@ export async function importMultipleLeads(leads: ImportLeadInput[]) {
 
     if (lead.placeId) inBatchPlaceIds.add(lead.placeId);
     if (lead.domain) inBatchDomains.add(lead.domain);
+    if (lead.linkedinUrl) inBatchLinkedIn.add(lead.linkedinUrl);
   }
 
   if (toCreate.length > 0) {
@@ -631,7 +721,13 @@ export async function bulkDeleteLeads(ids: string[]) {
 
 export async function updateLeadDetails(
   id: string,
-  data: { company?: string; value?: number; url?: string; email?: string; phone?: string },
+  data: {
+    company?: string;
+    value?: number;
+    url?: string;
+    email?: string;
+    phone?: string;
+  },
 ) {
   const session = await getSessionUser();
   if (!session.workspace?.id) {
@@ -732,7 +828,10 @@ export async function markLeadWebsiteVisited(id: string) {
   };
 }
 
-export async function updateSingleLeadStatus(id: string, status: LeadStatusInput) {
+export async function updateSingleLeadStatus(
+  id: string,
+  status: LeadStatusInput,
+) {
   const session = await getSessionUser();
   if (!session.workspace?.id) {
     return { error: "Nejste přihlášen." };
@@ -1017,4 +1116,3 @@ export async function getLeadSentEmails(
     return { error: "Nepodařilo se načíst odeslané e-maily." };
   }
 }
-

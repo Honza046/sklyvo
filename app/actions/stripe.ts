@@ -16,7 +16,8 @@ const PRICE_IDS: Record<string, string | undefined> = {
 };
 
 export async function createCheckoutSession(formData: FormData) {
-  const planTier = (formData.get("planTier") as string | null)?.toUpperCase() ?? "";
+  const planTier =
+    (formData.get("planTier") as string | null)?.toUpperCase() ?? "";
   const priceId = PRICE_IDS[planTier];
 
   if (!priceId) {
@@ -32,7 +33,10 @@ export async function createCheckoutSession(formData: FormData) {
     const workspaceRaw = await prisma.workspace.findUnique({
       where: { id: session.user.workspaceId },
     });
-    const workspace = workspaceRaw as { id: string; stripeCustomerId?: string | null } | null;
+    const workspace = workspaceRaw as {
+      id: string;
+      stripeCustomerId?: string | null;
+    } | null;
     if (!workspace) throw new Error("Workspace nebyl nalezen.");
 
     let stripeCustomerId = workspace.stripeCustomerId;

@@ -1,4 +1,7 @@
-import { getDashboardData, getDashboardFunnelStats } from "@/app/actions/dashboard";
+import {
+  getDashboardData,
+  getDashboardFunnelStats,
+} from "@/app/actions/dashboard";
 import type { LeadStatus } from "@/app/actions/dashboard";
 import { DashboardConversionFunnel } from "@/components/dashboard-conversion-funnel";
 import {
@@ -79,10 +82,17 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
     getDashboardData(),
     getDashboardFunnelStats(30),
   ]);
-  const recentActivity: DashboardActivityItem[] = dashboardData.recentActivities;
+  const recentActivity: DashboardActivityItem[] =
+    dashboardData.recentActivities;
   const leadsCount = dashboardData.statusCounts.NEW;
-  const totalLeads = Object.values(dashboardData.statusCounts).reduce((sum, count) => sum + count, 0);
-  const activeDeals = Math.max(0, totalLeads - dashboardData.statusCounts.CLOSED_LOST);
+  const totalLeads = Object.values(dashboardData.statusCounts).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
+  const activeDeals = Math.max(
+    0,
+    totalLeads - dashboardData.statusCounts.CLOSED_LOST,
+  );
   const pipelineValue = dashboardData.totalValue;
   const attentionRows = dashboardData.attentionTasks;
 
@@ -129,7 +139,9 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
             </div>
             <h3 className="sk-stat__label">Hodnota Pipeline</h3>
           </div>
-          <p className="sk-stat__value leading-tight">{formatCurrency(pipelineValue)}</p>
+          <p className="sk-stat__value leading-tight">
+            {formatCurrency(pipelineValue)}
+          </p>
         </div>
       </div>
 
@@ -141,10 +153,8 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
 
           <div className="sk-surface sk-panel-bottom flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="mb-2 flex shrink-0 items-center justify-between">
-              <h3 className="m-0 text-sm font-bold text-[color:var(--sk-ink)] sm:text-base">
-                Nedávná aktivita
-              </h3>
-              <span className="text-[10px] text-[color:var(--sk-muted)] sm:text-xs">
+              <h3 className="sk-type-h3 m-0">Nedávná aktivita</h3>
+              <span className="sk-type-small">
                 {recentActivity.length > 0
                   ? `${recentActivity.length} nejnovějších`
                   : "Za poslední dobu"}
@@ -153,24 +163,30 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
 
             {recentActivity.length === 0 ? (
               <div className="sk-surface--empty flex-1">
-                <h4 className="mb-1 m-0 text-sm font-semibold text-[color:var(--sk-ink)] sm:mb-2 sm:text-base">
+                <h4 className="sk-type-h3 mb-1 sm:mb-2">
                   Zatím žádná aktivita
                 </h4>
-                <p className="m-0 text-xs text-[color:var(--sk-muted)] sm:text-sm">
+                <p className="sk-type-body">
                   Jakmile spustíte první akci, objeví se tady chronologie.
                 </p>
               </div>
             ) : (
               <ul className="sk-list sk-panel-bottom__scroll scrollbar-hide">
                 {recentActivity.map((item) => (
-                  <li key={item.id} className="sk-list__row sk-list__row--activity">
-                    <p className="m-0 text-[13px] font-medium leading-snug text-[color:var(--sk-ink)]">
+                  <li
+                    key={item.id}
+                    className="sk-list__row sk-list__row--activity"
+                  >
+                    <p className="sk-list__title m-0 leading-snug">
                       Přidán nový lead:{" "}
-                      <Link href="/crm" className="sk-link-brand font-semibold underline-offset-4 hover:underline">
+                      <Link
+                        href="/crm"
+                        className="sk-link-brand font-semibold underline-offset-4 hover:underline"
+                      >
                         {item.companyName}
                       </Link>
                     </p>
-                    <p className="m-0 mt-1 text-[11.5px] text-[color:var(--sk-muted-soft)]">
+                    <p className="sk-list__meta m-0 mt-1">
                       {formatActivityTime(item.createdAt)}
                     </p>
                   </li>
@@ -182,16 +198,16 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
 
         <div className="sk-overview-grid__right">
           <div className="sk-surface sk-surface--pad flex shrink-0 grow-0 flex-col">
-            <h2 className="mb-1.5 shrink-0 text-sm font-bold text-[color:var(--sk-ink)] sm:mb-2 sm:text-base">
-              Rychlé akce
-            </h2>
+            <h2 className="sk-type-h3 mb-1.5 shrink-0 sm:mb-2">Rychlé akce</h2>
             <div className="flex shrink-0 flex-col gap-2.5">
               <Link href="/radar" className="sk-action-row group">
                 <span className="sk-action-row__icon sk-action-row__icon--dark">
                   <Zap className="h-4 w-4" />
                 </span>
                 <span className="sk-action-row__body">
-                  <span className="sk-action-row__title">Spustit Auto Prospector</span>
+                  <span className="sk-action-row__title">
+                    Spustit Auto Prospector
+                  </span>
                   <span className="sk-action-row__meta">Hledat nové firmy</span>
                 </span>
                 <span className="sk-action-row__go">
@@ -203,7 +219,9 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                   <Mail className="h-4 w-4" />
                 </span>
                 <span className="sk-action-row__body">
-                  <span className="sk-action-row__title">Napsat Cold E-mail</span>
+                  <span className="sk-action-row__title">
+                    Napsat Cold E-mail
+                  </span>
                   <span className="sk-action-row__meta">Direct Outreach</span>
                 </span>
                 <span className="sk-action-row__go">
@@ -214,9 +232,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
           </div>
 
           <div className="sk-surface sk-panel-bottom flex min-h-0 flex-1 flex-col overflow-hidden">
-            <h3 className="mb-2 shrink-0 text-sm font-bold text-[color:var(--sk-ink)] sm:text-base">
-              K řešení
-            </h3>
+            <h3 className="sk-type-h3 mb-2 shrink-0">K řešení</h3>
             <div className="sk-panel-bottom__scroll scrollbar-hide">
               {attentionRows.length === 0 ? (
                 <div className="sk-surface--empty">
@@ -224,10 +240,8 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                     <ClipboardList className="h-5 w-5" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-[color:var(--sk-ink)] sm:text-sm">
-                      Zatím žádné úkoly k řešení
-                    </p>
-                    <p className="max-w-[260px] text-[10px] text-[color:var(--sk-muted)] sm:text-xs">
+                    <p className="sk-type-h3">Zatím žádné úkoly k řešení</p>
+                    <p className="sk-type-small max-w-[260px]">
                       Jakmile se objeví nové firmy, uvidíte je zde.
                     </p>
                   </div>
@@ -243,7 +257,7 @@ export async function DashboardBody({ emailsSent }: { emailsSent: number }) {
                           {attentionTaskSubtitle(task.status)}
                         </div>
                       </div>
-                      <Link href="/crm" className="sk-btn sk-btn--secondary sk-btn--row">
+                      <Link href="/crm" className="sk-list__action">
                         Vyřešit
                       </Link>
                     </div>

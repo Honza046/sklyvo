@@ -29,9 +29,21 @@ import { cn } from "@/lib/utils";
 import { SklyvoWordmark } from "@/components/brand-marks";
 
 const TONES = [
-  { id: "friendly", label: "Přátelský a uvolněný", desc: "Působí lidsky, tyká nebo slušně vyká." },
-  { id: "professional", label: "Formální a profi", desc: "Striktně byznysový, budí maximální respekt." },
-  { id: "punchy", label: "Úderný a sebevědomý", desc: "Jde rovnou k věci, žádná zbytečná omáčka." },
+  {
+    id: "friendly",
+    label: "Přátelský a uvolněný",
+    desc: "Působí lidsky, tyká nebo slušně vyká.",
+  },
+  {
+    id: "professional",
+    label: "Formální a profi",
+    desc: "Striktně byznysový, budí maximální respekt.",
+  },
+  {
+    id: "punchy",
+    label: "Úderný a sebevědomý",
+    desc: "Jde rovnou k věci, žádná zbytečná omáčka.",
+  },
 ];
 
 const TOTAL_STEPS = 7;
@@ -74,14 +86,18 @@ export function OnboardingForm({
 
   const handleSubmit = async () => {
     const industry =
-      formData.industry === "Jiné" ? formData.customIndustry.trim() : formData.industry;
+      formData.industry === "Jiné"
+        ? formData.customIndustry.trim()
+        : formData.industry;
     const targetAudience =
       formData.targetAudience === "Jiné"
         ? formData.customTarget.trim()
         : formData.targetAudience;
 
     if (preview) {
-      toast.success("Náhled hotov — data se neuložila. Až bude flow OK, vypneme preview.");
+      toast.success(
+        "Náhled hotov. Data se neuložila. Až bude flow OK, vypneme preview.",
+      );
       return;
     }
 
@@ -124,7 +140,9 @@ export function OnboardingForm({
           key={i}
           className={cn(
             "h-1.5 rounded-full transition-all duration-300",
-            step >= i ? "w-5 sk-onboarding__dot-active" : "w-2 sk-onboarding__dot-idle",
+            step >= i
+              ? "w-5 sk-onboarding__dot-active"
+              : "w-2 sk-onboarding__dot-idle",
           )}
         />
       ))}
@@ -145,12 +163,10 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <Building2 className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Jak se jmenuje vaše firma?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Jak se jmenuje vaše firma?</h1>
               <p className="text-sm text-muted-foreground">
-                Název uvidíte v aplikaci. V e-mailech se spíš představujete jako člověk — firma patří
-                hlavně do podpisu.
+                Název uvidíte v aplikaci. V e-mailech se spíš představujete jako
+                člověk. Firma patří hlavně do podpisu.
               </p>
             </div>
 
@@ -160,7 +176,9 @@ export function OnboardingForm({
                 placeholder="např. Sklyvo s.r.o."
                 className="h-14 px-5 text-lg"
                 value={formData.companyName}
-                onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, companyName: e.target.value })
+                }
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -200,11 +218,10 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <Globe2 className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Máte web?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Máte web?</h1>
               <p className="text-sm text-muted-foreground">
-                Volitelné. Pomůže lépe pochopit, co nabízíte, a může se použít i v podpisu.
+                Volitelné. Pomůže lépe pochopit, co nabízíte, a může se použít i
+                v podpisu.
               </p>
             </div>
 
@@ -214,7 +231,9 @@ export function OnboardingForm({
                 placeholder="https://vasefirma.cz"
                 className="h-14 px-5 text-lg"
                 value={formData.companyWebsite}
-                onChange={(e) => setFormData({ ...formData, companyWebsite: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, companyWebsite: e.target.value })
+                }
                 autoFocus
               />
             </div>
@@ -256,9 +275,7 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <Briefcase className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                V čem podnikáte?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">V čem podnikáte?</h1>
               <p className="text-sm text-muted-foreground">
                 Vyberte obor, nebo napište vlastní.
               </p>
@@ -270,7 +287,13 @@ export function OnboardingForm({
                   <button
                     key={ind}
                     type="button"
-                    onClick={() => setFormData({ ...formData, industry: ind, customIndustry: "" })}
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        industry: ind,
+                        customIndustry: "",
+                      })
+                    }
                     className={cn(
                       "sk-onboarding__chip px-4 py-2.5 text-sm",
                       formData.industry === ind && "is-active",
@@ -297,7 +320,9 @@ export function OnboardingForm({
                   placeholder="Napište svůj obor..."
                   className="h-12 animate-in rounded-xl fade-in"
                   value={formData.customIndustry}
-                  onChange={(e) => setFormData({ ...formData, customIndustry: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customIndustry: e.target.value })
+                  }
                   autoFocus
                 />
               )}
@@ -317,7 +342,8 @@ export function OnboardingForm({
                 onClick={nextStep}
                 disabled={
                   !formData.industry ||
-                  (formData.industry === "Jiné" && !formData.customIndustry.trim())
+                  (formData.industry === "Jiné" &&
+                    !formData.customIndustry.trim())
                 }
                 className="sk-onboarding__cta group"
               >
@@ -334,11 +360,10 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Co nabízíte klientům?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Co nabízíte klientům?</h1>
               <p className="text-sm text-muted-foreground">
-                Vyberte jednu nebo více možností. Podle toho se v e-mailech nabídne to správné.
+                Vyberte jednu nebo více možností. Podle toho se v e-mailech
+                nabídne to správné.
               </p>
             </div>
 
@@ -354,7 +379,9 @@ export function OnboardingForm({
                         setFormData((prev) => ({
                           ...prev,
                           offeredServices: selected
-                            ? prev.offeredServices.filter((item) => item !== service)
+                            ? prev.offeredServices.filter(
+                                (item) => item !== service,
+                              )
                             : [...prev.offeredServices, service],
                         }))
                       }
@@ -373,7 +400,9 @@ export function OnboardingForm({
                     setFormData((prev) => ({
                       ...prev,
                       showCustomService: !prev.showCustomService,
-                      customService: prev.showCustomService ? "" : prev.customService,
+                      customService: prev.showCustomService
+                        ? ""
+                        : prev.customService,
                     }))
                   }
                   className={cn(
@@ -392,7 +421,12 @@ export function OnboardingForm({
                     placeholder="Napište vlastní službu a potvrďte Přidat..."
                     className="h-11 px-4"
                     value={formData.customService}
-                    onChange={(e) => setFormData({ ...formData, customService: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        customService: e.target.value,
+                      })
+                    }
                     onKeyDown={(e) => {
                       if (e.key !== "Enter") return;
                       e.preventDefault();
@@ -431,10 +465,15 @@ export function OnboardingForm({
                 </div>
               )}
 
-              {formData.offeredServices.some((s) => !(ONBOARDING_SERVICES as readonly string[]).includes(s)) && (
+              {formData.offeredServices.some(
+                (s) => !(ONBOARDING_SERVICES as readonly string[]).includes(s),
+              ) && (
                 <div className="flex flex-wrap gap-1.5">
                   {formData.offeredServices
-                    .filter((s) => !(ONBOARDING_SERVICES as readonly string[]).includes(s))
+                    .filter(
+                      (s) =>
+                        !(ONBOARDING_SERVICES as readonly string[]).includes(s),
+                    )
                     .map((s) => (
                       <button
                         key={s}
@@ -442,7 +481,9 @@ export function OnboardingForm({
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            offeredServices: prev.offeredServices.filter((item) => item !== s),
+                            offeredServices: prev.offeredServices.filter(
+                              (item) => item !== s,
+                            ),
                           }))
                         }
                         className="sk-onboarding__chip is-active rounded-lg px-2.5 py-1 text-xs"
@@ -483,9 +524,7 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <Target className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Kdo je váš ideální klient?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Kdo je váš ideální klient?</h1>
               <p className="text-sm text-muted-foreground">
                 Komu nejčastěji prodáváte? Komu mají být e-maily adresovány?
               </p>
@@ -498,7 +537,11 @@ export function OnboardingForm({
                     key={tgt}
                     type="button"
                     onClick={() =>
-                      setFormData({ ...formData, targetAudience: tgt, customTarget: "" })
+                      setFormData({
+                        ...formData,
+                        targetAudience: tgt,
+                        customTarget: "",
+                      })
                     }
                     className={cn(
                       "sk-onboarding__chip px-4 py-2.5 text-sm",
@@ -510,7 +553,9 @@ export function OnboardingForm({
                 ))}
                 <button
                   type="button"
-                  onClick={() => setFormData({ ...formData, targetAudience: "Jiné" })}
+                  onClick={() =>
+                    setFormData({ ...formData, targetAudience: "Jiné" })
+                  }
                   className={cn(
                     "sk-onboarding__chip px-4 py-2.5 text-sm",
                     formData.targetAudience === "Jiné" && "is-active",
@@ -526,7 +571,9 @@ export function OnboardingForm({
                   placeholder="Např. Majitelé malých eshopů s obratem do 5M..."
                   className="h-12 animate-in rounded-xl fade-in"
                   value={formData.customTarget}
-                  onChange={(e) => setFormData({ ...formData, customTarget: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, customTarget: e.target.value })
+                  }
                   autoFocus
                 />
               )}
@@ -546,7 +593,8 @@ export function OnboardingForm({
                 onClick={nextStep}
                 disabled={
                   !formData.targetAudience ||
-                  (formData.targetAudience === "Jiné" && !formData.customTarget.trim())
+                  (formData.targetAudience === "Jiné" &&
+                    !formData.customTarget.trim())
                 }
                 className="sk-onboarding__cta group"
               >
@@ -563,26 +611,26 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <PenLine className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Jak o sobě mluvíte?
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Jak o sobě mluvíte?</h1>
               <p className="text-sm text-muted-foreground">
-                Krátce napište, jak o sobě mluvíte — v 1. osobě, bez „My ve firmě…“. Tohle nejvíc
-                ovlivní, jak budou znít vaše e-maily.
+                Krátce napište, jak o sobě mluvíte, v 1. osobě, bez „My ve
+                firmě…“. Tohle nejvíc ovlivní, jak budou znít vaše e-maily.
               </p>
             </div>
 
             <div className="flex-1 space-y-3">
               <Textarea
                 value={formData.companyContext}
-                onChange={(e) => setFormData({ ...formData, companyContext: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, companyContext: e.target.value })
+                }
                 placeholder="Např. Pomáhám firmám s redesignem a tvorbou webů na míru. Při zájmu i automatizace. Fixní nabídka, projekty bez šablon."
                 className="min-h-[160px] resize-y text-sm"
                 autoFocus
               />
               <p className="text-xs text-muted-foreground">
-                Tip: napište co děláte, pro koho, a čím jste jiní. Sklyvo / název firmy nechte do
-                podpisu.
+                Tip: napište co děláte, pro koho, a čím jste jiní. Sklyvo /
+                název firmy nechte do podpisu.
               </p>
             </div>
 
@@ -623,11 +671,10 @@ export function OnboardingForm({
               <div className="sk-onboarding__icon">
                 <MessageSquare className="h-6 w-6" />
               </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-                Tón a podpis
-              </h1>
+              <h1 className="sk-type-h1 mb-2">Tón a podpis</h1>
               <p className="text-sm text-muted-foreground">
-                Výchozí styl e-mailů + jak se podepisujete. Obé jde později změnit v nastavení.
+                Výchozí styl e-mailů + jak se podepisujete. Obé jde později
+                změnit v nastavení.
               </p>
             </div>
 
@@ -637,7 +684,9 @@ export function OnboardingForm({
                   <button
                     key={toneOption.id}
                     type="button"
-                    onClick={() => setFormData({ ...formData, tone: toneOption.id })}
+                    onClick={() =>
+                      setFormData({ ...formData, tone: toneOption.id })
+                    }
                     className={cn(
                       "sk-onboarding__chip flex items-start gap-4 p-3.5 text-left",
                       formData.tone === toneOption.id && "is-active",
@@ -688,7 +737,9 @@ export function OnboardingForm({
                 </div>
                 <Textarea
                   value={formData.emailSignature}
-                  onChange={(e) => setFormData({ ...formData, emailSignature: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, emailSignature: e.target.value })
+                  }
                   placeholder={"S pozdravem,\n\nJan Novák\n\nwww.vasefirma.cz"}
                   className="min-h-[110px] resize-y font-mono text-sm"
                 />
@@ -711,7 +762,11 @@ export function OnboardingForm({
                 disabled={isLoading}
                 className="sk-onboarding__cta group"
               >
-                {isLoading ? "Ukládám..." : preview ? "Dokončit náhled" : "Dokončit a spustit"}
+                {isLoading
+                  ? "Ukládám..."
+                  : preview
+                    ? "Dokončit náhled"
+                    : "Dokončit a spustit"}
                 {!isLoading && <Sparkles className="ml-2 h-4 w-4" />}
               </Button>
             </div>
@@ -723,14 +778,18 @@ export function OnboardingForm({
 
   if (embedded) {
     return (
-      <div className="sk-onboarding relative z-10 flex w-full max-w-[600px] flex-col gap-6">{content}</div>
+      <div className="sk-onboarding relative z-10 flex w-full max-w-[600px] flex-col gap-6">
+        {content}
+      </div>
     );
   }
 
   return (
     <div className="sk-onboarding relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden p-4">
       <div className="sk-onboarding__gate absolute inset-0" />
-      <div className="relative z-10 flex w-full max-w-[600px] flex-col gap-6 py-10">{content}</div>
+      <div className="relative z-10 flex w-full max-w-[600px] flex-col gap-6 py-10">
+        {content}
+      </div>
     </div>
   );
 }
