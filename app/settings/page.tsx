@@ -182,7 +182,7 @@ export default async function SettingsPage() {
         <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm sm:rounded-2xl">
           {isWorkspaceReady ? (
             <div className="flex flex-col gap-4 p-3.5 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5">
-              <div className="flex min-w-0 flex-1 gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <span className="sk-settings-row-icon" aria-hidden>
                   <CreditCard strokeWidth={2} />
                 </span>
@@ -241,7 +241,7 @@ export default async function SettingsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-              <div className="flex gap-3">
+              <div className="flex items-center gap-3">
                 <Skeleton className="h-11 w-11 rounded-xl" />
                 <div className="space-y-2">
                   <Skeleton className="h-3 w-20" />
