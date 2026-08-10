@@ -20,6 +20,8 @@ export { DEFAULT_SNIPER_SYSTEM_PROMPT };
 
 type AiBehaviorSettingsFormProps = {
   initialEmailSignature: string;
+  senderFullName?: string;
+  senderEmail?: string;
   initialSystemPrompt: string;
   initialForbiddenWords: string;
 };
@@ -68,6 +70,8 @@ export function useSettingsSaveRegistry() {
 
 export function AiBehaviorSettingsForm({
   initialEmailSignature,
+  senderFullName = "Vaše jméno",
+  senderEmail = "vas@email.cz",
   initialSystemPrompt,
   initialForbiddenWords,
 }: AiBehaviorSettingsFormProps) {
@@ -78,6 +82,7 @@ export function AiBehaviorSettingsForm({
     initialSystemPrompt || DEFAULT_SNIPER_SYSTEM_PROMPT,
   );
   const [forbiddenWords, setForbiddenWords] = useState(initialForbiddenWords);
+  const signaturePlaceholder = `S pozdravem,\n\n${senderFullName}\n\nvenegard.com\n+420 605 875 808\n${senderEmail}`;
 
   const saveSettings = useCallback(async () => {
     const result = await updateAiBehaviorSettings({
@@ -119,9 +124,7 @@ export function AiBehaviorSettingsForm({
           id="email-signature"
           value={emailSignature}
           onChange={(e) => setEmailSignature(e.target.value)}
-          placeholder={
-            "S pozdravem,\n\nJan Sedlář\n\nvenegard.com\n+420 605 875 808\njan@venegard.com"
-          }
+          placeholder={signaturePlaceholder}
           className="min-h-[100px] resize-none rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">

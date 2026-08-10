@@ -10,7 +10,7 @@ import {
   useImperativeHandle,
 } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, ArrowUp, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CopilotMessage } from "@/components/ai/copilot-message";
@@ -285,7 +285,19 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
             />
           </div>
         ) : null}
-        <div className="sk-support-chat__input-row">
+        <div
+          className={cn(
+            "sk-support-chat__input-row",
+            isTeaser && "sk-support-ask",
+          )}
+        >
+          {isTeaser ? (
+            <Search
+              className="sk-support-chat__search-icon"
+              aria-hidden
+              strokeWidth={2}
+            />
+          ) : null}
           <Input
             ref={inputRef}
             value={input}
@@ -294,7 +306,10 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
             placeholder={
               isTeaser ? t("help.chatPlaceholder") : t("copilot.placeholder")
             }
-            className="h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
+            className={cn(
+              "h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0",
+              isTeaser && "sk-plain-field",
+            )}
             disabled={isThinking}
           />
           <Button
@@ -302,7 +317,10 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
             size="sm"
             onClick={handleSubmit}
             disabled={isThinking || (!input.trim() && !slashMenuOpen)}
-            className="sk-btn sk-btn--primary sk-btn--icon h-9 w-9 shrink-0 rounded-[10px] p-0"
+            className={cn(
+              "sk-btn sk-btn--icon h-9 w-9 shrink-0 rounded-[10px] p-0",
+              isTeaser ? "sk-support-ask__send" : "sk-btn--primary",
+            )}
             aria-label={t("copilot.send")}
           >
             <ArrowUp className="h-4 w-4" />

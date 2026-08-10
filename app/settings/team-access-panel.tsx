@@ -36,9 +36,6 @@ function StatusBadge() {
   );
 }
 
-const TEAM_COLS =
-  "grid-cols-1 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.35fr)_7.5rem_5.5rem_2rem]";
-
 export function TeamAccessPanel() {
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
@@ -230,59 +227,62 @@ export function TeamAccessPanel() {
         </div>
       )}
 
-      <div className="sk-data-panel overflow-hidden rounded-xl p-3 shadow-sm sm:p-3.5">
-        <div
-          className={cn(
-            "mb-1.5 hidden items-center gap-3 px-3.5 text-[10.5px] font-bold uppercase tracking-[0.06em] text-[color:var(--sk-muted)] sm:grid",
-            TEAM_COLS,
-          )}
-        >
-          <span>Jméno</span>
-          <span>E-mail</span>
-          <span>Role</span>
-          <span>Stav</span>
-          <span className="sr-only">Akce</span>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          {teamMembers.map((m) => (
-            <div
-              key={m.id}
-              className={cn(
-                "sk-data-row !grid !items-center gap-2 !px-3.5 !py-2.5 sm:!gap-3",
-                TEAM_COLS,
-              )}
-            >
-              <p className="truncate text-sm font-medium leading-none text-[color:var(--sk-ink)]">
-                {m.name}
-              </p>
-              <p className="truncate text-sm leading-none text-[color:var(--sk-muted)]">
-                {m.email}
-              </p>
-              <p className="text-sm leading-none text-[color:var(--sk-ink)]">
-                {roleLabel(m.role)}
-              </p>
-              <div className="flex items-center">
-                <StatusBadge />
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center justify-self-end">
-                {canManage &&
-                  currentUserRole === "OWNER" &&
-                  m.id !== currentUserId &&
-                  m.role !== "OWNER" && (
-                    <button
-                      type="button"
-                      aria-label={`Odebrat ${m.email}`}
-                      title="Odebrat"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--sk-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
-                      disabled={isPending}
-                      onClick={() => handleRemove(m)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-              </div>
-            </div>
-          ))}
+      <div className="sk-data-panel overflow-hidden rounded-xl shadow-sm">
+        <div className="sk-data-panel__scroll overflow-x-auto">
+          <table className="w-full table-fixed text-sm">
+            <thead>
+              <tr className="text-left">
+                <th className="w-[28%] px-3.5">Jméno</th>
+                <th className="w-[34%] px-3.5">E-mail</th>
+                <th className="w-[16%] px-3.5">Role</th>
+                <th className="w-[14%] px-3.5">Stav</th>
+                <th className="w-10 px-2">
+                  <span className="sr-only">Akce</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {teamMembers.map((m) => (
+                <tr key={m.id}>
+                  <td className="px-3.5 py-2.5">
+                    <p className="truncate text-sm font-medium leading-none text-[color:var(--sk-ink)]">
+                      {m.name}
+                    </p>
+                  </td>
+                  <td className="px-3.5 py-2.5">
+                    <p className="truncate text-sm leading-none text-[color:var(--sk-muted)]">
+                      {m.email}
+                    </p>
+                  </td>
+                  <td className="px-3.5 py-2.5">
+                    <p className="text-sm leading-none text-[color:var(--sk-ink)]">
+                      {roleLabel(m.role)}
+                    </p>
+                  </td>
+                  <td className="px-3.5 py-2.5">
+                    <StatusBadge />
+                  </td>
+                  <td className="px-2 py-2.5 text-right">
+                    {canManage &&
+                    currentUserRole === "OWNER" &&
+                    m.id !== currentUserId &&
+                    m.role !== "OWNER" ? (
+                      <button
+                        type="button"
+                        aria-label={`Odebrat ${m.email}`}
+                        title="Odebrat"
+                        className="sk-row-icon-btn inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--sk-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
+                        disabled={isPending}
+                        onClick={() => handleRemove(m)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

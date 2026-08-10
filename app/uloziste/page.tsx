@@ -598,7 +598,7 @@ export default function StoragePage() {
               className={cn(
                 "-mb-px flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 pb-2 text-center transition-colors sm:flex-none sm:items-start sm:px-0 sm:pb-2.5 sm:text-left",
                 active
-                  ? "border-blue-600 text-blue-700 "
+                  ? "border-[color:var(--sk-ink)] text-[color:var(--sk-ink)]"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >

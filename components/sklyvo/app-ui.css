@@ -3842,12 +3842,13 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-help-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid !important;
+  place-items: center !important;
   width: 40px;
   height: 40px;
   flex: none;
+  padding: 0 !important;
+  line-height: 0;
   border-radius: 12px;
   border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
   background: var(
@@ -3859,8 +3860,10 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-help-icon svg {
+  display: block;
   width: 1.15rem;
   height: 1.15rem;
+  margin: 0;
   stroke-width: 2;
 }
 
@@ -3990,8 +3993,17 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sklyvo-app .sk-support--hub {
   max-height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   gap: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sklyvo-app .sk-support--hub::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .sklyvo-app .sk-support--chat {
@@ -4002,27 +4014,60 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-support__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   width: 100%;
-  max-width: 48rem;
+  max-width: 52rem;
+  margin-inline: auto;
   text-align: center;
   flex: none;
+  gap: 0.35rem;
+}
+
+.sklyvo-app .sk-support__hero .sk-page-badge {
+  margin-bottom: 0.45rem;
+}
+
+@media (min-width: 768px) {
+  .sklyvo-app .sk-support__hero .sk-page-badge {
+    margin-bottom: 0.6rem;
+  }
+}
+
+.sklyvo-app .sk-support__hero-title,
+.sklyvo-app .sk-support__hero .sk-type-h1 {
+  width: 100%;
+  text-align: center !important;
+}
+
+.sklyvo-app .sk-support__hero-sub,
+.sklyvo-app .sk-support__hero .sk-type-body {
+  display: block;
+  width: auto;
+  max-width: 26rem;
+  margin: 0;
+  padding: 0 0.5rem;
+  text-align: center !important;
 }
 
 .sklyvo-app .sk-support__stack {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 48rem;
+  max-width: 52rem;
   min-height: 0;
   flex: 1 1 auto;
-  gap: 1.15rem;
-  padding: 0;
+  gap: 1.35rem;
+  padding: 0 0 0.5rem;
 }
 
 .sklyvo-app .sk-support--chat .sk-support__stack {
   max-width: none;
   height: 100%;
   gap: 0;
+  padding: 0;
 }
 
 .sklyvo-app .sk-support__section {
@@ -4032,14 +4077,13 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-support__section--faq {
-  flex: 1 1 auto;
+  flex: none;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .sklyvo-app .sk-support__section-title {
-  margin: 0 0 0.7rem;
+  margin: 0 0 0.85rem;
   font-size: 0.68rem;
   font-weight: 650;
   letter-spacing: 0.08em;
@@ -4061,7 +4105,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sklyvo-app .sk-support__topic {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.8rem;
   width: 100%;
   padding: 0.95rem 1rem;
@@ -4069,15 +4113,21 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-support__topic-icon {
+  display: grid !important;
+  place-items: center !important;
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  margin-top: 0.05rem;
+  margin-top: 0;
+  line-height: 0;
+  flex: none;
 }
 
 .sklyvo-app .sk-support__topic-icon svg {
+  display: block;
   width: 1.15rem;
   height: 1.15rem;
+  margin: 0;
 }
 
 .sklyvo-app .sk-support__topic-copy {
@@ -4110,70 +4160,96 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   width: 1rem;
   height: 1rem;
   flex: none;
-  margin-top: 0.35rem;
+  margin-top: 0;
   color: color-mix(in oklab, var(--sk-muted) 65%, transparent);
 }
 
-.sklyvo-app .sk-support__faq-list {
+/* Shopify-style topic columns — no box, no internal scroll */
+.sklyvo-app .sk-support__faq-topics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem 2rem;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-support__faq-topics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .sklyvo-app .sk-support__faq-topics {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.sklyvo-app .sk-support__faq-topic {
+  min-width: 0;
+}
+
+.sklyvo-app .sk-support__faq-topic-title {
+  margin: 0 0 0.7rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  color: var(--sk-ink);
+  text-transform: none;
+}
+
+.sklyvo-app .sk-support__faq-links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  border-radius: var(--sk-radius-card);
-  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-raised-shadow);
-  padding: 0.35rem 0 0.55rem;
+  gap: 0.55rem;
 }
 
-.sklyvo-app .sk-support__faq-group + .sk-support__faq-group {
-  margin-top: 0.35rem;
-  padding-top: 0.35rem;
-  border-top: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent);
-}
-
-.sklyvo-app .sk-support__faq-group-title {
-  margin: 0;
-  padding: 0.55rem 1.05rem 0.25rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--sk-muted);
-}
-
-.sklyvo-app .sk-support__faq-item {
-  border: none !important;
-  border-bottom: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent) !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
-  padding: 0 1.05rem !important;
-}
-
-.sklyvo-app .sk-support__faq-group .sk-support__faq-item:last-child {
-  border-bottom: none !important;
-}
-
-.sklyvo-app .sk-support__faq-trigger {
-  padding: 0.75rem 0 !important;
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-  line-height: 1.35 !important;
+.sklyvo-app .sk-support__faq-link {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
   text-align: left;
-  color: var(--sk-ink) !important;
-  text-decoration: none !important;
+  font-size: 0.875rem;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--sk-ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.12s ease;
 }
 
-.sklyvo-app .sk-support__faq-trigger:hover {
-  text-decoration: none !important;
+.sklyvo-app .sk-support__faq-link:hover,
+.sklyvo-app .sk-support__faq-link--open {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sklyvo-app .sk-support__faq-link-arrow {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: none;
+  margin-top: 0.15rem;
+  color: color-mix(in oklab, var(--sk-muted) 70%, transparent);
+  opacity: 0;
+  transform: translateX(-2px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.sklyvo-app .sk-support__faq-link:hover .sk-support__faq-link-arrow {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .sklyvo-app .sk-support__faq-answer {
-  padding-bottom: 0.75rem !important;
+  margin: 0.35rem 0 0.4rem;
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--sk-muted);
@@ -4186,7 +4262,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
-  padding-top: 0.25rem;
+  padding-top: 0.35rem;
   flex: none;
 }
 
@@ -4364,30 +4440,6 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   background: transparent;
 }
 
-/* Single engraved pill — no nested raised shell + sunken input */
-.sklyvo-app .sk-support-chat--input-only .sk-support-chat__input-row {
-  min-height: 2.85rem;
-  padding: 0.3rem 0.35rem 0.3rem 1rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: var(--sk-sunken) !important;
-  background-image: var(--sk-sunken) !important;
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.34),
-    inset 0 1px 2px rgba(90, 130, 165, 0.16),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
-}
-
-.sklyvo-app .sk-support-chat--input-only .sk-support-chat__input-row input {
-  height: 2.15rem !important;
-  font-size: 0.9rem !important;
-  border: none !important;
-  background: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-  padding-inline: 0 !important;
-}
-
 .sklyvo-app .sk-support-chat__input-row {
   display: flex;
   align-items: center;
@@ -4397,6 +4449,74 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   background: var(--sk-sunken);
   border: 1px solid rgba(255, 255, 255, 0.9);
   box-shadow: var(--sk-sunken-shadow);
+}
+
+/*
+  Ask pill on Podpora — raised soft chip (Shopify / footer CTAs).
+  Must beat .sk-support-chat__input-row sunken + global input sunken.
+*/
+.sklyvo-app .sk-support-ask.sk-support-chat__input-row,
+.sklyvo-app .sk-support-chat--input-only .sk-support-ask {
+  min-height: 3.15rem !important;
+  padding: 0.4rem 0.4rem 0.4rem 1.1rem !important;
+  gap: 0.65rem !important;
+  border-radius: 999px !important;
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent) !important;
+  background: #fff !important;
+  background-image: none !important;
+  box-shadow:
+    0 10px 24px -12px rgba(30, 70, 110, 0.3),
+    0 3px 8px rgba(30, 70, 110, 0.07),
+    inset 0 1px 0 #fff !important;
+}
+
+.sklyvo-app .sk-support-ask .sk-support-chat__search-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+  color: color-mix(in oklab, var(--sk-muted) 80%, transparent);
+}
+
+.sklyvo-app
+  .sk-support-ask
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.sklyvo-app .sk-support-ask input.sk-plain-field,
+.sklyvo-app .sk-support-ask .sk-plain-field {
+  height: 2.25rem !important;
+  min-height: 0 !important;
+  font-size: 0.95rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.sklyvo-app .sk-support-ask__send.sk-btn,
+.sklyvo-app .sk-support-ask .sk-support-ask__send {
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  min-width: 2.4rem !important;
+  border-radius: 999px !important;
+  border: none !important;
+  background: var(--sk-ink-bg) !important;
+  background-image: var(--sk-ink-bg) !important;
+  color: #fff !important;
+  box-shadow:
+    0 4px 10px -4px rgba(20, 32, 50, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+.sklyvo-app .sk-support-ask__send.sk-btn:hover,
+.sklyvo-app .sk-support-ask .sk-support-ask__send:hover {
+  transform: translateY(-1px);
+}
+
+.sklyvo-app .sk-support-ask__send.sk-btn:disabled,
+.sklyvo-app .sk-support-ask .sk-support-ask__send:disabled {
+  opacity: 0.45;
+  transform: none;
 }
 
 .sklyvo-app .sk-help-contact h3 {

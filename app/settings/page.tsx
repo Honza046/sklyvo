@@ -38,6 +38,8 @@ import { EmailIntegrationPanel } from "@/app/settings/email-integration-panel";
 import { SettingsAccordion } from "@/app/settings/settings-accordion";
 import { parseStoredAiBehaviorSettings } from "@/lib/ai-behavior-settings";
 import { EMAIL_SETUP_SETTINGS_HASH } from "@/lib/copilot/setup-knowledge";
+import { personalizeEmailSignature } from "@/lib/email-format";
+import { authorFromSessionUser } from "@/lib/lead-provenance";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -146,6 +148,15 @@ export default async function SettingsPage() {
   })();
 
   const aiBehaviorSettings = parseStoredAiBehaviorSettings(workspace?.systemPrompt);
+  const signatureAuthor =
+    authorFromSessionUser(session.user) ||
+    session.user?.name?.trim() ||
+    "Uživatel";
+  const signatureEmail = session.user?.email?.trim() || "";
+  const personalizedEmailSignature = personalizeEmailSignature(
+    workspace?.emailSignature ?? "",
+    { fullName: signatureAuthor, senderEmail: signatureEmail },
+  );
   const emailConnection = isWorkspaceReady ? await getEmailConnectionState() : null;
 
   return (
@@ -427,7 +438,9 @@ export default async function SettingsPage() {
             <AccordionContent className="space-y-5 pb-6 pt-2">
               {isWorkspaceReady ? (
                 <AiBehaviorSettingsForm
-                  initialEmailSignature={workspace?.emailSignature ?? ""}
+                  initialEmailSignature={personalizedEmailSignature}
+                  senderFullName={signatureAuthor}
+                  senderEmail={signatureEmail}
                   initialSystemPrompt={aiBehaviorSettings.systemPrompt}
                   initialForbiddenWords={aiBehaviorSettings.forbiddenWords}
                 />

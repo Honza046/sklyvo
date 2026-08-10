@@ -19,12 +19,6 @@ import {
   LifeBuoy,
 } from "lucide-react";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
   SklyBotChat,
   type SklyBotChatHandle,
 } from "@/components/support/skly-bot-chat";
@@ -66,6 +60,7 @@ export default function SupportPage() {
   const [chatExpanded, setChatExpanded] = useState(false);
   const [activeModal, setActiveModal] = useState<GuideId | null>(null);
   const [isRestartingTour, setIsRestartingTour] = useState(false);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
 
   const handleRestartTour = async () => {
     setIsRestartingTour(true);
@@ -89,19 +84,17 @@ export default function SupportPage() {
     <div
       data-tour="onboarding-help-page"
       className={cn(
-        "sk-support",
+        "sk-support scrollbar-hide",
         chatExpanded ? "sk-support--chat" : "sk-support--hub",
       )}
     >
       {!chatExpanded && (
-        <header className="sk-support__hero mb-3 shrink-0 space-y-1 sm:mb-4 md:mb-5">
-          <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
-            <div className="sk-page-badge" aria-hidden>
-              <LifeBuoy strokeWidth={2} />
-            </div>
+        <header className="sk-support__hero mb-3 shrink-0 sm:mb-4 md:mb-5">
+          <div className="sk-page-badge" aria-hidden>
+            <LifeBuoy strokeWidth={2} />
           </div>
-          <h1 className="sk-type-h1">{t("help.title")}</h1>
-          <p className="sk-type-body mx-auto mt-1 max-w-lg px-2">
+          <h1 className="sk-type-h1 sk-support__hero-title">{t("help.title")}</h1>
+          <p className="sk-type-body sk-support__hero-sub">
             {t("help.subtitle")}
           </p>
         </header>
@@ -167,26 +160,42 @@ export default function SupportPage() {
         {!chatExpanded && (
           <section className="sk-support__section sk-support__section--faq">
             <h2 className="sk-support__section-title">{t("help.faqTitle")}</h2>
-            <div className="sk-support__faq-list">
+            <div className="sk-support__faq-topics">
               {faqSections.map((section) => (
-                <div key={section.id} className="sk-support__faq-group">
-                  <h3 className="sk-support__faq-group-title">{section.title}</h3>
-                  <Accordion type="single" collapsible className="w-full">
-                    {section.items.map((faq, index) => (
-                      <AccordionItem
-                        key={faq.question}
-                        value={`${section.id}-${index}`}
-                        className="sk-support__faq-item"
-                      >
-                        <AccordionTrigger className="sk-support__faq-trigger">
-                          {faq.question}
-                        </AccordionTrigger>
-                        <AccordionContent className="sk-support__faq-answer">
-                          {faq.answer}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+                <div key={section.id} className="sk-support__faq-topic">
+                  <h3 className="sk-support__faq-topic-title">{section.title}</h3>
+                  <ul className="sk-support__faq-links">
+                    {section.items.map((faq) => {
+                      const open = openFaq === faq.question;
+                      return (
+                        <li key={faq.question}>
+                          <button
+                            type="button"
+                            className={cn(
+                              "sk-support__faq-link",
+                              open && "sk-support__faq-link--open",
+                            )}
+                            aria-expanded={open}
+                            onClick={() =>
+                              setOpenFaq(open ? null : faq.question)
+                            }
+                          >
+                            {faq.question}
+                            {open ? null : (
+                              <ChevronRight
+                                className="sk-support__faq-link-arrow"
+                                aria-hidden
+                                strokeWidth={2}
+                              />
+                            )}
+                          </button>
+                          {open ? (
+                            <p className="sk-support__faq-answer">{faq.answer}</p>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
               ))}
             </div>
