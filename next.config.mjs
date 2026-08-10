@@ -8,7 +8,9 @@ const revision =
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
-  disable: process.env.NODE_ENV === "development",
+  // Service worker was flashing Safari’s “This page couldn’t load” before every visit.
+  // Keep PWA tooling in-repo, but don’t register a SW until that’s fixed.
+  disable: true,
   additionalPrecacheEntries: [{ url: "/~offline", revision }],
 });
 

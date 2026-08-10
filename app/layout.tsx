@@ -5,6 +5,7 @@ import "@/components/sklyvo/app-ui.css";
 import { AppProviders } from "@/components/app-providers";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
+import { UnregisterServiceWorker } from "@/components/unregister-service-worker";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
@@ -20,7 +21,7 @@ const jetbrains = JetBrains_Mono({
 const APP_NAME = "Sklyvo";
 const APP_DEFAULT_TITLE = "Sklyvo";
 const APP_TITLE_TEMPLATE = "%s · Sklyvo";
-const APP_DESCRIPTION = "Sklyvo AI nástroj na hledání a oslovování klientů";
+const APP_DESCRIPTION = "Sklyvo je nástroj na hledání a oslovování klientů";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -81,6 +82,7 @@ export default function RootLayout({
         className={`${jakarta.variable} ${jetbrains.variable} min-h-dvh font-sans`}
         style={{ fontFamily: "var(--font-jakarta), Helvetica, Arial, sans-serif" }}
       >
+        <UnregisterServiceWorker />
         <AppProviders>
           <AppShell>{children}</AppShell>
         </AppProviders>
