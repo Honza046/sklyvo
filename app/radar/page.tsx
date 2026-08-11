@@ -277,7 +277,7 @@ export default function RadarPage() {
     }
 
     setAddedLeadIds((prev) => [...prev, lead.id]);
-    toast.success("Firma přidána do CRM");
+    toast.success(t("radar.addedToCrm"));
   };
 
   const handleImportAll = async () => {
@@ -312,18 +312,18 @@ export default function RadarPage() {
 
     const created = result.createdCount ?? 0;
     const skipped = result.skippedCount ?? 0;
-    if (created > 0 && skipped > 0) {
+    const companyWord =
+      created === 1
+        ? t("radar.companyOne")
+        : language === "cz" && created >= 2 && created <= 4
+          ? t("radar.companyFew")
+          : t("radar.companyMany");
+    if (created > 0) {
       toast.success(
-        `Do CRM přidáno ${created} firem. ${skipped} už v CRM bylo (přeskočeno).`,
+        t("radar.importedToCrm", { count: created, word: companyWord }),
       );
-    } else if (created > 0) {
-      toast.success(
-        `Do CRM přidáno ${created} ${created === 1 ? "firma" : created < 5 ? "firmy" : "firem"}.`,
-      );
-    } else if (skipped > 0) {
-      toast.message(`Nic nového. Všech ${skipped} už je v CRM.`);
     } else {
-      toast.message("Nebylo co importovat.");
+      toast.message(t("radar.nothingToImport"));
     }
   };
 
@@ -350,13 +350,13 @@ export default function RadarPage() {
             <div className="space-y-1.5">
               <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <Target className="h-3.5 w-3.5" />
-                Cílový profil / Segment
+                {t("radar.targetProfile")}
               </Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
                 <Input
                   className="h-11 rounded-xl border-border/50 bg-background pl-10 text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0"
-                  placeholder="např. Architektonická studia v Brně"
+                  placeholder={t("radar.searchPlaceholder")}
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   autoComplete="off"
@@ -367,7 +367,7 @@ export default function RadarPage() {
             <div className="space-y-1.5">
               <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <Globe className="h-3.5 w-3.5" />
-                Země
+                {t("radar.country")}
               </Label>
               <Select value={country} onValueChange={handleCountryChange}>
                 <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
@@ -375,7 +375,7 @@ export default function RadarPage() {
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
                   <SelectItem value={RADAR_COUNTRY_NONE}>
-                    Bez omezení
+                    {t("radar.countryAny")}
                   </SelectItem>
                   {RADAR_COUNTRY_OPTIONS.map((opt) => (
                     <SelectItem key={opt.code} value={opt.code}>
@@ -389,16 +389,22 @@ export default function RadarPage() {
             <div className="space-y-1.5">
               <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 <ListOrdered className="h-3.5 w-3.5" />
-                Počet firem
+                {t("radar.resultCount")}
               </Label>
               <Select value={count} onValueChange={setCount}>
                 <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
-                  <SelectItem value="5">5 výsledků</SelectItem>
-                  <SelectItem value="10">10 výsledků</SelectItem>
-                  <SelectItem value="15">15 výsledků</SelectItem>
+                  <SelectItem value="5">
+                    {t("radar.resultsN", { n: 5 })}
+                  </SelectItem>
+                  <SelectItem value="10">
+                    {t("radar.resultsN", { n: 10 })}
+                  </SelectItem>
+                  <SelectItem value="15">
+                    {t("radar.resultsN", { n: 15 })}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -467,7 +473,7 @@ export default function RadarPage() {
                       : "text-muted-foreground",
                   )}
                 />
-                Deep Scan (Kontakty)
+                {t("radar.deepScanLabel")}
               </Label>
             </div>
 
@@ -482,7 +488,7 @@ export default function RadarPage() {
                 htmlFor="exclude-crm"
                 className="cursor-pointer text-[13px] font-medium"
               >
-                Vyloučit firmy v CRM / Sheets archivu
+                {t("radar.excludeCrmLabel")}
               </Label>
             </div>
 
@@ -497,7 +503,7 @@ export default function RadarPage() {
                 htmlFor="only-email"
                 className="cursor-pointer text-[13px] font-medium"
               >
-                Pouze s e-mailem
+                {t("radar.emailOnlyLabel")}
               </Label>
             </div>
           </div>

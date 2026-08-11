@@ -37,6 +37,7 @@ import {
   formatProcessedDateTime,
   leadFullWebsiteUrl,
 } from "@/components/autopilot/shared";
+import { AutopilotTableSkeletonRows } from "@/components/autopilot/autopilot-table-skeleton";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 
 type FullAutoDateSort = "newest" | "oldest" | "range";
@@ -307,7 +308,8 @@ export function AutopilotFullAutoView() {
               </tr>
             </thead>
             <tbody>
-              {paginatedFullAutoRows.map((row) => (
+              {!isFullAutoHistoryLoading &&
+                paginatedFullAutoRows.map((row) => (
                 <tr key={`${mode}-d-${row.id}`}>
                   <td className="px-6 py-3.5">
                     <div className="min-w-0">
@@ -354,36 +356,32 @@ export function AutopilotFullAutoView() {
                   </td>
                 </tr>
               ))}
-              {paginatedFullAutoRows.length === 0 && (
-                <>
-                  {isFullAutoHistoryLoading && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      Načítám historii…
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isFullAutoHistoryLoading && fullAutoHistoryError && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      {fullAutoHistoryError}
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isFullAutoHistoryLoading &&
-                    !fullAutoHistoryError &&
-                    fullAutoRows.length === 0 && (
+              {isFullAutoHistoryLoading ? (
+                <AutopilotTableSkeletonRows rows={8} columns={4} />
+              ) : (
+                paginatedFullAutoRows.length === 0 && (
+                  <>
+                    {fullAutoHistoryError && (
+                      <AutopilotTableEmptyState colSpan={4}>
+                        {fullAutoHistoryError}
+                      </AutopilotTableEmptyState>
+                    )}
+                    {!fullAutoHistoryError && fullAutoRows.length === 0 && (
                       <AutopilotTableEmptyState colSpan={4}>
                         Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady
                         ukážou jen firmy, které Full Auto najde a pošle (ne ze
                         Sběru / Odesílání).
                       </AutopilotTableEmptyState>
                     )}
-                  {!isFullAutoHistoryLoading &&
-                    !fullAutoHistoryError &&
-                    fullAutoRows.length > 0 &&
-                    filteredRows.length === 0 && (
-                      <AutopilotTableEmptyState colSpan={4}>
-                        Žádné firmy neodpovídají filtrům.
-                      </AutopilotTableEmptyState>
-                    )}
-                </>
+                    {!fullAutoHistoryError &&
+                      fullAutoRows.length > 0 &&
+                      filteredRows.length === 0 && (
+                        <AutopilotTableEmptyState colSpan={4}>
+                          Žádné firmy neodpovídají filtrům.
+                        </AutopilotTableEmptyState>
+                      )}
+                  </>
+                )
               )}
             </tbody>
           </table>

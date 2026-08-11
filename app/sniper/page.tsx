@@ -50,7 +50,9 @@ import { getWorkspaceAccessState } from "@/app/actions/auth";
 import { getEmailConnectionState } from "@/app/actions/email-connection";
 import { sendSniperEmailNow } from "@/app/actions/sniper-send";
 import { SNIPER_AUTODETECT_VALUE, SNIPER_OFFER_OPTIONS } from "@/lib/constants";
+import { tService } from "@/lib/i18n/service-catalog";
 import { EMAIL_SETUP_SETTINGS_PATH } from "@/lib/copilot/setup-knowledge";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Pomocné mapování pro hezké zobrazení v menu i na štítcích (label + unikátní emoji)
 type OptionMeta = { label: string; emoji: string };
@@ -78,16 +80,16 @@ const segmentMap: Record<string, OptionMeta> = {
 
 /** Jazyky výstupu — vlajka přes PNG (Windows nezobrazuje emoji vlajky). */
 const SNIPER_LANGUAGES = [
-  { value: "cs", label: "Čeština" },
-  { value: "sk", label: "Slovenština" },
-  { value: "en", label: "Angličtina" },
-  { value: "de", label: "Němčina" },
-  { value: "es", label: "Španělština" },
-  { value: "ru", label: "Ruština" },
-  { value: "fr", label: "Francouzština" },
-  { value: "pl", label: "Polština" },
-  { value: "it", label: "Italština" },
-  { value: "nl", label: "Nizozemština" },
+  { value: "cs" },
+  { value: "sk" },
+  { value: "en" },
+  { value: "de" },
+  { value: "es" },
+  { value: "ru" },
+  { value: "fr" },
+  { value: "pl" },
+  { value: "it" },
+  { value: "nl" },
 ] as const;
 
 const MOCK_SUBJECTS = [
@@ -223,6 +225,7 @@ function truncateFilename(name: string, max = 26): string {
 }
 
 function SniperContent() {
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
@@ -564,13 +567,13 @@ function SniperContent() {
       if (result.success && result.data?.subjects?.length) {
         setSubjects(result.data.subjects);
         setSelectedSubject(result.data.subjects[0] ?? selectedSubject);
-        toast.success("Předměty byly obnoveny.");
+        toast.success(t("sniper.subjectsRefreshed"));
       } else {
-        toast.error("Generování předmětů selhalo. Zkuste to prosím znovu.");
+        toast.error(t("sniper.subjectsFailed"));
       }
     } catch (e) {
       console.error("SNIPER CLIENT (subjects):", e);
-      toast.error("Generování předmětů selhalo. Zkuste to prosím znovu.");
+      toast.error(t("sniper.subjectsFailed"));
     } finally {
       setIsRefreshingSubjects(false);
     }
@@ -592,9 +595,9 @@ function SniperContent() {
               <Crosshair strokeWidth={2} />
             </div>
           </div>
-          <h1 className="sk-type-h1 text-[28px]">Sniper</h1>
+          <h1 className="sk-type-h1 text-[28px]">{t("sniper.title")}</h1>
           <p className="sk-type-small mx-auto max-w-lg">
-            Jednorázová analýza webu a generování obchodního e-mailu na míru.
+            {t("sniper.subtitle")}
           </p>
         </div>
 
@@ -607,7 +610,7 @@ function SniperContent() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f && f.type && f.type !== "application/pdf") {
-                toast.error("Vyberte prosím soubor PDF.");
+                toast.error(t("sniper.pdfOnly"));
                 e.target.value = "";
                 return;
               }
@@ -620,7 +623,7 @@ function SniperContent() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Cílová URL adresa
+                  {t("sniper.targetUrlLabel")}
                 </label>
                 <div className="relative">
                   <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
@@ -636,7 +639,7 @@ function SniperContent() {
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Kontaktní E-mail
+                  {t("sniper.contactEmail")}
                 </label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
@@ -655,11 +658,11 @@ function SniperContent() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Typ nabídky (Vaše služba)
+                  {t("sniper.offerType")}
                 </label>
                 <Select value={selectedOffer} onValueChange={setSelectedOffer}>
                   <SelectTrigger className="h-11 w-full rounded-xl text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
-                    <SelectValue placeholder="Vyberte typ nabídky" />
+                    <SelectValue placeholder={t("sniper.offerType")} />
                   </SelectTrigger>
                   <SelectContent className="z-50 rounded-xl border-border/50 bg-card shadow-xl">
                     {SNIPER_OFFER_OPTIONS.map((option) => (
@@ -672,7 +675,9 @@ function SniperContent() {
                             "font-medium",
                         )}
                       >
-                        {option.label}
+                        {option.value === SNIPER_AUTODETECT_VALUE
+                          ? t("sniper.autoDetect")
+                          : tService(t, option.value)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -705,7 +710,7 @@ function SniperContent() {
                       </span>
                     ) : (
                       <span className="lowercase tracking-normal">
-                        + přidat PDF kontext
+                        {t("sniper.addPdfContext")}
                       </span>
                     )}
                   </button>
@@ -755,21 +760,21 @@ function SniperContent() {
                     <div className="space-y-3">
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Jazyk výstupu
+                          {t("sniper.outputLanguage")}
                         </label>
                         <Select
                           value={language}
                           onValueChange={handleLanguageChange}
                         >
                           <SelectTrigger className="h-9 rounded-lg bg-background text-xs">
-                            <SelectValue placeholder="Vyberte jazyk" />
+                            <SelectValue placeholder={t("sniper.outputLanguage")} />
                           </SelectTrigger>
                           <SelectContent className="border-border/60 bg-card shadow-lg">
-                            {SNIPER_LANGUAGES.map(({ value, label }) => (
+                            {SNIPER_LANGUAGES.map(({ value }) => (
                               <SelectItem key={value} value={value}>
                                 <span className="inline-flex items-center gap-2">
                                   <LanguageFlag code={value} />
-                                  {label}
+                                  {t(`sniper.languages.${value}`)}
                                 </span>
                               </SelectItem>
                             ))}
@@ -778,17 +783,18 @@ function SniperContent() {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Tón komunikace
+                          {t("sniper.toneLabel")}
                         </label>
                         <Select value={tone} onValueChange={setTone}>
                           <SelectTrigger className="h-9 rounded-lg bg-background text-xs">
-                            <SelectValue placeholder="Vyberte tón" />
+                            <SelectValue placeholder={t("sniper.tonePlaceholder")} />
                           </SelectTrigger>
                           <SelectContent className="border-border/60 bg-card shadow-lg">
                             {Object.entries(toneMap).map(
-                              ([value, { label, emoji }]) => (
+                              ([value, { emoji }]) => (
                                 <SelectItem key={value} value={value}>
-                                  {emoji} {label}
+                                  {emoji}{" "}
+                                  {t(`sniper.tones.${value}`)}
                                 </SelectItem>
                               ),
                             )}
@@ -796,8 +802,7 @@ function SniperContent() {
                         </Select>
                       </div>
                       <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                        Segment (obor klienta) se určí automaticky z webu. Už se
-                        nevybírá ručně, ať e-mail sedí na reálnou firmu.
+                        {t("sniper.segmentAutoHint")}
                       </p>
                     </div>
                   </div>
@@ -818,11 +823,11 @@ function SniperContent() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generuji…
+                    {t("sniper.generating")}
                   </>
                 ) : (
                   <>
-                    {hasCredits ? "Vygenerovat email" : "Nedostatek kreditů"}
+                    {hasCredits ? t("sniper.generate") : t("sniper.insufficientCreditsShort")}
                     <Wand2 className="ml-2 h-4 w-4" />
                   </>
                 )}
@@ -964,7 +969,7 @@ function SniperContent() {
                         isRefreshingSubjects || isLoading || !selectedOffer
                       }
                       className="flex items-center justify-center p-0 h-11 w-11 rounded-xl shrink-0 border-border/50 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      title="Vygenerovat nové předměty"
+                      title={t("sniper.refreshSubjects")}
                     >
                       <RefreshCw
                         className={cn(

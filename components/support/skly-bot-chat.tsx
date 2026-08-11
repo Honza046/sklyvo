@@ -364,7 +364,7 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
               </Button>
             ) : null}
             <div className="sk-support-chat__avatar" aria-hidden>
-              <SklyvoMark size={28} />
+              <SklyvoMark size={28} interactive={false} />
             </div>
             <div className="min-w-0">
               <p className="sk-type-h3 truncate">{t("copilot.title")}</p>

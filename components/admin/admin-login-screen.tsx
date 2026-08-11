@@ -112,12 +112,12 @@ export function AdminLoginScreen() {
           <SklyvoMark size={40} />
           <div>
             <p className="sk-admin-login__eyebrow">Interní konzole</p>
-            <h1 className="sk-admin-login__title">Sklyvo Ops</h1>
+            <h1 className="sk-admin-login__title">Sklyvo Admin</h1>
           </div>
         </div>
 
         <p className="sk-admin-login__lede">
-          Oddělené přihlášení pro správu zákazníků a workspaceů.
+          Oddělené přihlášení pro správu zákazníků a workspaceů (CTO).
         </p>
 
         {errorMessage ? (
@@ -137,7 +137,7 @@ export function AdminLoginScreen() {
                 autoComplete="username"
                 required
                 className="h-11 rounded-xl"
-                placeholder="ops@…"
+                placeholder="jan@…"
               />
             </div>
             <div className="space-y-1.5">
@@ -165,7 +165,7 @@ export function AdminLoginScreen() {
               disabled={pending}
               className="sk-btn sk-btn--primary sk-btn--md w-full"
             >
-              {pending ? "Přihlašuji…" : "Vstup do Ops"}
+              {pending ? "Přihlašuji…" : "Vstup do Admin"}
             </button>
           </form>
         ) : (

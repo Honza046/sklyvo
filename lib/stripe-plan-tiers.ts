@@ -2,32 +2,42 @@ import type Stripe from "stripe";
 
 /** Všechny price ID z app/pricing/page.tsx (single + agency). */
 export const STRIPE_PRICE_ID_TO_TIER: Record<string, string> = {
- price_1TTR7ULylMkTRLPv0aKsMf6m: "STARTER",
- price_1TTR7ULylMkTRLPveZMSNDo0: "STARTER",
- price_1TTR9LLylMkTRLPvOy6G6eFc: "PRO",
- price_1TTR9LLylMkTRLPvekSzl2hx: "PRO",
- price_1TTRAJLylMkTRLPvZ4g1enS7: "PREMIUM",
- price_1TTRAJLylMkTRLPvGnnFjFTx: "PREMIUM",
- price_1TTRAxLylMkTRLPvkFnoL2AA: "AGENCY_STARTER",
- price_1TTRAxLylMkTRLPvJqogNxh6: "AGENCY_STARTER",
- price_1TTREOLylMkTRLPvDcOljc76: "AGENCY_GROWTH",
- price_1TTREOLylMkTRLPvrAJSv6sN: "AGENCY_GROWTH",
- price_1TTREvLylMkTRLPveDQIsP3y: "AGENCY_SCALE",
- price_1TTREvLylMkTRLPvGRhDYJna: "AGENCY_SCALE",
+  price_1TTR7ULylMkTRLPv0aKsMf6m: "STARTER",
+  price_1TTR7ULylMkTRLPveZMSNDo0: "STARTER",
+  price_1TTR9LLylMkTRLPvOy6G6eFc: "PRO",
+  price_1TTR9LLylMkTRLPvekSzl2hx: "PRO",
+  price_1TTRAJLylMkTRLPvZ4g1enS7: "PREMIUM",
+  price_1TTRAJLylMkTRLPvGnnFjFTx: "PREMIUM",
+  price_1TTRAxLylMkTRLPvkFnoL2AA: "AGENCY_STARTER",
+  price_1TTRAxLylMkTRLPvJqogNxh6: "AGENCY_STARTER",
+  price_1TTREOLylMkTRLPvDcOljc76: "AGENCY_GROWTH",
+  price_1TTREOLylMkTRLPvrAJSv6sN: "AGENCY_GROWTH",
+  price_1TTREvLylMkTRLPveDQIsP3y: "AGENCY_SCALE",
+  price_1TTREvLylMkTRLPvGRhDYJna: "AGENCY_SCALE",
 };
 
-/** Kredity podle tarifu (soulad s marketingem na pricing). */
+/** Free workspace před výběrem tarifu (Prisma default). */
+export const FREE_WORKSPACE_CREDITS = 10;
+
+/** Trial po zadání karty (3 dny) — nevyužité se po stržení smažou. */
+export const TRIAL_CREDITS = 40;
+
+/**
+ * Měsíční pool kreditů (varianta C).
+ * Cíl ≈ COGS 30 % MRR při 100% usage / ~21 % při 70% (0,30 Kč/akce).
+ * Kredity se nepřenášejí — při invoice.paid se creditsUsed resetuje na 0.
+ */
 export function creditsForPlanTier(tier: string): number {
- const key = tier.toUpperCase();
- const map: Record<string, number> = {
- STARTER: 1500,
- PRO: 4500,
- PREMIUM: 12000,
- AGENCY_STARTER: 6000,
- AGENCY_GROWTH: 15000,
- AGENCY_SCALE: 36000,
- };
- return map[key] ?? 10;
+  const key = tier.toUpperCase();
+  const map: Record<string, number> = {
+    STARTER: 1000,
+    PRO: 2500,
+    PREMIUM: 6000,
+    AGENCY_STARTER: 3000,
+    AGENCY_GROWTH: 7000,
+    AGENCY_SCALE: 15000,
+  };
+  return map[key] ?? FREE_WORKSPACE_CREDITS;
 }
 
 export function resolvePlanTierFromSubscription(sub: Stripe.Subscription): string | null {

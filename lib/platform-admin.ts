@@ -10,7 +10,7 @@ import {
 
 export const ADMIN_RETURN_COOKIE = "sklyvo_admin_return";
 
-/** Comma-separated allowlist, e.g. `honza@x.com,matej@y.com`. */
+/** Comma-separated allowlist (CTO / platform admins only). */
 export function getPlatformAdminEmails(): string[] {
   const raw = process.env.PLATFORM_ADMIN_EMAILS?.trim() ?? "";
   if (!raw) return [];
@@ -20,19 +20,8 @@ export function getPlatformAdminEmails(): string[] {
     .filter(Boolean);
 }
 
-/**
- * Local/dev: when PLATFORM_ADMIN_LOCAL=1, any logged-in user can open /admin.
- * Never on in production.
- */
-export function isLocalPlatformAdminOpen(): boolean {
-  if (process.env.NODE_ENV === "production") return false;
-  const flag = process.env.PLATFORM_ADMIN_LOCAL?.trim().toLowerCase();
-  return flag === "1" || flag === "true" || flag === "yes";
-}
-
 export function isPlatformAdminEmail(email: string | null | undefined): boolean {
   if (!email?.trim()) return false;
-  if (isLocalPlatformAdminOpen()) return true;
   const allow = getPlatformAdminEmails();
   if (allow.length === 0) return false;
   return allow.includes(email.trim().toLowerCase());
@@ -63,7 +52,7 @@ export async function getPlatformAdminActor(): Promise<PlatformAdminActor | null
   return { id: user.id, email: user.email, name: user.name };
 }
 
-/** Hard gate for /admin console — redirects to Ops login when needed. */
+/** Hard gate for /admin console — redirects to Admin login when needed. */
 export async function requirePlatformAdmin(): Promise<PlatformAdminActor> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   const userId = await verifySessionToken(token);

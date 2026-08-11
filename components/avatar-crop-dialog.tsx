@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { getCroppedImageBlob } from "@/lib/crop-image";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 
 type AvatarCropDialogProps = {
   open: boolean;
@@ -31,6 +32,7 @@ export function AvatarCropDialog({
   onConfirm,
   isSaving = false,
 }: AvatarCropDialogProps) {
+  const { t } = useLanguage();
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -62,7 +64,7 @@ export function AvatarCropDialog({
       await onConfirm(file);
     } catch (error) {
       console.error("Avatar crop failed:", error);
-      toast.error("Nepodařilo se připravit ořez fotky.");
+      toast.error(t("account.crop.failed"));
     } finally {
       setIsProcessing(false);
     }
@@ -80,9 +82,9 @@ export function AvatarCropDialog({
     >
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md sm:rounded-2xl">
         <DialogHeader className="space-y-1 px-5 pb-3 pt-5 text-left sm:px-6 sm:pt-6">
-          <DialogTitle>Upravit fotku</DialogTitle>
+          <DialogTitle>{t("account.crop.title")}</DialogTitle>
           <DialogDescription>
-            Posuňte a přibližte fotku tak, jak ji chcete mít v profilu.
+            {t("account.crop.desc")}
           </DialogDescription>
         </DialogHeader>
 
@@ -111,7 +113,7 @@ export function AvatarCropDialog({
               htmlFor="avatar-zoom"
               className="text-xs text-muted-foreground"
             >
-              Přiblížení
+              {t("account.crop.zoom")}
             </Label>
             <span className="tabular-nums text-[11px] text-muted-foreground">
               {zoom.toFixed(1)}×
@@ -141,7 +143,7 @@ export function AvatarCropDialog({
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
-            Zrušit
+            {t("account.crop.cancel")}
           </Button>
           <Button
             type="button"
@@ -149,7 +151,7 @@ export function AvatarCropDialog({
             disabled={busy || !imageSrc || !croppedAreaPixels}
             onClick={() => void handleConfirm()}
           >
-            {busy ? "Ukládám…" : "Použít fotku"}
+            {busy ? t("account.crop.saving") : t("account.crop.usePhoto")}
           </Button>
         </DialogFooter>
       </DialogContent>

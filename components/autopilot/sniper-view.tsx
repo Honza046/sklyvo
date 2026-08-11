@@ -91,6 +91,10 @@ import {
   type RunStatus,
   type WorkspaceLead,
 } from "@/components/autopilot/shared";
+import {
+  AutopilotListSkeleton,
+  AutopilotTableSkeletonRows,
+} from "@/components/autopilot/autopilot-table-skeleton";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 
 /** Stejný scroll model jako Sběr firem — flex overflow, ne absolute (rozbíjel zarovnání thead/td). */
@@ -1035,7 +1039,8 @@ export function AutopilotSniperView() {
               </tr>
             </thead>
             <tbody>
-              {paginatedLeads.map((lead) => {
+              {!isLoading &&
+                paginatedLeads.map((lead) => {
                 const web = leadFullWebsiteUrl(lead.url);
                 const checked = selectedIds.includes(lead.id);
                 return (
@@ -1129,28 +1134,27 @@ export function AutopilotSniperView() {
                   </tr>
                 );
               })}
-              {paginatedLeads.length === 0 && (
-                <>
-                  {isLoading && (
-                    <AutopilotTableEmptyState colSpan={6}>
-                      Načítám firmy…
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isLoading && loadError && (
-                    <AutopilotTableEmptyState
-                      colSpan={6}
-                      className="text-rose-600 "
-                    >
-                      {loadError}
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isLoading && !loadError && leads.length === 0 && (
-                    <AutopilotTableEmptyState colSpan={6}>
-                      Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo
-                      CRM.
-                    </AutopilotTableEmptyState>
-                  )}
-                </>
+              {isLoading ? (
+                <AutopilotTableSkeletonRows rows={8} columns={6} />
+              ) : (
+                paginatedLeads.length === 0 && (
+                  <>
+                    {loadError && (
+                      <AutopilotTableEmptyState
+                        colSpan={6}
+                        className="text-rose-600 "
+                      >
+                        {loadError}
+                      </AutopilotTableEmptyState>
+                    )}
+                    {!loadError && leads.length === 0 && (
+                      <AutopilotTableEmptyState colSpan={6}>
+                        Žádné neoslovené firmy. Přidejte leady v sekci Radar nebo
+                        CRM.
+                      </AutopilotTableEmptyState>
+                    )}
+                  </>
+                )
               )}
             </tbody>
           </table>
@@ -1184,9 +1188,7 @@ export function AutopilotSniperView() {
               : "mt-3 sm:mt-6",
           )}
         >
-          <AutopilotListEmptyState>
-            Načítám naplánovanou frontu…
-          </AutopilotListEmptyState>
+          <AutopilotListSkeleton rows={5} />
         </div>
       );
     }

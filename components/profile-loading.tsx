@@ -18,7 +18,7 @@ export function ProfilePageSkeleton() {
       {/* Kontejner pro karty */}
       <div className="flex w-full max-w-3xl flex-col gap-4 px-4 md:px-8">
         {/* Karta 1: Osobní údaje */}
-        <div className="flex flex-col gap-8 rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
+        <div className="sk-ghost-card flex flex-col gap-8 rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
           <div className="flex animate-pulse items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-6 w-6 rounded-md bg-slate-200 " />
@@ -58,7 +58,7 @@ export function ProfilePageSkeleton() {
         {closedAccordionRows.map(({ key, barClass }) => (
           <div
             key={key}
-            className="flex animate-pulse items-center justify-between rounded-2xl border border-border/60 bg-card p-6 shadow-sm"
+            className="sk-ghost-card flex animate-pulse items-center justify-between rounded-2xl border border-border/60 bg-card p-6 shadow-sm"
           >
             <div className="flex items-center gap-3">
               <div className="h-6 w-6 rounded-md bg-slate-200 " />

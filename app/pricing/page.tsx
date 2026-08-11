@@ -6,134 +6,146 @@ import { Switch } from "@/components/ui/switch";
 import { Check, Zap } from "lucide-react";
 import { startTrialCheckout } from "@/app/actions/billing";
 import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
+import { useLanguage } from "@/context/LanguageContext";
+import { messages } from "@/lib/i18n/messages";
+import { DATE_LOCALE, type Language } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
 type BillingCycle = "monthly" | "yearly";
 type AccountType = "single" | "agency";
 
-type Plan = {
-  tier: string;
-  name: string;
-  subtitle: string;
-  priceMonthly: string;
-  priceYearly: string;
+type PlanTierKey =
+  | "STARTER"
+  | "PRO"
+  | "PREMIUM"
+  | "AGENCY_STARTER"
+  | "AGENCY_GROWTH"
+  | "AGENCY_SCALE";
+
+type PlanDef = {
+  tier: PlanTierKey;
+  priceMonthlyCzk: number;
+  priceYearlyCzk: number;
+  /** EN UI list price (Stripe checkout still uses CZK price IDs). */
+  priceMonthlyUsd?: number;
+  priceYearlyUsd?: number;
+  credits: number;
   stripePriceIdMonthly: string;
   stripePriceIdYearly: string;
-  credits: string;
-  features: string[];
   isPopular?: boolean;
 };
 
-const singlePlans: Plan[] = [
+/** Fallback FX when a plan has no explicit USD list price. */
+const CZK_PER_USD = 23;
+
+const singlePlans: PlanDef[] = [
   {
     tier: "STARTER",
-    name: "Starter",
-    subtitle: "Pro jednotlivce, kdo začíná",
-    priceMonthly: "990 Kč / měs",
-    priceYearly: "9 490 Kč / rok",
-    credits: "1 500 kreditů / měs",
-    features: [
-      "1 aktivní účet",
-      "1 mailový identifikátor",
-      "Základní šablony",
-      "Email support (48 h)",
-    ],
+    priceMonthlyCzk: 990,
+    priceYearlyCzk: 9490,
+    priceMonthlyUsd: 49,
+    priceYearlyUsd: 469,
+    credits: 1000,
     stripePriceIdMonthly: "price_1TTR7ULylMkTRLPv0aKsMf6m",
     stripePriceIdYearly: "price_1TTR7ULylMkTRLPveZMSNDo0",
   },
   {
     tier: "PRO",
-    name: "Pro",
-    subtitle: "Pro aktivní freelancery",
-    priceMonthly: "2 490 Kč / měs",
-    priceYearly: "23 900 Kč / rok",
-    credits: "4 500 kreditů / měs",
-    features: [
-      "3 mailové identifikátory",
-      "AI personalizace Sniperu",
-      "A/B testování",
-      "Pokročilé šablony",
-      "Chat support (24 h)",
-    ],
+    priceMonthlyCzk: 2490,
+    priceYearlyCzk: 23900,
+    priceMonthlyUsd: 109,
+    priceYearlyUsd: 1049,
+    credits: 2500,
     isPopular: true,
     stripePriceIdMonthly: "price_1TTR9LLylMkTRLPvOy6G6eFc",
     stripePriceIdYearly: "price_1TTR9LLylMkTRLPvekSzl2hx",
   },
   {
     tier: "PREMIUM",
-    name: "Premium",
-    subtitle: "Power user a velké objemy",
-    priceMonthly: "5 990 Kč / měs",
-    priceYearly: "57 500 Kč / rok",
-    credits: "12 000 kreditů / měs",
-    features: [
-      "Neomezené identifikátory",
-      "AI + vlastní prompty",
-      "Priorita ve frontě",
-      "Dedicated manager",
-      "API přístup",
-    ],
+    priceMonthlyCzk: 5990,
+    priceYearlyCzk: 57500,
+    priceMonthlyUsd: 259,
+    priceYearlyUsd: 2489,
+    credits: 6000,
     stripePriceIdMonthly: "price_1TTRAJLylMkTRLPvZ4g1enS7",
     stripePriceIdYearly: "price_1TTRAJLylMkTRLPvGnnFjFTx",
   },
 ];
 
-const agencyPlans: Plan[] = [
+const agencyPlans: PlanDef[] = [
   {
     tier: "AGENCY_STARTER",
-    name: "Agency Starter",
-    subtitle: "Až 3 účty • sdílený pool",
-    priceMonthly: "2 990 Kč / měs",
-    priceYearly: "28 700 Kč / rok",
-    credits: "6 000 kreditů / měs",
-    features: [
-      "Až 3 uživatelské účty",
-      "Sdílený pool akcí",
-      "Společná databáze",
-      "Admin dashboard",
-      "White label (logo)",
-    ],
+    priceMonthlyCzk: 2990,
+    priceYearlyCzk: 28700,
+    priceMonthlyUsd: 129,
+    priceYearlyUsd: 1239,
+    credits: 3000,
     stripePriceIdMonthly: "price_1TTRAxLylMkTRLPvkFnoL2AA",
     stripePriceIdYearly: "price_1TTRAxLylMkTRLPvJqogNxh6",
   },
   {
     tier: "AGENCY_GROWTH",
-    name: "Agency Growth",
-    subtitle: "Až 5 účtů • sdílený pool",
-    priceMonthly: "6 990 Kč / měs",
-    priceYearly: "67 100 Kč / rok",
-    credits: "15 000 kreditů / měs",
-    features: [
-      "Až 5 uživatelských účtů",
-      "Role a práva",
-      "AI pro celý tým",
-      "Týmové šablony a segmenty",
-      "Priority support",
-    ],
+    priceMonthlyCzk: 6990,
+    priceYearlyCzk: 67100,
+    priceMonthlyUsd: 299,
+    priceYearlyUsd: 2869,
+    credits: 7000,
     isPopular: true,
     stripePriceIdMonthly: "price_1TTREOLylMkTRLPvDcOljc76",
     stripePriceIdYearly: "price_1TTREOLylMkTRLPvrAJSv6sN",
   },
   {
     tier: "AGENCY_SCALE",
-    name: "Agency Scale",
-    subtitle: "Až 10 účtů • sdílený pool",
-    priceMonthly: "14 990 Kč / měs",
-    priceYearly: "143 900 Kč / rok",
-    credits: "36 000 kreditů / měs",
-    features: [
-      "Až 10 uživatelských účtů",
-      "Custom onboarding",
-      "API a webhooky",
-      "Dedicated account manager",
-      "SLA 99,9 %",
-    ],
+    priceMonthlyCzk: 14990,
+    priceYearlyCzk: 143900,
+    priceMonthlyUsd: 649,
+    priceYearlyUsd: 6229,
+    credits: 15000,
     stripePriceIdMonthly: "price_1TTREvLylMkTRLPveDQIsP3y",
     stripePriceIdYearly: "price_1TTREvLylMkTRLPvGRhDYJna",
   },
 ];
 
+function usesUsdDisplay(language: Language): boolean {
+  return language === "en";
+}
+
+function formatPlanPrice(
+  plan: PlanDef,
+  cycle: BillingCycle,
+  language: Language,
+): string {
+  if (usesUsdDisplay(language)) {
+    const usd =
+      cycle === "monthly"
+        ? (plan.priceMonthlyUsd ??
+          Math.round(plan.priceMonthlyCzk / CZK_PER_USD))
+        : (plan.priceYearlyUsd ??
+          Math.round(plan.priceYearlyCzk / CZK_PER_USD));
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(usd);
+  }
+
+  const amountCzk =
+    cycle === "monthly" ? plan.priceMonthlyCzk : plan.priceYearlyCzk;
+  return new Intl.NumberFormat(DATE_LOCALE[language] || "cs-CZ", {
+    style: "currency",
+    currency: "CZK",
+    maximumFractionDigits: 0,
+  }).format(amountCzk);
+}
+
+function formatCreditsCount(count: number, language: Language): string {
+  return new Intl.NumberFormat(
+    usesUsdDisplay(language) ? "en-US" : DATE_LOCALE[language] || "cs-CZ",
+  ).format(count);
+}
+
 export default function PricingPage() {
+  const { t, language } = useLanguage();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [accountType, setAccountType] = useState<AccountType>("single");
   const plans = useMemo(
@@ -163,11 +175,8 @@ export default function PricingPage() {
   return (
     <div className="sk-pricing flex w-full flex-col items-center justify-start py-4">
       <div className="mb-6 space-y-2 text-center">
-        <h1 className="sk-type-h1">Vyberte tarif podle typu účtu</h1>
-        <p className="sk-type-body mx-auto max-w-xl">
-          Aktivace vyžaduje platební kartu. První platba proběhne až po 3 dnech
-          trialu.
-        </p>
+        <h1 className="sk-type-h1">{t("pricing.title")}</h1>
+        <p className="sk-type-body mx-auto max-w-xl">{t("pricing.subtitle")}</p>
       </div>
 
       <div className="sk-pricing__cycle mb-5">
@@ -179,14 +188,14 @@ export default function PricingPage() {
               : "text-muted-foreground",
           )}
         >
-          Měsíčně
+          {t("pricing.monthly")}
         </span>
         <Switch
           checked={billingCycle === "yearly"}
           onCheckedChange={(checked) =>
             setBillingCycle(checked ? "yearly" : "monthly")
           }
-          aria-label="Přepnout fakturaci"
+          aria-label={t("pricing.billingAria")}
         />
         <span
           className={cn(
@@ -196,7 +205,7 @@ export default function PricingPage() {
               : "text-muted-foreground",
           )}
         >
-          Ročně (Sleva 20%)
+          {t("pricing.yearly")}
         </span>
       </div>
 
@@ -218,7 +227,7 @@ export default function PricingPage() {
             accountType === "single" && "sk-view-toggle__item--active",
           )}
         >
-          Single account
+          {t("pricing.singleAccount")}
         </button>
         <button
           type="button"
@@ -229,14 +238,14 @@ export default function PricingPage() {
             accountType === "agency" && "sk-view-toggle__item--active",
           )}
         >
-          Agency account
+          {t("pricing.agencyAccount")}
         </button>
       </div>
 
       <p className="mb-6 w-full text-center text-sm text-muted-foreground">
         {accountType === "single"
-          ? "1 uživatel, 1 aktivní účet, vlastní databáze kontaktů"
-          : "Tým pod jednou značkou, sdílený pool akcí, až 10 účtů"}
+          ? t("pricing.singleBlurb")
+          : t("pricing.agencyBlurb")}
       </p>
 
       <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-3 md:items-stretch">
@@ -245,6 +254,14 @@ export default function PricingPage() {
             billingCycle === "monthly"
               ? plan.stripePriceIdMonthly
               : plan.stripePriceIdYearly;
+          const planCopy = messages[language].pricing.plans[plan.tier];
+          const priceLabel = t(
+            billingCycle === "monthly"
+              ? "pricing.perMonth"
+              : "pricing.perYear",
+            { price: formatPlanPrice(plan, billingCycle, language) },
+          );
+
           return (
             <div
               key={plan.tier}
@@ -253,36 +270,34 @@ export default function PricingPage() {
                 plan.isPopular && "sk-pricing__card--popular",
               )}
             >
-              {plan.isPopular && (
+              {plan.isPopular ? (
                 <div className="sk-pricing__badge">
                   <Zap className="h-3 w-3" />
-                  Nejčastější volba
+                  {t("pricing.popular")}
                 </div>
-              )}
+              ) : null}
 
               <h3 className="sk-type-h3 mb-1 text-[color:var(--sk-ink)]">
-                {plan.name}
+                {planCopy.name}
               </h3>
               <p className="mb-4 min-h-[36px] text-xs text-muted-foreground">
-                {plan.subtitle}
+                {planCopy.subtitle}
               </p>
 
               <div className="mb-4">
-                <span className="sk-type-h1">
-                  {billingCycle === "monthly"
-                    ? plan.priceMonthly
-                    : plan.priceYearly}
-                </span>
+                <span className="sk-type-h1">{priceLabel}</span>
               </div>
 
               <div className="sk-pricing__credits mb-5">
                 <span className="text-sm font-extrabold tracking-tight text-[color:var(--sk-ink)]">
-                  {plan.credits}
+                  {t("pricing.creditsPerMonth", {
+                    count: formatCreditsCount(plan.credits, language),
+                  })}
                 </span>
               </div>
 
               <ul className="mb-6 flex-1 space-y-2.5">
-                {plan.features.map((feature) => (
+                {planCopy.features.map((feature) => (
                   <li
                     key={feature}
                     className="flex items-start text-xs font-medium text-[color:var(--sk-ink)]"
@@ -300,7 +315,9 @@ export default function PricingPage() {
                 variant="primary"
                 className="sk-pricing__cta mt-auto h-11 w-full"
               >
-                {loadingTier === plan.tier ? "Aktivuji…" : "Aktivovat"}
+                {loadingTier === plan.tier
+                  ? t("pricing.activating")
+                  : t("pricing.activate")}
               </Button>
             </div>
           );

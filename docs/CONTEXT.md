@@ -151,7 +151,7 @@ Vynecháno: `node_modules`, `.next`, drobné config soubory (`postcss`, `eslint`
 ### Ceník / plan config
 
 - **UI a Price ID**: `app/pricing/page.tsx` — pole plánů (`tier`, měsíční/roční `stripePriceId*`, marketingové texty včetně kreditů).
-- **Logika tarifu a kreditů pro backend**: **`lib/stripe-plan-tiers.ts`** — mapa price ID → `STARTER` / `PRO` / … a funkce **`creditsForPlanTier`** (např. STARTER **1500**, PRO **4500**), **`resolvePlanTierFromSubscription`** (metadata `planTier` nebo první známý price na subscription).
+- **Logika tarifu a kreditů pro backend**: **`lib/stripe-plan-tiers.ts`** — mapa price ID → `STARTER` / `PRO` / … a funkce **`creditsForPlanTier`** (varianta C: STARTER **1000**, PRO **2500**, PREMIUM **6000**, AGENCY 3000/7000/15000), trial **`TRIAL_CREDITS` = 40**, free **10**. **`resolvePlanTierFromSubscription`** (metadata `planTier` nebo první známý price na subscription).
 
 ### Kde je webhook
 

@@ -23,6 +23,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
+import { CrmKanbanSkeleton } from "@/components/crm/crm-table-skeleton";
 
 /** Při tažení s DragOverlay ponechá zdroj v layoutu; kopii tahá overlay (@dnd-kit doporučení). */
 export type KanbanDragProps = {
@@ -292,9 +293,7 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
         </p>
 
         {isLoading ? (
-          <div className="sk-data-panel rounded-2xl border border-border/60 bg-white p-6 text-sm font-semibold text-muted-foreground">
-            Načítám dealy...
-          </div>
+          <CrmKanbanSkeleton />
         ) : selectedColumn ? (
           <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
             <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">

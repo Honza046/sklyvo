@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -67,6 +69,7 @@ import {
   Mail,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -97,6 +100,10 @@ import {
   type AutopilotLead,
 } from "@/app/crm/autopilot-dialog";
 import { CompanyAvatar } from "@/components/crm/company-avatar";
+import {
+  CrmDueBannerSkeleton,
+  CrmTableSkeleton,
+} from "@/components/crm/crm-table-skeleton";
 import { SlidingViewToggle } from "@/components/sklyvo/sliding-view-toggle";
 import { toast } from "sonner";
 import { OUTREACH_KIND_LABELS, type OutreachKindValue } from "@/lib/outreach";
@@ -222,6 +229,7 @@ function formatCsDate(isoOrDate: string): string {
 /** Primární datum na kartě / v tabulce. */
 function leadPrimaryDateLabel(
   lead: Pick<Lead, "lastContactedAt" | "createdAt" | "date">,
+  labels: { sent: string; added: string },
 ): {
   label: string;
   /** Krátký řádek s datem (pro tabulku bez překryvu). */
@@ -233,18 +241,18 @@ function leadPrimaryDateLabel(
   if (lead.lastContactedAt) {
     const sent = formatCsDate(lead.lastContactedAt);
     return {
-      label: `Odesláno ${sent}`,
-      kindLine: "Odesláno",
+      label: `${labels.sent} ${sent}`,
+      kindLine: labels.sent,
       dateLine: sent,
-      title: `E-mail odeslán ${sent}${lead.date ? ` · přidáno ${lead.date}` : ""}`,
+      title: `${labels.sent} ${sent}${lead.date ? ` · ${labels.added} ${lead.date}` : ""}`,
       isSent: true,
     };
   }
   return {
-    label: `Přidáno ${lead.date}`,
-    kindLine: "Přidáno",
+    label: `${labels.added} ${lead.date}`,
+    kindLine: labels.added,
     dateLine: lead.date,
-    title: `Přidáno do CRM ${lead.date}`,
+    title: `${labels.added} ${lead.date}`,
     isSent: false,
   };
 }
@@ -416,7 +424,19 @@ function ScrapeContactButton({
 }
 
 function CrmPageContent() {
+  const { t, language } = useLanguage();
   const ITEMS_PER_PAGE = 50;
+  const translatedColumns = useMemo(
+    () =>
+      COLUMNS.map((col) => ({
+        ...col,
+        title:
+          col.id === "breakup"
+            ? t("leadStatus.BREAK_UP")
+            : t(`crm.columns.${col.id}`),
+      })),
+    [t],
+  );
   const [sortBy, setSortBy] = useState<
     "newest" | "oldest" | "value_high" | "value_low"
   >("newest");
@@ -691,13 +711,13 @@ function CrmPageContent() {
   };
 
   const statusLabelMap: Record<Lead["status"], string> = {
-    new: "Nový lead",
-    contacted: "Kontaktováno",
-    follow_up: "Follow up",
-    communication: "Komunikace",
-    agreed: "Domluveno",
-    rejected: "Nedomluveno",
-    breakup: "Breakup",
+    new: t("leadStatus.NEW"),
+    contacted: t("leadStatus.CONTACTED"),
+    follow_up: t("leadStatus.REPLIED"),
+    communication: t("leadStatus.MEETING_SET"),
+    agreed: t("leadStatus.CLOSED_WON"),
+    rejected: t("leadStatus.CLOSED_LOST"),
+    breakup: t("leadStatus.BREAK_UP"),
   };
 
   const statusColorMap: Record<Lead["status"], string> = {
@@ -714,6 +734,46 @@ function CrmPageContent() {
     () => leads.filter((l) => l.outreachDue),
     [leads],
   );
+  const dueOutreachSignature = useMemo(
+    () =>
+      dueOutreachLeads
+        .map((l) => l.id)
+        .sort()
+        .join(","),
+    [dueOutreachLeads],
+  );
+  const [dismissedDueSignature, setDismissedDueSignature] = useState<
+    string | null
+  >(null);
+  const [dueDismissHydrated, setDueDismissHydrated] = useState(false);
+
+  useEffect(() => {
+    try {
+      setDismissedDueSignature(
+        window.localStorage.getItem("sklyvo-crm-due-dismissed"),
+      );
+    } catch {
+      /* ignore */
+    }
+    setDueDismissHydrated(true);
+  }, []);
+
+  const showDueBanner =
+    dueDismissHydrated &&
+    dueOutreachLeads.length > 0 &&
+    dismissedDueSignature !== dueOutreachSignature;
+
+  const dismissDueBanner = () => {
+    setDismissedDueSignature(dueOutreachSignature);
+    try {
+      window.localStorage.setItem(
+        "sklyvo-crm-due-dismissed",
+        dueOutreachSignature,
+      );
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleSendOutreach = async (
     leadId: string,
@@ -1056,67 +1116,77 @@ function CrmPageContent() {
         </div>
         <h1 className="sk-type-h1">CRM</h1>
         <p className="sk-type-body mx-auto max-w-lg">
-          Sledujte stav oslovených firem a nenechte žádný potenciální deal
-          vychladnout.
+          {t("crm.subtitle")}
         </p>
       </div>
 
       <div className="flex min-h-0 w-full flex-1 flex-col gap-2 overflow-hidden px-0 sm:gap-4">
-        {dueOutreachLeads.length > 0 && (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950 sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3">
-            <div className="flex min-w-0 items-start gap-2">
-              <Bell className="mt-0.5 h-4 w-4 shrink-0" />
+        {isLoading ? (
+          <CrmDueBannerSkeleton />
+        ) : showDueBanner ? (
+          <div className="sk-crm-due flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span className="sk-crm-due__icon" aria-hidden>
+                <Bell className="h-4 w-4" />
+              </span>
               <div className="min-w-0">
-                <p className="text-xs font-semibold sm:text-sm">
-                  {dueOutreachLeads.length} leadů čeká na follow-up / breakup
+                <p className="text-xs font-semibold text-[color:var(--sk-ink)] sm:text-sm">
+                  {t("crm.dueTitle", { count: dueOutreachLeads.length })}
                 </p>
-                <p className="hidden text-xs opacity-80 sm:block">
-                  Po 14 dnech follow-up, dalších 14 breakup. Pošli je přímo z
-                  CRM.
+                <p className="hidden text-xs text-[color:var(--sk-muted)] sm:block">
+                  {t("crm.dueDesc")}
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 border-amber-300 bg-white px-2 text-[11px] font-semibold sm:h-9 sm:px-3 sm:text-sm"
+                className="sk-press-btn h-8 px-2 text-[11px] font-semibold sm:h-9 sm:px-3 sm:text-sm"
                 disabled={isBulkRunning}
                 onClick={() => {
                   const ids = dueOutreachLeads
                     .filter((l) => l.nextOutreachKind === "FOLLOW_UP")
                     .map((l) => l.id);
                   if (ids.length === 0) {
-                    toast.message("Žádný splatný follow-up.");
+                    toast.message(t("crm.noDueFollowUp"));
                     return;
                   }
                   setSelectedLeads(ids);
                   void handleBulkOutreach("FOLLOW_UP");
                 }}
               >
-                Follow-upy
+                {t("crm.followUps")}
               </Button>
               <Button
                 size="sm"
-                className="h-8 bg-orange-700 px-2 text-[11px] font-semibold text-white hover:bg-orange-800 sm:h-9 sm:px-3 sm:text-sm"
+                className="sk-press-btn h-8 bg-[color:var(--sk-ink)] px-2 text-[11px] font-semibold text-white hover:bg-[color:var(--sk-ink-press)] sm:h-9 sm:px-3 sm:text-sm"
                 disabled={isBulkRunning}
                 onClick={() => {
                   const ids = dueOutreachLeads
                     .filter((l) => l.nextOutreachKind === "BREAKUP")
                     .map((l) => l.id);
                   if (ids.length === 0) {
-                    toast.message("Žádný splatný breakup.");
+                    toast.message(t("crm.noDueBreakup"));
                     return;
                   }
                   setSelectedLeads(ids);
                   void handleBulkOutreach("BREAKUP");
                 }}
               >
-                Breakupy
+                {t("crm.breakups")}
               </Button>
+              <button
+                type="button"
+                className="sk-crm-due__dismiss"
+                aria-label={t("crm.dismissDue")}
+                onClick={dismissDueBanner}
+              >
+                <X strokeWidth={2.25} aria-hidden />
+              </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         <div
           className={cn(
@@ -1241,7 +1311,7 @@ function CrmPageContent() {
               <div className="relative min-w-0 flex-1 md:max-w-xs">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground md:h-4 md:w-4" />
                 <Input
-                  placeholder="Hledat firmu…"
+                  placeholder={t("crm.searchPlaceholder")}
                   className="h-9 pl-9 text-[15px] md:text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -1258,7 +1328,7 @@ function CrmPageContent() {
                       className="sk-press-btn h-9 w-9 shrink-0 p-0 md:w-auto md:min-w-[7.5rem] md:px-3.5"
                     >
                       <SlidersHorizontal className="h-4 w-4 md:mr-0" />
-                      <span className="hidden md:inline">Filtry</span>
+                      <span className="hidden md:inline">{t("crm.filters")}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent
@@ -1386,7 +1456,7 @@ function CrmPageContent() {
                               Autopilot Sniper
                             </SelectItem>
                             <SelectItem value="sniper">Sniper</SelectItem>
-                            <SelectItem value="manual">Manuálně</SelectItem>
+                            <SelectItem value="manual">{t("crm.sourceManual")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1437,7 +1507,7 @@ function CrmPageContent() {
                   onClick={() => setIsNewDealOpen(true)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
-                  Nový deal
+                  {t("crm.newDeal")}
                 </Button>
               </div>
             </div>
@@ -1453,7 +1523,7 @@ function CrmPageContent() {
             aria-hidden={view !== "board"}
           >
             <CrmKanbanBoard
-              columns={COLUMNS}
+              columns={translatedColumns}
               leads={filteredLeads}
               isLoading={isLoading}
               formatCurrency={formatCurrency}
@@ -1517,12 +1587,20 @@ function CrmPageContent() {
                             {lead.company}
                           </h4>
                           {(() => {
-                            const { sourceLabel, authorLabel } =
-                              leadProvenanceParts(
+                            const parts = leadProvenanceParts(
                                 lead.source,
                                 lead.author,
                                 lead.contactedVia,
                               );
+                            const sourceLabel =
+                              parts.sourceLabel === "Manuálně"
+                                ? t("crm.sourceManual")
+                                : parts.sourceLabel === "Autopilot Sniper"
+                                  ? t("crm.sourceAutopilotSniper")
+                                  : parts.sourceLabel === "Radar"
+                                    ? t("crm.sourceRadar")
+                                    : parts.sourceLabel;
+                            const authorLabel = parts.authorLabel;
                             if (!sourceLabel && !authorLabel) return null;
                             return (
                               <p className="mb-0.5 truncate text-[9px] text-muted-foreground">
@@ -1625,7 +1703,10 @@ function CrmPageContent() {
                     <div className="mt-0.5 flex items-center justify-between gap-2 pt-1.5">
                       <div className="flex min-w-0 flex-col gap-0.5">
                         {(() => {
-                          const d = leadPrimaryDateLabel(lead);
+                          const d = leadPrimaryDateLabel(lead, {
+                            sent: t("crm.sent"),
+                            added: t("crm.added"),
+                          });
                           return (
                             <div
                               className="flex items-center truncate text-[10px] font-medium text-muted-foreground"
@@ -1718,9 +1799,7 @@ function CrmPageContent() {
         >
           {/* Desktop table */}
           {isLoading ? (
-            <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-              Načítám dealy...
-            </div>
+            <CrmTableSkeleton />
           ) : (
             <div className="sk-data-panel__scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <table className="w-full table-fixed text-sm">
@@ -1750,19 +1829,19 @@ function CrmPageContent() {
                       </div>
                     </th>
                     <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[34%]">
-                      Firma
+                      {t("crm.colCompany")}
                     </th>
                     <th className="sticky top-0 z-10 w-[7.25rem] bg-transparent px-2 py-3 font-semibold">
-                      Datum
+                      {t("crm.colDate")}
                     </th>
                     <th className="sticky top-0 z-10 bg-transparent px-3 py-3 font-semibold w-[24%] min-w-0">
-                      KONTAKT
+                      {t("crm.colContact")}
                     </th>
                     <th className="sticky top-0 z-10 min-w-[9.75rem] bg-transparent px-3 py-3 pl-3 font-semibold w-[14%]">
-                      Status
+                      {t("crm.colStatus")}
                     </th>
                     <th className="sticky top-0 z-10 w-[10.5rem] bg-transparent px-2 py-3 pl-2 text-left font-semibold">
-                      Akce
+                      {t("crm.colActions")}
                     </th>
                   </tr>
                 </thead>
@@ -1800,12 +1879,20 @@ function CrmPageContent() {
                                 {lead.company}
                               </p>
                               {(() => {
-                                const { sourceLabel, authorLabel } =
-                                  leadProvenanceParts(
+                                const parts = leadProvenanceParts(
                                     lead.source,
                                     lead.author,
                                     lead.contactedVia,
                                   );
+                                const sourceLabel =
+                                  parts.sourceLabel === "Manuálně"
+                                    ? t("crm.sourceManual")
+                                    : parts.sourceLabel === "Autopilot Sniper"
+                                      ? t("crm.sourceAutopilotSniper")
+                                      : parts.sourceLabel === "Radar"
+                                        ? t("crm.sourceRadar")
+                                        : parts.sourceLabel;
+                                const authorLabel = parts.authorLabel;
                                 if (!sourceLabel && !authorLabel) return null;
                                 const provenance = [sourceLabel, authorLabel]
                                   .filter(Boolean)
@@ -1832,7 +1919,10 @@ function CrmPageContent() {
                         </td>
                         <td className="w-[7.25rem] overflow-hidden px-2 py-3 align-top">
                           {(() => {
-                            const d = leadPrimaryDateLabel(lead);
+                            const d = leadPrimaryDateLabel(lead, {
+                            sent: t("crm.sent"),
+                            added: t("crm.added"),
+                          });
                             return (
                               <div
                                 className="min-w-0 max-w-full leading-tight"
@@ -1846,7 +1936,7 @@ function CrmPageContent() {
                                 </p>
                                 {d.isSent && lead.date ? (
                                   <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
-                                    Přidáno {lead.date}
+                                    {t("crm.added")} {lead.date}
                                   </p>
                                 ) : null}
                               </div>
@@ -1873,7 +1963,7 @@ function CrmPageContent() {
                                 )}
                                 title={emailTrim || undefined}
                               >
-                                {emailTrim || "Bez emailu"}
+                                {emailTrim || t("common.noEmail")}
                               </p>
                               {phoneTrim ? (
                                 <p
@@ -2097,7 +2187,7 @@ function CrmPageContent() {
 
           <div className="sk-pager mt-0 flex shrink-0 items-center justify-between gap-2 border-0 bg-transparent px-3 py-2 md:gap-3 md:px-4 md:py-2.5">
             <p className="text-xs leading-none text-muted-foreground">
-              Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+              {t("crm.showing", { from: shownFrom, to: shownTo, total: totalItems })}
             </p>
             <div className="flex items-center gap-0.5 md:gap-1">
               <Button
@@ -2109,7 +2199,7 @@ function CrmPageContent() {
                 disabled={safePage <= 1}
               >
                 <ChevronLeft className="!size-3.5 shrink-0" />
-                Předchozí
+                {t("crm.previous")}
               </Button>
               <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground md:text-xs">
                 {safePage}/{totalPages}
@@ -2124,7 +2214,7 @@ function CrmPageContent() {
                 }
                 disabled={safePage >= totalPages}
               >
-                Následující
+                {t("crm.next")}
                 <ChevronRight className="!size-3.5 shrink-0" />
               </Button>
             </div>
@@ -2312,7 +2402,7 @@ function CrmPageContent() {
       <Dialog open={isNewDealOpen} onOpenChange={setIsNewDealOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nový deal</DialogTitle>
+            <DialogTitle>{t("crm.newDeal")}</DialogTitle>
             <DialogDescription>
               Zadejte údaje o firmě a hodnotě dealu.
             </DialogDescription>

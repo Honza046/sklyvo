@@ -7,6 +7,7 @@ import {
   resolvePlanTierFromSubscription,
   resolvePlanTierFromInvoiceLines,
   resolvePlanTierFromStripePriceIds,
+  TRIAL_CREDITS,
 } from "@/lib/stripe-plan-tiers";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -123,6 +124,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
       subscriptionId ?? workspace.stripeSubscriptionId ?? undefined,
     planTier: tier,
     creditsTotal,
+    /** Nové období = čistý pool, žádný přenos nevyužitých kreditů. */
+    creditsUsed: 0,
     subscriptionStatus: "ACTIVE",
     trialEndsAt: null,
     ...(subscriptionPeriodEnd ? { subscriptionPeriodEnd } : {}),
@@ -152,6 +155,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
           : null,
         planTier: tier,
         creditsTotal,
+        creditsUsed: 0,
         subscriptionStatus: "ACTIVE",
         trialEndsAt: null,
         subscriptionPeriodEnd: subscriptionPeriodEnd?.toISOString() ?? null,
@@ -264,8 +268,10 @@ async function handleCheckoutSessionCompleted(
 
   const subscriptionStatus = sub ? mapSubscriptionStatus(sub.status) : "TRIAL";
 
-  /** Trial: vždy 60 kreditů; bez trialu (okamžitě active): plný pool z `creditsForPlanTier`. */
-  const creditsTotal = isTrialStart ? 60 : creditsForPlanTier(planTier);
+  /** Trial: 40 kreditů na 3 dny; po stržení invoice.paid nastaví plný pool + usage 0 %. */
+  const creditsTotal = isTrialStart
+    ? TRIAL_CREDITS
+    : creditsForPlanTier(planTier);
 
   const subscriptionId = getCheckoutSubscriptionId(session);
 
@@ -283,6 +289,11 @@ async function handleCheckoutSessionCompleted(
       ? { trialEndsAt: new Date(sub.trial_end * 1000) }
       : {}
     : { trialEndsAt: null };
+
+  const creditPatch: Prisma.WorkspaceUpdateInput = {
+    creditsTotal,
+    creditsUsed: 0,
+  };
 
   const userId = session.metadata?.userId ?? null;
 
@@ -305,7 +316,7 @@ async function handleCheckoutSessionCompleted(
         stripeSubscriptionId: subscriptionId ?? undefined,
         subscriptionStatus,
         planTier,
-        creditsTotal,
+        ...creditPatch,
         ...trialPatch,
       },
     });
@@ -326,6 +337,7 @@ async function handleCheckoutSessionCompleted(
           subscriptionId,
           planTier,
           creditsTotal,
+          creditsUsed: 0,
           subscriptionStatus,
           trialEndsAt:
             isTrialStart && sub?.trial_end != null
@@ -356,7 +368,7 @@ async function handleCheckoutSessionCompleted(
       stripeSubscriptionId: subscriptionId ?? undefined,
       subscriptionStatus,
       planTier,
-      creditsTotal,
+      ...creditPatch,
       ...trialPatch,
     },
   });
@@ -374,6 +386,7 @@ async function handleCheckoutSessionCompleted(
         subscriptionId,
         planTier,
         creditsTotal,
+        creditsUsed: 0,
         subscriptionStatus,
         trialEndsAt:
           isTrialStart && sub?.trial_end != null
@@ -417,6 +430,12 @@ export async function POST(req: Request) {
 
     if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription;
+      const previous = event.data.previous_attributes as
+        | { status?: Stripe.Subscription.Status }
+        | undefined;
+      const leftTrial =
+        previous?.status === "trialing" && subscription.status === "active";
+
       const customerId =
         typeof subscription.customer === "string"
           ? subscription.customer
@@ -467,6 +486,12 @@ export async function POST(req: Request) {
             subscriptionStatus: newStatus,
             planTier: tier,
             trialEndsAt,
+            ...(leftTrial
+              ? {
+                  creditsTotal: creditsForPlanTier(tier),
+                  creditsUsed: 0,
+                }
+              : {}),
           },
         });
       }

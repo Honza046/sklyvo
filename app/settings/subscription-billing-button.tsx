@@ -4,34 +4,32 @@ import Link from "next/link";
 import { type MouseEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function SubscriptionBillingButton({
   showChoosePlan,
 }: {
   showChoosePlan: boolean;
 }) {
+  const { t } = useLanguage();
+
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
+    const toastId = toast.loading(t("settings.portalRedirect"));
     try {
       const response = await fetch("/api/stripe/create-portal", {
         method: "POST",
       });
       if (!response.ok) {
-        throw new Error("Nepodařilo se vytvořit Stripe Portal Session.");
+        throw new Error("Stripe portal session failed");
       }
       const { url } = (await response.json()) as { url?: string };
       if (!url) {
-        throw new Error("V odpovědi chybí URL zákaznického portálu.");
+        throw new Error("Missing portal URL");
       }
       window.location.href = url;
     } catch {
-      toast.error(
-        "Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...",
-        {
-          id: toastId,
-        },
-      );
+      toast.error(t("settings.noBillingProfile"), { id: toastId });
       setTimeout(() => {
         window.location.href = "/pricing";
       }, 2000);
@@ -44,7 +42,7 @@ export function SubscriptionBillingButton({
         asChild
         className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
       >
-        <Link href="/settings/billing">Vybrat tarif</Link>
+        <Link href="/settings/billing">{t("settings.choosePlan")}</Link>
       </Button>
     );
   }
@@ -55,7 +53,7 @@ export function SubscriptionBillingButton({
       className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
       onClick={(e) => void handleBillingPortal(e)}
     >
-      Spravovat billing
+      {t("settings.manageBilling")}
     </Button>
   );
 }

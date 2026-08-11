@@ -40,6 +40,8 @@ type LanguageContextValue = {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 const REGIONAL_STORAGE_KEY = "sklyvo.regional-locale";
+/** Auth / marketing provider uses dotted key + `cs` instead of `cz`. */
+const AUTH_STORAGE_KEY = "sklyvo.language";
 
 /** Auth locale codes use `cs`; dashboard dictionaries use `cz`. */
 export function languageFromToggleCode(code: string): Language | null {
@@ -59,6 +61,21 @@ function isAppLanguage(value: string | null): value is Language {
  return value !== null && (LANGUAGES as readonly string[]).includes(value);
 }
 
+function readStoredLanguage(): Language | null {
+ if (typeof window === "undefined") return null;
+ const appStored = localStorage.getItem(STORAGE_KEY);
+ if (isAppLanguage(appStored)) return appStored;
+ const authStored = localStorage.getItem(AUTH_STORAGE_KEY);
+ if (!authStored) return null;
+ return languageFromToggleCode(authStored);
+}
+
+function persistLanguage(next: Language) {
+ localStorage.setItem(STORAGE_KEY, next);
+ localStorage.setItem(AUTH_STORAGE_KEY, displayCodeForLanguage(next));
+ document.documentElement.lang = HTML_LANG[next];
+}
+
 function defaultLanguageFromRegional(regionalCode: string): Language {
  const authDefault = defaultLanguageForRegional(regionalCode);
  return languageFromToggleCode(authDefault) ?? "en";
@@ -71,16 +88,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
  const writeLanguage = useCallback((next: Language) => {
  setLanguageState(next);
- localStorage.setItem(STORAGE_KEY, next);
- document.documentElement.lang = HTML_LANG[next];
+ persistLanguage(next);
  }, []);
 
  useEffect(() => {
  let cancelled = false;
 
  async function boot() {
- const stored = localStorage.getItem(STORAGE_KEY);
- const storedLang = isAppLanguage(stored) ? stored : null;
+ // Prefer any previously chosen language (app or auth) before geo default.
+ const storedLang = readStoredLanguage();
 
  let country: string | null = null;
  let acceptLanguage: string | null = null;

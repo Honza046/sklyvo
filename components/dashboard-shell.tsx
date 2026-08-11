@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Settings,
   LogOut,
@@ -27,7 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SklyvoOnboardingTour } from "@/components/sklyvo-onboarding-tour";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
 import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
@@ -41,6 +41,16 @@ import {
 } from "@/components/nav-config";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+
+const SklyvoOnboardingTour = dynamic(
+  () =>
+    import("@/components/sklyvo-onboarding-tour").then((m) => ({
+      default: m.SklyvoOnboardingTour,
+    })),
+  { ssr: false },
+);
+
+const SESSION_VISIBILITY_REFRESH_MS = 60_000;
 
 function navItemClass(active: boolean, locked = false) {
   return cn("sk-nav-item", active && "is-active", locked && "is-locked");
@@ -72,12 +82,25 @@ export function DashboardShell({
   const dateLocale = DATE_LOCALE[language];
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tourQuery = searchParams.get("tour") === "1";
 
   /** Instant active state on click — don't wait for the route to finish loading */
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   useEffect(() => {
     if (!pendingHref) return;
     if (normalizeActiveHref(pathname) === pendingHref) setPendingHref(null);
+  }, [pathname, pendingHref]);
+
+  // If client navigation never commits, don't leave the sidebar on a stale target.
+  useEffect(() => {
+    if (!pendingHref) return;
+    const timeoutId = window.setTimeout(() => {
+      setPendingHref((current) =>
+        current && normalizeActiveHref(pathname) !== current ? null : current,
+      );
+    }, 4_000);
+    return () => window.clearTimeout(timeoutId);
   }, [pathname, pendingHref]);
 
   const markNavPending = useCallback((href: string) => {
@@ -119,9 +142,13 @@ export function DashboardShell({
     return i >= 0 ? i + 2 : -1;
   }, [navActiveHref, isAutopilotActive]);
   const { trackRef: sidebarNavRef, thumbStyle: sidebarThumbStyle } =
-    useSlidingThumb(sidebarSlideIndex, [navActiveHref, isAutopilotActive], {
-      axis: "y",
-    });
+    useSlidingThumb(
+      sidebarSlideIndex,
+      // Remeasure when Autopilot subnav mounts/unmounts — RO only sees size
+      // changes, not Sniper/Radar/CRM shifting up after the branch collapses.
+      [navActiveHref, isAutopilotActive, showAutopilotSubnav],
+      { axis: "y" },
+    );
 
   /** Footer nav: Help → Workspace */
   const footerSlideIndex = useMemo(() => {
@@ -171,6 +198,7 @@ export function DashboardShell({
   const [tourPreview, setTourPreview] = useState(false);
   /** Po zavření křížkem / Hotovo — nespouštět tour znovu v téže session (preview→live). */
   const [tourSuppressed, setTourSuppressed] = useState(false);
+  const lastSessionFetchRef = useRef(0);
 
   const displayName = sessionUser?.name?.trim();
   const displayEmail = sessionUser?.email?.trim();
@@ -192,6 +220,8 @@ export function DashboardShell({
       router.replace("/login");
       return;
     }
+
+    lastSessionFetchRef.current = Date.now();
 
     setSessionUser({
       id: session.user.id,
@@ -221,7 +251,7 @@ export function DashboardShell({
     setCompanyOnboardingPending(!(session.workspace.companyName ?? "").trim());
   }, [router]);
 
-  // Při každé navigaci / návratu na tab znovu načteme workspace z DB (žádný zastaralý stav po ruční úpravě v Supabase)
+  // Initial session — once on mount (not on every client navigation).
   useEffect(() => {
     let cancelled = false;
 
@@ -235,39 +265,38 @@ export function DashboardShell({
     return () => {
       cancelled = true;
     };
-  }, [loadWorkspaceSession, pathname]);
+  }, [loadWorkspaceSession]);
 
+  // Refresh when tab becomes visible again — debounced to avoid focus spam.
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void loadWorkspaceSession();
-      }
+      if (document.visibilityState !== "visible") return;
+      const elapsed = Date.now() - lastSessionFetchRef.current;
+      if (elapsed < SESSION_VISIBILITY_REFRESH_MS) return;
+      void loadWorkspaceSession();
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [loadWorkspaceSession]);
 
-  // Po dokončení firemního onboardingu (modal) znovu načti session → pusť tour.
   useEffect(() => {
-    const onCompanyOnboardingDone = () => {
+    const refreshSession = () => {
       void loadWorkspaceSession();
     };
-    window.addEventListener(
-      "sklyvo-company-onboarding-done",
-      onCompanyOnboardingDone,
-    );
-    return () =>
-      window.removeEventListener(
-        "sklyvo-company-onboarding-done",
-        onCompanyOnboardingDone,
-      );
+    window.addEventListener("sklyvo-company-onboarding-done", refreshSession);
+    window.addEventListener("sklyvo-session-refresh", refreshSession);
+    return () => {
+      window.removeEventListener("sklyvo-company-onboarding-done", refreshSession);
+      window.removeEventListener("sklyvo-session-refresh", refreshSession);
+    };
   }, [loadWorkspaceSession]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const syncTourPreview = () => {
-      const params = new URLSearchParams(window.location.search);
-      const fromQuery = params.get("tour") === "1";
+      const fromQuery =
+        tourQuery ||
+        new URLSearchParams(window.location.search).get("tour") === "1";
       const fromStorage =
         window.sessionStorage.getItem("sklyvo-tour-preview") === "1";
       if (fromQuery) {
@@ -276,13 +305,16 @@ export function DashboardShell({
       const wantsPreview = fromQuery || fromStorage;
       if (wantsPreview) {
         setTourSuppressed(false);
+        // Restart from Podpora marks DB incomplete, but client session
+        // may still say completed until a full reload — force live start.
+        setOnboardingTourCompleted(false);
       }
       setTourPreview(wantsPreview);
     };
     syncTourPreview();
     window.addEventListener("popstate", syncTourPreview);
     return () => window.removeEventListener("popstate", syncTourPreview);
-  }, [pathname]);
+  }, [pathname, tourQuery]);
 
   useEffect(() => {
     const handleAvatarUpdate = (event: Event) => {
@@ -423,6 +455,12 @@ export function DashboardShell({
     return null;
   })();
 
+  const tourActive =
+    hasSessionData &&
+    !tourSuppressed &&
+    !companyOnboardingPending &&
+    (tourPreview || onboardingTourCompleted === false);
+
   return (
     <div className="sklyvo-app flex h-dvh max-h-dvh w-full overflow-hidden">
       <ImpersonationBanner />
@@ -436,7 +474,7 @@ export function DashboardShell({
             aria-label={t("nav.overview")}
             {...navPendingProps("/")}
           >
-            <SklyvoMark size={30} />
+            <SklyvoMark size={30} interactive={false} />
             <span className="sk-lockup__word">Sklyvo</span>
           </Link>
         </div>
@@ -741,7 +779,7 @@ export function DashboardShell({
                   >
                     <Link href="/admin/login">
                       <Shield className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>Sklyvo Ops</span>
+                      <span>Sklyvo Admin</span>
                     </Link>
                   </DropdownMenuItem>
                 ) : null}
@@ -773,7 +811,6 @@ export function DashboardShell({
       >
         <main
           className={cn(
-            "pb-[1.15rem]",
             lockMainScroll
               ? pathname === "/"
                 ? "flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-visible"
@@ -784,17 +821,14 @@ export function DashboardShell({
           {children}
         </main>
       </div>
-      <SklyvoOnboardingTour
-        active={
-          hasSessionData &&
-          !tourSuppressed &&
-          !companyOnboardingPending &&
-          (tourPreview || onboardingTourCompleted === false)
-        }
-        preview={tourPreview}
-        userId={sessionUser?.id ?? null}
-        onCompleted={handleTourFinished}
-      />
+      {tourActive ? (
+        <SklyvoOnboardingTour
+          active
+          preview={tourPreview}
+          userId={sessionUser?.id ?? null}
+          onCompleted={handleTourFinished}
+        />
+      ) : null}
     </div>
   );
 }

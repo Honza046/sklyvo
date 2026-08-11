@@ -13,7 +13,7 @@ const Checkbox = React.forwardRef<
   <CheckboxPrimitive.Root
     ref={ref}
     className={cn(
-      "peer grid h-4 w-4 shrink-0 place-content-center rounded-[4px] border-[1.5px] border-[color-mix(in_oklab,var(--sk-ink)_22%,transparent)] bg-transparent text-white shadow-none transition-[background,border-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sk-brand)]/25 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[color:var(--sk-ink)] data-[state=checked]:bg-[color:var(--sk-ink)] data-[state=checked]:shadow-none data-[state=indeterminate]:border-[color:var(--sk-ink)] data-[state=indeterminate]:bg-[color:var(--sk-ink)] data-[state=indeterminate]:shadow-none",
+      "peer grid h-4 w-4 shrink-0 place-content-center rounded-[4px] border-[1.5px] border-[color-mix(in_oklab,var(--sk-ink)_22%,transparent)] bg-transparent text-white shadow-none transition-[background,border-color] duration-150 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[color:var(--sk-ink)] data-[state=checked]:bg-[color:var(--sk-ink)] data-[state=checked]:shadow-none data-[state=indeterminate]:border-[color:var(--sk-ink)] data-[state=indeterminate]:bg-[color:var(--sk-ink)] data-[state=indeterminate]:shadow-none",
       className,
     )}
     {...props}

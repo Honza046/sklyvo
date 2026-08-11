@@ -73,7 +73,7 @@ export default function SupportPage() {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem("sklyvo-tour-preview", "1");
       }
-      toast.success("Spouštím prohlídku…");
+      toast.success(t("tour.starting"));
       router.push("/?tour=1");
     } finally {
       setIsRestartingTour(false);

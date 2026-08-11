@@ -355,9 +355,20 @@ export async function verifyLoginTotp(
   const secret = decryptTotpSecret(user.totpSecretEnc);
   if (!secret) {
     console.error("[2fa] totpSecretEnc decrypt failed — SESSION_SECRET mismatch?");
+    // Broken blob after secret rotation — clear so the user is not permanently locked out.
+    // They must re-enroll authenticator from Profil after next password login.
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        totpEnabled: false,
+        totpSecretEnc: null,
+        totpPendingEnc: null,
+      },
+    });
+    await clearPending2faCookie();
     return {
       error:
-        "Authenticator secret nelze načíst (nesoulad SESSION_SECRET). V DB vypni 2FA nebo nastav stejný secret jako při zapnutí TOTP.",
+        "Authenticator je poškozený (změna šifrovacího klíče). Přihlaste se znovu heslem a 2FA znovu zapněte v profilu.",
     };
   }
   if (!verifyTotpCode(secret, code)) {

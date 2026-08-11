@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { updateAiBehaviorSettings } from "@/app/actions/workspace";
 import { DEFAULT_SNIPER_SYSTEM_PROMPT } from "@/lib/ai-behavior-settings";
+import { useLanguage } from "@/context/LanguageContext";
 
 export { DEFAULT_SNIPER_SYSTEM_PROMPT };
 
@@ -70,11 +71,13 @@ export function useSettingsSaveRegistry() {
 
 export function AiBehaviorSettingsForm({
   initialEmailSignature,
-  senderFullName = "Vaše jméno",
-  senderEmail = "vas@email.cz",
+  senderFullName,
+  senderEmail = "you@example.com",
   initialSystemPrompt,
   initialForbiddenWords,
 }: AiBehaviorSettingsFormProps) {
+  const { t } = useLanguage();
+  const resolvedName = senderFullName?.trim() || t("settings.aiSenderFallback");
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
   const [emailSignature, setEmailSignature] = useState(initialEmailSignature);
@@ -82,7 +85,7 @@ export function AiBehaviorSettingsForm({
     initialSystemPrompt || DEFAULT_SNIPER_SYSTEM_PROMPT,
   );
   const [forbiddenWords, setForbiddenWords] = useState(initialForbiddenWords);
-  const signaturePlaceholder = `S pozdravem,\n\n${senderFullName}\n\nvenegard.com\n+420 605 875 808\n${senderEmail}`;
+  const signaturePlaceholder = `Best regards,\n\n${resolvedName}\n\nvenegard.com\n+420 605 875 808\n${senderEmail}`;
 
   const saveSettings = useCallback(async () => {
     const result = await updateAiBehaviorSettings({
@@ -118,7 +121,7 @@ export function AiBehaviorSettingsForm({
           htmlFor="email-signature"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Podpis (kontaktní šablona pro Sniper)
+          {t("settings.aiSignature")}
         </Label>
         <Textarea
           id="email-signature"
@@ -128,8 +131,7 @@ export function AiBehaviorSettingsForm({
           className="min-h-[100px] resize-none rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">
-          Jméno a e-mail v podpisu se berou z přihlášeného člena týmu. Tady
-          nastavte hlavně společný web / telefon (šablona).
+          {t("settings.aiSignatureHint")}
         </p>
       </div>
 
@@ -138,19 +140,18 @@ export function AiBehaviorSettingsForm({
           htmlFor="forbidden-words"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Zakázaná slova a fráze (blacklist)
+          {t("settings.aiForbidden")}
         </Label>
         <Textarea
           id="forbidden-words"
           rows={2}
           value={forbiddenWords}
           onChange={(e) => setForbiddenWords(e.target.value)}
-          placeholder="např. synergie, namontujeme, -"
+          placeholder={t("settings.aiForbiddenPlaceholder")}
           className="w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="mt-1 text-[10px] text-gray-500 ">
-          Tato slova AI nikdy nepoužije. Oddělujte čárkou (např. synergie,
-          inovativní, zaručeně).
+          {t("settings.aiForbiddenHint")}
         </p>
       </div>
 
@@ -159,7 +160,7 @@ export function AiBehaviorSettingsForm({
           htmlFor="system-prompt"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Základní instrukce (System Prompt)
+          {t("settings.aiSystemPrompt")}
         </Label>
         <Textarea
           id="system-prompt"
@@ -168,7 +169,7 @@ export function AiBehaviorSettingsForm({
           className="min-h-[150px] w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         <p className="text-[10px] text-muted-foreground">
-          Tato instrukce ovlivňuje, jakým stylem Sniper generuje e-maily.
+          {t("settings.aiSystemPromptHint")}
         </p>
       </div>
     </div>

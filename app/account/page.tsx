@@ -61,8 +61,10 @@ import { toast } from "sonner";
 import { ProfilePageSkeleton } from "@/components/profile-loading";
 import { AccountInvoiceHistory } from "@/components/account-invoice-history";
 import { AccountTwoFactorPanel } from "@/components/account-two-factor-panel";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function AccountPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [user, setUser] = useState<{
     name: string;
@@ -103,7 +105,7 @@ export default function AccountPage() {
             name:
               session.user.name && session.user.name !== ""
                 ? session.user.name
-                : "Uživatel",
+                : t("account.userFallback"),
             email: session.user.email,
             avatarUrl: session.user.avatarUrl ?? session.user.image ?? null,
           });
@@ -123,9 +125,8 @@ export default function AccountPage() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("needs_email") === "1") {
-      toast.message("Doplňte svůj e-mail", {
-        description:
-          "Facebook nevrátil e-mailovou adresu. Nastavte ji tady v účtu.",
+      toast.message(t("account.toast.needsEmailTitle"), {
+        description: t("account.toast.needsEmailDesc"),
       });
       window.history.replaceState({}, "", "/account");
     }
@@ -147,17 +148,18 @@ export default function AccountPage() {
     };
   }, [cropImageSrc]);
 
+  const userFallback = t("account.userFallback");
   const initials = useMemo(
     () =>
-      (user?.name ?? "Uživatel")
+      (user?.name ?? userFallback)
         .split(/\s+/)
         .slice(0, 2)
         .map((part) => part.charAt(0).toUpperCase())
         .join(""),
-    [user?.name],
+    [user?.name, userFallback],
   );
 
-  const firstName = (user?.name ?? "Uživatel").split(/\s+/)[0];
+  const firstName = (user?.name ?? userFallback).split(/\s+/)[0];
   const lastName = (user?.name ?? "").split(/\s+/).slice(1).join(" ");
 
   const handleToggleNotification = async (
@@ -174,7 +176,7 @@ export default function AccountPage() {
         toast.error(result.error);
         return;
       }
-      toast.success(checked ? "Upozornění zapnuto" : "Upozornění vypnuto");
+      toast.success(checked ? t("account.toast.notifOn") : t("account.toast.notifOff"));
     } finally {
       setSavingNotifKey(null);
     }
@@ -190,7 +192,7 @@ export default function AccountPage() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast.error("Vyberte obrázek (JPG, PNG, WebP…).");
+      toast.error(t("account.toast.pickImage"));
       return;
     }
 
@@ -214,7 +216,7 @@ export default function AccountPage() {
     setIsUploading(false);
 
     if ("error" in result && result.error) {
-      toast.error("Chyba nahrávání", { description: result.error });
+      toast.error(t("account.toast.uploadError"), { description: result.error });
       setPreviewUrl(null);
       return;
     }
@@ -231,7 +233,7 @@ export default function AccountPage() {
         URL.revokeObjectURL(cropImageSrc);
         setCropImageSrc(null);
       }
-      toast.success("Profilová fotka byla uložena.");
+      toast.success(t("account.toast.photoSaved"));
       router.refresh();
     }
   };
@@ -252,8 +254,8 @@ export default function AccountPage() {
 
     // E-mail se nemění → klasické uložení ostatních údajů.
     if (!emailChanged) {
-      toast.success("Uloženo", {
-        description: "Vaše osobní údaje byly úspěšně uloženy.",
+      toast.success(t("account.saved"), {
+        description: t("account.toast.profileSaved"),
       });
       return;
     }
@@ -268,8 +270,8 @@ export default function AccountPage() {
       }
       setVerificationCode("");
       setIsVerifyingEmail(true);
-      toast.success("Ověřovací kód byl odeslán", {
-        description: `Zadejte 6místný kód, který jsme poslali na ${nextEmail}.`,
+      toast.success(t("account.toast.codeSentTitle"), {
+        description: t("account.toast.codeSentDesc", { email: nextEmail }),
       });
     } finally {
       setIsSavingProfile(false);
@@ -279,7 +281,7 @@ export default function AccountPage() {
   const handleConfirmEmailChange = async () => {
     const code = verificationCode.trim();
     if (code.length !== 6) {
-      toast.error("Zadejte 6místný kód.");
+      toast.error(t("account.toast.enterCode"));
       return;
     }
     setIsConfirmingCode(true);
@@ -293,7 +295,7 @@ export default function AccountPage() {
       setEmailValue(result.email);
       setIsVerifyingEmail(false);
       setVerificationCode("");
-      toast.success("E-mail byl úspěšně změněn.");
+      toast.success(t("account.toast.emailChanged"));
       router.refresh();
     } finally {
       setIsConfirmingCode(false);
@@ -302,15 +304,15 @@ export default function AccountPage() {
 
   const handlePasswordUpdate = async () => {
     if (newPassword !== confirmPassword) {
-      toast.error("Nová hesla se neshodují.");
+      toast.error(t("account.toast.passwordsMismatch"));
       return;
     }
     if (newPassword === currentPassword) {
-      toast.error("Nové heslo musí být jiné než to stávající.");
+      toast.error(t("account.toast.passwordSame"));
       return;
     }
     if (newPassword.length < 8) {
-      toast.error("Nové heslo musí mít alespoň 8 znaků.");
+      toast.error(t("account.toast.passwordShort"));
       return;
     }
 
@@ -323,7 +325,7 @@ export default function AccountPage() {
         return;
       }
 
-      toast.success("Heslo bylo úspěšně změněno.");
+      toast.success(t("account.toast.passwordChanged"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -333,7 +335,7 @@ export default function AccountPage() {
   };
   const handleBillingPortal = async (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    const toastId = toast.loading("Přesměrovávám do zabezpečeného portálu...");
+    const toastId = toast.loading(t("account.toast.portalRedirect"));
     try {
       const response = await fetch("/api/stripe/create-portal", {
         method: "POST",
@@ -347,10 +349,9 @@ export default function AccountPage() {
       }
       window.location.href = url;
     } catch {
-      toast.error(
-        "Zatím nemáte aktivní platební profil. Přesměrovávám na výběr tarifu...",
-        { id: toastId },
-      );
+      toast.error(t("account.toast.noBillingProfile"), {
+        id: toastId,
+      });
       setTimeout(() => {
         window.location.href = "/pricing";
       }, 2000);
@@ -370,9 +371,9 @@ export default function AccountPage() {
             <User strokeWidth={2} />
           </div>
         </div>
-        <h1 className="sk-type-h1">Můj profil</h1>
+        <h1 className="sk-type-h1">{t("account.title")}</h1>
         <p className="sk-type-body mx-auto max-w-lg px-2">
-          Spravujte své osobní údaje, zabezpečení, fakturaci a integrace.
+          {t("account.subtitle")}
         </p>
       </div>
 
@@ -387,14 +388,14 @@ export default function AccountPage() {
           {/* 1. OSOBNÍ ÚDAJE */}
           <AccordionItem
             value="personal"
-            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 [state=open]:border-blue-800 transition-colors"
+            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600 ">
-                  <User className="h-5 w-5" />
-                </div>
-                <h2 className="sk-type-h3">Osobní údaje</h2>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <User strokeWidth={2} />
+                </span>
+                <h2 className="sk-type-h3">{t("account.personalData")}</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2">
@@ -412,7 +413,7 @@ export default function AccountPage() {
                       <Avatar className="absolute inset-0 h-full w-full shrink rounded-2xl">
                         <AvatarImage
                           src={previewUrl || user?.avatarUrl || undefined}
-                          alt={user?.name ?? "Uživatel"}
+                          alt={user?.name ?? t("account.userFallback")}
                           className="h-full w-full object-cover"
                         />
                         <AvatarFallback className="h-full w-full rounded-2xl bg-blue-50 text-3xl font-bold text-blue-700">
@@ -426,7 +427,7 @@ export default function AccountPage() {
                       disabled={isUploading}
                       className="sk-press-btn sk-btn sk-btn--secondary h-10 w-full shrink-0 whitespace-nowrap px-2 text-[11px] font-semibold"
                     >
-                      {isUploading ? "Nahrávám…" : "Změnit fotku"}
+                      {isUploading ? t("account.uploading") : t("account.changePhoto")}
                     </button>
                     <AvatarCropDialog
                       open={cropOpen}
@@ -441,7 +442,7 @@ export default function AccountPage() {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1">
                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Jméno
+                          {t("account.firstName")}
                         </Label>
                         <Input
                           className="h-10 rounded-xl border-border/50 bg-background text-sm"
@@ -450,7 +451,7 @@ export default function AccountPage() {
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Příjmení
+                          {t("account.lastName")}
                         </Label>
                         <Input
                           className="h-10 rounded-xl border-border/50 bg-background text-sm"
@@ -460,7 +461,7 @@ export default function AccountPage() {
                     </div>
                     <div className="space-y-1">
                       <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        <Mail className="h-3.5 w-3.5" /> E-mailová adresa
+                        <Mail className="h-3.5 w-3.5" /> {t("account.emailAddress")}
                       </Label>
                       <Input
                         type="email"
@@ -474,8 +475,7 @@ export default function AccountPage() {
                 </div>
 
                 <p className="text-[11px] leading-snug text-muted-foreground sm:pl-[calc(7.75rem+1.25rem)]">
-                  Změna e-mailu se potvrzuje 6místným kódem, který pošleme na
-                  novou adresu.
+                  {t("account.emailChangeHint")}
                 </p>
 
                 <div className="flex justify-end border-t border-border/50 pt-3">
@@ -488,10 +488,10 @@ export default function AccountPage() {
                     {isSavingProfile ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Odesílám kód…
+                        {t("account.sendingCode")}
                       </>
                     ) : (
-                      "Uložit změny"
+                      t("account.saveChanges")
                     )}
                   </button>
                 </div>
@@ -502,20 +502,20 @@ export default function AccountPage() {
           {/* 2. ZABEZPEČENÍ */}
           <AccordionItem
             value="security"
-            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 [state=open]:border-blue-800 transition-colors"
+            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 rounded-lg text-slate-600 ">
-                  <Shield className="h-5 w-5" />
-                </div>
-                <h2 className="sk-type-h3">Zabezpečení účtu</h2>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <Shield strokeWidth={2} />
+                </span>
+                <h2 className="sk-type-h3">{t("account.security")}</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2 space-y-5">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Aktuální heslo
+                  {t("account.currentPassword")}
                 </Label>
                 <Input
                   type="password"
@@ -524,13 +524,13 @@ export default function AccountPage() {
                   autoComplete="current-password"
                   disabled={isUpdatingPassword}
                   className="h-12 max-w-md rounded-xl border-border/50 bg-background"
-                  placeholder="Zadejte aktuální heslo"
+                  placeholder={t("account.currentPasswordPlaceholder")}
                 />
               </div>
               <div className="grid max-w-md grid-cols-1 gap-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Nové heslo
+                    {t("account.newPassword")}
                   </Label>
                   <Input
                     type="password"
@@ -539,12 +539,12 @@ export default function AccountPage() {
                     autoComplete="new-password"
                     disabled={isUpdatingPassword}
                     className="h-12 rounded-xl border-border/50 bg-background"
-                    placeholder="Min. 8 znaků"
+                    placeholder={t("account.newPasswordPlaceholder")}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                    Potvrdit nové heslo
+                    {t("account.confirmPassword")}
                   </Label>
                   <Input
                     type="password"
@@ -553,7 +553,7 @@ export default function AccountPage() {
                     autoComplete="new-password"
                     disabled={isUpdatingPassword}
                     className="h-12 rounded-xl border-border/50 bg-background"
-                    placeholder="Znovu nové heslo"
+                    placeholder={t("account.confirmPasswordPlaceholder")}
                   />
                 </div>
               </div>
@@ -568,10 +568,10 @@ export default function AccountPage() {
                   {isUpdatingPassword ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Ukládám…
+                      {t("account.saving")}
                     </>
                   ) : (
-                    "Aktualizovat heslo"
+                    t("account.updatePassword")
                   )}
                 </Button>
               </div>
@@ -583,20 +583,19 @@ export default function AccountPage() {
           {/* 3. PROPOJENÉ ÚČTY (Integrace e-mailů pro Snipera) */}
           <AccordionItem
             value="integrations"
-            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 [state=open]:border-blue-800 transition-colors"
+            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600 ">
-                  <LinkIcon className="h-5 w-5" />
-                </div>
-                <h2 className="sk-type-h3">Propojené e-mailové účty</h2>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <LinkIcon strokeWidth={2} />
+                </span>
+                <h2 className="sk-type-h3">{t("account.connectedEmails")}</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2 space-y-4">
               <p className="text-sm text-muted-foreground mb-4">
-                Připojte své e-mailové schránky, aby mohl Sniper odesílat zprávy
-                přímo z vaší adresy.
+                {t("account.connectedEmailsDesc")}
               </p>
 
               {/* Připojený účet */}
@@ -608,28 +607,22 @@ export default function AccountPage() {
                   <div>
                     <p className="font-semibold text-sm">Google Workspace</p>
                     <p className="text-xs text-muted-foreground">
-                      {user?.email ?? "bez e mailu"}
+                      {user?.email ?? t("account.noEmail")}
                     </p>
                   </div>
                 </div>
                 <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-md">
-                  Připojeno
+                  {t("account.connected")}
                 </span>
               </div>
 
               <div className="pb-1 pt-1">
-                <Button
-                  asChild
-                  variant="secondary"
-                  className="sk-press-btn h-12 w-full rounded-xl font-semibold"
+                <Link
+                  href="/settings/connect-email"
+                  className="sk-press-btn inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[13.5px] font-semibold"
                 >
-                  <Link
-                    href="/settings/connect-email"
-                    className="text-[color:var(--sk-ink)]"
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Přidat další schránku
-                  </Link>
-                </Button>
+                  <Plus className="h-4 w-4" /> {t("account.addMailbox")}
+                </Link>
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -637,14 +630,14 @@ export default function AccountPage() {
           {/* 4. FAKTURACE A PŘEDPLATNÉ */}
           <AccordionItem
             value="billing"
-            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 [state=open]:border-blue-800 transition-colors"
+            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-50 rounded-lg text-amber-600 ">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <h2 className="sk-type-h3">Fakturace a předplatné</h2>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <CreditCard strokeWidth={2} />
+                </span>
+                <h2 className="sk-type-h3">{t("account.billing")}</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2 space-y-6">
@@ -654,14 +647,14 @@ export default function AccountPage() {
                   <div className="min-w-0 flex-1">
                     <h4 className="sk-billing-card__eyebrow mb-1 text-[10px] font-bold uppercase tracking-widest">
                       {workspace?.subscriptionStatus === "FREE"
-                        ? "Zkušební účet"
+                        ? t("account.trialAccount")
                         : workspace?.subscriptionStatus === "TRIAL"
-                          ? "Trial verze aktivní"
-                          : "Aktuální tarif"}
+                          ? t("account.trialActive")
+                          : t("account.currentPlan")}
                     </h4>
                     <p className="sk-billing-card__title sk-type-h2">
                       {workspace?.planTier === "NONE" || !workspace?.planTier
-                        ? "Free Verze"
+                        ? t("account.freePlan")
                         : workspace.planTier}
                     </p>
                   </div>
@@ -676,8 +669,8 @@ export default function AccountPage() {
                         {workspace?.subscriptionStatus === "FREE" ||
                         workspace?.planTier === "NONE" ||
                         !workspace?.planTier
-                          ? "Vybrat tarif"
-                          : "Změnit tarif"}
+                          ? t("account.choosePlan")
+                          : t("account.changePlan")}
                       </Link>
                     </Button>
                     {workspace?.subscriptionStatus !== "FREE" &&
@@ -689,7 +682,7 @@ export default function AccountPage() {
                           onClick={(e) => void handleBillingPortal(e)}
                           className="sk-billing-card__primary h-11 rounded-xl font-semibold"
                         >
-                          Spravovat předplatné
+                          {t("account.manageSubscription")}
                         </Button>
                       )}
                   </div>
@@ -703,7 +696,7 @@ export default function AccountPage() {
                   return (
                     <div className="w-full space-y-1.5">
                       <p className="sk-billing-card__meta sk-type-small">
-                        Spotřeba: {usagePct} %
+                        {t("account.usagePct", { pct: usagePct })}
                       </p>
                       <div className="sk-billing-card__meter sk-meter__track w-full">
                         <div
@@ -719,30 +712,28 @@ export default function AccountPage() {
               {workspace?.subscriptionStatus !== "FREE" ? (
                 <>
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold">Platební metoda</h4>
-                    <div className="flex items-center justify-between p-4 rounded-xl border border-border/60 bg-background text-sm text-muted-foreground">
-                      Platební údaje jsou bezpečně spravovány v zákaznickém
-                      portálu (Stripe).
+                    <h4 className="text-sm font-semibold">{t("account.paymentMethod")}</h4>
+                    <div className="flex items-center justify-between gap-3 p-4 rounded-xl border border-border/60 bg-background text-sm text-muted-foreground">
+                      {t("account.paymentMethodHint")}
                       <Button
                         type="button"
                         variant="ghost"
                         onClick={(e) => void handleBillingPortal(e)}
                         className="text-xs font-semibold hover:bg-muted rounded-lg text-foreground"
                       >
-                        Změnit kartu
+                        {t("account.changeCard")}
                       </Button>
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold">Historie faktur</h4>
+                    <h4 className="text-sm font-semibold">{t("account.invoiceHistory")}</h4>
                     <AccountInvoiceHistory />
                   </div>
                 </>
               ) : (
                 <div className="p-4 rounded-xl border border-border/60 bg-background text-sm text-muted-foreground text-center">
-                  Pro zobrazení platebních metod a fakturační historie si prosím
-                  aktivujte placený tarif.
+                  {t("account.billingLocked")}
                 </div>
               )}
             </AccordionContent>
@@ -751,14 +742,14 @@ export default function AccountPage() {
           {/* 5. NOTIFIKACE */}
           <AccordionItem
             value="notifications"
-            className="rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 data-[state=open]:border-blue-200 [state=open]:border-blue-800 transition-colors"
+            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >
             <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600 ">
-                  <Bell className="h-5 w-5" />
-                </div>
-                <h2 className="sk-type-h3">Upozornění a notifikace</h2>
+                <span className="sk-settings-row-icon" aria-hidden>
+                  <Bell strokeWidth={2} />
+                </span>
+                <h2 className="sk-type-h3">{t("account.notifications")}</h2>
               </div>
             </AccordionTrigger>
             <AccordionContent className="pb-6 pt-2">
@@ -767,33 +758,33 @@ export default function AccountPage() {
                   [
                     {
                       key: "notifyCampaignReply" as const,
-                      title: "Nová odpověď z kampaně",
-                      desc: "Upozornit okamžitě, když lead odepíše na zprávu ze Sniperu.",
+                      title: t("account.notifs.campaignReplyTitle"),
+                      desc: t("account.notifs.campaignReplyDesc"),
                     },
                     {
                       key: "notifyCrmActivity" as const,
-                      title: "Nové aktivity v CRM",
-                      desc: "Upozornit mě, když se změní stav dealu nebo přibude úkol.",
+                      title: t("account.notifs.crmActivityTitle"),
+                      desc: t("account.notifs.crmActivityDesc"),
                     },
                     {
                       key: "notifyWeeklyRadarReport" as const,
-                      title: "Týdenní reporty (Radar)",
-                      desc: "Posílat souhrn nově objevených leadů z automatického hledání.",
+                      title: t("account.notifs.weeklyRadarTitle"),
+                      desc: t("account.notifs.weeklyRadarDesc"),
                     },
                     {
                       key: "notifyLowCredits" as const,
-                      title: "Nízký stav kreditů",
-                      desc: "Poslat varování, když spotřeba limitu přesáhne 90 %.",
+                      title: t("account.notifs.lowCreditsTitle"),
+                      desc: t("account.notifs.lowCreditsDesc"),
                     },
                     {
                       key: "notifyBillingTrial" as const,
-                      title: "Obnova tarifu a konec trialu",
-                      desc: "Připomenout blížící se platbu nebo konec zkušebního období.",
+                      title: t("account.notifs.billingTrialTitle"),
+                      desc: t("account.notifs.billingTrialDesc"),
                     },
                     {
                       key: "notifyProductTips" as const,
-                      title: "Produktové novinky a tipy",
-                      desc: "Nové funkce platformy a rady pro lepší konverze.",
+                      title: t("account.notifs.productTipsTitle"),
+                      desc: t("account.notifs.productTipsDesc"),
                     },
                   ] as const
                 ).map((item) => (
@@ -833,13 +824,9 @@ export default function AccountPage() {
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Ověření nové e-mailové adresy</DialogTitle>
+            <DialogTitle>{t("account.verifyEmailTitle")}</DialogTitle>
             <DialogDescription>
-              Zadejte 6místný kód, který jsme poslali na{" "}
-              <span className="font-semibold text-foreground">
-                {emailValue}
-              </span>
-              .
+              {t("account.verifyEmailDesc", { email: emailValue })}
             </DialogDescription>
           </DialogHeader>
 
@@ -869,7 +856,7 @@ export default function AccountPage() {
                 onClick={() => setIsVerifyingEmail(false)}
                 disabled={isConfirmingCode}
               >
-                Zrušit
+                {t("account.cancel")}
               </Button>
               <Button
                 type="button"
@@ -880,10 +867,10 @@ export default function AccountPage() {
                 {isConfirmingCode ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Ověřuji…
+                    {t("account.confirming")}
                   </>
                 ) : (
-                  "Potvrdit a změnit e-mail"
+                  t("account.confirmChangeEmail")
                 )}
               </Button>
             </div>

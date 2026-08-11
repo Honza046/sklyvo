@@ -15,13 +15,13 @@
 
 ## Platform admin (`/admin`)
 - **Entry:** dedicated login at `/admin/login` (not the customer `/login`).
-- Access = logged-in user whose **email** is in `PLATFORM_ADMIN_EMAILS`, or any logged-in user when `PLATFORM_ADMIN_LOCAL=1` (non-production only). This is **not** `UserRole.ADMIN` (customer workspace role).
+- Access = logged-in user whose **email** is in `PLATFORM_ADMIN_EMAILS` only (CTO / platform owners). This is **not** `UserRole.ADMIN` (customer workspace role).
 - Admin UI may show account/workspace metadata, usage, integration **status**, and lead PII for support — **never** password hashes, TOTP secrets, or OAuth/SMTP ciphertext.
 - Mutations go through `app/actions/platform-admin.ts` and are written to `AdminAuditLog`.
-- Impersonation sets a return cookie; `/admin` stays gated on the **current** session email (impersonated users cannot open ops).
+- Impersonation sets a return cookie; `/admin` stays gated on the **current** session email (impersonated users cannot open admin).
 
 ## Ops checklist
 - Set `SESSION_SECRET` (≥32 chars), `CRON_SECRET`, `EMAIL_CREDENTIALS_SECRET` in production.
-- Set `PLATFORM_ADMIN_EMAILS` for ops staff who need `/admin`.
+- Set `PLATFORM_ADMIN_EMAILS` for platform admins who need `/admin`.
 - Re-connect Google / Microsoft / e-mail after deploy so tokens are re-saved encrypted (plaintext still decrypts via migration path).
 - Never expose `workspaceId` mutation endpoints without session or internal token checks.

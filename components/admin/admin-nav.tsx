@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 const LINKS: { href: string; label: string; exact?: boolean }[] = [
   { href: "/admin", label: "Přehled", exact: true },
   { href: "/admin/users", label: "Uživatelé" },
-  { href: "/admin/workspaces", label: "Workspacey" },
+  { href: "/admin/workspaces", label: "Workspaces" },
+  { href: "/admin/finance", label: "Finance" },
   { href: "/admin/audit", label: "Audit" },
 ];
 

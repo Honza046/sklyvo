@@ -22,6 +22,8 @@ import {
   finishPasskeyRegistration,
   getTwoFactorStatus,
 } from "@/app/actions/two-factor";
+import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
 type PasskeyRow = {
   id: string;
@@ -31,6 +33,7 @@ type PasskeyRow = {
 };
 
 export function AccountTwoFactorPanel() {
+  const { t, language } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [totpEnabled, setTotpEnabled] = useState(false);
   const [passkeys, setPasskeys] = useState<PasskeyRow[]>([]);
@@ -90,7 +93,7 @@ export function AccountTwoFactorPanel() {
         toast.error(result.error);
         return;
       }
-      toast.success("Authenticator je zapnutý.");
+      toast.success(t("account.twoFactor.totpEnabled"));
       setTotpSetup(null);
       setTotpCode("");
       await refresh();
@@ -101,7 +104,7 @@ export function AccountTwoFactorPanel() {
 
   async function handleDisableTotp() {
     if (!disablePassword.trim()) {
-      toast.error("Zadejte heslo pro vypnutí.");
+      toast.error(t("account.twoFactor.enterDisablePassword"));
       return;
     }
     setTotpBusy(true);
@@ -111,7 +114,7 @@ export function AccountTwoFactorPanel() {
         toast.error(result.error);
         return;
       }
-      toast.success("Authenticator je vypnutý.");
+      toast.success(t("account.twoFactor.totpDisabled"));
       setDisablePassword("");
       await refresh();
     } finally {
@@ -138,13 +141,13 @@ export function AccountTwoFactorPanel() {
         toast.error(finish.error);
         return;
       }
-      toast.success("Passkey byl přidán.");
+      toast.success(t("account.twoFactor.passkeyAdded"));
       await refresh();
     } catch (err) {
       const message =
         err instanceof Error && err.name === "NotAllowedError"
-          ? "Přidání passkey bylo zrušeno."
-          : "Nepodařilo se přidat passkey.";
+          ? t("account.twoFactor.passkeyCancelled")
+          : t("account.twoFactor.passkeyFailed");
       toast.error(message);
     } finally {
       setPasskeyBusy(false);
@@ -153,7 +156,7 @@ export function AccountTwoFactorPanel() {
 
   async function handleDeletePasskey(id: string) {
     if (!deletePassword.trim()) {
-      toast.error("Zadejte heslo pro odebrání passkey.");
+      toast.error(t("account.twoFactor.enterDeletePassword"));
       return;
     }
     setDeletingId(id);
@@ -163,7 +166,7 @@ export function AccountTwoFactorPanel() {
         toast.error(result.error);
         return;
       }
-      toast.success("Passkey byl odebrán.");
+      toast.success(t("account.twoFactor.passkeyRemoved"));
       setDeletePassword("");
       await refresh();
     } finally {
@@ -175,7 +178,7 @@ export function AccountTwoFactorPanel() {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Načítám dvoufázové ověření…
+        {t("account.twoFactor.loading")}
       </div>
     );
   }
@@ -185,11 +188,10 @@ export function AccountTwoFactorPanel() {
       <div>
         <div className="mb-1 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-[color:var(--sk-brand)]" />
-          <h3 className="sk-type-h3">Dvoufázové ověření</h3>
+          <h3 className="sk-type-h3">{t("account.twoFactor.title")}</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Po hesle vyžaduj i kód z authenticatoru nebo passkey (Face ID / Touch
-          ID / Windows Hello).
+          {t("account.twoFactor.desc")}
         </p>
       </div>
 
@@ -200,10 +202,10 @@ export function AccountTwoFactorPanel() {
             <KeyRound className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Authenticator app</p>
+            <p className="text-sm font-semibold">{t("account.twoFactor.authenticatorTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              Google Authenticator, 1Password, Authy…
-              {totpEnabled ? " (zapnuto)" : " (vypnuto)"}
+              {t("account.twoFactor.authenticatorDesc")}{" "}
+              {totpEnabled ? t("account.twoFactor.on") : t("account.twoFactor.off")}
             </p>
           </div>
         </div>
@@ -219,19 +221,19 @@ export function AccountTwoFactorPanel() {
             {totpBusy ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            Zapnout authenticator
+            {t("account.twoFactor.enableAuthenticator")}
           </Button>
         ) : null}
 
         {totpSetup ? (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Naskenujte QR kód v aplikaci, nebo zadejte tajný klíč ručně.
+              {t("account.twoFactor.scanQr")}
             </p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={totpSetup.qrDataUrl}
-              alt="QR kód pro authenticator"
+              alt={t("account.twoFactor.qrAlt")}
               className="h-[220px] w-[220px] rounded-xl border border-border/60 bg-white p-2"
             />
             <p className="break-all font-mono text-[11px] text-muted-foreground">
@@ -239,7 +241,7 @@ export function AccountTwoFactorPanel() {
             </p>
             <div className="max-w-xs space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Ověřovací kód
+                {t("account.twoFactor.verificationCode")}
               </Label>
               <Input
                 value={totpCode}
@@ -261,7 +263,7 @@ export function AccountTwoFactorPanel() {
                 {totpBusy ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Potvrdit a zapnout
+                {t("account.twoFactor.confirmEnable")}
               </Button>
               <Button
                 type="button"
@@ -273,7 +275,7 @@ export function AccountTwoFactorPanel() {
                   setTotpCode("");
                 }}
               >
-                Zrušit
+                {t("account.cancel")}
               </Button>
             </div>
           </div>
@@ -282,14 +284,14 @@ export function AccountTwoFactorPanel() {
         {totpEnabled ? (
           <div className="max-w-sm space-y-2">
             <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Heslo pro vypnutí
+              {t("account.twoFactor.disablePassword")}
             </Label>
             <Input
               type="password"
               value={disablePassword}
               onChange={(e) => setDisablePassword(e.target.value)}
               className="h-11 rounded-xl"
-              placeholder="Vaše heslo"
+              placeholder={t("account.twoFactor.yourPassword")}
               disabled={totpBusy}
             />
             <Button
@@ -299,7 +301,7 @@ export function AccountTwoFactorPanel() {
               disabled={totpBusy}
               onClick={() => void handleDisableTotp()}
             >
-              Vypnout authenticator
+              {t("account.twoFactor.disableAuthenticator")}
             </Button>
           </div>
         ) : null}
@@ -312,9 +314,9 @@ export function AccountTwoFactorPanel() {
             <Fingerprint className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">Passkey</p>
+            <p className="text-sm font-semibold">{t("account.twoFactor.passkeyTitle")}</p>
             <p className="text-xs text-muted-foreground">
-              Face ID, Touch ID, Windows Hello nebo bezpečnostní klíč
+              {t("account.twoFactor.passkeyDesc")}
             </p>
           </div>
         </div>
@@ -331,7 +333,11 @@ export function AccountTwoFactorPanel() {
                     {pk.name || "Passkey"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    Přidáno {new Date(pk.createdAt).toLocaleDateString("cs-CZ")}
+                    {t("account.twoFactor.addedOn", {
+                      date: new Date(pk.createdAt).toLocaleDateString(
+                        DATE_LOCALE[language] || "cs-CZ",
+                      ),
+                    })}
                   </p>
                 </div>
                 <Button
@@ -341,7 +347,7 @@ export function AccountTwoFactorPanel() {
                   className="shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
                   disabled={deletingId === pk.id}
                   onClick={() => void handleDeletePasskey(pk.id)}
-                  aria-label="Odebrat passkey"
+                  aria-label={t("account.twoFactor.removePasskey")}
                 >
                   {deletingId === pk.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -353,20 +359,20 @@ export function AccountTwoFactorPanel() {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-muted-foreground">Zatím žádný passkey.</p>
+          <p className="text-xs text-muted-foreground">{t("account.twoFactor.noPasskeys")}</p>
         )}
 
         {passkeys.length > 0 ? (
           <div className="max-w-sm space-y-2">
             <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Heslo pro odebrání passkey
+              {t("account.twoFactor.deletePassword")}
             </Label>
             <Input
               type="password"
               value={deletePassword}
               onChange={(e) => setDeletePassword(e.target.value)}
               className="h-11 rounded-xl"
-              placeholder="Vaše heslo"
+              placeholder={t("account.twoFactor.yourPassword")}
             />
           </div>
         ) : null}
@@ -381,7 +387,7 @@ export function AccountTwoFactorPanel() {
           {passkeyBusy ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : null}
-          Přidat passkey
+          {t("account.twoFactor.addPasskey")}
         </Button>
       </div>
     </div>

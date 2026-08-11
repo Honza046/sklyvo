@@ -7,61 +7,12 @@ import {
   type WorkspaceInvoiceRow,
 } from "@/app/actions/billing";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 
-function formatInvoiceAmount(amountCents: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat("cs-CZ", {
-      style: "currency",
-      currency: currency || "CZK",
-      maximumFractionDigits: 0,
-    }).format(amountCents / 100);
-  } catch {
-    return `${(amountCents / 100).toFixed(0)} ${currency}`;
-  }
-}
-
-function formatInvoiceDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("cs-CZ", {
-      day: "numeric",
-      month: "numeric",
-      year: "numeric",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
-
-function statusLabel(status: string | null): {
-  text: string;
-  className: string;
-} {
-  switch (status) {
-    case "paid":
-      return {
-        text: "Zaplaceno",
-        className: "bg-emerald-50 text-emerald-700 ",
-      };
-    case "open":
-      return {
-        text: "K úhradě",
-        className: "bg-amber-50 text-amber-700 ",
-      };
-    case "uncollectible":
-      return {
-        text: "Neuhrazeno",
-        className: "bg-rose-50 text-rose-700 ",
-      };
-    default:
-      return {
-        text: status || "—",
-        className: "bg-muted text-muted-foreground",
-      };
-  }
-}
-
 export function AccountInvoiceHistory() {
+  const { t, language } = useLanguage();
   const [invoices, setInvoices] = useState<WorkspaceInvoiceRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,11 +32,60 @@ export function AccountInvoiceHistory() {
     };
   }, []);
 
+  const formatInvoiceAmount = (amountCents: number, currency: string) => {
+    try {
+      return new Intl.NumberFormat(DATE_LOCALE[language] || "cs-CZ", {
+        style: "currency",
+        currency: currency || "CZK",
+        maximumFractionDigits: 0,
+      }).format(amountCents / 100);
+    } catch {
+      return `${(amountCents / 100).toFixed(0)} ${currency}`;
+    }
+  };
+
+  const formatInvoiceDate = (iso: string) => {
+    try {
+      return new Intl.DateTimeFormat(DATE_LOCALE[language] || "cs-CZ", {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+      }).format(new Date(iso));
+    } catch {
+      return iso;
+    }
+  };
+
+  const statusLabel = (status: string | null) => {
+    switch (status) {
+      case "paid":
+        return {
+          text: t("account.invoices.paid"),
+          className: "bg-emerald-50 text-emerald-700 ",
+        };
+      case "open":
+        return {
+          text: t("account.invoices.open"),
+          className: "bg-amber-50 text-amber-700 ",
+        };
+      case "uncollectible":
+        return {
+          text: t("account.invoices.uncollectible"),
+          className: "bg-rose-50 text-rose-700 ",
+        };
+      default:
+        return {
+          text: status || "—",
+          className: "bg-muted text-muted-foreground",
+        };
+    }
+  };
+
   if (invoices === null) {
     return (
       <div className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-4 py-6 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Načítám faktury…
+        {t("account.invoices.loading")}
       </div>
     );
   }
@@ -103,7 +103,7 @@ export function AccountInvoiceHistory() {
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/60 bg-background px-4 py-6 text-center">
         <Receipt className="h-5 w-5 text-muted-foreground/70" />
         <p className="text-sm text-muted-foreground">
-          Zatím žádné faktury. Zobrazí se tu po první platbě přes Stripe.
+          {t("account.invoices.empty")}
         </p>
       </div>
     );
@@ -162,7 +162,7 @@ export function AccountInvoiceHistory() {
                   >
                     <a href={inv.hostedUrl} target="_blank" rel="noreferrer">
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                      Detail
+                      {t("account.invoices.detail")}
                     </a>
                   </Button>
                 ) : null}

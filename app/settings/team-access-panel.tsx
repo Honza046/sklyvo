@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   getTeamAccessState,
   inviteTeamMember,
@@ -15,28 +16,32 @@ import {
   type TeamMemberDto,
 } from "@/app/actions/team";
 
-function roleLabel(role: TeamMemberDto["role"]) {
+function roleLabel(
+  role: TeamMemberDto["role"],
+  t: (path: string) => string,
+) {
   switch (role) {
     case "OWNER":
-      return "Vlastník";
+      return t("settings.teamPanel.owner");
     case "ADMIN":
-      return "Admin";
+      return t("settings.teamPanel.admin");
     case "MEMBER":
-      return "Člen";
+      return t("settings.teamPanel.member");
     default:
       return role;
   }
 }
 
-function StatusBadge() {
+function StatusBadge({ label }: { label: string }) {
   return (
     <span className="inline-flex rounded-md bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ">
-      Aktivní
+      {label}
     </span>
   );
 }
 
 export function TeamAccessPanel() {
+  const { t } = useLanguage();
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
   const [isAgency, setIsAgency] = useState(false);
@@ -81,7 +86,7 @@ export function TeamAccessPanel() {
   if (!loaded) {
     return (
       <p className="py-6 text-center text-sm text-muted-foreground">
-        Načítám tým…
+        {t("settings.teamPanel.loading")}
       </p>
     );
   }
@@ -93,18 +98,16 @@ export function TeamAccessPanel() {
           <Lock className="h-7 w-7" aria-hidden />
         </div>
         <h3 className="sk-type-h3">
-          Týmová spolupráce je dostupná od tarifu Agency
+          {t("settings.teamPanel.agencyOnlyTitle")}
         </h3>
         <p className="mt-2 mb-6 max-w-md text-sm text-gray-500 ">
-          Pozvěte kolegy do svého pracovního prostoru, sdílejte společně CRM,
-          Google Sheets a kredity. Aktuální tarif:{" "}
-          <span className="font-medium text-foreground">{planTier}</span>
+          {t("settings.teamPanel.agencyOnlyDesc", { plan: planTier })}
         </p>
         <Button
           className="h-11 rounded-xl bg-blue-600 px-8 font-semibold text-white shadow-sm hover:bg-blue-700"
           asChild
         >
-          <Link href="/pricing">Zobrazit tarify</Link>
+          <Link href="/pricing">{t("settings.teamPanel.viewPlans")}</Link>
         </Button>
       </div>
     );
@@ -130,20 +133,21 @@ export function TeamAccessPanel() {
     if (!email) return;
     startTransition(async () => {
       const result = await inviteTeamMember({ email, role: inviteRole });
-      if ("error" in result && result.error) {
+      if ("error" in result) {
         toast.error(result.error);
         return;
       }
-      if (result.temporaryPassword) {
+      const displayName = result.name || result.email;
+      if ("temporaryPassword" in result && result.temporaryPassword) {
         setTempPasswordInfo({
           email: result.email,
           password: result.temporaryPassword,
         });
         toast.success(
-          `${result.name} přidán. Pošli mu dočasné heslo (zobrazí se níže).`,
+          t("settings.teamPanel.addedWithPassword", { name: displayName }),
         );
       } else {
-        toast.success(`${result.name} je teď ve vašem workspace.`);
+        toast.success(t("settings.teamPanel.added", { name: displayName }));
       }
       setInviteEmail("");
       setInviteRole("MEMBER");
@@ -153,14 +157,14 @@ export function TeamAccessPanel() {
   };
 
   const handleRemove = (member: TeamMemberDto) => {
-    if (!confirm(`Odebrat ${member.email} z workspace?`)) return;
+    if (!confirm(t("settings.teamPanel.removeConfirm", { email: member.email }))) return;
     startTransition(async () => {
       const result = await removeTeamMember(member.id);
       if ("error" in result && result.error) {
         toast.error(result.error);
         return;
       }
-      toast.success("Člen odebrán.");
+      toast.success(t("settings.teamPanel.removed"));
       refresh();
     });
   };
@@ -173,18 +177,18 @@ export function TeamAccessPanel() {
             Agency workspace
           </p>
           <p className="text-sm text-muted-foreground">
-            Členové:{" "}
+            {t("settings.teamPanel.membersLabel")}{" "}
             <span className="font-semibold tabular-nums text-foreground">
               {seatsUsed} / {maxMembers}
             </span>
           </p>
           <p className="text-xs text-muted-foreground">
-            Všichni vidí stejné CRM, stavy a Google Sheets.
+            {t("settings.teamPanel.sharedHint")}
           </p>
           <p className="text-xs text-muted-foreground">
             {ownerName
-              ? `Předplatné spravuje ${ownerName}`
-              : "Předplatné spravuje vlastník workspace"}
+              ? t("settings.teamPanel.billingByNamed", { name: ownerName })
+              : t("settings.teamPanel.billingByOwner")}
           </p>
         </div>
         {canManage && (
@@ -195,7 +199,7 @@ export function TeamAccessPanel() {
             onClick={handlePozvatClick}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Pozvat člena
+            {t("settings.teamPanel.invite")}
           </Button>
         )}
       </div>
@@ -205,7 +209,7 @@ export function TeamAccessPanel() {
           role="alert"
           className="rounded-xl border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 "
         >
-          Dosáhli jste maximální kapacity týmu ({maxMembers} míst).
+          {t("settings.teamPanel.capacityFull", { max: maxMembers })}
         </div>
       )}
 
@@ -215,14 +219,15 @@ export function TeamAccessPanel() {
           className="rounded-xl border border-blue-300/80 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 "
         >
           <p className="font-semibold">
-            Dočasné heslo pro {tempPasswordInfo.email}
+            {t("settings.teamPanel.tempPasswordFor", {
+              email: tempPasswordInfo.email,
+            })}
           </p>
           <p className="mt-1 font-mono text-base tracking-wide">
             {tempPasswordInfo.password}
           </p>
           <p className="mt-1 text-xs opacity-80">
-            Pošli ho kolegovi (Slack / e-mail). Po přihlášení ať si heslo změní
-            v účtu.
+            {t("settings.teamPanel.tempPasswordHint")}
           </p>
         </div>
       )}
@@ -232,10 +237,10 @@ export function TeamAccessPanel() {
           <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="text-left">
-                <th className="w-[28%] px-3.5">Jméno</th>
-                <th className="w-[34%] px-3.5">E-mail</th>
-                <th className="w-[16%] px-3.5">Role</th>
-                <th className="w-[14%] px-3.5">Stav</th>
+                <th className="w-[28%] px-3.5">{t("settings.teamPanel.colName")}</th>
+                <th className="w-[34%] px-3.5">{t("settings.teamPanel.colEmail")}</th>
+                <th className="w-[16%] px-3.5">{t("settings.teamPanel.colRole")}</th>
+                <th className="w-[14%] px-3.5">{t("settings.teamPanel.colStatus")}</th>
                 <th className="w-10 px-2">
                   <span className="sr-only">Akce</span>
                 </th>
@@ -256,11 +261,11 @@ export function TeamAccessPanel() {
                   </td>
                   <td className="px-3.5 py-2.5">
                     <p className="text-sm leading-none text-[color:var(--sk-ink)]">
-                      {roleLabel(m.role)}
+                      {roleLabel(m.role, t)}
                     </p>
                   </td>
                   <td className="px-3.5 py-2.5">
-                    <StatusBadge />
+                    <StatusBadge label={t("settings.teamPanel.active")} />
                   </td>
                   <td className="px-2 py-2.5 text-right">
                     {canManage &&
@@ -269,8 +274,8 @@ export function TeamAccessPanel() {
                     m.role !== "OWNER" ? (
                       <button
                         type="button"
-                        aria-label={`Odebrat ${m.email}`}
-                        title="Odebrat"
+                        aria-label={t("settings.teamPanel.removeAria", { email: m.email })}
+                        title={t("settings.teamPanel.removeTitle")}
                         className="sk-row-icon-btn inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--sk-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
                         disabled={isPending}
                         onClick={() => handleRemove(m)}
@@ -305,13 +310,13 @@ export function TeamAccessPanel() {
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="sk-type-h3 mb-1">Pozvat do workspace</h3>
+            <h3 className="sk-type-h3 mb-1">{t("settings.teamPanel.inviteTitle")}</h3>
             <p className="mb-5 text-sm text-muted-foreground">
-              Kolega uvidí stejné CRM, stavy a Google Sheets jako ty.
+              {t("settings.teamPanel.inviteDialogHint")}
             </p>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="invite-email">E-mail</Label>
+                <Label htmlFor="invite-email">{t("settings.teamPanel.colEmail")}</Label>
                 <Input
                   id="invite-email"
                   type="email"
@@ -322,7 +327,7 @@ export function TeamAccessPanel() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="invite-role">Role</Label>
+                <Label htmlFor="invite-role">{t("settings.teamPanel.colRole")}</Label>
                 <select
                   id="invite-role"
                   className={cn(
@@ -333,8 +338,8 @@ export function TeamAccessPanel() {
                     setInviteRole(e.target.value as "ADMIN" | "MEMBER")
                   }
                 >
-                  <option value="MEMBER">Člen</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="MEMBER">{t("settings.teamPanel.member")}</option>
+                  <option value="ADMIN">{t("settings.teamPanel.admin")}</option>
                 </select>
               </div>
               <Button
@@ -343,7 +348,7 @@ export function TeamAccessPanel() {
                 disabled={isPending || !inviteEmail.trim()}
                 onClick={handleSendInvite}
               >
-                Přidat do týmu
+                {t("settings.teamPanel.addToTeam")}
               </Button>
             </div>
           </div>

@@ -11,7 +11,7 @@ export default function WorkspaceLoading() {
       {/* Kontejner pro karty */}
       <div className="flex w-full max-w-3xl flex-col gap-6 px-0">
         {/* Karta 1: Předplatné */}
-        <div className="flex flex-col items-start justify-between gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:flex-row sm:items-center md:p-8">
+        <div className="sk-ghost-card flex flex-col items-start justify-between gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:flex-row sm:items-center md:p-8">
           <div className="w-full space-y-3 animate-pulse">
             <div className="h-3 w-24 rounded-md bg-slate-200 " />
             <div className="h-8 w-48 rounded-md bg-slate-200 " />
@@ -21,7 +21,7 @@ export default function WorkspaceLoading() {
         </div>
 
         {/* Karta 2: Nabízené služby */}
-        <div className="flex flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
+        <div className="sk-ghost-card flex flex-col gap-6 rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
           <div className="flex animate-pulse items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-slate-200 " />
@@ -57,7 +57,7 @@ export default function WorkspaceLoading() {
         </div>
 
         {/* Karta 3: Spotřeba */}
-        <div className="flex animate-pulse items-center justify-between rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
+        <div className="sk-ghost-card flex animate-pulse items-center justify-between rounded-2xl border border-border/60 bg-card p-6 shadow-sm md:p-8">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-slate-200 " />
             <div className="h-6 w-48 rounded-md bg-slate-200 " />

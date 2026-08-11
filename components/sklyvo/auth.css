@@ -425,6 +425,68 @@
     opacity 0.2s ease;
 }
 
+/* 2FA — six digit OTP cells (Matej sunken) */
+.sklyvo-login .sklyvo-otp {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+}
+
+.sklyvo-login .sklyvo-otp__cell {
+  box-sizing: border-box;
+  width: 44px;
+  height: 52px;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: var(--sk-sunken);
+  box-shadow: var(--sk-sunken-shadow);
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--sk-ink);
+  caret-color: var(--sk-brand, #02a7ff);
+  outline: none;
+  transition:
+    box-shadow 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.14s ease;
+}
+
+.sklyvo-login .sklyvo-otp__cell::placeholder {
+  color: color-mix(in oklab, var(--sk-muted, #8a94a6) 55%, transparent);
+  font-weight: 600;
+}
+
+.sklyvo-login .sklyvo-otp__cell:focus,
+.sklyvo-login .sklyvo-otp__cell:focus-visible {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--sk-sunken-shadow);
+  --tw-ring-shadow: 0 0 #0000;
+  --tw-ring-offset-shadow: 0 0 #0000;
+}
+
+.sklyvo-login .sklyvo-otp__cell:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .sklyvo-login .sklyvo-otp {
+    gap: 6px;
+  }
+
+  .sklyvo-login .sklyvo-otp__cell {
+    width: 40px;
+    height: 48px;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+}
+
 .sklyvo-login .sklyvo-form__aside {
   display: flex;
   justify-content: flex-end;

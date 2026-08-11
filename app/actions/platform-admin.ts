@@ -40,7 +40,7 @@ async function setSessionCookie(userId: string) {
   cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
 }
 
-/** Dedicated Ops login — only platform admins (or local open). */
+/** Dedicated Admin login — allowlisted platform admins only. */
 export async function loginPlatformAdmin(formData: FormData) {
   const { getRequestIp } = await import("@/lib/request-ip");
   const { consumeRateLimit, RATE_LIMITS } = await import("@/lib/rate-limit");
@@ -61,7 +61,7 @@ export async function loginPlatformAdmin(formData: FormData) {
   }
 
   if (!isPlatformAdminEmail(email)) {
-    return { error: "Tento účet nemá přístup do Sklyvo Ops." };
+    return { error: "Tento účet nemá přístup do Sklyvo Admin." };
   }
 
   const user = await prisma.user.findUnique({
@@ -83,7 +83,7 @@ export async function loginPlatformAdmin(formData: FormData) {
   }
 
   if (!isPlatformAdminEmail(user.email)) {
-    return { error: "Tento účet nemá přístup do Sklyvo Ops." };
+    return { error: "Tento účet nemá přístup do Sklyvo Admin." };
   }
 
   const check = await verifyPassword(password, user.passwordHash);
@@ -196,6 +196,9 @@ export async function listAdminUsers(query?: string) {
           name: true,
           planTier: true,
           subscriptionStatus: true,
+          trialEndsAt: true,
+          subscriptionPeriodEnd: true,
+          createdAt: true,
         },
       },
     },
@@ -247,6 +250,8 @@ export async function listAdminWorkspaces(query?: string) {
       companyName: true,
       planTier: true,
       subscriptionStatus: true,
+      trialEndsAt: true,
+      subscriptionPeriodEnd: true,
       creditsUsed: true,
       creditsTotal: true,
       leadsCount: true,
@@ -594,3 +599,287 @@ export async function listAdminAuditLogs(limit = 80) {
     take: Math.min(Math.max(limit, 1), 200),
   });
 }
+
+export type AdminInvoiceFilterBucket = "all" | "paid" | "open" | "failed";
+
+export type AdminStripeInvoiceRow = {
+  id: string;
+  number: string | null;
+  status: string | null;
+  /** paid | open | failed — for Přehled filters */
+  bucket: Exclude<AdminInvoiceFilterBucket, "all">;
+  amountCents: number;
+  currency: string;
+  createdAt: string;
+  pdfUrl: string | null;
+  hostedUrl: string | null;
+  dashboardUrl: string;
+  stripeCustomerId: string | null;
+  workspaceId: string | null;
+  workspaceName: string | null;
+  planTier: string | null;
+};
+
+export type AdminBillingOverview = {
+  invoices: AdminStripeInvoiceRow[];
+  stripeOk: boolean;
+  stripeError: string | null;
+  paidCount: number;
+  openCount: number;
+  failedCount: number;
+  paidCents30d: number;
+  /** Alias: Stripe revenue last 30d (paid invoices after cleanup filter). */
+  revenueCents30d: number;
+  /** Fixed monthly platform costs from env + estimated Stripe fees. */
+  costsCents30d: number;
+  /** Fixed portion of costs (PLATFORM_MONTHLY_COSTS_CZK). */
+  fixedCostsCents: number;
+  /** Estimated Stripe processing fees on revenue. */
+  stripeFeesCents: number;
+  /** revenue − costs */
+  profitCents30d: number;
+  currency: string;
+};
+
+/** Cross-tenant Stripe invoices for Admin Přehled. */
+export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
+  await assertAdmin();
+
+  const empty: AdminBillingOverview = {
+    invoices: [],
+    stripeOk: false,
+    stripeError: null,
+    paidCount: 0,
+    openCount: 0,
+    failedCount: 0,
+    paidCents30d: 0,
+    revenueCents30d: 0,
+    costsCents30d: 0,
+    fixedCostsCents: 0,
+    stripeFeesCents: 0,
+    profitCents30d: 0,
+    currency: "CZK",
+  };
+
+  try {
+    const { stripe } = await import("@/lib/stripe");
+    const result = await stripe.invoices.list({
+      limit: 60,
+    });
+
+    const customerIds = new Set<string>();
+    for (const inv of result.data) {
+      const cid =
+        typeof inv.customer === "string"
+          ? inv.customer
+          : inv.customer && !("deleted" in inv.customer && inv.customer.deleted)
+            ? inv.customer.id
+            : null;
+      if (cid) customerIds.add(cid);
+    }
+
+    const workspaces =
+      customerIds.size > 0
+        ? await prisma.workspace.findMany({
+            where: { stripeCustomerId: { in: [...customerIds] } },
+            select: {
+              id: true,
+              name: true,
+              planTier: true,
+              stripeCustomerId: true,
+            },
+          })
+        : [];
+
+    const byCustomer = new Map(
+      workspaces
+        .filter((w) => w.stripeCustomerId)
+        .map((w) => [w.stripeCustomerId as string, w]),
+    );
+
+    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
+    const stripeTest = stripeKey.startsWith("sk_test");
+    const dashboardBase = stripeTest
+      ? "https://dashboard.stripe.com/test/invoices"
+      : "https://dashboard.stripe.com/invoices";
+
+    const invoices: AdminStripeInvoiceRow[] = result.data
+      .filter((inv) => inv.status !== "draft" && inv.status !== "void")
+      .map((inv) => {
+        const cid =
+          typeof inv.customer === "string"
+            ? inv.customer
+            : inv.customer &&
+                !("deleted" in inv.customer && inv.customer.deleted)
+              ? inv.customer.id
+              : null;
+        const ws = cid ? byCustomer.get(cid) : undefined;
+        const status = inv.status;
+        let bucket: AdminStripeInvoiceRow["bucket"] = "open";
+        if (status === "paid") bucket = "paid";
+        else if (status === "uncollectible") bucket = "failed";
+        else if (
+          status === "open" &&
+          (inv.attempt_count ?? 0) > 0 &&
+          inv.next_payment_attempt == null
+        ) {
+          bucket = "failed";
+        } else if (status === "open") {
+          bucket = "open";
+        } else {
+          bucket = "failed";
+        }
+
+        const amountCents =
+          status === "paid"
+            ? (inv.amount_paid ?? 0)
+            : (inv.amount_due ?? inv.amount_paid ?? 0);
+
+        return {
+          id: inv.id,
+          number: inv.number,
+          status,
+          bucket,
+          amountCents,
+          currency: (inv.currency || "czk").toUpperCase(),
+          createdAt: new Date((inv.created ?? 0) * 1000).toISOString(),
+          pdfUrl: inv.invoice_pdf ?? null,
+          hostedUrl: inv.hosted_invoice_url ?? null,
+          dashboardUrl: `${dashboardBase}/${inv.id}`,
+          stripeCustomerId: cid,
+          workspaceId: ws?.id ?? null,
+          workspaceName: ws?.name ?? null,
+          planTier: ws?.planTier ?? null,
+        };
+      })
+      // Paid Stripe invoices cannot be deleted via API. Hide pre-cleanup test
+      // junk from Admin Přehled (real payments created after this still show).
+      .filter((inv) => {
+        const minRaw = process.env.ADMIN_STRIPE_INVOICE_MIN_CREATED?.trim();
+        const minMs = minRaw
+          ? Date.parse(minRaw)
+          : Date.parse("2026-08-11T18:00:00.000Z");
+        if (!Number.isFinite(minMs)) return true;
+        return Date.parse(inv.createdAt) >= minMs;
+      });
+
+    const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    let paidCount = 0;
+    let openCount = 0;
+    let failedCount = 0;
+    let paidCents30d = 0;
+    let currency = "CZK";
+
+    for (const inv of invoices) {
+      currency = inv.currency || currency;
+      if (inv.bucket === "paid") {
+        paidCount += 1;
+        if (new Date(inv.createdAt).getTime() >= monthAgo) {
+          paidCents30d += inv.amountCents;
+        }
+      } else if (inv.bucket === "open") {
+        openCount += 1;
+      } else {
+        failedCount += 1;
+      }
+    }
+
+    // Fixed monthly platform costs (Kč whole units in env → cents).
+    const fixedCzkRaw = process.env.PLATFORM_MONTHLY_COSTS_CZK?.trim() ?? "0";
+    const fixedCzk = Number.parseFloat(fixedCzkRaw.replace(",", "."));
+    const fixedCostsCents =
+      Number.isFinite(fixedCzk) && fixedCzk > 0
+        ? Math.round(fixedCzk * 100)
+        : 0;
+
+    // Rough Stripe CZ card fee: ~1.5% + 2.50 Kč per successful charge.
+    const paidInvoices30d = invoices.filter(
+      (inv) =>
+        inv.bucket === "paid" &&
+        new Date(inv.createdAt).getTime() >= monthAgo,
+    );
+    const stripeFeesCents = paidInvoices30d.reduce((sum, inv) => {
+      const pct = Math.round(inv.amountCents * 0.015);
+      const flat = 250; // 2.50 Kč
+      return sum + pct + flat;
+    }, 0);
+
+    const costsCents30d = fixedCostsCents + stripeFeesCents;
+    const profitCents30d = paidCents30d - costsCents30d;
+
+    return {
+      invoices,
+      stripeOk: true,
+      stripeError: null,
+      paidCount,
+      openCount,
+      failedCount,
+      paidCents30d,
+      revenueCents30d: paidCents30d,
+      costsCents30d,
+      fixedCostsCents,
+      stripeFeesCents,
+      profitCents30d,
+      currency,
+    };
+  } catch (error) {
+    console.error("getAdminBillingOverview:", error);
+    return {
+      ...empty,
+      stripeError:
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se načíst Stripe faktury.",
+    };
+  }
+}
+
+export type PlatformFakturoidStatus = {
+  configured: boolean;
+  slug: string | null;
+  label: string;
+  detail: string;
+};
+
+/** Platform (Sklyvo) Fakturoid — env-based, not workspace Integrace. */
+export async function getPlatformFakturoidStatus(): Promise<PlatformFakturoidStatus> {
+  await assertAdmin();
+  const clientId = process.env.PLATFORM_FAKTUROID_CLIENT_ID?.trim() ?? "";
+  const clientSecret =
+    process.env.PLATFORM_FAKTUROID_CLIENT_SECRET?.trim() ?? "";
+  const slug = process.env.PLATFORM_FAKTUROID_ACCOUNT_SLUG?.trim() || null;
+
+  if (!clientId || !clientSecret) {
+    return {
+      configured: false,
+      slug: null,
+      label: "Nenapojeno",
+      detail:
+        "Nastav PLATFORM_FAKTUROID_CLIENT_ID / SECRET (a volitelně ACCOUNT_SLUG). Po Stripe platbě sem půjdou české PDF se Sklyvo brandingem.",
+    };
+  }
+
+  try {
+    const { fetchFakturoidToken } = await import("@/lib/fakturoid");
+    await fetchFakturoidToken(clientId, clientSecret);
+    return {
+      configured: true,
+      slug,
+      label: "Připraveno",
+      detail: slug
+        ? `Účet ${slug} — Stripe bere platby, Fakturoid vystaví doklad se Sklyvo brandingem.`
+        : "Credentials OK. Doplň PLATFORM_FAKTUROID_ACCOUNT_SLUG pro přímé odkazy do Fakturoidu.",
+    };
+  } catch (error) {
+    return {
+      configured: false,
+      slug,
+      label: "Chyba credentials",
+      detail:
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se ověřit Fakturoid token.",
+    };
+  }
+}
+

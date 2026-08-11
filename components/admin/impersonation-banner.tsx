@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   getImpersonationBannerState,
   stopImpersonation,
@@ -16,16 +16,11 @@ type BannerState = {
 };
 
 export function ImpersonationBanner() {
-  const pathname = usePathname();
   const router = useRouter();
   const [state, setState] = useState<BannerState | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (pathname?.startsWith("/admin")) {
-      setState(null);
-      return;
-    }
     let cancelled = false;
     void getImpersonationBannerState().then((s) => {
       if (!cancelled) setState(s);
@@ -33,7 +28,7 @@ export function ImpersonationBanner() {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, []);
 
   if (!state?.active) return null;
 

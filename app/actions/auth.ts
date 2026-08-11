@@ -116,8 +116,9 @@ export async function registerUser(formData: FormData) {
   }
 }
 
-export async function getSessionUser() {
+export async function getSessionUser(options?: { includeWorkspaceContent?: boolean }) {
   noStore();
+  const includeWorkspaceContent = options?.includeWorkspaceContent !== false;
   const userId = await readSessionUserId();
 
   if (!userId) {
@@ -147,6 +148,35 @@ export async function getSessionUser() {
 
   const workspaceRaw = await prisma.workspace.findUnique({
     where: { id: user.workspaceId },
+    select: {
+      id: true,
+      name: true,
+      companyName: true,
+      industry: true,
+      targetAudience: true,
+      defaultTone: true,
+      subscriptionStatus: true,
+      trialEndsAt: true,
+      subscriptionPeriodEnd: true,
+      stripeCustomerId: true,
+      stripeSubscriptionId: true,
+      planTier: true,
+      creditsUsed: true,
+      creditsTotal: true,
+      leadsCount: true,
+      emailsSent: true,
+      activeDeals: true,
+      pipelineValue: true,
+      offeredServices: true,
+      ...(includeWorkspaceContent
+        ? {
+            companyContext: true,
+            companyServices: true,
+            emailSignature: true,
+            systemPrompt: true,
+          }
+        : {}),
+    },
   });
   if (!workspaceRaw) {
     cookieStore.delete(SESSION_COOKIE);
@@ -212,10 +242,18 @@ export async function getSessionUser() {
       activeDeals: workspace.activeDeals ?? 0,
       pipelineValue: workspace.pipelineValue ?? 0,
       offeredServices: workspace.offeredServices ?? [],
-      companyContext: workspace.companyContext ?? null,
-      companyServices: workspace.companyServices ?? null,
-      emailSignature: workspace.emailSignature ?? null,
-      systemPrompt: workspace.systemPrompt ?? null,
+      companyContext: includeWorkspaceContent
+        ? (workspace.companyContext ?? null)
+        : null,
+      companyServices: includeWorkspaceContent
+        ? (workspace.companyServices ?? null)
+        : null,
+      emailSignature: includeWorkspaceContent
+        ? (workspace.emailSignature ?? null)
+        : null,
+      systemPrompt: includeWorkspaceContent
+        ? (workspace.systemPrompt ?? null)
+        : null,
     },
   };
 }
@@ -223,7 +261,7 @@ export async function getSessionUser() {
 export const getSession = getSessionUser;
 
 export async function getWorkspaceAccessState() {
-  const session = await getSessionUser();
+  const session = await getSessionUser({ includeWorkspaceContent: false });
 
   if (!session.user || !session.workspace) {
     return {

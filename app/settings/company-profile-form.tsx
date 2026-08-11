@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { updateCompanyContext } from "@/app/actions/workspace";
 import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
+import { useLanguage } from "@/context/LanguageContext";
 import { toast } from "sonner";
 
 type CompanyProfileFormProps = {
@@ -17,6 +18,7 @@ type CompanyProfileFormProps = {
 export function CompanyProfileForm({
   initialContext,
 }: CompanyProfileFormProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
   const [companyContext, setCompanyContext] = useState(initialContext);
@@ -52,20 +54,18 @@ export function CompanyProfileForm({
           htmlFor="company-context"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Profil vaší firmy
+          {t("settings.companyProfileLabel")}
         </Label>
         <Textarea
           id="company-context"
           value={companyContext}
           onChange={(e) => setCompanyContext(e.target.value)}
           disabled={isSaving}
-          placeholder="Např. Pomáhám firmám s redesignem a tvorbou webů a e-shopů (včetně Shopify). Při zájmu i AI a automatizace. Fixní nabídka, projekty na míru bez šablon. (Nepíš „My ve Sklyvu…“, to patří do podpisu.)"
+          placeholder={t("settings.companyProfilePlaceholder")}
           className="min-h-[180px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Zde podrobně popište, co vaše firma dělá, jaké služby nabízíte, vaše
-          hlavní výhody a rychlost dodání. AI tyto informace použije jako
-          kontext pro psaní e-mailů.
+          {t("settings.companyProfileHint")}
         </p>
       </div>
       <div className="flex justify-end">
@@ -78,10 +78,10 @@ export function CompanyProfileForm({
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Ukládám…
+              {t("settings.saving")}
             </>
           ) : (
-            "Uložit profil firmy"
+            t("settings.saveCompanyProfile")
           )}
         </Button>
       </div>

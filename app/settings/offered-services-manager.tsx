@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PREDEFINED_SERVICE_GROUPS } from "@/lib/constants";
+import { tService, tServiceGroup } from "@/lib/i18n/service-catalog";
 import { updateWorkspaceServicesSettings } from "@/app/actions/workspace";
 import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 
 type OfferedServicesManagerProps = {
   initialServices: string[];
@@ -21,6 +23,7 @@ export function OfferedServicesManager({
   initialServices,
   initialCompanyServices,
 }: OfferedServicesManagerProps) {
+  const { t } = useLanguage();
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
   const [services, setServices] = useState<string[]>(initialServices);
@@ -70,11 +73,10 @@ export function OfferedServicesManager({
       <div className="space-y-4">
         <div className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            Základní obory
+            {t("settings.servicesBasic")}
           </p>
           <p className="text-xs text-muted-foreground">
-            Vyberte kategorie, které nejlépe vystihují vaši nabídku. Sniper z
-            nich nabídne zaměření konkrétního e-mailu.
+            {t("settings.servicesBasicHint")}
           </p>
         </div>
 
@@ -82,7 +84,7 @@ export function OfferedServicesManager({
           {PREDEFINED_SERVICE_GROUPS.map((group) => (
             <div key={group.id} className="space-y-2">
               <p className="text-[11px] font-semibold text-foreground/80">
-                {group.label}
+                {tServiceGroup(t, group.id)}
               </p>
               <div className="flex flex-wrap gap-2">
                 {group.services.map((service) => {
@@ -100,7 +102,7 @@ export function OfferedServicesManager({
                           : "border-border/60 bg-background text-muted-foreground hover:border-blue-200 hover:text-foreground",
                       )}
                     >
-                      {service}
+                      {tService(t, service)}
                     </button>
                   );
                 })}
@@ -111,12 +113,14 @@ export function OfferedServicesManager({
 
         {services.length > 0 ? (
           <p className="text-xs text-muted-foreground">
-            Vybráno: {services.length}{" "}
-            {services.length === 1
-              ? "obor"
-              : services.length >= 2 && services.length <= 4
-                ? "obory"
-                : "oborů"}
+            {t(
+              services.length === 1
+                ? "settings.servicesSelectedOne"
+                : services.length >= 2 && services.length <= 4
+                  ? "settings.servicesSelectedFew"
+                  : "settings.servicesSelectedMany",
+              { count: services.length },
+            )}
           </p>
         ) : null}
       </div>
@@ -126,19 +130,18 @@ export function OfferedServicesManager({
           htmlFor="company-services"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
         >
-          Detailní popis služeb
+          {t("settings.servicesDetail")}
         </Label>
         <Textarea
           id="company-services"
           value={companyServices}
           onChange={(e) => setCompanyServices(e.target.value)}
           disabled={isSaving}
-          placeholder="Popište podrobně, co přesně nabízíte, pro koho, jak probíhá spolupráce, termíny dodání, ceny nebo typické výsledky pro klienty..."
+          placeholder={t("settings.servicesDetailPlaceholder")}
           className="min-h-[220px] resize-y rounded-xl border-border/60 bg-background text-sm"
         />
         <p className="text-xs text-muted-foreground">
-          Sem patří rozepsaný text se specifikacemi služeb. AI ho použije spolu
-          s profilem firmy při psaní e-mailů.
+          {t("settings.servicesDetailHint")}
         </p>
       </div>
 
@@ -152,10 +155,10 @@ export function OfferedServicesManager({
           {isSaving ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Ukládám…
+              {t("settings.saving")}
             </>
           ) : (
-            "Uložit nabízené služby"
+            t("settings.saveServices")
           )}
         </Button>
       </div>

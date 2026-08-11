@@ -21,6 +21,7 @@ import {
   OAuthProviderButtons,
   useOAuthLogin,
 } from "@/components/sklyvo/oauth-providers";
+import { TotpCodeInput } from "@/components/sklyvo/totp-code-input";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   exchange: "Sociální přihlášení se nepodařilo dokončit. Zkuste to znovu.",
@@ -96,14 +97,20 @@ export function LoginScreen() {
     }
   }
 
-  async function handleTotpVerify(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function handleTotpVerify(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    const code = totpCode.replace(/\D/g, "").slice(0, 6);
+    if (code.length < 6) {
+      setErrorMessage("Zadejte 6místný kód z authenticatoru.");
+      return;
+    }
     setErrorMessage("");
     setPending(true);
     try {
-      const result = await verifyLoginTotp(totpCode);
+      const result = await verifyLoginTotp(code);
       if ("error" in result) {
         setErrorMessage(result.error);
+        setTotpCode("");
         return;
       }
       window.location.href = "/";
@@ -187,25 +194,17 @@ export function LoginScreen() {
         ) : null}
 
         {twoFactorMode === "totp" ? (
-          <form onSubmit={handleTotpVerify} noValidate>
+          <form onSubmit={(e) => void handleTotpVerify(e)} noValidate>
             <div className="sklyvo-fields">
-              <div className="sklyvo-field">
-                <label className="sr-only" htmlFor={totpId}>
-                  Ověřovací kód
-                </label>
-                <input
-                  id={totpId}
-                  className="sklyvo-field__input"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="123456"
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value)}
-                  required
-                  disabled={pending}
-                />
-              </div>
+              <TotpCodeInput
+                id={totpId}
+                value={totpCode}
+                onChange={setTotpCode}
+                disabled={pending}
+                onComplete={() => {
+                  if (!pending) void handleTotpVerify();
+                }}
+              />
             </div>
 
             <div className="sklyvo-form__aside" aria-hidden />
@@ -219,7 +218,7 @@ export function LoginScreen() {
             <button
               type="submit"
               className="sklyvo-btn-primary"
-              disabled={pending}
+              disabled={pending || totpCode.replace(/\D/g, "").length < 6}
             >
               {pending ? <AuthButtonLoader /> : "Ověřit kód"}
             </button>

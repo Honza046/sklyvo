@@ -5,8 +5,10 @@ import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function SettingsSaveButton() {
+  const { t } = useLanguage();
   const registry = useSettingsSaveRegistry();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -19,10 +21,10 @@ export function SettingsSaveButton() {
           Array.from(registry.handlersRef.values()).map((handler) => handler()),
         );
         if (results.every(Boolean)) {
-          toast.success("Nastavení projektu bylo úspěšně uloženo.");
+          toast.success(t("settings.saveSuccess"));
         }
       } else {
-        toast.error("Nepodařilo se uložit nastavení. Zkuste obnovit stránku.");
+        toast.error(t("settings.saveError"));
       }
     } finally {
       setIsSaving(false);
@@ -40,12 +42,12 @@ export function SettingsSaveButton() {
       {isSaving ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
-          Ukládám...
+          {t("settings.saving")}
         </>
       ) : (
         <>
           <Save className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-          Uložit nastavení projektu
+          {t("settings.saveProject")}
         </>
       )}
     </Button>

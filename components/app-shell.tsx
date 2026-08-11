@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
@@ -24,7 +24,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeHref = useMemo(() => normalizeActiveHref(pathname), [pathname]);
 
   if (PERSISTENT_SIDEBAR_PATHS.has(activeHref)) {
-    return <DashboardShell activeHref={activeHref}>{children}</DashboardShell>;
+    return (
+      <Suspense fallback={null}>
+        <DashboardShell activeHref={activeHref}>{children}</DashboardShell>
+      </Suspense>
+    );
   }
 
   return <>{children}</>;

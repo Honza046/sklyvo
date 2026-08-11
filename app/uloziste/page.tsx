@@ -21,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   deleteWorkspaceDocument,
   getWorkspaceDocumentDownloadUrl,
@@ -188,6 +189,7 @@ const DRIVE_FILTERS: { id: DriveTypeFilter; label: string }[] = [
 ];
 
 export default function StoragePage() {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<StorageTab>("personal");
   const [documents, setDocuments] = useState<WorkspaceDocumentRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -331,18 +333,18 @@ export default function StoragePage() {
       [
         {
           id: "personal" as const,
-          label: "Moje úložiště",
-          hint: "Jen vy",
+          label: t("storage.tabPersonal"),
+          hint: t("storage.tabPersonalHint"),
           icon: Lock,
         },
         {
           id: "shared" as const,
-          label: "Společné",
-          hint: "Celý tým",
+          label: t("storage.tabShared"),
+          hint: t("storage.tabSharedHint"),
           icon: Users,
         },
       ] as const,
-    [],
+    [t],
   );
 
   const handleUpload = async (file: File | undefined) => {
@@ -580,10 +582,9 @@ export default function StoragePage() {
             <FolderOpen strokeWidth={2} />
           </div>
         </div>
-        <h1 className="sk-type-h1">Úložiště</h1>
+        <h1 className="sk-type-h1">{t("storage.title")}</h1>
         <p className="sk-type-body mt-1 max-w-xl px-2">
-          Osobní dokumenty jen pro vás a společné pro celý tým. Můžete nahrát
-          soubory nebo importovat z Google Drive / OneDrive.
+          {t("storage.subtitle")}
         </p>
       </div>
 
@@ -619,8 +620,8 @@ export default function StoragePage() {
           <div className="mb-3 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground sm:text-sm">
               {tab === "personal"
-                ? "Soubory vidíte jen vy. Ostatní členové týmu k nim nemají přístup."
-                : "Sdílené soubory vidí všichni členové pracovního prostoru."}
+                ? t("storage.privacyPersonal")
+                : t("storage.privacyShared")}
             </p>
             <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
               <input
@@ -642,8 +643,8 @@ export default function StoragePage() {
                   <Upload className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
                 )}
                 <span className="truncate">
-                  <span className="sm:hidden">Nahrát</span>
-                  <span className="hidden sm:inline">Nahrát soubor</span>
+                  <span className="sm:hidden">{t("storage.uploadShort")}</span>
+                  <span className="hidden sm:inline">{t("storage.upload")}</span>
                 </span>
               </Button>
               <Button
@@ -669,7 +670,7 @@ export default function StoragePage() {
                 <span className="truncate">
                   <span className="sm:hidden">Drive</span>
                   <span className="hidden sm:inline">
-                    {driveConnected ? "Google Drive" : "Připojit Drive"}
+                    {driveConnected ? "Google Drive" : t("storage.connectDrive")}
                   </span>
                 </span>
               </Button>
@@ -696,7 +697,7 @@ export default function StoragePage() {
                 <span className="truncate">
                   <span className="sm:hidden">OneDrive</span>
                   <span className="hidden sm:inline">
-                    {oneDriveConnected ? "OneDrive" : "Připojit OneDrive"}
+                    {oneDriveConnected ? "OneDrive" : t("storage.connectOneDrive")}
                   </span>
                 </span>
               </Button>
@@ -713,11 +714,10 @@ export default function StoragePage() {
               <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
                 <FileText className="h-8 w-8 text-muted-foreground/50" />
                 <p className="text-sm font-medium text-foreground">
-                  Zatím prázdné
+                  {t("storage.emptyTitle")}
                 </p>
                 <p className="max-w-sm text-xs text-muted-foreground">
-                  Nahrajte dokument, importujte z Google Drive / OneDrive, nebo
-                  vytvořte nabídku v Generátoru.
+                  {t("storage.emptyDesc")}
                 </p>
               </div>
             ) : (

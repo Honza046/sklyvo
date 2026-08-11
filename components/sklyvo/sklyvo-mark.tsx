@@ -187,9 +187,12 @@ const clamp = (n: number) => Math.max(-1, Math.min(1, n));
 export function SklyvoMark({
   size = 30,
   className,
+  interactive = true,
 }: {
   size?: number;
   className?: string;
+  /** Sidebar / chrome — skip rAF + global mousemove (much lighter). */
+  interactive?: boolean;
 }) {
   const tileRef = useRef<HTMLSpanElement>(null);
   const orbRef = useRef<HTMLSpanElement>(null);
@@ -197,6 +200,8 @@ export function SklyvoMark({
   const rightRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
+    if (!interactive) return;
+
     const tile = tileRef.current;
     const orb = orbRef.current;
     const left = leftRef.current;
@@ -342,7 +347,7 @@ export function SklyvoMark({
       tile.removeEventListener("mouseenter", onEnter);
       tile.removeEventListener("mouseleave", onLeave);
     };
-  }, [size]);
+  }, [size, interactive]);
 
   return (
     <span

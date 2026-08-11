@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLanguage } from "@/context/LanguageContext";
 
 export type DashboardConversionFunnelProps = {
   initialCounts: Record<LeadStatus, number>;
@@ -19,6 +20,7 @@ export type DashboardConversionFunnelProps = {
 export function DashboardConversionFunnel({
   initialCounts,
 }: DashboardConversionFunnelProps) {
+  const { t } = useLanguage();
   const [days, setDays] = useState("30");
   const [counts, setCounts] =
     useState<Record<LeadStatus, number>>(initialCounts);
@@ -40,29 +42,29 @@ export function DashboardConversionFunnel({
   return (
     <div className="sk-surface sk-surface--pad flex shrink-0 flex-col">
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 sm:mb-2 sm:gap-2">
-        <h2 className="sk-type-h3">Konverzní trychtýř</h2>
+        <h2 className="sk-type-h3">{t("dashboard.funnelTitle")}</h2>
         <Select value={days} onValueChange={refresh} disabled={isPending}>
           <SelectTrigger
             className="sk-select"
-            aria-label="Časové okno trychtýře"
+            aria-label={t("dashboard.funnelAria")}
           >
-            <SelectValue placeholder="Období" />
+            <SelectValue placeholder={t("dashboard.funnelPeriod")} />
           </SelectTrigger>
           <SelectContent className="rounded-lg border-border/60 bg-card text-sm shadow-md">
             <SelectItem value="7" className="text-xs">
-              Poslední týden
+              {t("dashboard.funnelWeek")}
             </SelectItem>
             <SelectItem value="30" className="text-xs">
-              Poslední měsíc
+              {t("dashboard.funnelMonth")}
             </SelectItem>
             <SelectItem value="90" className="text-xs">
-              Poslední čtvrtletí
+              {t("dashboard.funnelQuarter")}
             </SelectItem>
             <SelectItem value="180" className="text-xs">
-              Poslední půlrok
+              {t("dashboard.funnelHalfYear")}
             </SelectItem>
             <SelectItem value="365" className="text-xs">
-              Poslední rok
+              {t("dashboard.funnelYear")}
             </SelectItem>
           </SelectContent>
         </Select>
@@ -79,7 +81,9 @@ export function DashboardConversionFunnel({
                   <div
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`}
                   />
-                  <span className="truncate">{row.label}</span>
+                  <span className="truncate">
+                    {t(`leadStatus.${row.key}`)}
+                  </span>
                 </span>
                 <span className="shrink-0 tabular-nums">{count}</span>
               </div>

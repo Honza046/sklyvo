@@ -33,6 +33,7 @@ import {
   useAutopilotLabels,
   type WorkspaceLead,
 } from "@/components/autopilot/shared";
+import { AutopilotTableSkeletonRows } from "@/components/autopilot/autopilot-table-skeleton";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -328,7 +329,8 @@ export function AutopilotRadarView() {
               </tr>
             </thead>
             <tbody>
-              {paginatedRadarLeads.map((lead) => {
+              {!isLoading &&
+                paginatedRadarLeads.map((lead) => {
                 const web = leadFullWebsiteUrl(lead.url);
                 return (
                   <tr key={`${mode}-d-${lead.id}`}>
@@ -392,36 +394,34 @@ export function AutopilotRadarView() {
                   </tr>
                 );
               })}
-              {paginatedRadarLeads.length === 0 && (
-                <>
-                  {isLoading && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      Načítám historii sběru…
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isLoading && loadError && (
-                    <AutopilotTableEmptyState
-                      colSpan={4}
-                      className="text-rose-600 "
-                    >
-                      {loadError}
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isLoading && !loadError && workspaceLeads.length === 0 && (
-                    <AutopilotTableEmptyState colSpan={4}>
-                      Zatím žádné nalezené firmy. Spusťte automatický sběr nebo
-                      přidejte leady v Radaru.
-                    </AutopilotTableEmptyState>
-                  )}
-                  {!isLoading &&
-                    !loadError &&
-                    workspaceLeads.length > 0 &&
-                    filteredLeads.length === 0 && (
-                      <AutopilotTableEmptyState colSpan={4}>
-                        Žádné firmy neodpovídají filtrům.
+              {isLoading ? (
+                <AutopilotTableSkeletonRows rows={8} columns={4} />
+              ) : (
+                paginatedRadarLeads.length === 0 && (
+                  <>
+                    {loadError && (
+                      <AutopilotTableEmptyState
+                        colSpan={4}
+                        className="text-rose-600 "
+                      >
+                        {loadError}
                       </AutopilotTableEmptyState>
                     )}
-                </>
+                    {!loadError && workspaceLeads.length === 0 && (
+                      <AutopilotTableEmptyState colSpan={4}>
+                        Zatím žádné nalezené firmy. Spusťte automatický sběr nebo
+                        přidejte leady v Radaru.
+                      </AutopilotTableEmptyState>
+                    )}
+                    {!loadError &&
+                      workspaceLeads.length > 0 &&
+                      filteredLeads.length === 0 && (
+                        <AutopilotTableEmptyState colSpan={4}>
+                          Žádné firmy neodpovídají filtrům.
+                        </AutopilotTableEmptyState>
+                      )}
+                  </>
+                )
               )}
             </tbody>
           </table>
