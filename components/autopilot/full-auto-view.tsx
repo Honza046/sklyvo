@@ -420,6 +420,7 @@ export function AutopilotFullAutoView() {
         <AutopilotControlPanel
           icon={<Sparkles className="h-5 w-5" />}
           iconWrapClassName="sk-page-badge"
+          iconAccent="amber"
           title="Plná automatizace (Full Auto)"
           powerEnabled={featureEnabled}
           description={

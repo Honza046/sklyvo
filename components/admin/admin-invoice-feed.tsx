@@ -88,14 +88,13 @@ export function AdminInvoiceFeed({
   }, [filter, invoices]);
 
   return (
-    <section className="sk-admin__panel sk-admin__panel--invoices" aria-label="Stripe faktury">
+    <section
+      className="sk-admin__panel sk-admin__panel--invoices sk-admin__panel--fill"
+      aria-label="Stripe faktury"
+    >
       <div className="sk-admin__panel-head">
-        <div>
-          <h2 className="sk-admin__h2">Platby / faktury</h2>
-          <p className="sk-admin__panel-sub">
-            Stripe je zdroj pravdy · napříč workspaces · posledních {invoices.length}
-          </p>
-        </div>
+        <h2 className="sk-admin__h2">Faktury</h2>
+        <span className="sk-admin__meta-inline">{invoices.length} · Stripe</span>
       </div>
 
       {!stripeOk ? (
@@ -135,8 +134,8 @@ export function AdminInvoiceFeed({
           </p>
         </div>
       ) : (
-        <div className="sk-admin__table-wrap sk-admin__table-wrap--rows">
-          <table className="sk-admin__table sk-admin__table--rows">
+        <div className="sk-admin__table-wrap sk-admin__table-wrap--rows sk-admin__table-wrap--scroll-inset">
+          <table className="sk-admin__table sk-admin__table--rows sk-admin__table--dense">
             <thead>
               <tr>
                 <th>Workspace</th>

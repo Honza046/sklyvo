@@ -19,27 +19,39 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/LanguageContext";
 import type { EmailConnectionState } from "@/lib/email-connection-types";
-import { EMAIL_SETUP_SETTINGS_HASH } from "@/lib/copilot/setup-knowledge";
 import { cn } from "@/lib/utils";
 
 type EmailIntegrationPanelProps = {
   initialState: EmailConnectionState;
+  compact?: boolean;
 };
 
-const inputClass =
-  "rounded-xl border-border/60 bg-background focus-visible:ring-blue-500";
+type ConnectionTab = "google" | "smtp";
 
-function smtpModeToggleClass(active: boolean) {
+const inputClass = "sk-settings-field h-9 text-sm";
+
+function smtpModeToggleClass(active: boolean, compact?: boolean) {
   return cn(
-    "flex-1 rounded-xl px-3 py-2 text-sm transition-all duration-200",
+    "rounded-lg font-medium transition-all duration-200",
+    compact ? "flex-1 px-2 py-1.5 text-[11px]" : "flex-1 rounded-xl px-3 py-2 text-sm",
     active
-      ? "bg-blue-600 font-medium text-white shadow-sm hover:bg-blue-700"
-      : "bg-gray-100 text-gray-600 hover:bg-gray-200/80 ",
+      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+      : "bg-gray-100 text-gray-600 hover:bg-gray-200/80",
+  );
+}
+
+function connectionTabClass(active: boolean) {
+  return cn(
+    "flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-all sm:text-xs",
+    active
+      ? "bg-blue-600 text-white shadow-sm"
+      : "bg-muted/50 text-muted-foreground hover:text-foreground",
   );
 }
 
 export function EmailIntegrationPanel({
   initialState,
+  compact = false,
 }: EmailIntegrationPanelProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -47,6 +59,7 @@ export function EmailIntegrationPanel({
   const [state, setState] = useState(initialState);
   const [isPending, startTransition] = useTransition();
   const [isSaving, setIsSaving] = useState(false);
+  const [connectionTab, setConnectionTab] = useState<ConnectionTab>("smtp");
   const [smtpProvider, setSmtpProvider] = useState<
     "OUTLOOK_SMTP" | "CUSTOM_SMTP"
   >(() =>
@@ -90,6 +103,9 @@ export function EmailIntegrationPanel({
       smtpHost: initialState.smtpHost ?? prev.smtpHost,
       smtpPort: initialState.smtpPort?.toString() ?? prev.smtpPort,
     }));
+    if (initialState.provider === "GOOGLE") {
+      setConnectionTab("google");
+    }
   }, [initialState]);
 
   useEffect(() => {
@@ -101,6 +117,7 @@ export function EmailIntegrationPanel({
 
     if (smtpMode === "OUTLOOK_SMTP" || smtpMode === "CUSTOM_SMTP") {
       setSmtpProvider(smtpMode);
+      setConnectionTab("smtp");
     }
     if (smtpHost || smtpPort) {
       setForm((prev) => ({
@@ -108,18 +125,15 @@ export function EmailIntegrationPanel({
         ...(smtpHost ? { smtpHost } : {}),
         ...(smtpPort ? { smtpPort } : {}),
       }));
+      setConnectionTab("smtp");
     }
 
     if (connected === "google") {
       toast.success(t("settings.emailIntegration.connectedGoogle"));
-      router.replace(`/settings#${EMAIL_SETUP_SETTINGS_HASH}`, {
-        scroll: false,
-      });
+      router.replace("/settings/outreach", { scroll: false });
     } else if (error) {
       toast.error(decodeURIComponent(error));
-      router.replace(`/settings#${EMAIL_SETUP_SETTINGS_HASH}`, {
-        scroll: false,
-      });
+      router.replace("/settings/outreach", { scroll: false });
     }
   }, [router, searchParams, t]);
 
@@ -160,8 +174,296 @@ export function EmailIntegrationPanel({
   }, [router, t]);
 
   const statusCardClass = state.connected
-    ? "border-emerald-200 bg-emerald-50/70 "
-    : "border-amber-200 bg-amber-50/70 ";
+    ? "border-emerald-200 bg-emerald-50/70"
+    : "border-amber-200 bg-amber-50/70";
+
+  const smtpForm = (
+    <>
+      <div className={cn("flex flex-wrap gap-1.5", compact ? "mb-2 shrink-0" : "mb-4")}>
+        <button
+          type="button"
+          className={smtpModeToggleClass(smtpProvider === "OUTLOOK_SMTP", compact)}
+          onClick={() => {
+            setSmtpProvider("OUTLOOK_SMTP");
+            setForm((prev) => ({
+              ...prev,
+              smtpHost: "smtp.office365.com",
+              smtpPort: "587",
+            }));
+          }}
+        >
+          Outlook
+        </button>
+        <button
+          type="button"
+          className={smtpModeToggleClass(
+            smtpProvider === "CUSTOM_SMTP" && form.smtpHost.includes("seznam"),
+            compact,
+          )}
+          onClick={applySeznamPreset}
+        >
+          Seznam
+        </button>
+        <button
+          type="button"
+          className={smtpModeToggleClass(
+            smtpProvider === "CUSTOM_SMTP" && !form.smtpHost.includes("seznam"),
+            compact,
+          )}
+          onClick={() => setSmtpProvider("CUSTOM_SMTP")}
+        >
+          {t("settings.emailIntegration.customSmtp")}
+        </button>
+      </div>
+
+      {form.smtpHost.includes("seznam") ? (
+        <p
+          className={cn(
+            "rounded-lg border border-amber-200 bg-amber-50 text-amber-900",
+            compact ? "mb-2 px-2 py-1.5 text-[10px] leading-snug" : "mb-3 px-3 py-2 text-xs",
+          )}
+        >
+          Seznam: heslo k e-mailu nebo heslo aplikace. Host{" "}
+          <code className="font-mono">smtp.seznam.cz</code>, port{" "}
+          <code className="font-mono">465</code>.
+        </p>
+      ) : null}
+
+      <div
+        className={cn(
+          compact
+            ? "flex min-h-0 flex-1 flex-col justify-between gap-2"
+            : "space-y-3",
+        )}
+      >
+        <div className={cn(compact ? "space-y-2" : "space-y-3")}>
+          <div className={cn(compact ? "grid grid-cols-2 gap-2" : "space-y-3")}>
+            <div className="space-y-1">
+              <Label htmlFor="sender-name" className="text-[10px]">
+                {t("settings.emailIntegration.senderName")}
+              </Label>
+              <Input
+                id="sender-name"
+                value={form.senderName}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    senderName: event.target.value,
+                  }))
+                }
+                className={inputClass}
+                placeholder="Jan Novák"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="sender-email" className="text-[10px]">
+                {t("settings.emailIntegration.senderEmail")}
+              </Label>
+              <Input
+                id="sender-email"
+                type="email"
+                value={form.senderEmail}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    senderEmail: event.target.value,
+                  }))
+                }
+                className={inputClass}
+                placeholder="jan@firma.cz"
+              />
+            </div>
+          </div>
+
+          {smtpProvider === "CUSTOM_SMTP" ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="col-span-2 space-y-1">
+                <Label htmlFor="smtp-host" className="text-[10px]">
+                  {t("settings.emailIntegration.smtpHost")}
+                </Label>
+                <Input
+                  id="smtp-host"
+                  value={form.smtpHost}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      smtpHost: event.target.value,
+                    }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="smtp-port" className="text-[10px]">
+                  {t("settings.emailIntegration.smtpPort")}
+                </Label>
+                <Input
+                  id="smtp-port"
+                  value={form.smtpPort}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      smtpPort: event.target.value,
+                    }))
+                  }
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <div className="space-y-1">
+            <Label htmlFor="app-password" className="text-[10px]">
+              {t("settings.emailIntegration.appPassword")}
+            </Label>
+            <Input
+              id="app-password"
+              type="password"
+              value={form.appPassword}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  appPassword: event.target.value,
+                }))
+              }
+              className={inputClass}
+              placeholder="••••••••••••••••"
+            />
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          onClick={() => void handleSaveSmtp()}
+          disabled={isSaving}
+          className={cn(
+            "w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700",
+            compact ? "mt-auto h-9 shrink-0 text-xs" : "",
+          )}
+        >
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t("common.loading")}
+            </>
+          ) : (
+            t("settings.emailIntegration.saveSmtp")
+          )}
+        </Button>
+      </div>
+    </>
+  );
+
+  if (compact) {
+    return (
+      <div className="flex h-full min-h-0 flex-col gap-2">
+        <div
+          className={cn(
+            "flex shrink-0 items-start gap-2 rounded-xl border px-2.5 py-2",
+            statusCardClass,
+          )}
+        >
+          {state.connected ? (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold leading-snug text-foreground">
+              {state.connected
+                ? t("settings.emailIntegration.statusConnected")
+                : t("settings.emailIntegration.statusDisconnected")}
+            </p>
+            {state.connected && state.senderEmail ? (
+              <p className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                {state.senderName ? `${state.senderName} · ` : ""}
+                {state.senderEmail}
+              </p>
+            ) : null}
+            {state.lastError ? (
+              <p className="mt-0.5 text-[10px] leading-snug text-rose-600">
+                {state.lastError}
+              </p>
+            ) : null}
+          </div>
+          {state.connected ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 rounded-lg px-2 text-[10px]"
+              onClick={() => void handleDisconnect()}
+              disabled={isPending}
+            >
+              <Unplug className="mr-1 h-3 w-3" />
+              {t("settings.emailIntegration.disconnect")}
+            </Button>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            className={connectionTabClass(connectionTab === "google")}
+            onClick={() => setConnectionTab("google")}
+          >
+            Google / Gmail
+          </button>
+          <button
+            type="button"
+            className={connectionTabClass(connectionTab === "smtp")}
+            onClick={() => setConnectionTab("smtp")}
+          >
+            Outlook / SMTP
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col">
+          {connectionTab === "google" ? (
+            <div className="flex h-full min-h-0 flex-col rounded-xl border border-border/60 bg-card/50 p-3">
+              <div className="mb-3 flex shrink-0 items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-card text-sm font-bold text-[#4285F4]">
+                  G
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-xs font-semibold">
+                    {t("settings.emailIntegration.googleTitle")}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    {t("settings.emailIntegration.googleDescription")}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                onClick={handleGoogleConnect}
+                className="mt-auto h-9 w-full shrink-0 rounded-xl bg-card text-xs font-semibold text-[#4285F4] shadow-sm ring-1 ring-border hover:bg-muted/40"
+              >
+                {t("settings.emailIntegration.googleButton")}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex h-full min-h-0 flex-col rounded-xl border border-border/60 bg-card/50 p-3">
+              <div className="mb-2 flex shrink-0 items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+                  <Mail className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-xs font-semibold">
+                    {t("settings.emailIntegration.smtpTitle")}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground">
+                    {t("settings.emailIntegration.smtpDescription")}
+                  </p>
+                </div>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">{smtpForm}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -190,7 +492,7 @@ export function EmailIntegrationPanel({
               </p>
             )}
             {state.lastError && (
-              <p className="mt-1 text-xs text-rose-600 ">{state.lastError}</p>
+              <p className="mt-1 text-xs text-rose-600">{state.lastError}</p>
             )}
           </div>
           {state.connected && (
@@ -212,7 +514,7 @@ export function EmailIntegrationPanel({
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-red-100 bg-card ">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-card">
               <span className="sk-type-h2 leading-none">
                 <span className="text-[#4285F4]">G</span>
               </span>
@@ -229,7 +531,7 @@ export function EmailIntegrationPanel({
           <Button
             type="button"
             onClick={handleGoogleConnect}
-            className="w-full rounded-xl bg-card font-semibold text-[#4285F4] shadow-sm ring-1 ring-border hover:bg-muted/40 "
+            className="w-full rounded-xl bg-card font-semibold text-[#4285F4] shadow-sm ring-1 ring-border hover:bg-muted/40"
           >
             {t("settings.emailIntegration.googleButton")}
           </Button>
@@ -237,7 +539,7 @@ export function EmailIntegrationPanel({
 
         <div className="rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-10 shrink-0 aspect-square items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 ">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
               <Mail className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -249,169 +551,7 @@ export function EmailIntegrationPanel({
               </p>
             </div>
           </div>
-
-          <div className="mb-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              className={smtpModeToggleClass(smtpProvider === "OUTLOOK_SMTP")}
-              onClick={() => {
-                setSmtpProvider("OUTLOOK_SMTP");
-                setForm((prev) => ({
-                  ...prev,
-                  smtpHost: "smtp.office365.com",
-                  smtpPort: "587",
-                }));
-              }}
-            >
-              Outlook
-            </button>
-            <button
-              type="button"
-              className={smtpModeToggleClass(
-                smtpProvider === "CUSTOM_SMTP" &&
-                  form.smtpHost.includes("seznam"),
-              )}
-              onClick={applySeznamPreset}
-            >
-              Seznam
-            </button>
-            <button
-              type="button"
-              className={smtpModeToggleClass(
-                smtpProvider === "CUSTOM_SMTP" &&
-                  !form.smtpHost.includes("seznam"),
-              )}
-              onClick={() => setSmtpProvider("CUSTOM_SMTP")}
-            >
-              {t("settings.emailIntegration.customSmtp")}
-            </button>
-          </div>
-
-          {form.smtpHost.includes("seznam") && (
-            <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 ">
-              Seznam: heslo k vašemu firemnímu e-mailu (nebo heslo aplikace ze
-              Seznam účtu). Host{" "}
-              <code className="font-mono">smtp.seznam.cz</code>, port{" "}
-              <code className="font-mono">465</code>. Každý člen týmu si
-              připojuje <strong>svůj</strong> účet a maily pak odcházejí z něj.
-            </p>
-          )}
-
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="sender-name">
-                {t("settings.emailIntegration.senderName")}
-              </Label>
-              <Input
-                id="sender-name"
-                value={form.senderName}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    senderName: event.target.value,
-                  }))
-                }
-                className={inputClass}
-                placeholder="Jan Novák"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="sender-email">
-                {t("settings.emailIntegration.senderEmail")}
-              </Label>
-              <Input
-                id="sender-email"
-                type="email"
-                value={form.senderEmail}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    senderEmail: event.target.value,
-                  }))
-                }
-                className={inputClass}
-                placeholder="jan@firma.cz"
-              />
-            </div>
-            <div
-              className={cn(
-                "grid transition-all duration-200 ease-in-out",
-                smtpProvider === "CUSTOM_SMTP"
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0",
-              )}
-            >
-              <div className="min-h-0 overflow-hidden">
-                <div className="grid grid-cols-3 gap-3 pb-3">
-                  <div className="col-span-2 space-y-1.5">
-                    <Label htmlFor="smtp-host">
-                      {t("settings.emailIntegration.smtpHost")}
-                    </Label>
-                    <Input
-                      id="smtp-host"
-                      value={form.smtpHost}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          smtpHost: event.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="smtp-port">
-                      {t("settings.emailIntegration.smtpPort")}
-                    </Label>
-                    <Input
-                      id="smtp-port"
-                      value={form.smtpPort}
-                      onChange={(event) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          smtpPort: event.target.value,
-                        }))
-                      }
-                      className={inputClass}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="app-password">
-                {t("settings.emailIntegration.appPassword")}
-              </Label>
-              <Input
-                id="app-password"
-                type="password"
-                value={form.appPassword}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    appPassword: event.target.value,
-                  }))
-                }
-                className={inputClass}
-                placeholder="••••••••••••••••"
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={() => void handleSaveSmtp()}
-              disabled={isSaving}
-              className="w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("common.loading")}
-                </>
-              ) : (
-                t("settings.emailIntegration.saveSmtp")
-              )}
-            </Button>
-          </div>
+          {smtpForm}
         </div>
       </div>
     </div>

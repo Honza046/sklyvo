@@ -203,7 +203,7 @@ export async function listAdminUsers(query?: string) {
       },
     },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 24,
   });
   return users;
 }
@@ -261,7 +261,7 @@ export async function listAdminWorkspaces(query?: string) {
       _count: { select: { members: true, leads: true } },
     },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 24,
   });
   return workspaces;
 }
@@ -341,7 +341,7 @@ export async function getAdminWorkspace(workspaceId: string) {
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 25,
+    take: 10,
   });
 
   const recentActivity = await prisma.activityLog.findMany({
@@ -354,7 +354,7 @@ export async function getAdminWorkspace(workspaceId: string) {
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 8,
   });
 
   return {
@@ -664,7 +664,7 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
   try {
     const { stripe } = await import("@/lib/stripe");
     const result = await stripe.invoices.list({
-      limit: 60,
+      limit: 24,
     });
 
     const customerIds = new Set<string>();

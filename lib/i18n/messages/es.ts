@@ -192,6 +192,12 @@ export const es: MessageTree = {
     title: "Sniper",
     subtitle:
       "Análisis puntual del sitio web y generación de un e-mail comercial a medida.",
+    recentTitle: "Últimos Sniper",
+    recentEmpty: "Aún nada. Aquí aparecerán los e-mails generados o enviados.",
+    recentDraft: "Borrador",
+    recentSent: "Enviado",
+    recentOpen: "Abrir",
+    recentRestored: "Sniper restaurado.",
     generate: "Generar email",
     generating: "Generando…",
     copySuccess: "Copiado al portapapeles.",
@@ -449,7 +455,91 @@ export const es: MessageTree = {
   },
   settings: {
     title: "Espacio de trabajo",
-    subtitle: "Gestiona ajustes del proyecto, integraciones CRM y créditos IA.",
+    hubSubtitle:
+      "Elige un área: empresa, email, conexiones o tarifa.",
+    back: "Atrás",
+    backToHub: "Volver al espacio de trabajo",
+    hubUsageHint: "Tarifa y uso están en Mi perfil → Facturación.",
+    hub: {
+      progressTitle: "Estado de configuración",
+      progressDone: "{done} de {total} completado",
+      progressCta: "Continuar configuración",
+      steps: {
+        profile: "Perfil de empresa",
+        services: "Servicios ofrecidos",
+        email: "E-mail corporativo",
+      },
+      preview: {
+        companyEmpty: "Complete el perfil y servicios para Sniper.",
+        servicesCount: "{count} servicios en catálogo",
+        emailConnected: "{email}",
+        emailDisconnected: "Sin e-mail Autopilot no envía.",
+        aiReady: "Firma y reglas de IA configuradas",
+        integrationOn: "Activo",
+        integrationOff: "Inactivo",
+        integrationsHint: "Sheets, Microsoft 365, Fakturoid",
+        teamMembers: "{count} miembros del workspace",
+        teamAgency: "Gestionar acceso del equipo",
+        teamLocked: "Disponible en plan Agency",
+        planLabel: "Plan {plan}",
+        creditsLeft: "{left} / {total} créditos",
+        renewalIn: "Renueva en {days} días",
+        accountUser: "{name}",
+      },
+    },
+    sections: {
+      company: {
+        title: "Empresa y oferta",
+        desc: "Lo que la IA sabe de tu empresa y servicios.",
+        statusReady: "Perfil y servicios listos",
+        statusIncomplete: "Completa perfil o servicios",
+      },
+      outreach: {
+        title: "Email e IA",
+        desc: "Desde dónde envías y cómo escribe Sniper.",
+        statusConnected: "Email conectado",
+        statusDisconnected: "Email no conectado",
+      },
+      integrations: {
+        title: "Conexiones",
+        desc: "Sheets, webhooks y facturación.",
+      },
+      team: {
+        title: "Equipo",
+        desc: "Quién tiene acceso al workspace.",
+        agencyOnly: "Disponible en plan Agency.",
+      },
+      billing: {
+        title: "Tarifa y uso",
+        desc: "Plan, facturación y límite.",
+        statusUsage: "Uso {pct} %",
+      },
+      account: {
+        title: "Mi perfil",
+        desc: "Nombre, contraseña, seguridad y notificaciones.",
+      },
+    },
+    pages: {
+      company: {
+        title: "Empresa y oferta",
+        desc: "Perfil de empresa y catálogo de servicios.",
+      },
+      outreach: {
+        title: "Email e IA",
+        desc: "Buzón, firma y reglas para emails.",
+        aiDesc: "Firma, palabras prohibidas e instrucciones base.",
+      },
+      integrations: {
+        title: "Conexiones",
+        desc: "Sincronización con hojas, webhooks y herramientas.",
+      },
+      team: {
+        title: "Equipo y accesos",
+        desc: "Invitaciones, roles y workspace compartido.",
+      },
+    },
+    subtitle:
+      "Configuración de empresa, email saliente y conexiones externas.",
     subscription: "Suscripción",
     noActivePlan: "Sin plan activo (Gratis)",
     freePlan: "Plan gratuito",
@@ -598,6 +688,9 @@ export const es: MessageTree = {
     connectedEmails: "Cuentas de email conectadas",
     connectedEmailsDesc:
       "Conecta buzones para que Sniper envíe desde tu dirección.",
+    connectedEmailsWorkspaceHint:
+      "Configura el buzón y la IA en Espacio de trabajo → Email e IA.",
+    openEmailSettings: "Abrir Email e IA",
     addMailbox: "Añadir otro buzón",
     connected: "Conectado",
     billing: "Facturación y suscripción",

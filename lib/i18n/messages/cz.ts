@@ -192,6 +192,12 @@ export const cz = {
     title: "Sniper",
     subtitle:
       "Jednorázová analýza webu a generování obchodního e-mailu na míru.",
+    recentTitle: "Poslední Snipery",
+    recentEmpty: "Zatím žádné. Vygenerovaný nebo odeslaný e-mail se tu objeví.",
+    recentDraft: "Koncept",
+    recentSent: "Odesláno",
+    recentOpen: "Otevřít",
+    recentRestored: "Sniper obnoven.",
     generate: "Vygenerovat email",
     generating: "Generuji…",
     copySuccess: "Zkopírováno do schránky.",
@@ -450,8 +456,92 @@ export const cz = {
   },
   settings: {
     title: "Pracovní prostor",
+    hubSubtitle:
+      "Vyberte oblast — firma, e-maily, propojení nebo tarif. Každá sekce má jasný účel.",
+    back: "Zpět",
+    backToHub: "Zpět do pracovního prostoru",
+    hubUsageHint: "Tarif a spotřeba najdete v Můj profil → Fakturace.",
+    hub: {
+      progressTitle: "Stav nastavení",
+      progressDone: "{done} z {total} hotovo",
+      progressCta: "Pokračovat v nastavení",
+      steps: {
+        profile: "Profil firmy",
+        services: "Nabízené služby",
+        email: "Firemní e-mail",
+      },
+      preview: {
+        companyEmpty: "Doplňte popis firmy a vyberte služby pro Sniper.",
+        servicesCount: "{count} služeb v katalogu",
+        emailConnected: "{email}",
+        emailDisconnected: "Bez e-mailu Autopilot neodesílá.",
+        aiReady: "Podpis a pravidla AI nastavené",
+        integrationOn: "Zapnuto",
+        integrationOff: "Neaktivní",
+        integrationsHint: "Sheets, Microsoft 365, Fakturoid",
+        teamMembers: "{count} členů workspace",
+        teamAgency: "Spravujte přístupy kolegů",
+        teamLocked: "Dostupné v Agency tarifu",
+        planLabel: "Tarif {plan}",
+        creditsLeft: "{left} / {total} kreditů",
+        renewalIn: "Obnova za {days} dní",
+        accountUser: "{name}",
+      },
+    },
+    sections: {
+      company: {
+        title: "Firma & nabídka",
+        desc: "Co AI ví o vaší firmě a co nabízíte.",
+        statusReady: "Profil i služby nastavené",
+        statusIncomplete: "Doplňte profil nebo služby",
+      },
+      outreach: {
+        title: "E-mail & AI",
+        desc: "Odkud posíláte a jak píše Sniper.",
+        statusConnected: "E-mail připojen",
+        statusDisconnected: "E-mail nepřipojen",
+      },
+      integrations: {
+        title: "Propojení",
+        desc: "Sheets, webhooky a fakturace.",
+      },
+      team: {
+        title: "Tým",
+        desc: "Kdo má přístup do workspace.",
+        agencyOnly: "Dostupné v Agency tarifu.",
+      },
+      billing: {
+        title: "Tarif & spotřeba",
+        desc: "Plán, fakturace a využití limitu.",
+        statusUsage: "Spotřeba {pct} %",
+      },
+      account: {
+        title: "Můj profil",
+        desc: "Jméno, heslo, zabezpečení a notifikace.",
+      },
+    },
+    pages: {
+      company: {
+        title: "Firma & nabídka",
+        desc: "Popis firmy a katalog služeb pro Sniper a Autopilot.",
+      },
+      outreach: {
+        title: "E-mail & AI",
+        desc: "Firemní schránka, podpis a pravidla pro generování e-mailů.",
+        aiDesc:
+          "Podpis, zakázaná slova a základní instrukce pro psaní e-mailů.",
+      },
+      integrations: {
+        title: "Propojení",
+        desc: "Synchronizace s tabulkami, webhooky a externími nástroji.",
+      },
+      team: {
+        title: "Tým & přístupy",
+        desc: "Pozvánky, role a sdílený workspace pro Agency.",
+      },
+    },
     subtitle:
-      "Spravujte nastavení projektu, integrace s vaším CRM a čerpání AI kreditů.",
+      "Nastavení firmy, odchozí e-maily a propojení s externími nástroji.",
     subscription: "Předplatné",
     noActivePlan: "Bez aktivního tarifu (Free verze)",
     freePlan: "Free verze",
@@ -600,6 +690,9 @@ export const cz = {
     connectedEmails: "Propojené e-mailové účty",
     connectedEmailsDesc:
       "Připojte své e-mailové schránky, aby mohl Sniper odesílat zprávy přímo z vaší adresy.",
+    connectedEmailsWorkspaceHint:
+      "Firemní schránku a pravidla pro AI nastavíte v Pracovním prostoru → E-mail & AI.",
+    openEmailSettings: "Otevřít E-mail & AI",
     addMailbox: "Přidat další schránku",
     connected: "Připojeno",
     billing: "Fakturace a předplatné",

@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
 import { useLanguage } from "@/context/LanguageContext";
+import { cn } from "@/lib/utils";
 
-export function SettingsSaveButton() {
+export function SettingsSaveButton({ compact = false }: { compact?: boolean }) {
   const { t } = useLanguage();
   const registry = useSettingsSaveRegistry();
   const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +38,12 @@ export function SettingsSaveButton() {
       variant="outline"
       disabled={isSaving}
       onClick={() => void handleSave()}
-      className="h-12 rounded-xl border-0 bg-blue-600 px-8 font-bold text-white shadow-md transition-all duration-200 hover:bg-blue-700 disabled:opacity-100"
+      className={cn(
+        "rounded-xl border-0 bg-blue-600 font-bold text-white shadow-md transition-all duration-200 hover:bg-blue-700 disabled:opacity-100",
+        compact
+          ? "h-9 px-4 text-xs"
+          : "h-12 px-8",
+      )}
     >
       {isSaving ? (
         <>

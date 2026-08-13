@@ -164,7 +164,7 @@ export function AutopilotSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         data-accent={meta.accent}
-        data-theme="light"
+        data-theme="dark"
         className={cn(
           "sklyvo-app sk-settings-dialog flex w-full flex-col gap-0 overflow-hidden p-0",
           "left-[50%] top-[50%] h-auto max-h-[min(90vh,720px)] w-full translate-x-[-50%] translate-y-[-50%] rounded-[20px]",

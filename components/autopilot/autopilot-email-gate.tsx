@@ -45,7 +45,7 @@ export function AutopilotEmailGate({
           </p>
           <div className="mt-5 flex w-full flex-col gap-2.5 sm:flex-row sm:justify-center">
             <Button asChild className="sk-btn sk-btn--primary w-full sm:w-auto">
-              <Link href={`/settings#${EMAIL_SETUP_SETTINGS_HASH}`}>
+              <Link href="/settings/outreach">
                 {t("autopilot.emailGate.openSettings")}
               </Link>
             </Button>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listAdminUsers } from "@/app/actions/platform-admin";
+import { AdminPageHead } from "@/components/admin/admin-page-head";
 import { AdminSearchForm } from "@/components/admin/admin-search-form";
 import {
   formatAdminDate,
@@ -18,54 +19,35 @@ export default async function AdminUsersPage({
   const users = await listAdminUsers(q);
 
   return (
-    <div className="sk-admin__page">
-      <header className="sk-admin__page-head sk-admin__page-head--row">
-        <div>
-          <h1 className="sk-admin__h1">Uživatelé</h1>
-          <p className="sk-admin__lede">
-            Max 100 výsledků · search e-mail / jméno / id
-          </p>
-        </div>
-        <AdminSearchForm
-          placeholder="Hledat uživatele…"
-          defaultValue={q ?? ""}
-        />
-      </header>
+    <div className="sk-admin__page sk-admin__page--list">
+      <AdminPageHead
+        title="Uživatelé"
+        meta={`${users.length} záznamů`}
+        actions={
+          <AdminSearchForm placeholder="Hledat…" defaultValue={q ?? ""} />
+        }
+      />
 
-      <div className="sk-admin__table-wrap sk-admin__table-wrap--rows">
-        <table className="sk-admin__table sk-admin__table--rows">
+      <div className="sk-admin__table-wrap sk-admin__table-wrap--rows sk-admin__table-wrap--scroll">
+        <table className="sk-admin__table sk-admin__table--rows sk-admin__table--dense">
           <thead>
             <tr>
               <th>Uživatel</th>
               <th>Workspace</th>
-              <th>Členství</th>
+              <th>Tarif</th>
               <th>Platba</th>
               <th>Od</th>
-              <th>Další platba</th>
             </tr>
           </thead>
           <tbody>
             {users.map((u) => {
               const pay = paymentBadge(u.workspace.subscriptionStatus);
-              const nextPay =
-                u.workspace.subscriptionPeriodEnd ?? u.workspace.trialEndsAt;
               return (
                 <tr key={u.id}>
                   <td>
-                    <Link
-                      href={`/admin/users/${u.id}`}
-                      className="sk-admin__link"
-                    >
-                      <span className="font-semibold">
-                        {u.name || "—"}
-                      </span>
-                      <span className="sk-admin__muted block text-xs">
-                        {u.email}
-                      </span>
-                      <span className="sk-admin__muted block text-[10px] font-semibold uppercase tracking-wide">
-                        {u.role}
-                        {u.disabledAt ? " · disabled" : null}
-                      </span>
+                    <Link href={`/admin/users/${u.id}`} className="sk-admin__link">
+                      <span className="font-semibold">{u.name || "—"}</span>
+                      <span className="sk-admin__muted block text-xs">{u.email}</span>
                     </Link>
                   </td>
                   <td>
@@ -76,11 +58,7 @@ export default async function AdminUsersPage({
                       {u.workspace.name}
                     </Link>
                   </td>
-                  <td>
-                    <span className="font-semibold">
-                      {membershipLabel(u.workspace.planTier)}
-                    </span>
-                  </td>
+                  <td>{membershipLabel(u.workspace.planTier)}</td>
                   <td>
                     <span className={`sk-admin__pill sk-admin__pill--${pay.tone}`}>
                       {pay.label}
@@ -89,21 +67,12 @@ export default async function AdminUsersPage({
                   <td className="sk-admin__muted text-xs tabular-nums">
                     {formatAdminDate(u.workspace.createdAt)}
                   </td>
-                  <td className="text-xs tabular-nums">
-                    {nextPay ? (
-                      <span className="font-medium">
-                        {formatAdminDate(nextPay)}
-                      </span>
-                    ) : (
-                      <span className="sk-admin__muted">—</span>
-                    )}
-                  </td>
                 </tr>
               );
             })}
             {users.length === 0 ? (
-              <tr className="sk-admin__table-empty">
-                <td colSpan={6} className="sk-admin__empty">
+              <tr>
+                <td colSpan={5} className="sk-admin__empty">
                   Nic nenalezeno.
                 </td>
               </tr>

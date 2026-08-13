@@ -62,7 +62,7 @@ function safeEqual(a: string, b: string): boolean {
 function sanitizeReturnPath(path: string | undefined | null): string {
   const raw = (path || "").trim() || "/settings";
   if (!raw.startsWith("/") || raw.startsWith("//")) {
-    return "/settings#integrations";
+    return "/settings/integrations";
   }
   return raw;
 }

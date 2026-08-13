@@ -1,157 +1,119 @@
-/* Soft-UI vocabulary — tokens on :root so portals + UI primitives inherit.
-   .sklyvo-app applies page chrome; raised/sunken stay token-driven. */
+/* Night vocabulary from /login2 — flat surfaces, hairline borders, no soft-UI.
+   Gradients stay as images so Tailwind `bg-[image:var(--sk-*)]` still paints. */
 
 :root {
-  --sk-ink: oklch(0.22 0.015 250);
-  --sk-ink-soft: oklch(0.24 0.015 250);
-  --sk-ink-press: oklch(0.2 0.015 250);
-  --sk-muted: oklch(0.58 0.015 250);
-  --sk-muted-soft: oklch(0.62 0.015 250);
-  --sk-icon: oklch(0.55 0.015 250);
-  --sk-link: oklch(0.5 0.015 250);
+  --n-bg: #191a1c;
+  --n-card: #0e0f11;
+  --n-field: #0a0b0c;
+  --n-field-focus: #121316;
+  --n-hover: #161718;
+  --n-hairline: rgba(255, 255, 255, 0.09);
+  --n-edge: rgba(255, 255, 255, 0.1);
+  --n-edge-hover: rgba(255, 255, 255, 0.22);
+  --n-text: #fafafb;
+  --n-text-soft: #f2f3f5;
+  --n-muted: #8a8f98;
+  --n-dim: #6b7078;
+
+  --sk-ink: var(--n-text);
+  --sk-ink-soft: var(--n-text-soft);
+  --sk-ink-press: #ffffff;
+  --sk-muted: var(--n-muted);
+  --sk-muted-soft: var(--n-dim);
+  --sk-icon: var(--n-muted);
+  --sk-link: var(--n-muted);
   --sk-brand: #02a7ff;
+  --sk-dim: var(--n-dim);
+  --sk-hairline: var(--n-hairline);
+  --sk-cta: #ffffff;
+  --sk-cta-ink: #08090a;
+  --sk-cta-hover: #f0f2f5;
+  --sk-cta-active: #dfe3e8;
 
-  --sk-mix-base: #ffffff;
-  --sk-border: rgba(255, 255, 255, 0.9);
-  --sk-border-soft: rgba(255, 255, 255, 0.75);
-  --sk-border-strong: rgba(255, 255, 255, 0.95);
-  --sk-panel: #ffffff;
-  --sk-panel-edge: rgba(210, 222, 235, 0.85);
-  --sk-row: oklch(0.945 0.006 245);
-  --sk-row-hover: oklch(0.925 0.008 245);
-  --sk-thumb: #ffffff;
-  --sk-highlight: #fff;
-  --sk-highlight-soft: rgba(255, 255, 255, 0.9);
-  --sk-highlight-faint: rgba(255, 255, 255, 0.75);
+  --sk-mix-base: var(--n-card);
+  --sk-card: var(--n-card);
+  --sk-border: var(--n-hairline);
+  --sk-border-soft: var(--n-edge);
+  --sk-border-strong: var(--n-edge-hover);
+  --sk-panel: var(--n-card);
+  --sk-panel-edge: var(--n-hairline);
+  --sk-row: var(--n-field);
+  --sk-row-hover: var(--n-hover);
+  --sk-thumb: var(--n-text-soft);
+  --sk-highlight: transparent;
+  --sk-highlight-soft: transparent;
+  --sk-highlight-faint: transparent;
 
-  --sk-raised: linear-gradient(180deg, #ffffff 0%, oklch(0.972 0.004 240) 100%);
-  --sk-raised-shadow:
-    0 10px 24px -6px rgba(30, 70, 110, 0.26),
-    0 4px 10px 0 rgba(30, 70, 110, 0.13),
-    0 1px 3px 0 rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px rgba(120, 160, 190, 0.25);
+  --sk-raised: linear-gradient(180deg, var(--n-card) 0%, var(--n-card) 100%);
+  --sk-raised-shadow: none;
+  --sk-glass: linear-gradient(180deg, var(--n-card) 0%, var(--n-card) 100%);
+  --sk-glass-shadow: none;
+  --sk-sunken: linear-gradient(180deg, var(--n-field) 0%, var(--n-field) 100%);
+  --sk-sunken-shadow: none;
+  --sk-light-bg: linear-gradient(180deg, var(--n-field) 0%, var(--n-field) 100%);
+  --sk-nav-active: linear-gradient(180deg, #22242a 0%, #22242a 100%);
+  --sk-nav-active-shadow: none;
+  --sk-nav-active-ink: var(--n-text);
+  --sk-nav-active-icon: var(--n-text);
+  --sk-ink-bg: linear-gradient(180deg, #ffffff 0%, #ffffff 100%);
+  --sk-shadow-raised-hover: none;
+  --sk-shadow-dark: none;
+  --sk-shadow-dark-hover: none;
+  --sk-brand-shadow: none;
+  --sk-brand-shadow-hover: none;
+  --sk-popover-shadow: none;
+  --sk-card-shadow: none;
+  --sk-sidebar-shadow: none;
 
-  --sk-glass: linear-gradient(
-    165deg,
-    rgba(236, 248, 252, 0.88) 0%,
-    rgba(255, 255, 255, 0.98) 48%,
-    #ffffff 100%
-  );
-  --sk-glass-shadow: var(--sk-card-shadow);
-
-  --sk-sunken: linear-gradient(
-    180deg,
-    oklch(0.935 0.006 245) 0%,
-    oklch(0.968 0.004 245) 100%
-  );
-  --sk-sunken-shadow:
-    inset 0 1.5px 3px rgba(90, 130, 165, 0.16),
-    inset 0 -1px 0 var(--sk-highlight-soft),
-    0 1px 0 var(--sk-highlight-faint);
-
-  --sk-light-bg: linear-gradient(180deg, #ffffff 0%, oklch(0.955 0.006 240) 100%);
-  --sk-nav-active: var(--sk-light-bg);
-  --sk-nav-active-shadow:
-    0 8px 18px -10px rgba(30, 70, 110, 0.28),
-    0 1px 2px 0 rgba(30, 70, 110, 0.1),
-    inset 0 1.5px 0 #fff;
-  --sk-nav-active-ink: var(--sk-ink);
-  --sk-nav-active-icon: oklch(0.4 0.02 250);
-  --sk-ink-bg: linear-gradient(
-    180deg,
-    oklch(0.36 0.018 250) 0%,
-    oklch(0.24 0.015 250) 52%,
-    oklch(0.18 0.012 250) 100%
-  );
-  --sk-shadow-raised-hover:
-    0 14px 30px -6px rgba(30, 70, 110, 0.3),
-    0 5px 12px 0 rgba(30, 70, 110, 0.15),
-    0 1px 3px 0 rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px rgba(120, 160, 190, 0.25);
-  --sk-shadow-dark:
-    0 10px 24px -6px rgba(20, 32, 50, 0.37),
-    0 4px 10px 0 rgba(20, 32, 50, 0.19),
-    0 1px 3px 0 rgba(20, 32, 50, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.4);
-  --sk-shadow-dark-hover:
-    0 14px 30px -6px rgba(20, 32, 50, 0.41),
-    0 5px 12px 0 rgba(20, 32, 50, 0.21),
-    0 1px 3px 0 rgba(20, 32, 50, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.4);
-
-  --sk-brand-shadow:
-    0 12px 22px -10px rgba(2, 167, 255, 0.55),
-    0 3px 6px -2px rgba(2, 167, 255, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -2px 3px rgba(0, 90, 140, 0.25);
-  --sk-brand-shadow-hover:
-    0 16px 28px -12px rgba(2, 167, 255, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-
-  --sk-popover-shadow:
-    0 16px 32px -12px rgba(30, 70, 110, 0.22),
-    inset 0 1px 0 var(--sk-border-strong);
-
-  /* Matěj /design — rádiusy · stíny · mezery */
-  --sk-radius-control: 12px; /* pole a tlačítka */
-  --sk-radius-card: 18px; /* karty (18–22) */
-  --sk-radius-card-lg: 22px;
-  --sk-radius-hero: 26px; /* hero panely */
+  --sk-radius-control: 10px;
+  --sk-radius-card: 16px;
+  --sk-radius-card-lg: 16px;
+  --sk-radius-hero: 16px;
   --sk-radius-pill: 999px;
 
-  --sk-card-shadow:
-    0 26px 52px -20px rgba(30, 70, 110, 0.22),
-    0 5px 14px -6px rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.95);
-
-  --sk-space-field: 10px; /* gap v poli / mezi fieldy */
-  --sk-space-block: 18px; /* mezi bloky */
-  --sk-space-section: 22px; /* sekce */
+  --sk-space-field: 10px;
+  --sk-space-block: 18px;
+  --sk-space-section: 22px;
   --sk-pad-card-x: 24px;
   --sk-pad-card-y: 26px;
-  /* Equal gutter around main content (matches previous overview bottom feel). */
   --sk-page-inset: 1.25rem;
 
   --sk-ease-pop: cubic-bezier(0.3, 0.9, 0.3, 1);
   --sk-panel-h: 17.5rem;
 
-  --sk-page-bg:
-    radial-gradient(120% 80% at 10% -10%, rgba(2, 167, 255, 0.035), transparent 55%),
-    radial-gradient(90% 60% at 100% 0%, rgba(210, 232, 248, 0.28), transparent 52%),
-    linear-gradient(
-      180deg,
-      oklch(0.978 0.006 235) 0%,
-      oklch(0.985 0.003 240) 100%
-    );
+  --sk-page-bg: var(--n-bg);
+  --sk-overlay: rgba(0, 0, 0, 0.62);
+  --sk-sidebar-bg: var(--n-bg);
+  --sk-nav-hover: #22242a;
+  --sk-credits-bg: var(--n-card);
+  --sk-meter-track: #2a2b2e;
 
-  --sk-overlay: rgba(20, 40, 70, 0.35);
-  --sk-sidebar-bg: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.96) 0%,
-    rgba(252, 254, 255, 0.98) 100%
-  );
-  --sk-sidebar-shadow: 0 18px 36px -20px rgba(30, 70, 110, 0.22);
-  --sk-nav-hover: oklch(0.965 0.006 240);
-  --sk-credits-bg: linear-gradient(
-    180deg,
-    oklch(0.945 0.006 245) 0%,
-    oklch(0.972 0.004 245) 100%
-  );
-  --sk-meter-track: oklch(0.925 0.006 245);
+  --sk-blue: #3b82f6;
+  --sk-cyan: #02a7ff;
+  --sk-emerald: #10b981;
+  --sk-amber: #f59e0b;
+  --sk-orange: #f97316;
+  --sk-violet: #8b5cf6;
+  --sk-indigo: #6366f1;
+  --sk-rose: #f43f5e;
+  --sk-teal: #14b8a6;
+  --sk-sky: #0ea5e9;
 }
 
 .sklyvo-app {
   color: var(--sk-ink);
   background: var(--sk-page-bg);
+  color-scheme: dark;
   font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+.sklyvo-app ::selection {
+  background: #ffee00;
+  color: var(--n-bg);
 }
 
 .sklyvo-app a {
@@ -274,8 +236,8 @@
 }
 
 /* --------------------------------------------------------------- buttons --
-   Matěj soft-UI: primary / secondary / engraved / ghost (+ optional brand).
-   Heights: sm 32 · default/md 44 · lg 50. Hover −1px, active +1px.
+   /login2: white primary CTA, hairline secondary, no lift shadows.
+   Heights: sm 32 · default/md 44 · lg 50.
    ------------------------------------------------------------------------ */
 
 .sk-btn,
@@ -286,7 +248,7 @@
   gap: 9px;
   height: 44px;
   padding: 0 22px;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--sk-radius-control);
   font-family: inherit;
   font-size: 13.5px;
@@ -295,50 +257,45 @@
   line-height: 1;
   cursor: pointer;
   text-decoration: none;
+  box-shadow: none;
   transition:
-    transform 0.16s var(--sk-ease-pop),
-    background 0.18s ease,
-    box-shadow 0.12s ease,
-    color 0.18s ease;
+    transform 0.1s ease,
+    background 0.14s ease,
+    border-color 0.15s ease,
+    color 0.16s ease;
 }
 
 .sk-btn--primary,
 .sklyvo-app .sk-btn--primary {
-  background: var(--sk-ink-bg);
-  color: #fff;
-  box-shadow: var(--sk-shadow-dark);
+  background: var(--sk-cta);
+  color: var(--sk-cta-ink);
+  box-shadow: none;
 }
 
 .sk-btn--primary:hover,
 .sklyvo-app .sk-btn--primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-dark-hover);
+  background: var(--sk-cta-hover);
+  transform: none;
+  box-shadow: none;
 }
 
 .sk-btn--primary:active,
 .sklyvo-app .sk-btn--primary:active {
-  transform: translateY(1px);
-  box-shadow:
-    0 3px 8px -1px rgba(20, 32, 50, 0.28),
-    inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  background: var(--sk-cta-active);
+  transform: scale(0.985);
+  box-shadow: none;
 }
 
 a.sk-btn--primary,
 .sklyvo-app a.sk-btn--primary {
-  color: #fff;
+  color: var(--sk-cta-ink);
 }
 
-/* Optional brand accent — not in Matěj’s core set; keep for rare CTAs */
 .sk-btn--brand,
 .sklyvo-app .sk-btn--brand {
-  background: linear-gradient(
-    180deg,
-    #3bbcff 0%,
-    var(--sk-brand) 48%,
-    #0290e0 100%
-  );
+  background: var(--sk-brand);
   color: #fff;
-  box-shadow: var(--sk-brand-shadow);
+  box-shadow: none;
 }
 
 a.sk-btn--brand,
@@ -348,23 +305,23 @@ a.sk-btn--brand,
 
 .sk-btn--brand:hover,
 .sklyvo-app .sk-btn--brand:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-brand-shadow-hover);
+  filter: brightness(1.06);
+  transform: none;
+  box-shadow: none;
 }
 
 .sk-btn--brand:active,
 .sklyvo-app .sk-btn--brand:active {
-  transform: translateY(1px);
-  box-shadow:
-    0 3px 8px -1px rgba(2, 167, 255, 0.3),
-    inset 0 2px 4px rgba(0, 90, 140, 0.35);
+  transform: scale(0.985);
+  box-shadow: none;
 }
 
 .sk-btn--secondary,
 .sklyvo-app .sk-btn--secondary {
-  background: var(--sk-light-bg);
+  background: var(--n-field);
   color: var(--sk-ink);
-  box-shadow: var(--sk-raised-shadow);
+  border-color: var(--n-edge);
+  box-shadow: none;
 }
 
 a.sk-btn--secondary,
@@ -374,39 +331,39 @@ a.sk-btn--secondary,
 
 .sk-btn--secondary:hover,
 .sklyvo-app .sk-btn--secondary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-raised-hover);
+  background: var(--n-hover);
+  border-color: var(--n-edge-hover);
+  transform: none;
+  box-shadow: none;
 }
 
 .sk-btn--secondary:active,
 .sklyvo-app .sk-btn--secondary:active {
-  transform: translateY(1px);
-  background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.38),
-    inset 0 -1px 0 var(--sk-highlight-soft);
+  transform: scale(0.985);
+  background: var(--n-field-focus);
+  box-shadow: none;
 }
 
 .sk-btn--engraved,
 .sklyvo-app .sk-btn--engraved {
-  border: 1px solid var(--sk-border);
-  background: var(--sk-sunken);
+  border: 1px solid var(--n-edge);
+  background: var(--n-field);
   color: var(--sk-muted);
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow: none;
 }
 
 .sk-btn--engraved:hover,
 .sklyvo-app .sk-btn--engraved:hover {
   color: var(--sk-ink);
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.34),
-    inset 0 -1px 0 var(--sk-highlight-soft);
+  background: var(--n-hover);
+  border-color: var(--n-edge-hover);
+  box-shadow: none;
 }
 
 .sk-btn--engraved:active,
 .sklyvo-app .sk-btn--engraved:active {
-  transform: translateY(1px);
-  box-shadow: inset 0 3px 6px rgba(90, 130, 165, 0.45);
+  transform: scale(0.985);
+  box-shadow: none;
 }
 
 .sk-btn--ghost,
@@ -424,7 +381,7 @@ a.sk-btn--secondary,
 
 .sk-btn--ghost:active,
 .sklyvo-app .sk-btn--ghost:active {
-  transform: translateY(1px);
+  transform: none;
   color: var(--sk-ink-press);
 }
 
@@ -432,10 +389,11 @@ a.sk-btn--secondary,
 .sk-btn[aria-disabled="true"],
 .sklyvo-app .sk-btn:disabled,
 .sklyvo-app .sk-btn[aria-disabled="true"] {
-  background: var(--sk-sunken);
-  color: oklch(0.72 0.01 250);
+  background: var(--n-field);
+  color: var(--n-dim);
+  border-color: var(--n-hairline);
   cursor: not-allowed;
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow: none;
   transform: none;
   opacity: 1;
 }
@@ -494,9 +452,9 @@ a.sk-btn--secondary,
 .sklyvo-app .sk-surface--raised {
   padding: 0;
   border-radius: var(--sk-radius-card);
-  border: none;
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-raised-shadow);
+  border: 1px solid var(--n-hairline);
+  background: var(--n-card);
+  box-shadow: none;
   color: var(--sk-ink);
 }
 
@@ -532,34 +490,32 @@ a.sk-btn--secondary,
   background: var(--sk-panel);
   background-image: none;
   border: 1px solid var(--sk-panel-edge);
-  box-shadow:
-    0 4px 14px -8px rgba(30, 70, 110, 0.16),
-    0 1px 2px rgba(30, 70, 110, 0.05);
+  box-shadow: none;
 }
 
 /* Toolbar secondary — raised soft-UI, readable on white strip (not a flat outline) */
 .sklyvo-app .sk-toolbar .sk-press-btn {
   color: var(--sk-ink) !important;
-  background: var(--sk-light-bg) !important;
-  border: none !important;
-  box-shadow: var(--sk-raised-shadow) !important;
+  background: var(--n-field) !important;
+  border: 1px solid var(--n-edge) !important;
+  box-shadow: none !important;
   font-weight: 600 !important;
 }
 
 .sklyvo-app .sk-toolbar .sk-press-btn:hover {
   color: var(--sk-ink) !important;
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-raised-hover) !important;
+  background: var(--n-hover) !important;
+  border-color: var(--n-edge-hover) !important;
+  transform: none;
+  box-shadow: none !important;
 }
 
 .sklyvo-app .sk-toolbar .sk-press-btn:active,
 .sklyvo-app .sk-toolbar .sk-press-btn[data-state="open"],
 .sklyvo-app .sk-toolbar .sk-press-btn[aria-expanded="true"] {
-  transform: translateY(1px) !important;
-  background: var(--sk-sunken) !important;
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.4),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  transform: none !important;
+  background: var(--n-field-focus) !important;
+  box-shadow: none !important;
 }
 
 /* CRM bulk-selection — same Matej strip as search toolbar (no brand wash) */
@@ -567,9 +523,7 @@ a.sk-btn--secondary,
   background: var(--sk-panel);
   background-image: none;
   border-color: var(--sk-panel-edge);
-  box-shadow:
-    0 4px 14px -8px rgba(30, 70, 110, 0.16),
-    0 1px 2px rgba(30, 70, 110, 0.05);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-selection__count {
@@ -612,22 +566,22 @@ a.sk-btn--secondary,
 /* Soft success action in toolbars (Odeslat vše) */
 .sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__success,
 .sklyvo-app .sk-press-btn.sk-selection__success {
-  color: #047857 !important;
+  color: #34d399 !important;
 }
 
 .sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__success:hover,
 .sklyvo-app .sk-press-btn.sk-selection__success:hover {
-  color: #065f46 !important;
+  color: #6ee7b7 !important;
 }
 
 .sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__danger,
 .sklyvo-app .sk-selection__danger {
-  color: #b42318 !important;
+  color: #f87171 !important;
 }
 
 .sklyvo-app .sk-toolbar .sk-press-btn.sk-selection__danger:hover,
 .sklyvo-app .sk-selection__danger:hover {
-  color: #912018 !important;
+  color: #fca5a5 !important;
 }
 
 .sklyvo-app .sk-selection__clear {
@@ -669,25 +623,21 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app .sk-surface--engraved {
-  background: var(--sk-sunken);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: var(--sk-sunken-shadow);
+  background: var(--n-field);
+  border: 1px solid var(--n-hairline);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-surface--dark {
-  background: linear-gradient(
-    170deg,
-    oklch(0.34 0.02 250) 0%,
-    oklch(0.2 0.015 250) 100%
-  );
-  border: none;
-  box-shadow: var(--sk-shadow-dark);
-  color: #fff;
+  background: var(--n-field);
+  border: 1px solid var(--n-hairline);
+  box-shadow: none;
+  color: var(--n-text);
 }
 
 .sklyvo-app .sk-surface--hero {
   border-radius: var(--sk-radius-hero);
-  box-shadow: var(--sk-card-shadow);
+  box-shadow: none;
   padding: var(--sk-pad-card-x) var(--sk-pad-card-y) var(--sk-pad-card-y);
 }
 
@@ -702,7 +652,7 @@ a.sk-btn--secondary,
   margin: 7px 0 0;
   font-size: 12.5px;
   line-height: 1.55;
-  color: oklch(0.52 0.015 250);
+  color: var(--sk-muted);
 }
 
 .sklyvo-app .sk-surface--dark .sk-surface__title,
@@ -739,18 +689,36 @@ a.sk-btn--secondary,
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--sk-brand) 12%, var(--sk-mix-base));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sk-brand) 18%, transparent);
   color: var(--sk-brand);
-  box-shadow:
-    inset 0 1px 0 var(--sk-highlight-soft),
-    0 1px 2px rgba(30, 70, 110, 0.08);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-chip--muted {
-  background: var(--sk-sunken);
+  background: var(--n-field);
   color: var(--sk-icon);
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-chip--blue {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.sklyvo-app .sk-chip--green {
+  background: #10b981;
+  color: #fff;
+}
+
+.sklyvo-app .sk-chip--orange {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.sklyvo-app .sk-chip--purple {
+  background: #8b5cf6;
+  color: #fff;
 }
 
 /* ------------------------------------------------------------- navigation -- */
@@ -830,6 +798,66 @@ a.sk-btn--secondary,
 
 .sklyvo-app .sk-nav-item:not(.is-active):hover .sk-nav-icon {
   color: var(--sk-ink-soft);
+}
+
+.sklyvo-app [data-accent="blue"] {
+  --sk-accent: var(--sk-blue);
+  --sk-accent-soft: #60a5fa;
+}
+.sklyvo-app [data-accent="cyan"] {
+  --sk-accent: var(--sk-cyan);
+  --sk-accent-soft: #38bdf8;
+}
+.sklyvo-app [data-accent="emerald"] {
+  --sk-accent: var(--sk-emerald);
+  --sk-accent-soft: #34d399;
+}
+.sklyvo-app [data-accent="amber"] {
+  --sk-accent: var(--sk-amber);
+  --sk-accent-soft: #fbbf24;
+}
+.sklyvo-app [data-accent="orange"] {
+  --sk-accent: var(--sk-orange);
+  --sk-accent-soft: #fb923c;
+}
+.sklyvo-app [data-accent="violet"] {
+  --sk-accent: var(--sk-violet);
+  --sk-accent-soft: #a78bfa;
+}
+.sklyvo-app [data-accent="indigo"] {
+  --sk-accent: var(--sk-indigo);
+  --sk-accent-soft: #818cf8;
+}
+.sklyvo-app [data-accent="rose"] {
+  --sk-accent: var(--sk-rose);
+  --sk-accent-soft: #fb7185;
+}
+.sklyvo-app [data-accent="teal"] {
+  --sk-accent: var(--sk-teal);
+  --sk-accent-soft: #2dd4bf;
+}
+.sklyvo-app [data-accent="sky"] {
+  --sk-accent: var(--sk-sky);
+  --sk-accent-soft: #38bdf8;
+}
+
+.sklyvo-app .sk-nav-item[data-accent] .sk-nav-icon,
+.sklyvo-app .sk-nav-item[data-accent]:hover .sk-nav-icon,
+.sklyvo-app .sk-nav-item[data-accent].is-active .sk-nav-icon,
+.sklyvo-app .sk-nav-item[data-accent].is-active:hover .sk-nav-icon,
+.sklyvo-app .sk-nav-track .sk-nav-item[data-accent].is-active .sk-nav-icon,
+.sklyvo-app .sk-nav-track .sk-nav-item[data-accent].is-active:hover .sk-nav-icon {
+  color: var(--sk-accent-soft);
+}
+
+.sklyvo-app .sk-page-badge[data-accent],
+.sklyvo-app .sk-help-icon[data-accent],
+.sklyvo-app .sk-settings-row-icon[data-accent] {
+  background: color-mix(in oklab, var(--sk-accent) 18%, transparent);
+  color: var(--sk-accent-soft);
+  border: none;
+  box-shadow: none;
+  border-radius: 999px;
 }
 
 .sklyvo-app .sk-nav-tree {
@@ -912,7 +940,7 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app .sk-nav-sub.is-active .sk-nav-dot {
-  background: var(--sk-brand);
+  background: var(--sk-accent-soft, var(--sk-brand));
 }
 
 /* Sonar halo on active sub-item */
@@ -923,7 +951,7 @@ a.sk-btn--secondary,
   top: 50%;
   left: 50%;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--sk-brand) 32%, transparent);
+  background: color-mix(in oklab, var(--sk-accent, var(--sk-brand)) 32%, transparent);
   transform: translate(-50%, -50%) scale(0.7);
   pointer-events: none;
   animation: sk-nav-sonar 2s ease-out infinite;
@@ -1059,14 +1087,50 @@ a.sk-btn--secondary,
   height: 7px;
   border-radius: 99px;
   background: var(--sk-meter-track);
-  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.22);
+  box-shadow: none;
   overflow: hidden;
 }
 
 .sklyvo-app .sk-meter__fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--sk-brand) 0%, oklch(0.86 0.11 230) 100%);
+  background: linear-gradient(90deg, #02a7ff 0%, #22d3ee 100%);
+}
+
+.sklyvo-app .sk-meter__fill--ok {
+  background: linear-gradient(90deg, #02a7ff 0%, #22d3ee 100%);
+}
+
+.sklyvo-app .sk-meter__fill--warn {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.sklyvo-app .sk-meter__fill--hot {
+  background: linear-gradient(90deg, #f43f5e 0%, #fb7185 100%);
+}
+
+.sklyvo-app .sk-credits__zap {
+  color: #fbbf24;
+}
+
+.sklyvo-app .sk-credits__pct {
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-credits__pct--ok {
+  color: #22d3ee;
+}
+
+.sklyvo-app .sk-credits__pct--warn {
+  color: #fbbf24;
+}
+
+.sklyvo-app .sk-credits__pct--hot {
+  color: #fb7185;
+}
+
+.sklyvo-app .sk-credits__plan {
+  color: #67e8f9;
 }
 
 .sklyvo-app .sk-user {
@@ -1141,7 +1205,7 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app .sk-autopilot__nav {
-  padding: 4px 4px 10px;
+  padding: 0 4px 6px;
   overflow: visible;
 }
 
@@ -1170,10 +1234,8 @@ a.sk-btn--secondary,
   z-index: 0;
   border-radius: 10px;
   pointer-events: none;
-  background: var(--sk-light-bg);
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.45),
-    inset 0 1.5px 0 #fff;
+  background: var(--n-hover);
+  box-shadow: none;
   transition:
     transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1),
     width 0.28s cubic-bezier(0.34, 1.35, 0.5, 1),
@@ -1246,12 +1308,10 @@ a.sk-btn--secondary,
   height: 36px;
   box-sizing: border-box;
   padding: 2px;
-  border-radius: 14px;
-  border: none;
-  background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 5px rgba(30, 70, 110, 0.18),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  border: 1px solid var(--n-hairline);
+  background: #101113;
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-view-toggle__thumb {
@@ -1262,10 +1322,8 @@ a.sk-btn--secondary,
   z-index: 0;
   border-radius: 11px;
   pointer-events: none;
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.96 0.005 240) 100%);
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.4),
-    inset 0 1.5px 0 #fff;
+  background: #22242a;
+  box-shadow: none;
   transition:
     transform 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
     width 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
@@ -1317,13 +1375,12 @@ a.sk-btn--secondary,
 .sklyvo-app .sk-autopilot__body {
   min-height: 0;
   overflow: hidden;
-  /* Inset child raised panels (control bar + table) so soft shadows breathe */
-  padding: 6px 4px 4px;
+  padding: 2px 4px 4px;
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-autopilot__body {
-    padding: 8px 6px 6px;
+    padding: 4px 6px 6px;
   }
 }
 
@@ -1332,15 +1389,15 @@ a.sk-btn--secondary,
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem;
   overflow: hidden;
-  padding: 2px;
+  padding: 0;
 }
 
 @media (min-width: 640px) {
   .sklyvo-app .sk-autopilot__stack {
-    gap: 1rem;
-    padding: 4px;
+    gap: 0.65rem;
+    padding: 0;
   }
 }
 
@@ -1425,7 +1482,7 @@ a.sk-btn--secondary,
   }
 }
 
-/* Floating AI assistant — brand soft-UI 3D */
+/* Floating AI assistant — flat brand chip */
 .sklyvo-app .sk-fab,
 .sk-fab {
   display: inline-flex !important;
@@ -1435,47 +1492,28 @@ a.sk-btn--secondary,
   height: 2.5rem !important;
   min-width: 2.5rem;
   padding: 0 !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   border-radius: 999px !important;
   color: #fff !important;
   cursor: pointer;
-  background: linear-gradient(
-    165deg,
-    #5ecfff 0%,
-    #02a7ff 42%,
-    #0177c2 100%
-  ) !important;
-  box-shadow:
-    0 12px 22px -8px rgba(2, 167, 255, 0.65),
-    0 4px 10px -3px rgba(2, 100, 160, 0.35),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -2px 4px rgba(0, 80, 130, 0.28) !important;
+  background: var(--sk-brand) !important;
+  box-shadow: none !important;
   transition:
-    transform 0.16s cubic-bezier(0.3, 0.9, 0.3, 1),
-    box-shadow 0.16s ease;
+    transform 0.1s ease,
+    filter 0.14s ease;
 }
 
 .sk-fab:hover {
-  transform: translateY(-2px);
+  transform: none;
+  filter: brightness(1.08);
   color: #fff !important;
-  background: linear-gradient(
-    165deg,
-    #6ed4ff 0%,
-    #12b0ff 42%,
-    #0280d0 100%
-  ) !important;
-  box-shadow:
-    0 18px 32px -10px rgba(2, 167, 255, 0.7),
-    0 8px 14px -4px rgba(2, 100, 160, 0.4),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -2px 4px rgba(0, 80, 130, 0.28) !important;
+  background: var(--sk-brand) !important;
+  box-shadow: none !important;
 }
 
 .sk-fab:active {
-  transform: translateY(1px);
-  box-shadow:
-    0 6px 14px -6px rgba(2, 167, 255, 0.45),
-    inset 0 2px 5px rgba(0, 80, 130, 0.35) !important;
+  transform: scale(0.985);
+  box-shadow: none !important;
 }
 
 .sk-fab.sk-fab--sm {
@@ -1485,13 +1523,8 @@ a.sk-btn--secondary,
 }
 
 .sk-copilot-head {
-  background: linear-gradient(
-    165deg,
-    #5ecfff 0%,
-    #02a7ff 45%,
-    #0177c2 100%
-  );
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  background: var(--sk-brand);
+  box-shadow: none;
 }
 
 .sk-copilot-head button {
@@ -1506,14 +1539,12 @@ a.sk-btn--secondary,
 
 /* Frosted glass chat shell — theme tokens (light + dark) */
 .sk-copilot-panel {
-  background: var(--sk-glass);
+  background: var(--n-card);
   color: var(--sk-ink);
-  border: none;
+  border: 1px solid var(--n-hairline);
   outline: none;
-  box-shadow:
-    0 28px 56px -20px rgba(30, 70, 110, 0.32),
-    0 10px 24px -10px rgba(30, 70, 110, 0.16);
-  backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow: none;
+  backdrop-filter: none;
   -webkit-backdrop-filter: blur(18px) saturate(1.35);
 }
 
@@ -1613,11 +1644,9 @@ a.sk-btn--secondary,
   height: 44px;
   padding: 3px;
   border-radius: var(--sk-radius-control);
-  border: none;
-  background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 5px rgba(30, 70, 110, 0.18),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--n-hairline);
+  background: var(--n-field);
+  box-shadow: none;
 }
 
 .sk-lang__thumb {
@@ -1630,10 +1659,8 @@ a.sk-btn--secondary,
   border-radius: calc(var(--sk-radius-control) - 3px);
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.96 0.005 240) 100%);
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.4),
-    inset 0 1.5px 0 #fff;
+  background: var(--n-hover);
+  box-shadow: none;
   transition:
     transform 0.3s cubic-bezier(0.34, 1.3, 0.5, 1),
     width 0.3s cubic-bezier(0.34, 1.3, 0.5, 1),
@@ -1715,14 +1742,11 @@ a.sk-btn--secondary,
   height: 3rem;
   flex: none;
   padding: 0;
-  border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
-  border-radius: 14px;
-  background: var(
-    --sk-sunken,
-    linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))
-  );
+  border: none;
+  border-radius: 999px;
+  background: var(--n-field);
   color: var(--sk-icon, var(--sk-ink));
-  box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-page-badge svg {
@@ -1731,11 +1755,562 @@ a.sk-btn--secondary,
   flex: none;
 }
 
+/* Compact badge for settings sub-pages */
+.sklyvo-app .sk-page-badge--compact {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+}
+
+.sklyvo-app .sk-page-badge--compact svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Settings sub-page — fit viewport, no page scroll */
+.sklyvo-app .sk-settings-page {
+  min-height: 0;
+}
+
+.sklyvo-app .sk-settings-page .sk-page-badge {
+  background: color-mix(in oklab, var(--sk-indigo) 18%, transparent);
+  color: #818cf8;
+}
+
+.sklyvo-app .sk-settings-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-border-soft, rgba(15, 23, 42, 0.08)) 80%, transparent);
+}
+
+.sklyvo-app .sk-settings-page__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sklyvo-app .sk-settings-page__back {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-decoration: none;
+}
+
+.sklyvo-app .sk-settings-page__back:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+.sklyvo-app .sk-settings-page__head {
+  padding-top: 0.125rem;
+  text-align: center;
+}
+
+.sklyvo-app .sk-settings-page__head .sk-type-h1 {
+  font-size: 1.35rem;
+  line-height: 1.2;
+}
+
+/* Gray subtitle under page title — always centered */
+.sklyvo-app .sk-page-desc,
+.sklyvo-app .sk-settings-page__head .sk-type-body {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  margin-inline: auto;
+  text-align: center !important;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-settings-page__head .sk-type-h1 {
+    font-size: 1.5rem;
+  }
+}
+
+.sklyvo-app .sk-settings-page__body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 0.625rem;
+}
+
+/* Settings hub — fill viewport: stretched cards + compact progress strip */
+.sklyvo-app .sk-settings-hub {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sklyvo-app .sk-settings-hub__head {
+  flex: none;
+  text-align: center;
+}
+
+.sklyvo-app .sk-settings-hub__grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 0.65rem;
+  align-content: stretch;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-settings-hub__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .sklyvo-app .sk-settings-hub__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sklyvo-app .sk-settings-hub__foot {
+  flex: none;
+}
+
+.sklyvo-app .sk-settings-hub-card {
+  gap: 0.75rem;
+}
+
+.sklyvo-app .sk-settings-hub-card__preview {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+  justify-content: flex-start;
+}
+
+.sklyvo-app .sk-settings-hub-card__snippet {
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-settings-hub-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.sklyvo-app .sk-settings-hub-card__tag {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 650;
+  line-height: 1.3;
+  color: var(--sk-ink);
+  background: color-mix(in oklab, var(--sk-brand, #02a7ff) 10%, var(--sk-page-bg));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sklyvo-app .sk-settings-hub-card__tag--more {
+  color: var(--sk-muted);
+  background: color-mix(in oklab, var(--sk-muted) 10%, transparent);
+}
+
+.sklyvo-app .sk-settings-hub-card__email,
+.sklyvo-app .sk-settings-hub-card__stat {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--sk-ink);
+  word-break: break-word;
+}
+
+.sklyvo-app .sk-settings-hub-card__meta,
+.sklyvo-app .sk-settings-hub-card__hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-settings-hub-card__hint--warn {
+  color: #b45309;
+}
+
+.sklyvo-app .sk-settings-hub-card__integrations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.sklyvo-app .sk-settings-hub-card__integration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  color: var(--sk-muted);
+  background: color-mix(in oklab, var(--sk-page-bg) 80%, transparent);
+}
+
+.sklyvo-app .sk-settings-hub-card__integration.is-on {
+  color: var(--sk-ink);
+  background: color-mix(in oklab, #10b981 12%, var(--sk-card, var(--sk-mix-base)));
+}
+
+.sklyvo-app .sk-settings-hub-card__integration-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sk-muted) 45%, transparent);
+}
+
+.sklyvo-app .sk-settings-hub-card__integration.is-on .sk-settings-hub-card__integration-dot {
+  background: #10b981;
+}
+
+.sklyvo-app .sk-settings-hub-card__locked {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sk-muted);
+  background: color-mix(in oklab, var(--sk-page-bg) 85%, transparent);
+}
+
+.sklyvo-app .sk-settings-hub-card__meter {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sk-muted) 14%, transparent);
+}
+
+.sklyvo-app .sk-settings-hub-card__meter-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3bbcff, var(--sk-brand, #02a7ff));
+}
+
+.sklyvo-app .sk-settings-hub-card__status {
+  margin: auto 0 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in oklab, var(--sk-border-soft, rgba(15, 23, 42, 0.08)) 80%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-settings-hub-card__status.is-ok {
+  color: #059669;
+}
+
+.sklyvo-app .sk-settings-hub-card__status.is-warn {
+  color: #b45309;
+}
+
+.sklyvo-app .sk-settings-hub-footnote {
+  padding-bottom: 0.25rem;
+  font-size: 0.8125rem !important;
+}
+
+.sklyvo-app .sk-settings-hub-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border-radius: var(--sk-radius-card-lg, 16px);
+  border: 1px solid color-mix(in oklab, var(--sk-border-soft, rgba(15, 23, 42, 0.08)) 90%, transparent);
+  background: var(--sk-card, var(--sk-mix-base));
+  box-shadow: var(--sk-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.sklyvo-app .sk-settings-hub-progress--compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  padding: 0.7rem 0.95rem;
+}
+
+.sklyvo-app .sk-settings-hub-progress--compact .sk-settings-hub-progress__head {
+  flex: none;
+  gap: 0.65rem;
+}
+
+.sklyvo-app .sk-settings-hub-progress--compact .sk-settings-hub-progress__steps {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.sklyvo-app .sk-settings-hub-progress--compact .sk-settings-hub-progress__cta {
+  flex: none;
+  margin-left: auto;
+}
+
+.sklyvo-app .sk-settings-hub-progress__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sklyvo-app .sk-settings-hub-progress__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-settings-hub-progress__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-settings-hub-progress__ring {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(farthest-side, var(--sk-card, var(--sk-mix-base)) 78%, transparent 80% 100%),
+    conic-gradient(var(--sk-brand, #02a7ff) var(--sk-hub-progress, 0%), color-mix(in oklab, var(--sk-muted) 18%, transparent) 0);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-settings-hub-progress__steps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-settings-hub-progress__steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.625rem;
+  }
+}
+
+.sklyvo-app .sk-settings-hub-progress__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.45rem 0.625rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--sk-ink);
+  text-decoration: none;
+  background: color-mix(in oklab, var(--sk-page-bg) 65%, transparent);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.sklyvo-app .sk-settings-hub-progress__step:hover {
+  background: color-mix(in oklab, var(--sk-brand, #02a7ff) 10%, var(--sk-card, var(--sk-mix-base)));
+}
+
+.sklyvo-app .sk-settings-hub-progress__step.is-done {
+  color: color-mix(in oklab, var(--sk-ink) 72%, var(--sk-muted));
+}
+
+.sklyvo-app .sk-settings-hub-progress__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 999px;
+  border: 1.5px solid color-mix(in oklab, var(--sk-muted) 35%, transparent);
+  background: var(--sk-card, var(--sk-mix-base));
+}
+
+.sklyvo-app .sk-settings-hub-progress__step.is-done .sk-settings-hub-progress__mark {
+  border-color: transparent;
+  background: color-mix(in oklab, #10b981 18%, var(--sk-card, var(--sk-mix-base)));
+  color: #059669;
+}
+
+.sklyvo-app .sk-settings-hub-progress__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  padding: 0.5rem 0.875rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  background: var(--sk-ink-bg);
+  box-shadow: 0 4px 10px -4px rgba(20, 32, 50, 0.4);
+  transition: transform 0.12s var(--sk-ease-pop), box-shadow 0.12s ease;
+}
+
+.sklyvo-app .sk-settings-hub-progress__cta:hover {
+  transform: translateY(-1px);
+}
+
+.sklyvo-app .sk-settings-split {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 1fr;
+  gap: 0.875rem;
+}
+
+@media (max-width: 1023px) {
+  .sklyvo-app .sk-settings-split {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sklyvo-app .sk-settings-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 1rem;
+  }
+}
+
+.sklyvo-app .sk-settings-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--sk-border-soft, rgba(15, 23, 42, 0.08)) 80%, transparent);
+  border-radius: 1rem;
+  background: var(--sk-card, var(--sk-mix-base));
+  box-shadow: var(--sk-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.sklyvo-app .sk-settings-panel__head {
+  flex: none;
+  padding: 0.625rem 0.875rem 0.5rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--sk-border-soft, rgba(15, 23, 42, 0.08)) 60%, transparent);
+}
+
+.sklyvo-app .sk-settings-panel__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--sk-ink, inherit);
+}
+
+.sklyvo-app .sk-settings-panel__desc {
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: var(--sk-muted, inherit);
+}
+
+@media (min-width: 640px) {
+  .sklyvo-app .sk-settings-panel__desc {
+    font-size: 0.75rem;
+  }
+}
+
+.sklyvo-app .sk-settings-panel__content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.625rem 0.875rem 0.75rem;
+}
+
+.sklyvo-app .sk-settings-panel--scroll .sk-settings-panel__content,
+.sklyvo-app .sk-settings-panel--scroll {
+  overflow-y: auto;
+}
+
+.sklyvo-app .sk-settings-panel--scroll > :not(.sk-settings-panel__head):not(.sk-settings-panel__content) {
+  overflow-y: auto;
+}
+
+/* Engraved fields inside settings panels */
+.sklyvo-app .sk-settings-panel textarea,
+.sklyvo-app .sk-settings-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.sklyvo-app .sk-settings-field {
+  border: 1px solid rgba(255, 255, 255, 0.88) !important;
+  border-radius: var(--sk-radius-control, 12px) !important;
+  background: var(--sk-sunken) !important;
+  background-image: var(--sk-sunken) !important;
+  box-shadow:
+    inset 0 2px 5px rgba(90, 130, 165, 0.34),
+    inset 0 1px 2px rgba(90, 130, 165, 0.16),
+    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  color: var(--sk-ink) !important;
+}
+
+.sklyvo-app .sk-settings-panel textarea::placeholder,
+.sklyvo-app .sk-settings-panel input::placeholder,
+.sklyvo-app .sk-settings-field::placeholder {
+  color: var(--sk-muted) !important;
+}
+
+.sklyvo-app .sk-settings-panel textarea:focus,
+.sklyvo-app .sk-settings-panel textarea:focus-visible,
+.sklyvo-app .sk-settings-panel input:focus,
+.sklyvo-app .sk-settings-panel input:focus-visible,
+.sklyvo-app .sk-settings-field:focus,
+.sklyvo-app .sk-settings-field:focus-visible {
+  outline: none !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    inset 0 2px 6px rgba(90, 130, 165, 0.42),
+    inset 0 1px 2px rgba(90, 130, 165, 0.2),
+    inset 0 -1px 0 var(--sk-highlight-soft),
+    0 0 0 2px color-mix(in oklab, var(--sk-brand, oklch(0.55 0.18 250)) 18%, transparent) !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}
+
 @media (min-width: 640px) {
   .sklyvo-app .sk-page-badge {
     width: 3.5rem;
     height: 3.5rem;
-    border-radius: 16px;
+    border-radius: 999px;
   }
 
   .sklyvo-app .sk-page-badge svg {
@@ -1757,34 +2332,31 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app .sk-stat {
-  padding: 12px 14px 14px;
+  padding: 14px 16px 16px;
   border-radius: var(--sk-radius-card);
-  background: var(--sk-light-bg);
-  border: none;
-  box-shadow: var(--sk-raised-shadow);
-  transition: transform 0.16s var(--sk-ease-pop), box-shadow 0.16s ease;
+  background: var(--n-card);
+  border: 1px solid var(--n-hairline);
+  box-shadow: none;
+  transition: background 0.14s ease;
 }
 
 .sklyvo-app .sk-stat:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-raised-hover);
+  transform: none;
+  box-shadow: none;
+  background: var(--n-card);
 }
 
 .sklyvo-app .sk-stat .sk-chip {
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
-  background: var(--sk-light-bg);
-  color: var(--sk-ink);
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.3),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px rgba(120, 160, 190, 0.22);
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: none;
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-stat .sk-chip svg {
-  width: 13px;
-  height: 13px;
+  width: 16px;
+  height: 16px;
 }
 
 .sklyvo-app .sk-stat__label {
@@ -1816,58 +2388,66 @@ a.sk-btn--secondary,
 .sklyvo-app .sk-action-row {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 16px;
   width: 100%;
-  padding: 14px 15px;
+  padding: 13px 16px;
   border-radius: 14px;
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-raised-shadow);
-  transition:
-    transform 0.12s ease,
-    box-shadow 0.12s ease,
-    background 0.12s ease;
+  background: var(--n-field);
+  border: 1px solid var(--n-hairline);
+  box-shadow: none;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
 .sklyvo-app .sk-action-row:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-raised-hover);
+  transform: none;
+  box-shadow: none;
+  background: var(--n-hover);
+  border-color: var(--n-edge);
 }
 
 .sklyvo-app .sk-action-row:active {
-  transform: translateY(1px);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  transform: none;
+  background: var(--n-hover);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-action-row__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  margin-right: 2px;
   flex: none;
-  border-radius: 10px;
-  background: var(--sk-light-bg);
-  color: var(--sk-ink);
-  box-shadow:
-    0 8px 16px -8px rgba(30, 70, 110, 0.32),
-    inset 0 1.5px 0 var(--sk-highlight),
-    inset 0 -2px 3px rgba(120, 160, 190, 0.25);
+  border-radius: 999px;
+  background: var(--n-field);
+  color: var(--n-text);
+  border: none;
+  box-shadow: none;
 }
 
-.sklyvo-app .sk-action-row__icon--dark {
-  background: linear-gradient(
-    180deg,
-    oklch(0.36 0.018 250) 0%,
-    oklch(0.22 0.014 250) 100%
-  );
+.sklyvo-app .sk-action-row__icon--dark,
+.sklyvo-app .sk-action-row__icon--zap {
+  background: #f59e0b;
   color: #fff;
-  box-shadow: 0 8px 16px -8px rgba(20, 32, 50, 0.5);
+  box-shadow: none;
+  border: none;
+}
+
+.sklyvo-app .sk-action-row__icon--mail {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: none;
+  border: none;
 }
 
 .sklyvo-app .sk-action-row__body {
+  display: flex;
   flex: 1;
   min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
   text-align: left;
 }
 
@@ -1877,16 +2457,17 @@ a.sk-btn--secondary,
   font-size: 14px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.3;
+  line-height: 1.25;
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-action-row__meta {
   display: block;
-  margin: 2px 0 0;
+  margin: 0;
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
   text-transform: uppercase;
   color: var(--sk-muted);
 }
@@ -1915,7 +2496,7 @@ a.sk-btn--secondary,
 .sklyvo-app .sk-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -1926,13 +2507,16 @@ a.sk-btn--secondary,
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 15px;
-  border-radius: var(--sk-radius-card);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+  padding: 12px 0;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--n-hairline);
+  background: transparent;
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-list__row:last-child {
+  border-bottom: none;
 }
 
 .sklyvo-app .sk-overview-grid__left > .shrink-0,
@@ -1997,32 +2581,38 @@ a.sk-btn--secondary,
 
 .sklyvo-app .sk-list__row--activity {
   display: block;
-  padding: 10px 14px;
+  padding: 12px 0;
 }
 
 .sklyvo-app .sk-list__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex: none;
-  border-radius: 9px;
-  background: var(--sk-light-bg);
-  color: oklch(0.4 0.02 250);
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.35),
-    inset 0 1.5px 0 #fff;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--sk-brand) 16%, transparent);
+  color: var(--sk-brand);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-list__icon--lg {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 999px;
+  background: var(--n-field);
+  color: var(--n-muted);
 }
 
 .sklyvo-app .sk-list__icon--alert {
-  color: var(--sk-brand);
+  background: color-mix(in oklab, #f59e0b 18%, transparent);
+  color: #fbbf24;
+}
+
+.sklyvo-app .sk-list__icon--clock {
+  background: color-mix(in oklab, #3b82f6 16%, transparent);
+  color: #60a5fa;
 }
 
 .sklyvo-app .sk-list__body {
@@ -2051,30 +2641,29 @@ a.sk-btn--secondary,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
-  padding: 0 12px;
+  height: auto;
+  padding: 0;
   border: none;
-  border-radius: 10px;
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-raised-shadow);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   font-size: 12px;
   font-weight: 700;
-  color: var(--sk-ink);
+  color: var(--sk-brand);
   cursor: pointer;
-  transition:
-    transform 0.14s var(--sk-ease-pop),
-    box-shadow 0.14s ease;
+  transition: color 0.14s ease;
 }
 
 .sklyvo-app .sk-list__action:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--sk-shadow-raised-hover);
+  transform: none;
+  box-shadow: none;
+  color: #4dbfff;
 }
 
 .sklyvo-app .sk-list__action:active {
-  transform: translateY(1px);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  transform: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-select {
@@ -2087,11 +2676,9 @@ a.sk-btn--secondary,
   min-width: 148px;
   padding: 0 12px !important;
   border-radius: 11px !important;
-  border: 1px solid var(--sk-border) !important;
-  background: var(--sk-sunken) !important;
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.26),
-    inset 0 -1px 0 var(--sk-highlight-soft) !important;
+  border: 1px solid var(--n-hairline) !important;
+  background: var(--n-field) !important;
+  box-shadow: none !important;
   font-family: inherit;
   font-size: 12px !important;
   font-weight: 600;
@@ -2116,7 +2703,8 @@ a.sk-btn--secondary,
 .sklyvo-app .sk-select:focus,
 .sklyvo-app .sk-select:focus-visible {
   outline: none;
-  box-shadow: var(--sk-sunken-shadow);
+  box-shadow: none;
+  border-color: var(--n-edge-hover) !important;
 }
 
 .sklyvo-app .sk-select[data-disabled],
@@ -2129,14 +2717,14 @@ a.sk-btn--secondary,
   height: 8px;
   border-radius: 99px;
   background: var(--sk-meter-track);
-  box-shadow: inset 0 1.5px 3px rgba(90, 130, 165, 0.22);
+  box-shadow: none;
   overflow: hidden;
 }
 
 .sklyvo-app .sk-funnel-bar__fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, var(--sk-brand) 0%, oklch(0.86 0.11 230) 100%);
+  background: var(--sk-brand);
 }
 
 .sklyvo-app .sk-muted {
@@ -2163,14 +2751,14 @@ a.sk-btn--secondary,
 .sklyvo-app .bg-blue-700,
 .sklyvo-app button.bg-blue-600,
 .sklyvo-app a.bg-blue-600 {
-  background-color: transparent !important;
-  background-image: var(--sk-ink-bg) !important;
-  color: #fff !important;
+  background-color: var(--sk-cta) !important;
+  background-image: none !important;
+  color: var(--sk-cta-ink) !important;
   border: none !important;
-  box-shadow: var(--sk-shadow-dark) !important;
+  box-shadow: none !important;
   transition:
-    transform 0.16s var(--sk-ease-pop),
-    box-shadow 0.12s ease,
+    transform 0.1s ease,
+    background 0.14s ease,
     filter 0.16s ease !important;
 }
 
@@ -2178,19 +2766,19 @@ a.sk-btn--secondary,
 .sklyvo-app .bg-blue-600:hover,
 .sklyvo-app button.bg-blue-600:hover,
 .sklyvo-app a.bg-blue-600:hover {
-  background-image: var(--sk-ink-bg) !important;
-  box-shadow: var(--sk-shadow-dark-hover) !important;
-  filter: brightness(1.06);
-  transform: translateY(-1px);
+  background-color: var(--sk-cta-hover) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  filter: none;
+  transform: none;
 }
 
 .sklyvo-app .bg-blue-600:active,
 .sklyvo-app button.bg-blue-600:active,
 .sklyvo-app a.bg-blue-600:active {
-  transform: translateY(1px) !important;
-  box-shadow:
-    0 3px 8px -1px rgba(20, 32, 50, 0.28),
-    inset 0 2px 4px rgba(0, 0, 0, 0.45) !important;
+  transform: scale(0.985) !important;
+  background-color: var(--sk-cta-active) !important;
+  box-shadow: none !important;
   filter: none;
 }
 
@@ -2302,7 +2890,7 @@ a.sk-btn--secondary,
   transform: none !important;
 }
 
-/* Soft-UI switches — Matěj: sunken track → ink on, raised thumb (desktop-dense) */
+/* Switches — /login2: hairline track, white when on, no inset shadows */
 .sklyvo-app button[role="switch"],
 .sklyvo-app [role="switch"] {
   position: relative;
@@ -2310,27 +2898,27 @@ a.sk-btn--secondary,
   width: 46px !important;
   min-width: 46px !important;
   padding: 0 !important;
-  border: none !important;
+  border: 1px solid var(--n-edge) !important;
   border-radius: 999px !important;
   transition:
     background 0.2s ease,
-    box-shadow 0.2s ease !important;
+    border-color 0.2s ease !important;
 }
 
 .sklyvo-app button[role="switch"][data-state="unchecked"],
 .sklyvo-app [role="switch"][data-state="unchecked"] {
-  background: var(--sk-sunken) !important;
-  background-image: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  background: var(--n-field) !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 .sklyvo-app button[role="switch"][data-state="checked"],
 .sklyvo-app [role="switch"][data-state="checked"] {
-  background-color: transparent !important;
-  background-image: var(--sk-ink-bg) !important;
-  border-color: transparent !important;
-  color: #fff !important;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35) !important;
+  background-color: #fff !important;
+  background-image: none !important;
+  border-color: #fff !important;
+  color: var(--n-bg) !important;
+  box-shadow: none !important;
   transform: none !important;
 }
 
@@ -2343,10 +2931,8 @@ a.sk-btn--secondary,
   height: 20px !important;
   width: 20px !important;
   border-radius: 999px !important;
-  background: #fff !important;
-  box-shadow:
-    0 4px 10px -4px rgba(0, 0, 0, 0.45),
-    inset 0 1.5px 0 #fff !important;
+  background: var(--n-text-soft) !important;
+  box-shadow: none !important;
   transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1) !important;
 }
 
@@ -2358,6 +2944,7 @@ a.sk-btn--secondary,
 .sklyvo-app button[role="switch"][data-state="checked"] > span,
 .sklyvo-app [role="switch"][data-state="checked"] > span {
   transform: translateX(20px) !important;
+  background: var(--n-bg) !important;
 }
 
 /* Compact switch for dense toolbars (matches h-8 controls) */
@@ -2385,7 +2972,7 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app [data-state="unchecked"][class*="bg-slate-200"] {
-  background: oklch(0.9 0.006 245) !important;
+  background: var(--n-field) !important;
   background-image: none !important;
 }
 
@@ -2517,12 +3104,9 @@ a.sk-btn--secondary,
 .sklyvo-app main .rounded-2xl.bg-white:not(.sk-data-panel),
 .sklyvo-app main .rounded-xl.bg-white:not(.sk-data-panel),
 .sklyvo-app main .rounded-2xl.border.bg-white:not(.sk-data-panel) {
-  background: var(--sk-glass) !important;
-  border-color: var(--sk-border-soft) !important;
-  box-shadow:
-    0 8px 22px -6px rgba(30, 70, 110, 0.14),
-    0 2px 6px -2px rgba(30, 70, 110, 0.07),
-    inset 0 1px 0 var(--sk-border-strong) !important;
+  background: var(--n-card) !important;
+  border-color: var(--n-hairline) !important;
+  box-shadow: none !important;
 }
 
 /* Muted / sunken fields & boxes */
@@ -2536,11 +3120,7 @@ a.sk-btn--secondary,
 }
 
 .sklyvo-app .hover\:bg-muted:hover {
-  background: linear-gradient(
-    180deg,
-    oklch(0.925 0.006 245) 0%,
-    oklch(0.955 0.004 245) 100%
-  ) !important;
+  background: var(--n-hover) !important;
 }
 
 /* --- Form controls (Matěj: engraved / sunken) --- */
@@ -2549,25 +3129,32 @@ a.sk-btn--secondary,
 .sklyvo-app textarea,
 .sklyvo-app [data-slot="input"] {
   border-radius: var(--sk-radius-control) !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
-  color: var(--sk-ink) !important;
+  border: 1px solid var(--n-edge) !important;
+  background: var(--n-field) !important;
+  box-shadow: none !important;
+  color: var(--sk-ink-soft) !important;
   font-size: 14px !important;
 }
 
-/* Composed field shell (icon + input + note), like /design */
 .sklyvo-app .sk-field {
   display: flex;
   align-items: center;
   gap: var(--sk-space-field);
-  height: 44px;
+  height: 46px;
   padding: 0 14px;
   border-radius: var(--sk-radius-control);
-  background: var(--sk-sunken);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: var(--sk-sunken-shadow);
-  color: var(--sk-ink);
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
+  color: var(--n-dim);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sklyvo-app .sk-field:focus-within {
+  background: var(--n-field-focus);
+  border-color: var(--n-edge-hover);
 }
 
 .sklyvo-app .sk-field--error {
@@ -2689,8 +3276,9 @@ body:has(.sklyvo-app) [role="dialog"] .sk-fields {
 .sklyvo-app textarea:focus,
 .sklyvo-app textarea:focus-visible {
   outline: none !important;
-  border-color: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  border-color: var(--n-edge-hover) !important;
+  background: var(--n-field-focus) !important;
+  box-shadow: none !important;
   --tw-ring-width: 0 !important;
   --tw-ring-offset-width: 0px !important;
   --tw-ring-shadow: 0 0 #0000 !important;
@@ -2705,10 +3293,10 @@ body:has(.sklyvo-app) [role="dialog"] .sk-fields {
 .sklyvo-app [role="combobox"],
 .sklyvo-app button[aria-haspopup="listbox"],
 .sklyvo-app [data-radix-select-trigger] {
-  border-radius: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  background: var(--sk-sunken) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  border-radius: var(--sk-radius-control) !important;
+  border: 1px solid var(--n-edge) !important;
+  background: var(--n-field) !important;
+  box-shadow: none !important;
   color: var(--sk-ink) !important;
   outline: none !important;
   --tw-ring-width: 0 !important;
@@ -2729,8 +3317,9 @@ body:has(.sklyvo-app) [role="dialog"] .sk-fields {
 .sklyvo-app [data-radix-select-trigger]:focus-visible,
 .sklyvo-app [data-radix-select-trigger][data-state="open"] {
   outline: none !important;
-  border-color: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: var(--sk-sunken-shadow) !important;
+  border-color: var(--n-edge-hover) !important;
+  background: var(--n-field-focus) !important;
+  box-shadow: none !important;
   --tw-ring-width: 0 !important;
   --tw-ring-offset-width: 0px !important;
   --tw-ring-shadow: 0 0 #0000 !important;
@@ -3255,7 +3844,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sk-settings-dialog[data-accent="ink"] .sk-day-track__item--active {
   color: var(--sk-ink);
-  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-mix-base));
   box-shadow:
     inset 0 1px 0 var(--sk-highlight),
     0 1px 3px rgba(30, 70, 110, 0.1) !important;
@@ -3285,7 +3874,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sk-settings-dialog[data-accent="ink"] .sk-choice--active {
   border-color: color-mix(in oklab, var(--sk-brand) 18%, var(--sk-mix-base));
-  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-mix-base));
   box-shadow:
     inset 0 1px 0 var(--sk-highlight),
     0 2px 6px -4px rgba(30, 70, 110, 0.14);
@@ -3381,8 +3970,8 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   border-color: color-mix(in oklab, var(--sk-settings-accent) 35%, var(--sk-mix-base));
   background: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--sk-settings-accent) 18%, #fff) 0%,
-    color-mix(in oklab, var(--sk-settings-accent) 10%, #fff) 100%
+    color-mix(in oklab, var(--sk-settings-accent) 18%, var(--sk-mix-base)) 0%,
+    color-mix(in oklab, var(--sk-settings-accent) 10%, var(--sk-mix-base)) 100%
   );
   box-shadow:
     inset 0 1px 0 var(--sk-highlight),
@@ -3439,7 +4028,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sk-settings-dialog .sk-day-track__item--active {
   z-index: 1;
   color: var(--sk-ink);
-  background: color-mix(in oklab, var(--sk-brand) 5%, #fff);
+  background: color-mix(in oklab, var(--sk-brand) 5%, var(--sk-mix-base));
   box-shadow:
     inset 0 1px 0 var(--sk-highlight),
     0 1px 3px rgba(30, 70, 110, 0.1) !important;
@@ -3658,7 +4247,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 /* One continuous sunken pill per row — flat engraved fill, zero edge hairlines. */
 .sklyvo-app .sk-data-panel tbody tr > td:not([colspan]) {
-  background: oklch(0.955 0.006 245) !important;
+  background: var(--n-field) !important;
   background-image: none !important;
   border: none !important;
   border-top: none !important;
@@ -3771,7 +4360,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   gap: 12px;
   padding: 9px 14px;
   border-radius: var(--sk-radius-card);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--n-edge);
   background: var(--sk-sunken);
   background-image: var(--sk-sunken);
   box-shadow:
@@ -3796,12 +4385,8 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 /* Ghost bars inside sunken rows (CRM loading) */
 .sklyvo-app .sk-skeleton-block {
-  background: linear-gradient(
-    180deg,
-    oklch(0.86 0.01 245) 0%,
-    oklch(0.89 0.008 245) 100%
-  );
-  box-shadow: inset 0 1px 2px rgba(70, 105, 140, 0.18);
+  background: var(--n-hover);
+  box-shadow: none;
   animation: sk-skeleton-pulse 1.35s ease-in-out infinite;
 }
 
@@ -3815,14 +4400,8 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 }
 
 .sklyvo-app .sk-ghost-spot {
-  background: linear-gradient(
-    180deg,
-    oklch(0.82 0.012 245) 0%,
-    oklch(0.86 0.01 245) 100%
-  );
-  box-shadow:
-    inset 0 1.5px 3px rgba(70, 105, 140, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+  background: var(--n-hover);
+  box-shadow: none;
   animation: sk-skeleton-pulse 1.45s ease-in-out infinite;
 }
 
@@ -3935,13 +4514,13 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   border-color: color-mix(in oklab, var(--sk-brand) 28%, var(--sk-mix-base)) !important;
 }
 
-/* Help center — sunken ghost cards */
+/* Help center — raised cards with single sunken icon chip */
 .sklyvo-app .sk-help-card {
   border-radius: var(--sk-radius-card);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  background: var(--sk-sunken);
-  background-image: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  border: 1px solid color-mix(in oklab, var(--sk-panel-edge, rgba(210, 222, 235, 0.85)) 85%, transparent);
+  background: var(--sk-panel, var(--sk-mix-base));
+  background-image: var(--sk-raised);
+  box-shadow: var(--sk-raised-shadow);
   color: var(--sk-ink);
   transition:
     transform 0.14s var(--sk-ease-pop),
@@ -3953,24 +4532,22 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sklyvo-app .sk-help-card:hover {
   transform: translateY(-1px);
-  filter: brightness(0.985);
-  border-color: color-mix(in oklab, var(--sk-brand) 18%, rgba(255, 255, 255, 0.85));
-  box-shadow:
-    inset 0 2px 4px rgba(90, 130, 165, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+  filter: none;
+  border-color: color-mix(in oklab, var(--sk-brand) 14%, var(--sk-panel-edge, rgba(210, 222, 235, 0.85)));
+  box-shadow: var(--sk-shadow-raised-hover);
 }
 
 .sklyvo-app .sk-help-card:active {
   transform: translateY(1px);
-  filter: brightness(0.97);
-  box-shadow: var(--sk-sunken-shadow);
+  filter: brightness(0.99);
+  box-shadow: var(--sk-raised-shadow);
 }
 
 .sklyvo-app .sk-help-icon {
   display: grid !important;
   place-items: center !important;
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   flex: none;
   padding: 0 !important;
   line-height: 0;
@@ -3978,7 +4555,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
   background: var(
     --sk-sunken,
-    linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))
+    var(--n-field)
   );
   color: var(--sk-icon, var(--sk-ink));
   box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
@@ -4019,16 +4596,12 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sklyvo-app .sk-billing-card__meter.sk-meter__track {
   width: 100%;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-billing-card__meter .sk-meter__fill {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.55) 100%
-  );
+  background: linear-gradient(90deg, #02a7ff 0%, #22d3ee 100%);
 }
 
 .sklyvo-app .sk-billing-card__secondary,
@@ -4268,8 +4841,8 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sklyvo-app .sk-support__topic-icon {
   display: grid !important;
   place-items: center !important;
-  width: 40px;
-  height: 40px;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 12px;
   margin-top: 0;
   line-height: 0;
@@ -4553,8 +5126,8 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   border-radius: 11px;
   background: linear-gradient(
     165deg,
-    color-mix(in oklab, var(--sk-brand) 22%, #fff) 0%,
-    color-mix(in oklab, var(--sk-brand) 8%, #fff) 100%
+    color-mix(in oklab, var(--sk-brand) 22%, var(--sk-mix-base)) 0%,
+    color-mix(in oklab, var(--sk-brand) 8%, var(--sk-mix-base)) 100%
   );
   box-shadow:
     0 6px 12px -8px rgba(2, 167, 255, 0.45),
@@ -4600,8 +5173,41 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   padding: 3px 5px 3px 10px;
   border-radius: var(--sk-radius-control);
   background: var(--sk-sunken);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--n-edge);
   box-shadow: var(--sk-sunken-shadow);
+}
+
+/* Flat input inside the single sunken composer shell — no double-engrave. */
+.sklyvo-app
+  .sk-support-chat__input-row
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.sklyvo-app .sk-support-chat__input-row input.sk-plain-field,
+.sklyvo-app .sk-support-chat__input-row .sk-plain-field {
+  height: 2.25rem !important;
+  min-height: 0 !important;
+  font-size: 0.95rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.sklyvo-app
+  .sk-support-chat__input-row
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
+.sklyvo-app
+  .sk-support-chat__input-row
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus-visible,
+.sklyvo-app .sk-support-chat__input-row input.sk-plain-field:focus,
+.sklyvo-app .sk-support-chat__input-row input.sk-plain-field:focus-visible {
+  outline: none !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
 /*
@@ -4646,30 +5252,63 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   padding: 0 !important;
 }
 
-.sklyvo-app .sk-support-ask__send.sk-btn,
-.sklyvo-app .sk-support-ask .sk-support-ask__send {
-  width: 2.4rem !important;
-  height: 2.4rem !important;
-  min-width: 2.4rem !important;
-  border-radius: 999px !important;
+/* Send — flat icon when idle; solid chip only when there is text to send. */
+.sklyvo-app .sk-support-chat__send,
+.sklyvo-app .sk-support-chat__input-row .sk-support-chat__send {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: none !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  padding: 0 !important;
   border: none !important;
-  background: var(--sk-ink-bg) !important;
-  background-image: var(--sk-ink-bg) !important;
-  color: #fff !important;
-  box-shadow:
-    0 4px 10px -4px rgba(20, 32, 50, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: color-mix(in oklab, var(--sk-muted) 78%, transparent) !important;
+  box-shadow: none !important;
+  cursor: default !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition:
+    transform 0.12s var(--sk-ease-pop),
+    background 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease !important;
 }
 
-.sklyvo-app .sk-support-ask__send.sk-btn:hover,
-.sklyvo-app .sk-support-ask .sk-support-ask__send:hover {
-  transform: translateY(-1px);
+.sklyvo-app .sk-support-ask .sk-support-chat__send {
+  width: 2.35rem !important;
+  height: 2.35rem !important;
+  min-width: 2.35rem !important;
 }
 
-.sklyvo-app .sk-support-ask__send.sk-btn:disabled,
-.sklyvo-app .sk-support-ask .sk-support-ask__send:disabled {
-  opacity: 0.45;
+.sklyvo-app .sk-support-chat__send:not(:disabled),
+.sklyvo-app .sk-support-chat__input-row .sk-support-chat__send:not(:disabled) {
+  cursor: pointer !important;
+  background: #fff !important;
+  background-image: none !important;
+  color: var(--n-bg) !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-support-chat__send:hover:not(:disabled),
+.sklyvo-app .sk-support-chat__input-row .sk-support-chat__send:hover:not(:disabled) {
   transform: none;
+  background: #f0f2f5 !important;
+}
+
+.sklyvo-app .sk-support-chat__send:active:not(:disabled),
+.sklyvo-app .sk-support-chat__input-row .sk-support-chat__send:active:not(:disabled) {
+  transform: scale(0.985) !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-support-chat__send:disabled,
+.sklyvo-app .sk-support-chat__input-row .sk-support-chat__send:disabled {
+  pointer-events: none !important;
 }
 
 .sklyvo-app .sk-help-contact h3 {
@@ -4682,17 +5321,17 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 /* Autopilot email gate — soft raised card, no warning-chrome */
 .sklyvo-app .sk-email-gate {
-  background: color-mix(in oklab, var(--sk-page-bg, oklch(0.98 0.006 235)) 55%, transparent);
-  backdrop-filter: blur(6px);
+  background: color-mix(in oklab, var(--n-bg) 72%, transparent);
+  backdrop-filter: none;
 }
 
 .sklyvo-app .sk-email-gate__card {
   width: min(100%, 26rem);
   padding: 22px 22px 20px;
   border-radius: var(--sk-radius-card-lg);
-  border: none;
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-card-shadow);
+  border: 1px solid var(--n-hairline);
+  background: var(--n-card);
+  box-shadow: none;
   color: var(--sk-ink);
   text-align: center;
 }
@@ -4739,7 +5378,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sklyvo-app .sk-crm-due {
   border-radius: var(--sk-radius-card);
   border: 1px solid var(--sk-panel-edge);
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.978 0.004 240) 100%);
+  background: var(--n-card);
   box-shadow:
     0 8px 18px -12px rgba(30, 70, 110, 0.18),
     inset 0 1.5px 0 var(--sk-highlight);
@@ -4753,10 +5392,10 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   height: 32px;
   flex-shrink: 0;
   margin-top: 1px;
-  border-radius: 10px;
-  color: var(--sk-ink-soft);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  border-radius: 999px;
+  color: #fbbf24;
+  background: color-mix(in oklab, #f59e0b 18%, transparent);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-crm-due__dismiss {
@@ -4770,7 +5409,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   border: 1px solid var(--sk-panel-edge);
   border-radius: 10px;
   color: var(--sk-muted);
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.98 0.004 240) 100%);
+  background: var(--n-card);
   box-shadow:
     0 4px 10px -6px rgba(30, 70, 110, 0.22),
     inset 0 1px 0 var(--sk-highlight);
@@ -5071,7 +5710,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   padding: 10px 12px;
   border-radius: 14px;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--n-edge);
   background: var(--sk-sunken);
   box-shadow: var(--sk-sunken-shadow);
 }
@@ -5111,7 +5750,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sklyvo-app .sk-nav-item.is-locked:hover {
   opacity: 0.72;
   color: var(--sk-ink-soft);
-  background: oklch(0.965 0.006 240);
+  background: var(--n-field);
 }
 
 .sklyvo-app .sk-nav-track .sk-nav-item.is-locked:hover {
@@ -5160,14 +5799,9 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   height: 44px;
   border-radius: 14px;
   color: var(--sk-brand);
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, var(--sk-mix-base)) 100%
-  );
-  box-shadow:
-    0 8px 16px -8px color-mix(in oklab, var(--sk-brand) 40%, transparent),
-    inset 0 1.5px 0 var(--sk-highlight);
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
 }
 
 /* --- Generator live preview --- */
@@ -5179,7 +5813,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sklyvo-app .sk-generator-preview__sheet {
   border-radius: 16px;
   border: 1px solid var(--sk-border-strong);
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.985 0.003 240) 100%);
+  background: var(--n-card);
   box-shadow:
     0 14px 32px -16px rgba(30, 70, 110, 0.28),
     0 2px 6px rgba(30, 70, 110, 0.08),
@@ -5227,23 +5861,18 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sk-tour-popover.driver-popover,
 .sklyvo-driver-popover.sk-tour-popover.driver-popover {
   --sk-brand: #02a7ff;
-  --sk-ink: oklch(0.22 0.015 250);
-  --sk-muted: oklch(0.58 0.015 250);
-  /* Soft sunken gray — solid so arrow beak matches exactly */
-  --sk-tour-surface: oklch(0.955 0.006 245);
+  --sk-ink: #fafafb;
+  --sk-muted: #8a8f98;
+  --sk-tour-surface: #0e0f11;
   box-sizing: border-box;
   min-width: 280px;
   max-width: 340px;
   padding: 18px 18px 16px;
-  border-radius: 22px;
-  border: 1px solid color-mix(in oklab, var(--sk-muted) 14%, transparent);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
   background: var(--sk-tour-surface);
   background-image: none;
-  box-shadow:
-    0 24px 48px -20px rgba(30, 70, 110, 0.28),
-    0 8px 18px -10px rgba(30, 70, 110, 0.14),
-    inset 0 1.5px 3px rgba(90, 130, 165, 0.12),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.65);
+  box-shadow: none;
   color: var(--sk-ink);
   font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
   overflow: visible;
@@ -5276,7 +5905,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   height: 6px;
   width: 6px;
   border-radius: 999px;
-  background: oklch(0.9 0.008 245);
+  background: #22242a;
   transition:
     width 0.28s ease,
     background 0.28s ease,
@@ -5302,14 +5931,9 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
   margin-bottom: 12px;
   border-radius: 14px;
   color: var(--sk-brand);
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, #ffffff) 100%
-  );
-  box-shadow:
-    0 8px 16px -8px color-mix(in oklab, var(--sk-brand) 40%, transparent),
-    inset 0 1.5px 0 var(--sk-highlight);
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
 }
 
 .sk-tour-popover .sk-tour-icon svg {
@@ -5377,7 +6001,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 .sk-tour-popover .driver-popover-prev-btn:hover,
 .sk-tour-popover .sk-tour-prev:hover {
   color: var(--sk-ink) !important;
-  background: oklch(0.965 0.006 240) !important;
+  background: var(--n-field) !important;
 }
 
 .sk-tour-popover .driver-popover-next-btn,
@@ -5462,7 +6086,7 @@ body:has(.sklyvo-app) .sk-settings-dialog > button.absolute:hover {
 
 .sk-tour-popover .driver-popover-close-btn:hover {
   color: var(--sk-ink) !important;
-  background: oklch(0.955 0.006 245) !important;
+  background: var(--n-field) !important;
 }
 
 /*
@@ -5575,8 +6199,8 @@ body.driver-active .flex.h-dvh > aside {
   min-height: 420px;
   flex-direction: column;
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.978 0.004 240) 100%);
+  border: 1px solid var(--n-edge);
+  background: var(--n-card);
   box-shadow:
     0 24px 48px -20px rgba(30, 70, 110, 0.3),
     0 8px 18px -10px rgba(30, 70, 110, 0.16),
@@ -5600,7 +6224,7 @@ body.driver-active .flex.h-dvh > aside {
   align-items: center;
   justify-content: center;
   border-radius: inherit;
-  background: color-mix(in oklab, #ffffff 88%, transparent);
+  background: color-mix(in oklab, var(--sk-mix-base) 88%, transparent);
   backdrop-filter: blur(8px);
   padding: 24px;
 }
@@ -5611,14 +6235,9 @@ body.driver-active .flex.h-dvh > aside {
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, #ffffff) 100%
-  );
-  box-shadow:
-    0 12px 24px -10px color-mix(in oklab, var(--sk-brand) 45%, transparent),
-    inset 0 1.5px 0 var(--sk-highlight);
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
 }
 
 .sk-onboarding__insight {
@@ -5627,8 +6246,8 @@ body.driver-active .flex.h-dvh > aside {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245)));
+  border: 1px solid var(--n-edge);
+  background: var(--sk-sunken, var(--n-field));
   box-shadow: var(--sk-sunken-shadow);
   font-size: 13px;
   line-height: 1.45;
@@ -5644,14 +6263,9 @@ body.driver-active .flex.h-dvh > aside {
   margin-bottom: 16px;
   border-radius: 16px;
   color: var(--sk-brand);
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    color-mix(in oklab, var(--sk-brand) 14%, var(--sk-mix-base)) 100%
-  );
-  box-shadow:
-    0 8px 16px -8px color-mix(in oklab, var(--sk-brand) 40%, transparent),
-    inset 0 1.5px 0 var(--sk-highlight);
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
 }
 
 .sk-onboarding__dot-active {
@@ -5660,13 +6274,13 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sk-onboarding__dot-idle {
-  background: oklch(0.9 0.008 245) !important;
+  background: #22242a !important;
 }
 
 .sk-onboarding__chip {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.85);
-  background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245)));
+  background: var(--sk-sunken, var(--n-field));
   box-shadow:
     inset 0 2px 3px rgba(90, 130, 165, 0.18),
     0 1px 0 var(--sk-highlight-faint);
@@ -5723,19 +6337,16 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sk-onboarding__gate {
-  background:
-    radial-gradient(ellipse 50% 40% at 20% 15%, color-mix(in oklab, #02a7ff 18%, transparent), transparent 70%),
-    radial-gradient(ellipse 40% 35% at 85% 80%, color-mix(in oklab, #02a7ff 10%, transparent), transparent 65%),
-    color-mix(in oklab, oklch(0.92 0.01 240) 72%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in oklab, var(--n-bg) 78%, transparent);
+  backdrop-filter: none;
 }
 
 .sk-onboarding input:not([type="checkbox"]):not([type="radio"]),
 .sk-onboarding textarea,
 .sk-onboarding [data-slot="input"] {
   border-radius: 14px !important;
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245))) !important;
+  border: 1px solid var(--n-edge) !important;
+  background: var(--sk-sunken, var(--n-field)) !important;
   box-shadow: var(--sk-sunken-shadow) !important;
   color: var(--sk-ink) !important;
   font-size: 14px !important;
@@ -5765,7 +6376,7 @@ body.driver-active .flex.h-dvh > aside {
   flex: none;
   border-radius: 12px;
   border: 1px solid var(--sk-border-soft, rgba(15, 23, 42, 0.08));
-  background: var(--sk-sunken, linear-gradient(180deg, oklch(0.935 0.006 245), oklch(0.968 0.004 245)));
+  background: var(--sk-sunken, var(--n-field));
   box-shadow: var(--sk-sunken-shadow, inset 0 1px 2px rgba(15, 23, 42, 0.08));
   color: var(--sk-ink);
 }
@@ -5801,14 +6412,19 @@ body.driver-active .flex.h-dvh > aside {
 
 /* ---------- Platform Admin (Sklyvo Admin) — Matej soft-UI ---------- */
 .sklyvo-app.sk-admin {
-  --sk-admin-canvas: oklch(0.965 0.006 245);
+  --sk-admin-canvas: var(--n-bg);
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   background:
     radial-gradient(
       ellipse 50% 32% at 8% -4%,
       color-mix(in oklab, var(--sk-brand) 8%, transparent),
       transparent 68%
     ),
-    linear-gradient(180deg, oklch(0.978 0.004 245) 0%, var(--sk-admin-canvas) 42%);
+    var(--n-bg);
   color: var(--sk-ink);
   font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
 }
@@ -5817,13 +6433,12 @@ body.driver-active .flex.h-dvh > aside {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1.25rem;
-  padding: 0.75rem 1.25rem;
+  gap: 0.5rem 1rem;
+  padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--sk-panel-edge);
-  background: color-mix(in oklab, #ffffff 92%, transparent);
+  background: color-mix(in oklab, var(--sk-mix-base) 92%, transparent);
   backdrop-filter: blur(12px);
-  position: sticky;
-  top: 0;
+  position: static;
   z-index: 20;
   box-shadow: 0 8px 24px -20px rgba(30, 70, 110, 0.28);
 }
@@ -5875,7 +6490,7 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__nav-link:hover {
   color: var(--sk-ink);
-  background: color-mix(in oklab, #ffffff 55%, transparent);
+  background: color-mix(in oklab, var(--sk-mix-base) 55%, transparent);
 }
 
 .sklyvo-app .sk-admin__nav-link.is-active {
@@ -5916,17 +6531,52 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sklyvo-app .sk-admin__main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: 68rem;
+  max-width: 72rem;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 3rem;
+  padding: 0.65rem 1rem 0.5rem;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-admin__foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.4rem 1rem;
+  border-top: 1px solid var(--sk-panel-edge);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--sk-muted);
+  background: color-mix(in oklab, var(--sk-mix-base) 88%, transparent);
+}
+
+.sklyvo-app .sk-admin__foot-sep {
+  opacity: 0.45;
+}
+
+.sklyvo-app .sk-admin__page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: hidden;
 }
 
 .sklyvo-app .sk-admin__page--overview {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding-bottom: 0.5rem;
+  gap: 0.55rem;
+  padding-bottom: 0;
+}
+
+.sklyvo-app .sk-admin__page--list,
+.sklyvo-app .sk-admin__page--finance,
+.sklyvo-app .sk-admin__page--detail,
+.sklyvo-app .sk-admin__page--system {
+  min-height: 0;
 }
 
 .sklyvo-app .sk-admin__page--overview .sk-admin__panel {
@@ -5934,7 +6584,24 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sklyvo-app .sk-admin__page-head {
-  margin-bottom: 1.35rem;
+  flex: none;
+  margin-bottom: 0;
+}
+
+.sklyvo-app .sk-admin__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__meta-inline {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__page-actions {
+  flex: none;
 }
 
 .sklyvo-app .sk-admin__page-head--compact {
@@ -5984,7 +6651,7 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__h1 {
   margin: 0;
-  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -6127,25 +6794,25 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__stat--blue .sk-admin__stat-icon {
   color: #0284c7;
-  background: color-mix(in oklab, #02a7ff 14%, #ffffff);
+  background: color-mix(in oklab, #02a7ff 14%, var(--sk-mix-base));
   box-shadow: none;
 }
 
 .sklyvo-app .sk-admin__stat--slate .sk-admin__stat-icon {
   color: #475569;
-  background: color-mix(in oklab, #64748b 12%, #ffffff);
+  background: color-mix(in oklab, #64748b 12%, var(--sk-mix-base));
   box-shadow: none;
 }
 
 .sklyvo-app .sk-admin__stat--emerald .sk-admin__stat-icon {
   color: #047857;
-  background: color-mix(in oklab, #10b981 14%, #ffffff);
+  background: color-mix(in oklab, #10b981 14%, var(--sk-mix-base));
   box-shadow: none;
 }
 
 .sklyvo-app .sk-admin__stat-icon--amber {
   color: #b45309;
-  background: color-mix(in oklab, #f59e0b 16%, #ffffff);
+  background: color-mix(in oklab, #f59e0b 16%, var(--sk-mix-base));
   box-shadow: none;
 }
 
@@ -6246,7 +6913,7 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__feed-filter.is-active {
   color: var(--sk-ink);
-  background: color-mix(in oklab, var(--sk-brand) 12%, #ffffff);
+  background: color-mix(in oklab, var(--sk-brand) 12%, var(--sk-mix-base));
   box-shadow: none;
 }
 
@@ -6275,7 +6942,7 @@ body.driver-active .flex.h-dvh > aside {
   border-radius: 0.65rem;
   font-size: 0.8rem;
   color: #991b1b;
-  background: color-mix(in oklab, #ef4444 10%, #ffffff);
+  background: color-mix(in oklab, #ef4444 10%, var(--sk-mix-base));
 }
 
 .sklyvo-app .sk-admin__feed-actions {
@@ -6298,7 +6965,7 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__icon-link:hover {
   color: var(--sk-brand);
-  background: color-mix(in oklab, var(--sk-brand) 8%, #ffffff);
+  background: color-mix(in oklab, var(--sk-brand) 8%, var(--sk-mix-base));
 }
 
 .sklyvo-app .sk-admin__panel {
@@ -6471,7 +7138,7 @@ body.driver-active .flex.h-dvh > aside {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sk-muted);
-  background: color-mix(in oklab, var(--sk-sunken) 55%, #ffffff);
+  background: color-mix(in oklab, var(--sk-sunken) 55%, var(--sk-mix-base));
   border-bottom: 1px solid var(--sk-panel-edge);
   box-shadow: none !important;
   position: static;
@@ -6498,7 +7165,7 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sklyvo-app .sk-admin__table--rows tbody tr > td {
-  background: oklch(0.955 0.006 245) !important;
+  background: var(--n-field) !important;
   border: none !important;
   border-bottom: none !important;
   padding-top: 0.85rem !important;
@@ -6518,7 +7185,7 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin__table--rows tbody tr:hover > td {
   filter: brightness(0.985);
-  background: oklch(0.945 0.006 245) !important;
+  background: var(--n-hover) !important;
 }
 
 .sklyvo-app .sk-admin__table--rows tbody tr.sk-admin__table-empty > td,
@@ -6570,19 +7237,19 @@ body.driver-active .flex.h-dvh > aside {
 }
 
 .sklyvo-app .sk-admin__pill--ok {
-  background: color-mix(in oklab, #22c55e 14%, #ffffff);
+  background: color-mix(in oklab, #22c55e 14%, var(--sk-mix-base));
   color: #166534;
   box-shadow: none;
 }
 
 .sklyvo-app .sk-admin__pill--bad {
-  background: color-mix(in oklab, #ef4444 12%, #ffffff);
+  background: color-mix(in oklab, #ef4444 12%, var(--sk-mix-base));
   color: #991b1b;
   box-shadow: none;
 }
 
 .sklyvo-app .sk-admin__pill--trial {
-  background: color-mix(in oklab, #f59e0b 16%, #ffffff);
+  background: color-mix(in oklab, #f59e0b 16%, var(--sk-mix-base));
   color: #92400e;
   box-shadow: none;
 }
@@ -6675,20 +7342,17 @@ body.driver-active .flex.h-dvh > aside {
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background:
-    radial-gradient(ellipse 55% 40% at 15% 0%, color-mix(in oklab, var(--sk-brand) 14%, transparent), transparent 70%),
-    radial-gradient(ellipse 40% 35% at 90% 100%, color-mix(in oklab, var(--sk-brand) 8%, transparent), transparent 65%),
-    var(--sk-canvas, oklch(0.965 0.006 245));
+  background: var(--n-bg);
 }
 
 .sklyvo-app .sk-admin-login__card {
   width: 100%;
   max-width: 24rem;
-  padding: 1.5rem 1.35rem 1.25rem;
-  border-radius: var(--sk-radius-card-lg, 1.25rem);
-  border: 1px solid color-mix(in oklab, var(--sk-muted) 10%, transparent);
-  background: var(--sk-light-bg);
-  box-shadow: var(--sk-raised-shadow);
+  padding: 2rem;
+  border-radius: 20px;
+  border: 1px solid var(--n-hairline);
+  background: var(--n-card);
+  box-shadow: none;
 }
 
 .sklyvo-app .sk-admin-login__brand {
@@ -6751,4 +7415,542 @@ body.driver-active .flex.h-dvh > aside {
 
 .sklyvo-app .sk-admin-login__foot a:hover {
   color: var(--sk-ink);
+}
+
+/* Admin — viewport-fit pages */
+.sklyvo-app .sk-admin__table-wrap--scroll,
+.sklyvo-app .sk-admin__table-wrap--scroll-inset {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.sklyvo-app .sk-admin__panel--fill {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-admin__page--finance {
+  display: flex;
+  flex-direction: column;
+}
+
+.sklyvo-app .sk-admin__stat-grid--inline {
+  flex: none;
+}
+
+.sklyvo-app .sk-admin__stat-value--sm {
+  font-size: 1rem !important;
+}
+
+.sklyvo-app .sk-admin__table--dense th,
+.sklyvo-app .sk-admin__table--dense td {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+}
+
+.sklyvo-app .sk-admin__table--dense.sk-admin__table--rows {
+  border-spacing: 0 6px;
+}
+
+.sklyvo-app .sk-admin__detail-grid {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  gap: 0.65rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.sklyvo-app .sk-admin__tabs {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-admin__tabs-bar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 12px;
+  background: var(--sk-sunken);
+  box-shadow: var(--sk-sunken-shadow);
+}
+
+.sklyvo-app .sk-admin__tab {
+  padding: 0.35rem 0.65rem;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: var(--sk-muted);
+  cursor: pointer;
+}
+
+.sklyvo-app .sk-admin__tab.is-active {
+  background: var(--sk-light-bg);
+  color: var(--sk-ink);
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sklyvo-app .sk-admin__tab-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.15rem 0.1rem;
+}
+
+.sklyvo-app .sk-admin__tab-grid,
+.sklyvo-app .sk-admin__tab-stack,
+.sklyvo-app .sk-admin__tab-split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.sklyvo-app .sk-admin__tab-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.sklyvo-app .sk-admin__mini-table--wide {
+  grid-column: 1 / -1;
+}
+
+.sklyvo-app .sk-admin__mini-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__dl--compact dt,
+.sklyvo-app .sk-admin__dl--inline dt {
+  font-size: 0.65rem;
+}
+
+.sklyvo-app .sk-admin__dl--inline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.sklyvo-app .sk-admin__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sklyvo-app .sk-admin__list--compact {
+  gap: 0.35rem;
+}
+
+.sklyvo-app .sk-admin__list--compact li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sklyvo-app .sk-admin__system-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  flex: 1;
+  align-content: start;
+}
+
+.sklyvo-app .sk-admin__system-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+  border: 1px solid var(--sk-panel-edge);
+  background: var(--sk-panel);
+  box-shadow: var(--sk-raised-shadow);
+}
+
+.sklyvo-app .sk-admin__system-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-admin__system-value {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--sk-ink);
+}
+
+@media (max-width: 900px) {
+  .sklyvo-app .sk-admin__detail-grid,
+  .sklyvo-app .sk-admin__tab-split,
+  .sklyvo-app .sk-admin__system-grid,
+  .sklyvo-app .sk-admin__dl--inline {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Sniper recent ---------- */
+.sklyvo-app .sk-sniper-recent {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--sk-radius-card, 16px);
+  border: 1px solid var(--sk-panel-edge, rgba(15, 23, 42, 0.08));
+  background: var(--sk-panel, var(--sk-mix-base));
+  box-shadow: var(--sk-raised-shadow, 0 1px 2px rgba(15, 23, 42, 0.06));
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-sniper-recent__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sklyvo-app .sk-sniper-recent__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-sniper-recent__count {
+  display: inline-flex;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sk-muted);
+  background: color-mix(in oklab, var(--sk-muted) 12%, transparent);
+}
+
+.sklyvo-app .sk-sniper-recent__empty {
+  margin: auto 0;
+  padding: 1.25rem 0.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-sniper-recent__list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.sklyvo-app .sk-sniper-recent__row {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid color-mix(in oklab, var(--sk-muted) 12%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--sk-page-bg) 70%, var(--sk-mix-base));
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease,
+    transform 0.12s ease;
+}
+
+.sklyvo-app .sk-sniper-recent__row:hover {
+  border-color: color-mix(in oklab, var(--sk-brand, #02a7ff) 35%, transparent);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.sklyvo-app .sk-sniper-recent__main {
+  min-width: 0;
+  flex: 1;
+}
+
+.sklyvo-app .sk-sniper-recent__company {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-sniper-recent__url {
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  color: var(--sk-muted);
+}
+
+.sklyvo-app .sk-sniper-recent__email {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+  max-width: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--sk-ink);
+}
+
+.sklyvo-app .sk-sniper-recent__meta {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.sklyvo-app .sk-sniper-recent__status {
+  display: inline-flex;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #b45309;
+  background: color-mix(in oklab, #f59e0b 16%, transparent);
+}
+
+.sklyvo-app .sk-sniper-recent__status.is-sent {
+  color: #059669;
+  background: color-mix(in oklab, #10b981 16%, transparent);
+}
+
+.sklyvo-app .sk-sniper-recent__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  color: var(--sk-muted);
+  white-space: nowrap;
+}
+
+.sklyvo-app .sk-sniper-recent__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--sk-brand, #02a7ff);
+}
+
+/* ========================================================= /login2 night flatten ==
+   Catch leftover light-theme utilities and hardcoded soft-UI chrome.
+   ------------------------------------------------------------------------ */
+
+.sklyvo-app input::placeholder,
+.sklyvo-app textarea::placeholder {
+  color: var(--n-dim);
+}
+
+.sklyvo-app .bg-white,
+.sklyvo-app .bg-white\/80,
+.sklyvo-app .bg-white\/90,
+.sklyvo-app .bg-white\/95 {
+  background-color: var(--n-card) !important;
+}
+
+.sklyvo-app .bg-slate-50,
+.sklyvo-app .bg-slate-100,
+.sklyvo-app .bg-gray-50,
+.sklyvo-app .bg-gray-100,
+.sklyvo-app .bg-zinc-50,
+.sklyvo-app .bg-zinc-100 {
+  background-color: var(--n-field) !important;
+}
+
+.sklyvo-app .bg-slate-200,
+.sklyvo-app .bg-gray-200,
+.sklyvo-app .bg-zinc-200 {
+  background-color: #22242a !important;
+}
+
+.sklyvo-app .text-slate-900,
+.sklyvo-app .text-gray-900,
+.sklyvo-app .text-zinc-900,
+.sklyvo-app .text-slate-800,
+.sklyvo-app .text-gray-800 {
+  color: var(--n-text) !important;
+}
+
+.sklyvo-app .text-slate-700,
+.sklyvo-app .text-gray-700,
+.sklyvo-app .text-zinc-700 {
+  color: var(--n-text-soft) !important;
+}
+
+.sklyvo-app .text-slate-600,
+.sklyvo-app .text-gray-600,
+.sklyvo-app .text-zinc-600,
+.sklyvo-app .text-slate-500,
+.sklyvo-app .text-gray-500,
+.sklyvo-app .text-zinc-500,
+.sklyvo-app .text-gray-400 {
+  color: var(--n-muted) !important;
+}
+
+.sklyvo-app .border-slate-200,
+.sklyvo-app .border-gray-200,
+.sklyvo-app .border-zinc-200,
+.sklyvo-app .border-slate-300,
+.sklyvo-app .border-gray-300 {
+  border-color: var(--n-hairline) !important;
+}
+
+.sklyvo-app .shadow,
+.sklyvo-app .shadow-sm,
+.sklyvo-app .shadow-md,
+.sklyvo-app .shadow-lg,
+.sklyvo-app .shadow-xl,
+.sklyvo-app .shadow-2xl {
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-stat,
+.sklyvo-app .sk-action-row,
+.sklyvo-app .sk-credits,
+.sklyvo-app .sk-page-badge,
+.sklyvo-app .sk-data-panel {
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-stat {
+  border: 1px solid var(--n-hairline);
+  background: var(--n-card);
+}
+
+.sklyvo-app .sk-action-row {
+  border: 1px solid var(--n-hairline);
+  background: var(--n-field);
+}
+
+.sklyvo-app .sk-stat:hover {
+  transform: none;
+  background: var(--n-card);
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-action-row:hover {
+  transform: none;
+  background: var(--n-hover);
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-stat .sk-chip,
+.sklyvo-app .sk-action-row__icon,
+.sklyvo-app .sk-list__icon {
+  box-shadow: none;
+  border: none;
+}
+
+.sklyvo-app .sk-list__row,
+.sklyvo-app .sk-list__row--activity {
+  box-shadow: none;
+  background: transparent;
+  border-color: var(--n-hairline);
+}
+
+.sklyvo-app .sk-list__action {
+  background: transparent;
+  box-shadow: none;
+  color: var(--sk-brand);
+}
+
+.sklyvo-app .sk-funnel-bar {
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-lang {
+  box-shadow: none;
+  border: 1px solid var(--n-hairline);
+  background: var(--n-field);
+}
+
+.sklyvo-app .sk-lang__thumb {
+  box-shadow: none;
+  background: var(--n-hover);
+}
+
+.sklyvo-app .sk-meter__track {
+  box-shadow: none;
+}
+
+.sklyvo-app .sk-billing-card__secondary,
+.sklyvo-app a.sk-billing-card__secondary,
+.sklyvo-app a.sk-billing-card__secondary:link,
+.sklyvo-app a.sk-billing-card__secondary:visited {
+  background: var(--n-field) !important;
+  background-image: none !important;
+  color: var(--n-text) !important;
+  border: 1px solid var(--n-edge) !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-support-ask.sk-support-chat__input-row,
+.sklyvo-app .sk-support-chat--input-only .sk-support-ask {
+  background: var(--n-field) !important;
+  background-image: none !important;
+  border: 1px solid var(--n-edge) !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-sniper-recent__status.is-draft {
+  color: #fbbf24;
+}
+
+.sklyvo-app .sk-sniper-recent__status.is-sent {
+  color: #34d399;
+}
+
+body:has(.sklyvo-app) [role="dialog"],
+body:has(.sklyvo-app) [data-radix-popper-content-wrapper] > *,
+body:has(.sklyvo-app) [data-radix-select-content] {
+  color-scheme: dark;
+}
+
+.sklyvo-app .sk-nav-item.is-active {
+  color: var(--n-text);
+}
+
+.sklyvo-app .sk-sidebar {
+  box-shadow: none;
+  border-right-color: var(--n-hairline);
 }

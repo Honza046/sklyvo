@@ -307,24 +307,19 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
               isTeaser ? t("help.chatPlaceholder") : t("copilot.placeholder")
             }
             className={cn(
-              "h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0",
-              isTeaser && "sk-plain-field",
+              "sk-plain-field h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0",
             )}
             disabled={isThinking}
           />
-          <Button
+          <button
             type="button"
-            size="sm"
             onClick={handleSubmit}
             disabled={isThinking || (!input.trim() && !slashMenuOpen)}
-            className={cn(
-              "sk-btn sk-btn--icon h-9 w-9 shrink-0 rounded-[10px] p-0",
-              isTeaser ? "sk-support-ask__send" : "sk-btn--primary",
-            )}
+            className="sk-support-chat__send"
             aria-label={t("copilot.send")}
           >
-            <ArrowUp className="h-4 w-4" />
-          </Button>
+            <ArrowUp className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       </div>
     );
@@ -354,13 +349,10 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
                 variant="ghost"
                 size="sm"
                 onClick={handleCollapse}
-                className="h-9 shrink-0 gap-1.5 rounded-xl px-2.5 text-[color:var(--sk-muted)] hover:text-[color:var(--sk-ink)]"
+                className="h-9 w-9 shrink-0 rounded-xl p-0 text-[color:var(--sk-muted)] hover:text-[color:var(--sk-ink)]"
                 aria-label={t("help.chatClose")}
               >
                 <ArrowLeft className="h-4 w-4" />
-                <span className="hidden text-xs font-medium sm:inline">
-                  {t("help.chatClose")}
-                </span>
               </Button>
             ) : null}
             <div className="sk-support-chat__avatar" aria-hidden>

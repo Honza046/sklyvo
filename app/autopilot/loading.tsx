@@ -1,6 +1,6 @@
 import { AutopilotTableSkeleton } from "@/components/autopilot/autopilot-table-skeleton";
 
-/** Body-only — Autopilot layout keeps the page header + tabs. */
+/** Body-only — layout renders sub-nav; no page hero. */
 export default function AutopilotLoading() {
   return (
     <div className="sk-autopilot__stack flex min-h-0 flex-1 flex-col gap-3">

@@ -336,7 +336,7 @@ export default function RadarPage() {
     >
       <div className="mb-2 text-center">
         <div className="mb-1.5 flex items-center justify-center">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="cyan" aria-hidden>
             <Radio strokeWidth={2} />
           </div>
         </div>
@@ -349,7 +349,7 @@ export default function RadarPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr_1fr]">
             <div className="space-y-1.5">
               <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <Target className="h-3.5 w-3.5" />
+                <Target className="h-3.5 w-3.5 text-sky-400" />
                 {t("radar.targetProfile")}
               </Label>
               <div className="relative">

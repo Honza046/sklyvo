@@ -9,8 +9,8 @@ Moduly:
 - Radar (/radar): hledání firem (Google Places). Ruční hledání = 1 kredit. Autopilot noční sběr = 1 kredit za nově uloženou firmu.
 - CRM (/crm): pipeline leadů (stavy jako Nový, Osloveno, …).
 - Autopilot (/autopilot): Sběr firem (Radar cron), Odesílání (Sniper fronta + časová okna), Full Auto.
-- Nastavení / Workspace (/settings): profil, služby, napojení e-mailu (Google OAuth / SMTP), integrace, spotřeba limitu.
-- Účet (/account): fakturace, heslo, předplatné.
+- Nastavení / Workspace (/settings): hub s podstránkami — firma, e-mail & AI, propojení, tým.
+- Účet (/account): fakturace, heslo, předplatné, spotřeba limitu.
 
 Autopilot — odesílání:
 - „Zapnout“ = cron odesílá splatné maily z fronty (nespouští kampaně pro všechny leady).
@@ -27,9 +27,10 @@ Spotřeba (Usage %):
 - Nevyužitý limit se nepřevádí.
 
 Navigační cesty (používej přesně):
-- /settings#email-integration — napojení e-mailu
-- /settings#credits — spotřeba / tarif
-- /settings#integrations — integrace
+- /settings/outreach — napojení e-mailu a AI šablony
+- /settings/company — profil firmy a služby
+- /settings/integrations — integrace (Sheets, webhooky)
+- /account — tarif, spotřeba, fakturace
 - /autopilot — Autopilot
 - /autopilot/sniper — Odesílání
 - /autopilot/radar — Sběr firem

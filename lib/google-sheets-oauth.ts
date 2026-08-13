@@ -51,11 +51,11 @@ export function decodeGoogleOAuthState(state: string | null): {
 } {
   const claims = verifySignedOAuthState(state, "google_sheets");
   if (!claims) {
-    return { workspaceId: null, returnPath: "/settings#integrations" };
+    return { workspaceId: null, returnPath: "/settings/integrations" };
   }
   return {
     workspaceId: claims.workspaceId,
-    returnPath: claims.returnPath || "/settings#integrations",
+    returnPath: claims.returnPath || "/settings/integrations",
   };
 }
 

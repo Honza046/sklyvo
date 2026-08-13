@@ -1,46 +1,52 @@
-/* Scoped Sklyvo login styles — soft-UI tokens inherit from :root. */
+/* Scoped Sklyvo login styles — /login2 night: flat, hairline, no soft-UI. */
 
 .sklyvo-login {
-  --sk-glass: linear-gradient(
-    165deg,
-    rgba(228, 246, 250, 0.92) 0%,
-    rgba(255, 255, 255, 0.96) 55%,
-    rgba(255, 255, 255, 0.98) 100%
-  );
-  --sk-glass-border: var(--sk-border, rgba(255, 255, 255, 0.9));
-  --sk-glass-shadow:
-    0 40px 70px -24px rgba(30, 70, 110, 0.34),
-    0 12px 24px -14px rgba(30, 70, 110, 0.22),
-    inset 0 1.5px 0 var(--sk-border-strong, rgba(255, 255, 255, 0.95)),
-    inset 0 -1.5px 2px rgba(120, 160, 190, 0.18);
+  --n-bg: #08090a;
+  --n-card: #0e0f11;
+  --n-field: #15161a;
+  --n-field-focus: #1d1f24;
+  --n-hover: #191a1e;
+  --n-hairline: rgba(255, 255, 255, 0.09);
+  --n-edge: rgba(255, 255, 255, 0.1);
+  --n-edge-hover: rgba(255, 255, 255, 0.22);
+  --n-text: #fafafb;
+  --n-text-soft: #f2f3f5;
+  --n-muted: #8a8f98;
+  --n-dim: #6b7078;
   --sk-ease-pop: cubic-bezier(0.3, 0.9, 0.3, 1);
 
   position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: -webkit-fill-available;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: var(--sk-ink);
-  background: linear-gradient(
-    180deg,
-    oklch(0.8 0.09 235) 0%,
-    oklch(0.87 0.065 232) 32%,
-    oklch(0.93 0.035 230) 62%,
-    oklch(0.97 0.012 235) 100%
-  );
+  color-scheme: dark;
+  color: var(--n-text-soft);
+  background: var(--n-bg);
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+.sklyvo-login ::selection {
+  background: #ffee00;
+  color: var(--n-bg);
 }
 
 .sklyvo-login a {
-  color: oklch(0.45 0.02 250);
+  color: var(--n-muted);
   text-decoration: none;
 }
 
 .sklyvo-login a:hover {
-  color: oklch(0.28 0.02 250);
+  color: #ffffff;
 }
 
 .sklyvo-login input {
@@ -48,11 +54,16 @@
 }
 
 .sklyvo-login input::placeholder {
-  color: var(--sk-muted-soft);
+  color: var(--n-dim);
 }
 
 .sklyvo-login input:focus {
   outline: none;
+}
+
+.sklyvo-login .scene__layer,
+.sklyvo-login .scene__haze {
+  display: none;
 }
 
 .sklyvo-login .scene__layer {
@@ -167,67 +178,54 @@
 }
 
 .sklyvo-login .sklyvo-brand__word {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--sk-ink-soft);
+  letter-spacing: -0.01em;
+  color: var(--n-text-soft);
 }
 
 .sklyvo-login .sklyvo-lang {
   position: absolute;
   top: 26px;
-  right: 32px;
+  right: 28px;
   z-index: 20;
   display: flex;
-  padding: 3px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(6px);
-  box-shadow:
-    inset 0 2px 5px rgba(30, 70, 110, 0.22),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--n-hairline);
+  background: #101113;
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .sklyvo-login .sklyvo-lang__thumb {
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: 42px;
-  box-sizing: border-box;
-  border-radius: 9px;
-  z-index: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.96) 0%,
-    rgba(248, 252, 255, 0.88) 100%
-  );
-  box-shadow:
-    0 6px 12px -7px rgba(30, 70, 110, 0.42),
-    inset 0 1.5px 0 #fff;
-  transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1);
+  display: none;
 }
 
 .sklyvo-login .sklyvo-lang__btn {
   position: relative;
   z-index: 1;
-  width: 42px;
-  height: 28px;
+  width: 40px;
+  height: 26px;
   padding: 0;
   border: none;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: color 0.2s ease;
-  color: oklch(0.42 0.03 245);
+  color: var(--n-dim);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
 }
 
 .sklyvo-login .sklyvo-lang__btn[aria-pressed="true"] {
-  color: var(--sk-ink);
+  background: #22242a;
+  color: var(--n-text);
 }
 
 .sklyvo-login .sklyvo-lang__btn:disabled,
@@ -249,16 +247,16 @@
 .sklyvo-login .sklyvo-card {
   position: relative;
   box-sizing: border-box;
-  border-radius: 26px;
-  background: var(--sk-glass);
-  border: 1px solid var(--sk-glass-border);
-  box-shadow: var(--sk-glass-shadow);
-  backdrop-filter: blur(14px);
+  border-radius: 20px;
+  background: var(--n-card);
+  border: 1px solid var(--n-hairline);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .sklyvo-login .sklyvo-card--form {
-  width: 452px;
-  padding: 30px 34px 26px;
+  width: 420px;
+  padding: 32px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -341,6 +339,18 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  isolation: isolate;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background-clip: padding-box;
+  background: linear-gradient(
+    175deg,
+    #07182b 0%,
+    #0a3670 38%,
+    #0271b8 70%,
+    #02a7ff 100%
+  );
 }
 
 .sklyvo-login .sklyvo-card__crest {
@@ -349,15 +359,12 @@
 }
 
 .sklyvo-login .sklyvo-crest {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #ffffff 0%, oklch(0.955 0.006 240) 100%);
-  box-shadow:
-    0 10px 18px -8px rgba(30, 70, 110, 0.45),
-    0 2px 4px rgba(30, 70, 110, 0.12),
-    inset 0 1.5px 0 #fff,
-    inset 0 -2px 3px rgba(120, 160, 190, 0.25);
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,20 +373,21 @@
 .sklyvo-login .sklyvo-card__title {
   margin: 18px 0 8px;
   text-align: center;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--sk-ink);
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--n-text);
 }
 
 .sklyvo-login .sklyvo-card__sub {
-  margin: 0 auto 22px;
-  max-width: 268px;
+  margin: 0 auto 26px;
+  max-width: 300px;
   text-align: center;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
   text-wrap: pretty;
-  color: var(--sk-muted);
+  color: var(--n-muted);
 }
 
 .sklyvo-login .sklyvo-fields {
@@ -392,12 +400,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 44px;
+  height: 46px;
   padding: 0 14px;
-  border-radius: 12px;
-  background: var(--sk-sunken);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: var(--sk-sunken-shadow);
+  border-radius: 10px;
+  background: var(--n-field);
+  border: 1px solid var(--n-edge);
+  box-shadow: none;
+  color: var(--n-dim);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.sklyvo-login .sklyvo-field:focus-within {
+  background: var(--n-field-focus);
+  border-color: var(--n-edge-hover);
 }
 
 .sklyvo-login .sklyvo-field__input {
@@ -406,7 +423,7 @@
   border: none;
   background: transparent;
   font-size: 14px;
-  color: var(--sk-ink);
+  color: var(--n-text-soft);
 }
 
 .sklyvo-login .sklyvo-field__reveal {
@@ -438,33 +455,33 @@
   width: 44px;
   height: 52px;
   padding: 0;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  background: var(--sk-sunken);
-  box-shadow: var(--sk-sunken-shadow);
+  border-radius: 10px;
+  border: 1px solid var(--n-edge);
+  background: var(--n-field);
+  box-shadow: none;
   text-align: center;
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0;
-  color: var(--sk-ink);
+  color: var(--n-text);
   caret-color: var(--sk-brand, #02a7ff);
   outline: none;
   transition:
-    box-shadow 0.14s ease,
-    border-color 0.14s ease,
-    transform 0.14s ease;
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .sklyvo-login .sklyvo-otp__cell::placeholder {
-  color: color-mix(in oklab, var(--sk-muted, #8a94a6) 55%, transparent);
+  color: var(--n-dim);
   font-weight: 600;
 }
 
 .sklyvo-login .sklyvo-otp__cell:focus,
 .sklyvo-login .sklyvo-otp__cell:focus-visible {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--sk-sunken-shadow);
+  background: var(--n-field-focus);
+  border-color: var(--n-edge-hover);
+  box-shadow: none;
   --tw-ring-shadow: 0 0 #0000;
   --tw-ring-offset-shadow: 0 0 #0000;
 }
@@ -514,21 +531,21 @@
 }
 
 .sklyvo-login .sklyvo-link:hover {
-  color: var(--sk-ink-soft);
+  color: #ffffff;
 }
 
 .sklyvo-login .sklyvo-link:active {
-  transform: translateY(1px);
-  color: var(--sk-ink-press);
+  transform: none;
+  color: #ffffff;
 }
 
 .sklyvo-login .sklyvo-error {
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(220, 80, 80, 0.28);
-  background: rgba(255, 236, 236, 0.9);
-  color: #b42318;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(127, 29, 29, 0.28);
+  color: #fca5a5;
   font-size: 12.5px;
   line-height: 1.4;
   text-align: center;
@@ -538,9 +555,9 @@
   margin: 0 0 12px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(46, 160, 100, 0.28);
-  background: rgba(232, 250, 240, 0.95);
-  color: #0f6b3d;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: rgba(6, 78, 59, 0.35);
+  color: #6ee7b7;
   font-size: 12.5px;
   line-height: 1.4;
   text-align: center;
@@ -550,43 +567,31 @@
   width: 100%;
   height: 48px;
   border: none;
-  border-radius: 13px;
-  background: linear-gradient(
-    180deg,
-    oklch(0.36 0.018 250) 0%,
-    oklch(0.24 0.015 250) 52%,
-    oklch(0.18 0.012 250) 100%
-  );
-  color: #fff;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--n-bg);
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 14.5px;
+  font-weight: 700;
   letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow:
-    0 12px 22px -10px rgba(20, 32, 50, 0.65),
-    0 3px 6px -2px rgba(20, 32, 50, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transition:
-    transform 0.16s var(--sk-ease-pop),
-    background 0.18s ease,
-    box-shadow 0.16s ease,
+    background-color 0.14s ease,
+    transform 0.1s ease,
     opacity 0.16s ease;
 }
 
 .sklyvo-login .sklyvo-btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    0 16px 28px -12px rgba(20, 32, 50, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: #f0f2f5;
+  transform: none;
+  box-shadow: none;
 }
 
 .sklyvo-login .sklyvo-btn-primary:active:not(:disabled) {
-  transform: translateY(1px);
-  box-shadow:
-    0 3px 8px -1px rgba(20, 32, 50, 0.28),
-    inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  background: #dfe3e8;
+  transform: scale(0.985);
+  box-shadow: none;
 }
 
 .sklyvo-login .sklyvo-btn-primary:disabled {
@@ -607,7 +612,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--n-bg);
   opacity: 0.35;
   animation: sklyvo-btn-typing 1.05s ease-in-out infinite;
 }
@@ -635,48 +640,64 @@
 
 .sklyvo-login .sklyvo-divider {
   display: flex;
+  align-items: center;
+  gap: 12px;
   justify-content: center;
-  margin: 18px 0;
+  margin: 22px 0;
+}
+
+.sklyvo-login .sklyvo-divider::before,
+.sklyvo-login .sklyvo-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .sklyvo-login .sklyvo-divider__label {
   font-size: 11px;
-  color: var(--sk-muted-soft);
+  font-weight: 500;
+  color: var(--n-dim);
 }
 
 .sklyvo-login .sklyvo-providers {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
-.sklyvo-login .sklyvo-btn-provider {
+.sklyvo-login button.sklyvo-btn-provider {
+  appearance: none;
+  -webkit-appearance: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 44px;
-  border: none;
-  border-radius: 12px;
+  width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
   cursor: pointer;
-  background: var(--sk-raised);
-  box-shadow: var(--sk-raised-shadow);
+  background-color: #191a1e;
+  background-image: none;
+  color: #ffffff;
+  box-shadow: none;
   transition:
-    transform 0.16s var(--sk-ease-pop),
-    background 0.18s ease,
-    box-shadow 0.16s ease,
-    opacity 0.16s ease;
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
-.sklyvo-login .sklyvo-btn-provider:hover:not(:disabled) {
-  transform: translateY(-1px);
+.sklyvo-login button.sklyvo-btn-provider:hover:not(:disabled) {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.32);
+  background-color: #22242a;
 }
 
-.sklyvo-login .sklyvo-btn-provider:active:not(:disabled) {
-  transform: translateY(1px);
-  background: var(--sk-sunken);
-  box-shadow:
-    inset 0 2px 5px rgba(90, 130, 165, 0.38),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.9);
+.sklyvo-login button.sklyvo-btn-provider:active:not(:disabled) {
+  transform: scale(0.985);
+  background-color: #1d1f24;
+  box-shadow: none;
 }
 
 .sklyvo-login .sklyvo-btn-provider:disabled {
@@ -695,35 +716,42 @@
 
 .sklyvo-login .sklyvo-form__footer .sklyvo-link {
   font-size: 12.5px;
-  color: oklch(0.26 0.015 250);
+  font-weight: 700;
+  color: var(--n-muted);
+}
+
+.sklyvo-login .sklyvo-form__footer .sklyvo-link:hover,
+.sklyvo-login .sklyvo-form__footer .sklyvo-link:focus-visible {
+  color: #ffffff;
 }
 
 .sklyvo-login .globe-card__head {
-  padding: 30px 30px 0;
+  padding: 32px 30px 0;
 }
 
 .sklyvo-login .globe-card__title {
   margin: 0 0 8px;
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.25;
   text-wrap: pretty;
-  color: var(--sk-ink);
+  color: #ffffff;
 }
 
 .sklyvo-login .globe-card__body {
   margin: 0;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
   text-wrap: pretty;
-  color: var(--sk-muted);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .sklyvo-login .globe-card__stage {
   position: relative;
   flex: 1;
   min-height: 300px;
+  overflow: hidden;
 }
 
 .sklyvo-login .globe-card__canvas {
@@ -731,6 +759,9 @@
   left: 50%;
   bottom: -104px;
   transform: translateX(-62%) rotate(-12deg);
+  border: 0;
+  outline: none;
+  display: block;
 }
 
 .sklyvo-login .sr-only {
@@ -801,4 +832,10 @@
   .sklyvo-login .sklyvo-btn-provider:hover:not(:disabled) {
     transform: none;
   }
+}
+
+.sklyvo-login .sklyvo-card.sklyvo-card--globe {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }

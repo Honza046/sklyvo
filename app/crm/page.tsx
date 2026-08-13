@@ -1110,7 +1110,7 @@ function CrmPageContent() {
     <div className="flex h-full min-h-0 w-full flex-1 flex-col items-center overflow-hidden">
       <div className="mb-2 shrink-0 space-y-1 text-center">
         <div className="mb-2 flex items-center justify-center gap-3">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="violet" aria-hidden>
             <Users strokeWidth={2} />
           </div>
         </div>

@@ -578,7 +578,7 @@ export default function StoragePage() {
     <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
       <div className="flex w-full shrink-0 flex-col items-center px-0 pb-3 pt-1 text-center sm:pb-4 sm:pt-2">
         <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="teal" aria-hidden>
             <FolderOpen strokeWidth={2} />
           </div>
         </div>

@@ -459,6 +459,7 @@ export function AutopilotRadarView() {
         <AutopilotControlPanel
           icon={<Radio className="h-5 w-5" />}
           iconWrapClassName="sk-page-badge"
+          iconAccent="cyan"
           title={t("autopilot.radarTitle")}
           powerEnabled={featureEnabled}
           description={

@@ -48,19 +48,24 @@ export function normalizeCopilotActionPath(rawPath: string): string | null {
  if (path === "/dashboard") path = "/";
 
  if (section === "email") {
- return "/settings#email-integration";
+ return "/settings/outreach";
  }
 
  let normalized = path.startsWith("/") ? path : `/${path}`;
  normalized = normalized.replace("/pracovni-prostor", "/settings");
+
+ if (hash.includes("#email-integration") || trimmed.includes("#email-integration")) {
+ return "/settings/outreach";
+ }
+ if (hash.includes("#integrations") || trimmed.includes("#integrations")) {
+ return "/settings/integrations";
+ }
+ if (hash.includes("#credits") || trimmed.includes("#credits")) {
+ return "/account";
+ }
+
  if (hash && !normalized.includes("#")) {
  normalized = `${normalized}${hash}`;
- } else if (trimmed.includes("#email-integration") && normalized.startsWith("/settings")) {
- normalized = "/settings#email-integration";
- } else if (trimmed.includes("#credits") && normalized.startsWith("/settings")) {
- normalized = "/settings#credits";
- } else if (trimmed.includes("#integrations") && normalized.startsWith("/settings")) {
- normalized = "/settings#integrations";
  }
 
  if (!isAllowedAppPath(normalized.split("#")[0] || "/")) {

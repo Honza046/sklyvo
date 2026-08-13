@@ -10,10 +10,17 @@ import {
 
 export const ADMIN_RETURN_COOKIE = "sklyvo_admin_return";
 
-/** Comma-separated allowlist (CTO / platform admins only). */
+/** Comma-separated allowlist — production: set only Jan's email in Vercel env. */
 export function getPlatformAdminEmails(): string[] {
   const raw = process.env.PLATFORM_ADMIN_EMAILS?.trim() ?? "";
-  if (!raw) return [];
+  if (!raw) {
+    if (process.env.NODE_ENV === "production" && process.env.VERCEL) {
+      console.warn(
+        "[platform-admin] PLATFORM_ADMIN_EMAILS is empty — admin console locked.",
+      );
+    }
+    return [];
+  }
   return raw
     .split(",")
     .map((e) => e.trim().toLowerCase())

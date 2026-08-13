@@ -193,6 +193,12 @@ export const de: MessageTree = {
     title: "Sniper",
     subtitle:
       "Einmalige Website-Analyse und Erstellung einer maßgeschneiderten Geschäfts-E-Mail.",
+    recentTitle: "Letzte Sniper",
+    recentEmpty: "Noch nichts. Generierte oder gesendete E-Mails erscheinen hier.",
+    recentDraft: "Entwurf",
+    recentSent: "Gesendet",
+    recentOpen: "Öffnen",
+    recentRestored: "Sniper wiederhergestellt.",
     generate: "E-Mail generieren",
     generating: "Generiere…",
     copySuccess: "In die Zwischenablage kopiert.",
@@ -451,8 +457,91 @@ export const de: MessageTree = {
   },
   settings: {
     title: "Arbeitsbereich",
+    hubSubtitle:
+      "Wählen Sie einen Bereich — Firma, E-Mail, Verbindungen oder Tarif.",
+    back: "Zurück",
+    backToHub: "Zurück zum Arbeitsbereich",
+    hubUsageHint: "Tarif und Nutzung finden Sie unter Mein Profil → Abrechnung.",
+    hub: {
+      progressTitle: "Einrichtungsstatus",
+      progressDone: "{done} von {total} erledigt",
+      progressCta: "Einrichtung fortsetzen",
+      steps: {
+        profile: "Firmenprofil",
+        services: "Angebotene Leistungen",
+        email: "Geschäfts-E-Mail",
+      },
+      preview: {
+        companyEmpty: "Firmenprofil und Leistungen für Sniper ergänzen.",
+        servicesCount: "{count} Leistungen im Katalog",
+        emailConnected: "{email}",
+        emailDisconnected: "Ohne E-Mail sendet Autopilot nicht.",
+        aiReady: "Signatur und KI-Regeln gesetzt",
+        integrationOn: "Aktiv",
+        integrationOff: "Inaktiv",
+        integrationsHint: "Sheets, Microsoft 365, Fakturoid",
+        teamMembers: "{count} Workspace-Mitglieder",
+        teamAgency: "Teamzugriff verwalten",
+        teamLocked: "Im Agency-Tarif verfügbar",
+        planLabel: "Tarif {plan}",
+        creditsLeft: "{left} / {total} Credits",
+        renewalIn: "Verlängerung in {days} Tagen",
+        accountUser: "{name}",
+      },
+    },
+    sections: {
+      company: {
+        title: "Firma & Angebot",
+        desc: "Was die KI über Ihre Firma und Services weiß.",
+        statusReady: "Profil und Services gesetzt",
+        statusIncomplete: "Profil oder Services ergänzen",
+      },
+      outreach: {
+        title: "E-Mail & KI",
+        desc: "Absender und Schreibstil von Sniper.",
+        statusConnected: "E-Mail verbunden",
+        statusDisconnected: "E-Mail nicht verbunden",
+      },
+      integrations: {
+        title: "Verbindungen",
+        desc: "Sheets, Webhooks und Rechnungen.",
+      },
+      team: {
+        title: "Team",
+        desc: "Wer Zugriff auf den Workspace hat.",
+        agencyOnly: "Verfügbar im Agency-Tarif.",
+      },
+      billing: {
+        title: "Tarif & Nutzung",
+        desc: "Plan, Abrechnung und Limit.",
+        statusUsage: "Nutzung {pct} %",
+      },
+      account: {
+        title: "Mein Profil",
+        desc: "Name, Passwort, Sicherheit und Benachrichtigungen.",
+      },
+    },
+    pages: {
+      company: {
+        title: "Firma & Angebot",
+        desc: "Firmenprofil und Service-Katalog für Sniper und Autopilot.",
+      },
+      outreach: {
+        title: "E-Mail & KI",
+        desc: "Postfach, Signatur und Regeln für E-Mails.",
+        aiDesc: "Signatur, verbotene Wörter und Basis-Anweisungen.",
+      },
+      integrations: {
+        title: "Verbindungen",
+        desc: "Sync mit Tabellen, Webhooks und externen Tools.",
+      },
+      team: {
+        title: "Team & Zugriff",
+        desc: "Einladungen, Rollen und geteilter Workspace.",
+      },
+    },
     subtitle:
-      "Projekteinstellungen, CRM-Integrationen und KI-Credits verwalten.",
+      "Firma, ausgehende E-Mails und Anbindungen an externe Tools.",
     subscription: "Abonnement",
     noActivePlan: "Kein aktiver Tarif (Kostenlos)",
     freePlan: "Kostenlos",
@@ -598,6 +687,9 @@ export const de: MessageTree = {
     connectedEmails: "Verbundene E-Mail-Konten",
     connectedEmailsDesc:
       "Postfächer verbinden, damit Sniper von Ihrer Adresse sendet.",
+    connectedEmailsWorkspaceHint:
+      "Firmenpostfach und KI-Regeln unter Arbeitsbereich → E-Mail & KI.",
+    openEmailSettings: "E-Mail & KI öffnen",
     addMailbox: "Weiteres Postfach hinzufügen",
     connected: "Verbunden",
     billing: "Abrechnung & Abo",

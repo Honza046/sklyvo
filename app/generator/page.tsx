@@ -505,7 +505,7 @@ export default function GeneratorPage() {
       toast.message(
         "Nejdřív připojte Fakturoid v Pracovním prostoru → Integrace.",
       );
-      router.push("/settings#integrations");
+      router.push("/settings/integrations");
       return;
     }
     setIsGeneratingInvoice(true);
@@ -1033,12 +1033,12 @@ export default function GeneratorPage() {
     <div className="flex h-full min-h-0 w-full flex-col items-center overflow-hidden">
       <div className="mb-2 shrink-0 space-y-1 text-center">
         <div className="mb-2 flex items-center justify-center gap-3">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="orange" aria-hidden>
             <FileText strokeWidth={2} />
           </div>
         </div>
         <h1 className="sk-type-h1">Generátor</h1>
-        <p className="sk-type-body mx-auto max-w-lg">
+        <p className="sk-page-desc sk-type-body">
           Vytvořte nabídku nebo smlouvu. Živý náhled vpravo, PDF jedním klikem.
         </p>
       </div>

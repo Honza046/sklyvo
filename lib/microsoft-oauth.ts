@@ -51,11 +51,11 @@ export function decodeMicrosoftOAuthState(state: string | null): {
 } {
   const claims = verifySignedOAuthState(state, "microsoft");
   if (!claims) {
-    return { workspaceId: null, returnPath: "/settings#integrations" };
+    return { workspaceId: null, returnPath: "/settings/integrations" };
   }
   return {
     workspaceId: claims.workspaceId,
-    returnPath: claims.returnPath || "/settings#integrations",
+    returnPath: claims.returnPath || "/settings/integrations",
   };
 }
 

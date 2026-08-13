@@ -79,7 +79,8 @@ export function DashboardConversionFunnel({
               <div className="flex justify-between text-[11px] font-semibold text-[color:var(--sk-ink)] sm:text-xs">
                 <span className="flex min-w-0 items-center gap-1.5">
                   <div
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${row.dotClass}`}
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: row.color }}
                   />
                   <span className="truncate">
                     {t(`leadStatus.${row.key}`)}
@@ -87,10 +88,10 @@ export function DashboardConversionFunnel({
                 </span>
                 <span className="shrink-0 tabular-nums">{count}</span>
               </div>
-              <div className="sk-funnel-bar h-1 sm:h-1.5">
+              <div className="sk-funnel-bar">
                 <div
                   className="sk-funnel-bar__fill"
-                  style={{ width: `${width}%` }}
+                  style={{ width: `${width}%`, background: row.color }}
                 />
               </div>
             </div>

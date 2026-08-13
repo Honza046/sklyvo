@@ -83,7 +83,7 @@ export async function getMicrosoftConnectionState(): Promise<MicrosoftConnection
 }
 
 export async function getMicrosoftOAuthUrl(
-  returnPath = "/settings#integrations",
+  returnPath = "/settings/integrations",
 ) {
   const session = await requireSession();
   if (!session) return { error: "Nejste přihlášen." };

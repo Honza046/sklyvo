@@ -1641,6 +1641,7 @@ export function AutopilotSniperView() {
         <AutopilotControlPanel
           icon={<Send className="h-5 w-5" />}
           iconWrapClassName="sk-page-badge"
+          iconAccent="emerald"
           title="Automatické odesílání e-mailů"
           powerEnabled={featureEnabled}
           description={

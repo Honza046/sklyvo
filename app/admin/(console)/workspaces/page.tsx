@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listAdminWorkspaces } from "@/app/actions/platform-admin";
+import { AdminPageHead } from "@/components/admin/admin-page-head";
 import { AdminSearchForm } from "@/components/admin/admin-search-form";
 import {
   formatAdminDate,
@@ -18,44 +19,34 @@ export default async function AdminWorkspacesPage({
   const workspaces = await listAdminWorkspaces(q);
 
   return (
-    <div className="sk-admin__page">
-      <header className="sk-admin__page-head sk-admin__page-head--row">
-        <div>
-          <h1 className="sk-admin__h1">Workspaces</h1>
-          <p className="sk-admin__lede">
-            Max 100 · name / plan / stripe customer / id
-          </p>
-        </div>
-        <AdminSearchForm
-          placeholder="Hledat workspace…"
-          defaultValue={q ?? ""}
-        />
-      </header>
+    <div className="sk-admin__page sk-admin__page--list">
+      <AdminPageHead
+        title="Workspaces"
+        meta={`${workspaces.length} záznamů`}
+        actions={
+          <AdminSearchForm placeholder="Hledat…" defaultValue={q ?? ""} />
+        }
+      />
 
-      <div className="sk-admin__table-wrap sk-admin__table-wrap--rows">
-        <table className="sk-admin__table sk-admin__table--rows">
+      <div className="sk-admin__table-wrap sk-admin__table-wrap--rows sk-admin__table-wrap--scroll">
+        <table className="sk-admin__table sk-admin__table--rows sk-admin__table--dense">
           <thead>
             <tr>
               <th>Workspace</th>
-              <th>Členství</th>
+              <th>Tarif</th>
               <th>Platba</th>
-              <th>Od</th>
-              <th>Další platba</th>
               <th>Členové</th>
               <th>Leady</th>
+              <th>Od</th>
             </tr>
           </thead>
           <tbody>
             {workspaces.map((w) => {
               const pay = paymentBadge(w.subscriptionStatus);
-              const nextPay = w.subscriptionPeriodEnd ?? w.trialEndsAt;
               return (
                 <tr key={w.id}>
                   <td>
-                    <Link
-                      href={`/admin/workspaces/${w.id}`}
-                      className="sk-admin__link"
-                    >
+                    <Link href={`/admin/workspaces/${w.id}`} className="sk-admin__link">
                       <span className="font-semibold">{w.name}</span>
                       {w.companyName ? (
                         <span className="sk-admin__muted block text-xs">
@@ -64,41 +55,28 @@ export default async function AdminWorkspacesPage({
                       ) : null}
                     </Link>
                   </td>
-                  <td>
-                    <span className="font-semibold">
-                      {membershipLabel(w.planTier)}
-                    </span>
-                  </td>
+                  <td>{membershipLabel(w.planTier)}</td>
                   <td>
                     <span className={`sk-admin__pill sk-admin__pill--${pay.tone}`}>
                       {pay.label}
                     </span>
                   </td>
-                  <td className="sk-admin__muted text-xs tabular-nums">
-                    {formatAdminDate(w.createdAt)}
-                  </td>
-                  <td className="text-xs tabular-nums">
-                    {nextPay ? (
-                      <span className="font-medium">
-                        {formatAdminDate(nextPay)}
-                      </span>
-                    ) : (
-                      <span className="sk-admin__muted">—</span>
-                    )}
-                  </td>
                   <td>{w._count.members}</td>
                   <td>
                     {w._count.leads}
-                    <span className="sk-admin__muted block text-xs">
-                      sent {w.emailsSent}
+                    <span className="sk-admin__muted block text-[11px]">
+                      {w.emailsSent} sent
                     </span>
+                  </td>
+                  <td className="sk-admin__muted text-xs tabular-nums">
+                    {formatAdminDate(w.createdAt)}
                   </td>
                 </tr>
               );
             })}
             {workspaces.length === 0 ? (
-              <tr className="sk-admin__table-empty">
-                <td colSpan={7} className="sk-admin__empty">
+              <tr>
+                <td colSpan={6} className="sk-admin__empty">
                   Nic nenalezeno.
                 </td>
               </tr>

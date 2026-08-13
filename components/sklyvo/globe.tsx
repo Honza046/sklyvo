@@ -56,6 +56,21 @@ function getLandMask() {
   return maskRequest;
 }
 
+export type GlobeTheme = "ink" | "night";
+
+type DotRamp = { rgb: string; base: number; shade: number };
+
+const THEMES: Record<GlobeTheme, { land: DotRamp; ocean: DotRamp }> = {
+  ink: {
+    land: { rgb: "22,32,46", base: 0.2, shade: 0.72 },
+    ocean: { rgb: "22,32,46", base: 0.05, shade: 0.18 },
+  },
+  night: {
+    land: { rgb: "255,255,255", base: 0.62, shade: 0.38 },
+    ocean: { rgb: "255,255,255", base: 0, shade: 0 },
+  },
+};
+
 type Point = {
   cosLat: number;
   sinLat: number;
@@ -110,9 +125,11 @@ function tagLand(points: Point[], land: LandMask) {
 
 export function Globe({
   size = 500,
+  theme = "night",
   className,
 }: {
   size?: number;
+  theme?: GlobeTheme;
   className?: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -143,11 +160,12 @@ export function Globe({
     let frameId = 0;
     let spin = 0;
 
-    // dots are bucketed by rounded radius + alpha, so the whole globe draws in
-    // a couple of dozen fill() calls instead of one per dot
+    const ramp = THEMES[theme];
+
+    // dots are bucketed by land flag + rounded radius + alpha
     const buckets = new Map<
       number,
-      { r: number; alpha: number; xy: number[] }
+      { rgb: string; r: number; alpha: number; xy: number[] }
     >();
 
     const draw = () => {
@@ -168,29 +186,34 @@ export function Globe({
 
         const shade = 0.18 + 0.72 * Math.max(0, x * 0.45 + y * 0.35 + z * 0.7);
         const isLand = point.land === 1;
+        if (!isLand && theme === "night") continue;
+        const dot = isLand ? ramp.land : ramp.ocean;
         const rKey = Math.round((isLand ? 0.9 + z * 0.95 : 0.6 + z * 0.6) * 8);
-        const aKey = Math.round(
-          (isLand ? 0.2 + shade * 0.72 : 0.05 + shade * 0.18) * 60,
-        );
-        const key = (aKey << 6) | rKey;
+        const aKey = Math.round((dot.base + shade * dot.shade) * 60);
+        const key = ((isLand ? 1 : 0) << 12) | (aKey << 6) | rKey;
 
         let bucket = buckets.get(key);
         if (!bucket) {
-          bucket = { r: rKey / 8, alpha: aKey / 60, xy: [] };
+          bucket = { rgb: dot.rgb, r: rKey / 8, alpha: aKey / 60, xy: [] };
           buckets.set(key, bucket);
         }
         bucket.xy.push(cx + x * radius, cy - y * radius);
       }
 
-      for (const { r, alpha, xy } of buckets.values()) {
-        ctx.fillStyle = `rgba(22,32,46,${alpha.toFixed(3)})`;
-        ctx.beginPath();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.clip();
+
+      for (const { rgb, r, alpha, xy } of buckets.values()) {
+        ctx.fillStyle = `rgba(${rgb},${alpha.toFixed(3)})`;
         for (let i = 0; i < xy.length; i += 2) {
-          ctx.moveTo(xy[i] + r, xy[i + 1]);
+          ctx.beginPath();
           ctx.arc(xy[i], xy[i + 1], r, 0, Math.PI * 2);
+          ctx.fill();
         }
-        ctx.fill();
       }
+      ctx.restore();
     };
 
     void getLandMask().then((land) => {
@@ -217,7 +240,7 @@ export function Globe({
       cancelled = true;
       cancelAnimationFrame(frameId);
     };
-  }, [size]);
+  }, [size, theme]);
 
   return (
     <canvas

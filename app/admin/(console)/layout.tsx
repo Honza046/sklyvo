@@ -22,8 +22,8 @@ export default async function AdminConsoleLayout({
   const actor = await requirePlatformAdmin();
 
   return (
-    <div className="sklyvo-app sk-admin min-h-screen">
-      <header className="sk-admin__top">
+    <div className="sklyvo-app sk-admin flex h-dvh max-h-dvh flex-col overflow-hidden">
+      <header className="sk-admin__top shrink-0">
         <div className="sk-admin__brand">
           <SklyvoMark size={28} interactive={false} />
           <div>
@@ -51,7 +51,12 @@ export default async function AdminConsoleLayout({
           </form>
         </div>
       </header>
-      <main className="sk-admin__main">{children}</main>
+      <main className="sk-admin__main min-h-0 flex-1">{children}</main>
+      <footer className="sk-admin__foot shrink-0">
+        <span>Sklyvo Platform Admin</span>
+        <span className="sk-admin__foot-sep">·</span>
+        <span>{actor.email}</span>
+      </footer>
     </div>
   );
 }

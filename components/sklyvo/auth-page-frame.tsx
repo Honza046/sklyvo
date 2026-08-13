@@ -18,7 +18,7 @@ export function AuthPageFrame({
   initialRegional: string;
 }) {
   return (
-    <div className={jakarta.variable}>
+    <div className={`${jakarta.variable} min-h-dvh bg-[#08090a]`}>
       <LanguageProvider initialRegional={initialRegional}>
         {children}
       </LanguageProvider>

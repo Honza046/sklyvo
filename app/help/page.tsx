@@ -28,27 +28,31 @@ type GuideId = "sniper" | "radar" | "crm" | "autopilot";
 
 const GUIDE_META: Record<
   GuideId,
-  { icon: typeof Crosshair; titleKey: string; descKey: string }
+  { icon: typeof Crosshair; titleKey: string; descKey: string; accent: string }
 > = {
   sniper: {
     icon: Crosshair,
     titleKey: "help.guideSniper",
     descKey: "help.guideSniperDesc",
+    accent: "emerald",
   },
   radar: {
     icon: Radio,
     titleKey: "help.guideRadar",
     descKey: "help.guideRadarDesc",
+    accent: "cyan",
   },
   crm: {
     icon: Users,
     titleKey: "help.guideCrm",
     descKey: "help.guideCrmDesc",
+    accent: "violet",
   },
   autopilot: {
     icon: Rocket,
     titleKey: "help.guideAutopilot",
     descKey: "help.guideAutopilotDesc",
+    accent: "amber",
   },
 };
 
@@ -90,11 +94,11 @@ export default function SupportPage() {
     >
       {!chatExpanded && (
         <header className="sk-support__hero mb-3 shrink-0 sm:mb-4 md:mb-5">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="sky" aria-hidden>
             <LifeBuoy strokeWidth={2} />
           </div>
           <h1 className="sk-type-h1 sk-support__hero-title">{t("help.title")}</h1>
-          <p className="sk-type-body sk-support__hero-sub">
+          <p className="sk-page-desc sk-type-body sk-support__hero-sub">
             {t("help.subtitle")}
           </p>
         </header>
@@ -134,7 +138,10 @@ export default function SupportPage() {
                     onClick={() => setActiveModal(id)}
                     className="sk-help-card sk-support__topic"
                   >
-                    <span className="sk-help-icon sk-support__topic-icon">
+                    <span
+                      className="sk-help-icon sk-support__topic-icon"
+                      data-accent={meta.accent}
+                    >
                       <Icon strokeWidth={2} />
                     </span>
                     <span className="sk-support__topic-copy">

@@ -325,6 +325,7 @@ export function AutopilotIconButton({
 export function AutopilotControlPanel({
   icon,
   iconWrapClassName,
+  iconAccent,
   title,
   description,
   extra,
@@ -333,6 +334,7 @@ export function AutopilotControlPanel({
 }: {
   icon: React.ReactNode;
   iconWrapClassName: string;
+  iconAccent?: string;
   title: string;
   description: string;
   extra?: React.ReactNode;
@@ -350,6 +352,7 @@ export function AutopilotControlPanel({
                 "mt-0.5 shrink-0 rounded-lg p-1.5 sm:mt-0 sm:rounded-xl sm:p-2",
                 iconWrapClassName,
               )}
+              data-accent={iconAccent}
             >
               {icon}
             </div>

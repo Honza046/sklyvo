@@ -88,7 +88,7 @@ export function OAuthProviderButtons({
           onClick={() => onSelect(id)}
           disabled={disabled}
         >
-          <Icon />
+          <Icon size={20} />
         </button>
       ))}
     </div>

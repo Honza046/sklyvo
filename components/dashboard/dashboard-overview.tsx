@@ -35,7 +35,7 @@ const CZK_PER_USD = 23;
 function AttentionTaskIcon({ status }: { status: LeadStatus }) {
   if (status === "NEW") {
     return (
-      <span className="sk-list__icon">
+      <span className="sk-list__icon sk-list__icon--clock">
         <Clock className="h-3.5 w-3.5" />
       </span>
     );
@@ -127,7 +127,7 @@ export function DashboardOverview({
       <div className="grid shrink-0 grid-cols-2 gap-2 sm:gap-2.5 lg:grid-cols-4 lg:gap-3">
         <div className="sk-stat">
           <div className="mb-0.5 flex items-center gap-1.5">
-            <div className="sk-chip">
+            <div className="sk-chip sk-chip--blue">
               <Target />
             </div>
             <h3 className="sk-stat__label">{t("dashboard.statsNewLeads")}</h3>
@@ -137,7 +137,7 @@ export function DashboardOverview({
 
         <div className="sk-stat">
           <div className="mb-0.5 flex items-center gap-1.5">
-            <div className="sk-chip">
+            <div className="sk-chip sk-chip--green">
               <Mail />
             </div>
             <h3 className="sk-stat__label">{t("dashboard.statsEmailsSent")}</h3>
@@ -147,7 +147,7 @@ export function DashboardOverview({
 
         <div className="sk-stat">
           <div className="mb-0.5 flex items-center gap-1.5">
-            <div className="sk-chip">
+            <div className="sk-chip sk-chip--orange">
               <Users />
             </div>
             <h3 className="sk-stat__label">{t("dashboard.statsActiveDeals")}</h3>
@@ -160,7 +160,7 @@ export function DashboardOverview({
 
         <div className="sk-stat">
           <div className="mb-0.5 flex items-center gap-1.5">
-            <div className="sk-chip">
+            <div className="sk-chip sk-chip--purple">
               <Activity />
             </div>
             <h3 className="sk-stat__label">
@@ -233,7 +233,7 @@ export function DashboardOverview({
             </h2>
             <div className="flex shrink-0 flex-col gap-2.5">
               <Link href="/radar" className="sk-action-row group">
-                <span className="sk-action-row__icon sk-action-row__icon--dark">
+                <span className="sk-action-row__icon sk-action-row__icon--zap">
                   <Zap className="h-4 w-4" />
                 </span>
                 <span className="sk-action-row__body">
@@ -249,7 +249,7 @@ export function DashboardOverview({
                 </span>
               </Link>
               <Link href="/sniper" className="sk-action-row group">
-                <span className="sk-action-row__icon">
+                <span className="sk-action-row__icon sk-action-row__icon--mail">
                   <Mail className="h-4 w-4" />
                 </span>
                 <span className="sk-action-row__body">

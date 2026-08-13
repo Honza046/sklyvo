@@ -241,7 +241,7 @@ export async function getGoogleEmailOAuthUrl() {
       kind: "email_google",
       workspaceId,
       userId,
-      returnPath: "/settings#email-integration",
+      returnPath: "/settings/outreach",
     }),
   });
 

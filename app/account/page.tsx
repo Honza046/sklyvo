@@ -23,7 +23,6 @@ import {
   CreditCard,
   Link as LinkIcon,
   Users,
-  Plus,
   Download,
   Loader2,
 } from "lucide-react";
@@ -367,12 +366,12 @@ export default function AccountPage() {
       {/* HLAVIČKA */}
       <div className="mb-3 w-full max-w-3xl space-y-1 text-center md:mb-6 md:space-y-2">
         <div className="mb-1 flex items-center justify-center gap-2 md:mb-2 md:gap-3">
-          <div className="sk-page-badge" aria-hidden>
+          <div className="sk-page-badge" data-accent="rose" aria-hidden>
             <User strokeWidth={2} />
           </div>
         </div>
         <h1 className="sk-type-h1">{t("account.title")}</h1>
-        <p className="sk-type-body mx-auto max-w-lg px-2">
+        <p className="sk-page-desc sk-type-body">
           {t("account.subtitle")}
         </p>
       </div>
@@ -580,55 +579,29 @@ export default function AccountPage() {
             </AccordionContent>
           </AccordionItem>
 
-          {/* 3. PROPOJENÉ ÚČTY (Integrace e-mailů pro Snipera) */}
-          <AccordionItem
-            value="integrations"
-            className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
-          >
-            <AccordionTrigger className="py-3 hover:no-underline sm:py-6">
-              <div className="flex items-center gap-3">
-                <span className="sk-settings-row-icon" aria-hidden>
+          {/* E-mail pro Sniper — nastavení je v Pracovním prostoru */}
+          <div className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 py-4 shadow-sm sm:rounded-2xl sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span className="sk-settings-row-icon shrink-0" aria-hidden>
                   <LinkIcon strokeWidth={2} />
                 </span>
-                <h2 className="sk-type-h3">{t("account.connectedEmails")}</h2>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-6 pt-2 space-y-4">
-              <p className="text-sm text-muted-foreground mb-4">
-                {t("account.connectedEmailsDesc")}
-              </p>
-
-              {/* Připojený účet */}
-              <div className="flex items-center justify-between p-4 rounded-xl border border-border/60 bg-background">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-slate-600 " />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Google Workspace</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user?.email ?? t("account.noEmail")}
-                    </p>
-                  </div>
+                <div>
+                  <h2 className="sk-type-h3">{t("account.connectedEmails")}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t("account.connectedEmailsWorkspaceHint")}
+                  </p>
                 </div>
-                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-widest rounded-md">
-                  {t("account.connected")}
-                </span>
               </div>
-
-              <div className="pb-1 pt-1">
-                <Link
-                  href="/settings/connect-email"
-                  className="sk-press-btn inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[13.5px] font-semibold"
-                >
-                  <Plus className="h-4 w-4" /> {t("account.addMailbox")}
-                </Link>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+              <Button asChild variant="outline" className="sk-press-btn shrink-0 rounded-xl">
+                <Link href="/settings/outreach">{t("account.openEmailSettings")}</Link>
+              </Button>
+            </div>
+          </div>
 
           {/* 4. FAKTURACE A PŘEDPLATNÉ */}
           <AccordionItem
+            id="billing"
             value="billing"
             className="sk-ghost-card rounded-xl border border-border/60 bg-card px-3 shadow-sm sm:rounded-2xl sm:px-6 transition-colors data-[state=open]:border-blue-200 dark:data-[state=open]:border-blue-800"
           >

@@ -10,6 +10,7 @@ const LINKS: { href: string; label: string; exact?: boolean }[] = [
   { href: "/admin/workspaces", label: "Workspaces" },
   { href: "/admin/finance", label: "Finance" },
   { href: "/admin/audit", label: "Audit" },
+  { href: "/admin/system", label: "Systém" },
 ];
 
 export function AdminNav() {

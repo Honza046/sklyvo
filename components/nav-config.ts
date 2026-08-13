@@ -7,11 +7,11 @@ import {
 } from "lucide-react";
 
 export const MAIN_NAV = [
-  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard },
-  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair },
-  { href: "/radar", labelKey: "nav.radar", icon: Radio },
-  { href: "/crm", labelKey: "nav.crm", icon: Users },
-  { href: "/uloziste", labelKey: "nav.storage", icon: FolderOpen },
+  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard, accent: "blue" },
+  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair, accent: "emerald" },
+  { href: "/radar", labelKey: "nav.radar", icon: Radio, accent: "cyan" },
+  { href: "/crm", labelKey: "nav.crm", icon: Users, accent: "violet" },
+  { href: "/uloziste", labelKey: "nav.storage", icon: FolderOpen, accent: "teal" },
   // Generátor — schováno z navigace (PDF šablona ještě není ready); route /generator zůstává
 ] as const;
 

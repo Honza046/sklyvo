@@ -1,5 +1,8 @@
 export const EMAIL_SETUP_SETTINGS_HASH = "email-integration";
-export const EMAIL_SETUP_SETTINGS_PATH = `/settings#${EMAIL_SETUP_SETTINGS_HASH}`;
+export const EMAIL_SETUP_SETTINGS_PATH = "/settings/outreach";
+export const SETTINGS_INTEGRATIONS_PATH = "/settings/integrations";
+export const SETTINGS_COMPANY_PATH = "/settings/company";
+export const ACCOUNT_BILLING_PATH = "/account";
 
 const EMAIL_KEYWORDS = [
  "email",

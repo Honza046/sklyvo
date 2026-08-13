@@ -146,7 +146,7 @@ export function resolveCopilotResponse(
  (pathname.startsWith("/settings") || pathname === "/pracovni-prostor") &&
  isApiKeysQuestion(trimmed)
  ) {
- const raw = appendAction(t("copilot.replies.apiKeys"), "/settings#integrations", t("copilot.actions.openIntegrations"));
+ const raw = appendAction(t("copilot.replies.apiKeys"), "/settings/integrations", t("copilot.actions.openIntegrations"));
  const parsed = parseCopilotActions(raw);
  return { content: parsed.text, actions: parsed.actions };
  }
@@ -157,7 +157,7 @@ export function resolveCopilotResponse(
  }
 
  if (isCreditsQuestion(trimmed) || trimmed.toLowerCase().includes("/kredity")) {
- const raw = appendAction(t("copilot.replies.credits"), "/settings#credits", t("copilot.actions.openCredits"));
+ const raw = appendAction(t("copilot.replies.credits"), "/account", t("copilot.actions.openCredits"));
  const parsed = parseCopilotActions(raw);
  return { content: parsed.text, actions: parsed.actions };
  }

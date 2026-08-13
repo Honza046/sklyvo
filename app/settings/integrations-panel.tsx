@@ -151,17 +151,17 @@ export function IntegrationsPanel() {
         "Google Sheets připojeno. Listy podle stavů CRM (Nový lead → Nedomluveno) + Vše jsou připravené.",
       );
       refreshSheetsState();
-      router.replace("/settings#integrations", { scroll: false });
+      router.replace("/settings/integrations", { scroll: false });
     } else if (error) {
       toast.error(decodeURIComponent(error));
-      router.replace("/settings#integrations", { scroll: false });
+      router.replace("/settings/integrations", { scroll: false });
     } else if (msConnected === "1") {
       toast.success("Microsoft 365 připojeno (OneDrive / Excel / Word).");
       refreshMicrosoftState();
-      router.replace("/settings#integrations", { scroll: false });
+      router.replace("/settings/integrations", { scroll: false });
     } else if (msError) {
       toast.error(decodeURIComponent(msError));
-      router.replace("/settings#integrations", { scroll: false });
+      router.replace("/settings/integrations", { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -315,7 +315,7 @@ export function IntegrationsPanel() {
 
   const handleConnectMicrosoft = () => {
     startTransition(async () => {
-      const result = await getMicrosoftOAuthUrl("/settings#integrations");
+      const result = await getMicrosoftOAuthUrl("/settings/integrations");
       if ("error" in result) {
         toast.error(result.error);
         return;

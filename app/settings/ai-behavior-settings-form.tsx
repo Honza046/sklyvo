@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateAiBehaviorSettings } from "@/app/actions/workspace";
 import { DEFAULT_SNIPER_SYSTEM_PROMPT } from "@/lib/ai-behavior-settings";
 import { useLanguage } from "@/context/LanguageContext";
+import { cn } from "@/lib/utils";
 
 export { DEFAULT_SNIPER_SYSTEM_PROMPT };
 
@@ -25,6 +26,7 @@ type AiBehaviorSettingsFormProps = {
   senderEmail?: string;
   initialSystemPrompt: string;
   initialForbiddenWords: string;
+  compact?: boolean;
 };
 
 type SettingsSaveRegistry = {
@@ -75,6 +77,7 @@ export function AiBehaviorSettingsForm({
   senderEmail = "you@example.com",
   initialSystemPrompt,
   initialForbiddenWords,
+  compact = false,
 }: AiBehaviorSettingsFormProps) {
   const { t } = useLanguage();
   const resolvedName = senderFullName?.trim() || t("settings.aiSenderFallback");
@@ -115,47 +118,60 @@ export function AiBehaviorSettingsForm({
   }, [initialEmailSignature, initialForbiddenWords, initialSystemPrompt]);
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <Label
-          htmlFor="email-signature"
-          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-        >
-          {t("settings.aiSignature")}
-        </Label>
-        <Textarea
-          id="email-signature"
-          value={emailSignature}
-          onChange={(e) => setEmailSignature(e.target.value)}
-          placeholder={signaturePlaceholder}
-          className="min-h-[100px] resize-none rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
-        <p className="text-[10px] text-muted-foreground">
-          {t("settings.aiSignatureHint")}
-        </p>
+    <div
+      className={cn(
+        compact
+          ? "grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5"
+          : "space-y-5",
+      )}
+    >
+      <div className="grid shrink-0 grid-cols-2 items-stretch gap-2.5">
+        <div className="flex min-h-0 flex-col gap-1">
+          <Label
+            htmlFor="email-signature"
+            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+          >
+            {t("settings.aiSignature")}
+          </Label>
+          <Textarea
+            id="email-signature"
+            value={emailSignature}
+            onChange={(e) => setEmailSignature(e.target.value)}
+            placeholder={signaturePlaceholder}
+            rows={3}
+            className="sk-settings-field min-h-[4.5rem] flex-1 resize-none text-sm"
+          />
+          {!compact ? (
+            <p className="text-[10px] text-muted-foreground">
+              {t("settings.aiSignatureHint")}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex min-h-0 flex-col gap-1">
+          <Label
+            htmlFor="forbidden-words"
+            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+          >
+            {t("settings.aiForbidden")}
+          </Label>
+          <Textarea
+            id="forbidden-words"
+            rows={3}
+            value={forbiddenWords}
+            onChange={(e) => setForbiddenWords(e.target.value)}
+            placeholder={t("settings.aiForbiddenPlaceholder")}
+            className="sk-settings-field min-h-[4.5rem] flex-1 resize-none text-sm"
+          />
+          {!compact ? (
+            <p className="mt-1 text-[10px] text-gray-500 ">
+              {t("settings.aiForbiddenHint")}
+            </p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label
-          htmlFor="forbidden-words"
-          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-        >
-          {t("settings.aiForbidden")}
-        </Label>
-        <Textarea
-          id="forbidden-words"
-          rows={2}
-          value={forbiddenWords}
-          onChange={(e) => setForbiddenWords(e.target.value)}
-          placeholder={t("settings.aiForbiddenPlaceholder")}
-          className="w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
-        <p className="mt-1 text-[10px] text-gray-500 ">
-          {t("settings.aiForbiddenHint")}
-        </p>
-      </div>
-
-      <div className="space-y-2">
+      <div className="flex min-h-0 flex-col space-y-1">
         <Label
           htmlFor="system-prompt"
           className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
@@ -166,11 +182,16 @@ export function AiBehaviorSettingsForm({
           id="system-prompt"
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
-          className="min-h-[150px] w-full resize-y rounded-lg border border-border/60 bg-card px-4 py-3 text-sm text-foreground shadow-none outline-none transition-colors placeholder:text-muted-foreground focus:border-blue-500 focus:outline-none focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className={cn(
+            "sk-settings-field w-full resize-none text-sm",
+            compact ? "min-h-0 flex-1" : "min-h-[150px] resize-y",
+          )}
         />
-        <p className="text-[10px] text-muted-foreground">
-          {t("settings.aiSystemPromptHint")}
-        </p>
+        {!compact ? (
+          <p className="text-[10px] text-muted-foreground">
+            {t("settings.aiSystemPromptHint")}
+          </p>
+        ) : null}
       </div>
     </div>
   );

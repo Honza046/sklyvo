@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PREDEFINED_SERVICE_GROUPS } from "@/lib/constants";
@@ -14,40 +20,55 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLanguage } from "@/context/LanguageContext";
 
-type OfferedServicesManagerProps = {
-  initialServices: string[];
-  initialCompanyServices: string;
+type CompanyServicesContextValue = {
+  services: string[];
+  toggleService: (service: string) => void;
+  companyServices: string;
+  setCompanyServices: (value: string) => void;
 };
 
-export function OfferedServicesManager({
+const CompanyServicesContext =
+  createContext<CompanyServicesContextValue | null>(null);
+
+function useCompanyServices() {
+  const ctx = useContext(CompanyServicesContext);
+  if (!ctx) {
+    throw new Error("CompanyServices components must be used within provider");
+  }
+  return ctx;
+}
+
+type CompanyServicesProviderProps = {
+  initialServices: string[];
+  initialCompanyServices: string;
+  children: ReactNode;
+};
+
+export function CompanyServicesProvider({
   initialServices,
   initialCompanyServices,
-}: OfferedServicesManagerProps) {
-  const { t } = useLanguage();
+  children,
+}: CompanyServicesProviderProps) {
   const router = useRouter();
   const registry = useSettingsSaveRegistry();
-  const [services, setServices] = useState<string[]>(initialServices);
+  const [services, setServices] = useState(initialServices);
   const [companyServices, setCompanyServices] = useState(
     initialCompanyServices,
   );
-  const [isSaving, setIsSaving] = useState(false);
 
-  const handleToggleService = (service: string) => {
-    if (isSaving) return;
+  const toggleService = useCallback((service: string) => {
     setServices((prev) =>
       prev.includes(service)
         ? prev.filter((item) => item !== service)
         : [...prev, service],
     );
-  };
+  }, []);
 
   const handleSave = useCallback(async () => {
-    setIsSaving(true);
     const result = await updateWorkspaceServicesSettings({
       offeredServices: services,
       companyServices,
     });
-    setIsSaving(false);
 
     if ("error" in result && result.error) {
       toast.error(result.error);
@@ -68,35 +89,62 @@ export function OfferedServicesManager({
     setCompanyServices(initialCompanyServices);
   }, [initialCompanyServices, initialServices]);
 
+  const value = useMemo(
+    () => ({
+      services,
+      toggleService,
+      companyServices,
+      setCompanyServices,
+    }),
+    [companyServices, services, toggleService],
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <CompanyServicesContext.Provider value={value}>
+      {children}
+    </CompanyServicesContext.Provider>
+  );
+}
+
+export function OfferedServicesPicker({ compact = false }: { compact?: boolean }) {
+  const { t } = useLanguage();
+  const { services, toggleService } = useCompanyServices();
+
+  return (
+    <div
+      className={cn(
+        "flex min-h-0 flex-col",
+        compact ? "h-full" : "space-y-4",
+      )}
+    >
+      <div className={cn(compact ? "min-h-0 flex-1 overflow-y-auto pr-1" : "")}>
         <div className="space-y-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {t("settings.servicesBasic")}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {t("settings.servicesBasicHint")}
-          </p>
+          {!compact ? (
+            <p className="text-xs text-muted-foreground">
+              {t("settings.servicesBasicHint")}
+            </p>
+          ) : null}
         </div>
 
-        <div className="space-y-5">
+        <div className={cn(compact ? "space-y-3 pt-1" : "space-y-5")}>
           {PREDEFINED_SERVICE_GROUPS.map((group) => (
-            <div key={group.id} className="space-y-2">
-              <p className="text-[11px] font-semibold text-foreground/80">
+            <div key={group.id} className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-foreground/80 sm:text-[11px]">
                 {tServiceGroup(t, group.id)}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {group.services.map((service) => {
                   const selected = services.includes(service);
                   return (
                     <button
                       key={service}
                       type="button"
-                      disabled={isSaving}
-                      onClick={() => handleToggleService(service)}
+                      onClick={() => toggleService(service)}
                       className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-semibold leading-snug transition-all disabled:opacity-60",
+                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-snug transition-all sm:px-3 sm:py-1.5 sm:text-xs",
                         selected
                           ? "border-blue-600 bg-blue-600 text-white shadow-sm"
                           : "border-border/60 bg-background text-muted-foreground hover:border-blue-200 hover:text-foreground",
@@ -112,7 +160,7 @@ export function OfferedServicesManager({
         </div>
 
         {services.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="pt-2 text-[10px] text-muted-foreground sm:text-xs">
             {t(
               services.length === 1
                 ? "settings.servicesSelectedOne"
@@ -124,44 +172,69 @@ export function OfferedServicesManager({
           </p>
         ) : null}
       </div>
+    </div>
+  );
+}
 
-      <div className="space-y-2">
-        <Label
-          htmlFor="company-services"
-          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-        >
-          {t("settings.servicesDetail")}
-        </Label>
-        <Textarea
-          id="company-services"
-          value={companyServices}
-          onChange={(e) => setCompanyServices(e.target.value)}
-          disabled={isSaving}
-          placeholder={t("settings.servicesDetailPlaceholder")}
-          className="min-h-[220px] resize-y rounded-xl border-border/60 bg-background text-sm"
-        />
+export function CompanyServicesDetailForm({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
+  const { t } = useLanguage();
+  const { companyServices, setCompanyServices } = useCompanyServices();
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+      <Label
+        htmlFor="company-services"
+        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+      >
+        {t("settings.servicesDetail")}
+      </Label>
+      <Textarea
+        id="company-services"
+        value={companyServices}
+        onChange={(e) => setCompanyServices(e.target.value)}
+        placeholder={t("settings.servicesDetailPlaceholder")}
+        className={cn(
+          "sk-settings-field resize-none text-sm",
+          compact ? "min-h-0 flex-1" : "min-h-[220px] resize-y",
+        )}
+      />
+      {!compact ? (
         <p className="text-xs text-muted-foreground">
           {t("settings.servicesDetailHint")}
         </p>
-      </div>
-
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={isSaving}
-          className="h-10 rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t("settings.saving")}
-            </>
-          ) : (
-            t("settings.saveServices")
-          )}
-        </Button>
-      </div>
+      ) : null}
     </div>
+  );
+}
+
+/* Backward-compatible wrapper for pages that still need the combined form. */
+export function OfferedServicesManager({
+  initialServices,
+  initialCompanyServices,
+  compact = false,
+}: {
+  initialServices: string[];
+  initialCompanyServices: string;
+  compact?: boolean;
+}) {
+  return (
+    <CompanyServicesProvider
+      initialServices={initialServices}
+      initialCompanyServices={initialCompanyServices}
+    >
+      <div
+        className={cn(
+          "flex min-h-0 flex-col",
+          compact ? "h-full gap-3" : "space-y-6",
+        )}
+      >
+        <OfferedServicesPicker compact={compact} />
+        <CompanyServicesDetailForm compact={compact} />
+      </div>
+    </CompanyServicesProvider>
   );
 }

@@ -10,6 +10,7 @@ import {
   getAdminBillingOverview,
   getAdminDashboardStats,
 } from "@/app/actions/platform-admin";
+import { AdminPageHead } from "@/components/admin/admin-page-head";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,7 @@ export default async function AdminDashboardPage() {
       tone: "slate" as const,
     },
     {
-      label: "Placené / trial",
+      label: "Placené",
       value: formatInt(stats.paidWorkspaces),
       href: "/admin/workspaces",
       icon: Wallet,
@@ -61,53 +62,24 @@ export default async function AdminDashboardPage() {
 
   const growth = [
     {
-      label: "Noví users · 7 dní",
+      label: "Users 7d",
       value: formatInt(stats.newUsers7d),
       href: "/admin/users",
       icon: UserPlus,
     },
     {
-      label: "Nové workspaces · 7 dní",
+      label: "WS 7d",
       value: formatInt(stats.newWorkspaces7d),
       href: "/admin/workspaces",
       icon: Sparkles,
     },
   ];
 
-  const financeCards = [
-    {
-      label: "Obrat",
-      value: formatMoney(billing.revenueCents30d, billing.currency),
-      hint: "30 dní · Stripe",
-    },
-    {
-      label: "Náklady",
-      value: formatMoney(billing.costsCents30d, billing.currency),
-      hint: "Fixní + Stripe poplatky",
-    },
-    {
-      label: "Čistý zisk",
-      value: formatMoney(billing.profitCents30d, billing.currency),
-      hint: "Obrat − náklady",
-    },
-  ];
-
   return (
     <div className="sk-admin__page sk-admin__page--overview">
-      <header className="sk-admin__page-head sk-admin__page-head--compact">
-        <div>
-          <p className="sk-admin__eyebrow">Platforma</p>
-          <h1 className="sk-admin__h1">Přehled</h1>
-        </div>
-        <p className="sk-admin__lede sk-admin__lede--compact">
-          Stav platformy na jedné obrazovce
-        </p>
-      </header>
+      <AdminPageHead title="Přehled" />
 
-      <section
-        className="sk-admin__stat-grid sk-admin__stat-grid--primary"
-        aria-label="Základní metriky"
-      >
+      <section className="sk-admin__stat-grid sk-admin__stat-grid--primary" aria-label="Metriky">
         {primary.map((card) => {
           const Icon = card.icon;
           return (
@@ -129,12 +101,9 @@ export default async function AdminDashboardPage() {
       </section>
 
       <div className="sk-admin__overview-row">
-        <section className="sk-admin__panel" aria-label="Růst za 7 dní">
+        <section className="sk-admin__panel">
           <div className="sk-admin__panel-head">
-            <div>
-              <h2 className="sk-admin__h2">Posledních 7 dní</h2>
-              <p className="sk-admin__panel-sub">Nové registrace</p>
-            </div>
+            <h2 className="sk-admin__h2">7 dní</h2>
           </div>
           <div className="sk-admin__stat-grid sk-admin__stat-grid--growth">
             {growth.map((card) => {
@@ -158,29 +127,32 @@ export default async function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="sk-admin__panel" aria-label="Finance">
+        <section className="sk-admin__panel">
           <div className="sk-admin__panel-head">
-            <div>
-              <h2 className="sk-admin__h2">Finance</h2>
-              <p className="sk-admin__panel-sub">
-                {billing.stripeOk ? "30 dní · Stripe" : "Stripe nedostupné"}
-              </p>
-            </div>
+            <h2 className="sk-admin__h2">Finance 30d</h2>
             <Link href="/admin/finance" className="sk-admin__text-link">
               Detail
             </Link>
           </div>
           <div className="sk-admin__stat-grid sk-admin__stat-grid--billing">
-            {financeCards.map((card) => (
-              <div
-                key={card.label}
-                className="sk-admin__stat sk-admin__stat--compact sk-admin__stat--static"
-              >
-                <p className="sk-admin__stat-label">{card.label}</p>
-                <p className="sk-admin__stat-value">{card.value}</p>
-                <p className="sk-admin__stat-hint">{card.hint}</p>
-              </div>
-            ))}
+            <div className="sk-admin__stat sk-admin__stat--compact sk-admin__stat--static">
+              <p className="sk-admin__stat-label">Obrat</p>
+              <p className="sk-admin__stat-value">
+                {formatMoney(billing.revenueCents30d, billing.currency)}
+              </p>
+            </div>
+            <div className="sk-admin__stat sk-admin__stat--compact sk-admin__stat--static">
+              <p className="sk-admin__stat-label">Náklady</p>
+              <p className="sk-admin__stat-value">
+                {formatMoney(billing.costsCents30d, billing.currency)}
+              </p>
+            </div>
+            <div className="sk-admin__stat sk-admin__stat--compact sk-admin__stat--static">
+              <p className="sk-admin__stat-label">Zisk</p>
+              <p className="sk-admin__stat-value">
+                {formatMoney(billing.profitCents30d, billing.currency)}
+              </p>
+            </div>
           </div>
         </section>
       </div>

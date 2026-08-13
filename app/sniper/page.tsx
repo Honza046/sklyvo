@@ -13,7 +13,6 @@ import {
   Copy,
   Settings2,
   RefreshCw,
-  Crosshair,
   Info,
   X,
   ExternalLink,
@@ -34,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmailRichEditor } from "@/components/sniper/email-rich-editor";
+import { SniperRecentPanel } from "@/components/sniper/sniper-recent-panel";
 import {
   LanguageFlag,
   SNIPER_LANGUAGE_LABELS,
@@ -41,6 +41,12 @@ import {
 } from "@/components/language-flag";
 import { cn } from "@/lib/utils";
 import { htmlToPlainText, plainTextToEditorHtml } from "@/lib/email-format";
+import {
+  listSniperRecent,
+  markSniperRecentSent,
+  upsertSniperRecent,
+  type SniperRecentItem,
+} from "@/lib/sniper-recent";
 import { toast } from "sonner";
 import {
   generateEmailContent,
@@ -225,12 +231,14 @@ function truncateFilename(name: string, max = 26): string {
 }
 
 function SniperContent() {
-  const { t } = useLanguage();
+  const { t, language: uiLanguage } = useLanguage();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [targetUrl, setTargetUrl] = useState("");
   const [emailTarget, setEmailTarget] = useState("");
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [recentItems, setRecentItems] = useState<SniperRecentItem[]>([]);
 
   const [language, setLanguage] = useState("cs");
   const [tone, setTone] = useState("friendly");
@@ -290,10 +298,17 @@ function SniperContent() {
           state.workspace.creditsTotal - state.workspace.creditsUsed,
         );
         setCreditsLeft(left);
+        setWorkspaceId(state.workspace.id);
+        setRecentItems(listSniperRecent(state.workspace.id));
       }
       setEmailConnected(emailState.connected);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    setRecentItems(listSniperRecent(workspaceId));
+  }, [workspaceId]);
 
   useEffect(() => {
     const rawUrl = searchParams.get("url")?.trim() ?? "";
@@ -391,7 +406,8 @@ function SniperContent() {
         setSubjects(d.vygenerovane_predmety);
         setSelectedSubject(d.vygenerovane_predmety[0] ?? "");
         const bodyCombined = `${d.osloveni}\n\n${d.vygenerovany_email}`;
-        setEditableBody(plainTextToEditorHtml(bodyCombined));
+        const bodyHtml = plainTextToEditorHtml(bodyCombined);
+        setEditableBody(bodyHtml);
         setEditorKey((k) => k + 1);
 
         const finalSegment =
@@ -418,15 +434,35 @@ function SniperContent() {
           language: finalLanguage,
           analysis: d.analyza_klienta,
         });
+        const resolvedEmail = (() => {
+          const trimmed = emailTarget.trim();
+          if (trimmed) return trimmed;
+          const found = d.contact_email?.trim();
+          return found && found.length > 0 ? found : "";
+        })();
         setEmailTarget((prev) => {
           const trimmed = prev.trim();
           if (trimmed) return prev;
-          const found = d.contact_email?.trim();
-          return found && found.length > 0 ? found : prev;
+          return resolvedEmail || prev;
         });
         setIsGenerated(true);
         setCreditsLeft((prev) =>
           prev === null ? prev : Math.max(0, prev - 1),
+        );
+        setRecentItems(
+          upsertSniperRecent(workspaceId, {
+            targetUrl,
+            contactEmail: resolvedEmail || emailTarget.trim(),
+            status: "draft",
+            selectedOffer,
+            tone: finalTone,
+            language: finalLanguage,
+            subjects: d.vygenerovane_predmety,
+            selectedSubject: d.vygenerovane_predmety[0] ?? "",
+            body: bodyHtml,
+            segment: finalSegment,
+            analysis: d.analyza_klienta,
+          }),
         );
         toast.success("E-mail byl úspěšně vygenerován.");
       } else {
@@ -517,6 +553,7 @@ function SniperContent() {
         return;
       }
       toast.success("E-mail odeslán. V CRM je kontaktováno.");
+      setRecentItems(markSniperRecentSent(workspaceId, targetUrl, to));
       // Zavři editor a vrať Sniper do výchozího stavu (ne Autopilot).
       setIsGenerated(false);
       setGeneratedParams(null);
@@ -579,29 +616,51 @@ function SniperContent() {
     }
   };
 
+  const handleOpenRecent = (item: SniperRecentItem) => {
+    setTargetUrl(item.targetUrl);
+    setEmailTarget(item.contactEmail);
+    setSelectedOffer(item.selectedOffer || SNIPER_AUTODETECT_VALUE);
+    setTone(item.tone || "friendly");
+    setLanguage(item.language || "cs");
+    setLanguageManualOverride(true);
+    setSubjects(item.subjects.length > 0 ? item.subjects : [...MOCK_SUBJECTS]);
+    setSelectedSubject(
+      item.selectedSubject || item.subjects[0] || MOCK_SUBJECTS[0] || "",
+    );
+    setEditableBody(item.body || INITIAL_EMAIL_BODY);
+    setEditorKey((k) => k + 1);
+    setGeneratedParams({
+      segment: item.segment,
+      tone: item.tone || "friendly",
+      language: item.language || "cs",
+      analysis: item.analysis,
+    });
+    setIsGenerated(true);
+    setPdfFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    toast.success(t("sniper.recentRestored"));
+  };
+
   const hasCredits = (creditsLeft ?? 1) > 0;
+
+  const dateLocale =
+    uiLanguage === "cz"
+      ? "cs-CZ"
+      : uiLanguage === "de"
+        ? "de-DE"
+        : uiLanguage === "es"
+          ? "es-ES"
+          : "en-GB";
 
   return (
     <>
       <div
         className={cn(
-          "flex h-full w-full flex-col items-center overflow-y-auto pb-8 scrollbar-hide",
+          "flex h-full w-full flex-col overflow-y-auto pb-6 scrollbar-hide",
           !isGenerated && "overflow-hidden",
         )}
       >
-        <div className="mb-2 space-y-1 text-center">
-          <div className="mb-1.5 flex items-center justify-center">
-            <div className="sk-page-badge" aria-hidden>
-              <Crosshair strokeWidth={2} />
-            </div>
-          </div>
-          <h1 className="sk-type-h1 text-[28px]">{t("sniper.title")}</h1>
-          <p className="sk-type-small mx-auto max-w-lg">
-            {t("sniper.subtitle")}
-          </p>
-        </div>
-
-        <div className="flex w-full flex-col gap-4">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
           <input
             ref={fileInputRef}
             type="file"
@@ -619,7 +678,7 @@ function SniperContent() {
           />
 
           {/* Desktop form card */}
-          <div className="relative flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <div className="relative flex shrink-0 flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -878,6 +937,19 @@ function SniperContent() {
               </div>
             </div>
           </div>
+
+          {!isGenerated ? (
+            <SniperRecentPanel
+              items={recentItems}
+              onOpen={handleOpenRecent}
+              title={t("sniper.recentTitle")}
+              emptyHint={t("sniper.recentEmpty")}
+              draftLabel={t("sniper.recentDraft")}
+              sentLabel={t("sniper.recentSent")}
+              openLabel={t("sniper.recentOpen")}
+              dateLocale={dateLocale}
+            />
+          ) : null}
 
           {/* VÝSTUPNÍ E-MAIL */}
           {isGenerated && (

@@ -158,7 +158,9 @@ export default function ConnectEmailPage() {
     if (preset?.port) params.set("smtpPort", preset.port);
     const qs = params.toString();
     toast.success("Otevíráme nastavení e-mailové integrace…");
-    router.push(`/settings${qs ? `?${qs}` : ""}#${EMAIL_SETUP_SETTINGS_HASH}`);
+    router.push(
+      `/settings/outreach${qs ? `?${qs}` : ""}#${EMAIL_SETUP_SETTINGS_HASH}`,
+    );
   }
 
   return (
@@ -169,7 +171,7 @@ export default function ConnectEmailPage() {
           variant="ghost"
           className="mb-6 -ml-2 h-9 rounded-xl px-3 text-muted-foreground hover:text-foreground"
         >
-          <Link href="/account">
+          <Link href="/settings/outreach">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zpět do nastavení
           </Link>
@@ -182,7 +184,7 @@ export default function ConnectEmailPage() {
             </div>
           </div>
           <h1 className="sk-type-h1">Připojit novou e-mailovou schránku</h1>
-          <p className="sk-type-body mx-auto max-w-xl">
+          <p className="sk-page-desc sk-type-body">
             Vyberte poskytovatele. Google použije OAuth, ostatní otevřou SMTP
             nastavení v Pracovním prostoru.
           </p>

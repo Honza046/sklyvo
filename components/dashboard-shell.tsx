@@ -128,7 +128,7 @@ export function DashboardShell({
    */
   const showAutopilotSubnav =
     activeHref === "/autopilot" || pathname.startsWith("/autopilot");
-  const isWorkspaceSettingsActive = navActiveHref === "/settings";
+  const isWorkspaceSettingsActive = navMatches(navActiveHref, "/settings");
 
   /** Flat order of [data-slide-item]: Overview → Autopilot → Sniper → Radar → CRM → Úložiště */
   const sidebarSlideIndex = useMemo(() => {
@@ -174,7 +174,9 @@ export function DashboardShell({
     pathname === "/generator" ||
     pathname.startsWith("/generator/") ||
     pathname === "/help" ||
-    pathname.startsWith("/help/");
+    pathname.startsWith("/help/") ||
+    pathname === "/settings" ||
+    pathname.startsWith("/settings/");
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
@@ -413,6 +415,12 @@ export function DashboardShell({
       ? Math.min(100, (dbCreditsUsed / displayCreditsTotal) * 100)
       : 0;
   const usagePercentRounded = Math.round(creditsPercentage);
+  const meterTone =
+    usagePercentRounded >= 85
+      ? "hot"
+      : usagePercentRounded >= 60
+        ? "warn"
+        : "ok";
 
   const displayPlan = (() => {
     if (hasPaidPlanTier || subscriptionStatus === "ACTIVE") {
@@ -492,13 +500,14 @@ export function DashboardShell({
 
           <div className="relative z-[1] shrink-0 px-3 pb-1 pt-1">
             {MAIN_NAV.filter(({ href }) => href === "/").map(
-              ({ href, labelKey, icon: Icon }) => {
+              ({ href, labelKey, icon: Icon, accent }) => {
                 const active = navMatches(navActiveHref, href);
                 return (
                   <Link
                     key={href}
                     href={href}
                     data-slide-item
+                    data-accent={accent}
                     data-tour="onboarding-overview"
                     className={navItemClass(active)}
                     aria-current={active ? "page" : undefined}
@@ -521,6 +530,7 @@ export function DashboardShell({
               <Link
                 href="/autopilot/radar"
                 data-slide-item
+                data-accent="amber"
                 data-tour="onboarding-autopilot"
                 className={navItemClass(isAutopilotActive, premiumToolsLocked)}
                 aria-current={isAutopilotActive ? "page" : undefined}
@@ -542,6 +552,7 @@ export function DashboardShell({
                       <Link
                         key={href}
                         href={href}
+                        data-accent="amber"
                         className={cn(
                           "sk-nav-sub",
                           subActive && "is-active",
@@ -558,13 +569,14 @@ export function DashboardShell({
             </div>
 
             {MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)).map(
-              ({ href, labelKey, icon: Icon }) => {
+              ({ href, labelKey, icon: Icon, accent }) => {
                 const active = navMatches(navActiveHref, href);
                 return (
                   <Link
                     key={href}
                     href={href}
                     data-slide-item
+                    data-accent={accent}
                     data-tour={
                       href === "/radar"
                         ? "onboarding-radar"
@@ -585,7 +597,7 @@ export function DashboardShell({
 
             <span className="sk-nav-label">{t("nav.work")}</span>
             {MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)).map(
-              ({ href, labelKey, icon: Icon }) => {
+              ({ href, labelKey, icon: Icon, accent }) => {
                 const active = navMatches(navActiveHref, href);
                 const locked =
                   premiumToolsLocked && PREMIUM_NAV_HREFS.has(href);
@@ -594,6 +606,7 @@ export function DashboardShell({
                     key={href}
                     href={href}
                     data-slide-item
+                    data-accent={accent}
                     data-tour={href === "/crm" ? "onboarding-crm" : undefined}
                     className={navItemClass(active, locked)}
                     aria-current={active ? "page" : undefined}
@@ -625,6 +638,7 @@ export function DashboardShell({
             <Link
               href="/help"
               data-slide-item
+              data-accent="sky"
               data-tour="onboarding-help"
               className={navItemClass(navMatches(navActiveHref, "/help"))}
               aria-current={
@@ -638,6 +652,7 @@ export function DashboardShell({
             <Link
               href="/settings"
               data-slide-item
+              data-accent="indigo"
               data-tour="onboarding-settings"
               className={navItemClass(isWorkspaceSettingsActive)}
               aria-current={isWorkspaceSettingsActive ? "page" : undefined}
@@ -650,7 +665,7 @@ export function DashboardShell({
 
           <div className="mb-2 flex flex-col gap-2">
             {hasSessionData && isTrialActive && isFreePlanTier && (
-              <div className="rounded-xl border border-amber-300/50 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 ">
+              <div className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
                 {t("nav.trialEndsIn", {
                   days: trialDays,
                   dayWord: dayWord(trialDays),
@@ -659,7 +674,7 @@ export function DashboardShell({
             )}
 
             {hasSessionData && isTrialExpired && (
-              <div className="rounded-xl border border-red-300/50 bg-red-50/70 px-3 py-2 text-xs text-red-800 ">
+              <div className="rounded-xl border border-rose-400/25 bg-rose-400/10 px-3 py-2 text-xs text-rose-200">
                 {t("nav.trialExpired")}
               </div>
             )}
@@ -672,12 +687,14 @@ export function DashboardShell({
                 <>
                   <div className="mb-1.5 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Zap className="h-3 w-3 text-[color:var(--sk-brand)]" />
+                      <Zap className="sk-credits__zap h-3 w-3" />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--sk-muted)]">
                         {t("nav.credits")}
                       </span>
                     </div>
-                    <span className="text-[10px] font-bold text-[color:var(--sk-ink)]">
+                    <span
+                      className={`sk-credits__pct sk-credits__pct--${meterTone} text-[10px] font-bold`}
+                    >
                       {t("nav.usagePercent", {
                         pct: String(usagePercentRounded),
                       })}
@@ -685,12 +702,13 @@ export function DashboardShell({
                   </div>
                   <div className="sk-meter__track">
                     <div
-                      className="sk-meter__fill"
+                      className={`sk-meter__fill sk-meter__fill--${meterTone}`}
                       style={{ width: `${creditsPercentage}%` }}
                     />
                   </div>
                   <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--sk-muted)]">
-                    {t("nav.plan")}: {displayPlan}
+                    {t("nav.plan")}:{" "}
+                    <span className="sk-credits__plan">{displayPlan}</span>
                   </p>
                   {subscriptionDateLabel && (
                     <p className="mt-1 text-[9px] leading-snug text-[color:var(--sk-muted-soft)]">
@@ -715,9 +733,9 @@ export function DashboardShell({
                 <button className="sk-user outline-none focus:outline-none focus-visible:ring-0">
                   {hasSessionData ? (
                     <>
-                      <Avatar className="h-9 w-9 rounded-xl border border-white/80 shadow-sm">
+                      <Avatar className="h-9 w-9 rounded-xl border border-[color:var(--n-hairline)]">
                         <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
-                        <AvatarFallback className="rounded-xl bg-[color-mix(in_oklab,var(--sk-brand)_14%,white)] text-sm font-bold text-[color:var(--sk-brand)]">
+                        <AvatarFallback className="rounded-xl bg-[color-mix(in_oklab,var(--sk-brand)_22%,transparent)] text-sm font-bold text-[color:var(--sk-brand)]">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
