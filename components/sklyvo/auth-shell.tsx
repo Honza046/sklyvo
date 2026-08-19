@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Globe } from "@/components/sklyvo/globe";
@@ -278,10 +279,10 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       <div className="scene__layer scene__layer--low" />
       <div className="scene__haze" />
 
-      <div className="sklyvo-brand">
+      <Link className="sklyvo-brand" href="/landing" aria-label="Sklyvo — zpět na úvod">
         <SklyvoMark size={30} />
         <span className="sklyvo-brand__word">Sklyvo</span>
-      </div>
+      </Link>
 
       <LanguageToggle />
 

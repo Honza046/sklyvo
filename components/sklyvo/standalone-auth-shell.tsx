@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import "@/components/sklyvo/auth.css";
@@ -37,10 +38,10 @@ export function StandaloneAuthShell({
   return (
     <div className={`${jakarta.variable} min-h-dvh bg-[#08090a]`}>
       <main className="sklyvo-login sklyvo-login--solo">
-        <div className="sklyvo-brand">
+        <Link className="sklyvo-brand" href="/landing" aria-label="Sklyvo — zpět na úvod">
           <SklyvoMark size={30} />
           <span className="sklyvo-brand__word">Sklyvo</span>
-        </div>
+        </Link>
 
         <div className="sklyvo-auth sklyvo-auth--solo" data-mode="recovery">
           <section className="sklyvo-card sklyvo-card--form">
