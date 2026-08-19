@@ -62,7 +62,8 @@ function useIntroTypewriter(texts: string[] | null) {
   const [complete, setComplete] = useState(false);
 
   useEffect(() => {
-    if (!texts?.length) return;
+    const lines = texts ?? [];
+    if (!lines.length) return;
 
     let cancelled = false;
     const CHAR_MS = 16;
@@ -73,13 +74,13 @@ function useIntroTypewriter(texts: string[] | null) {
       setCurrentPartial("");
       setComplete(false);
 
-      for (let index = 0; index < texts.length; index += 1) {
+      for (let index = 0; index < lines.length; index += 1) {
         if (index > 0) {
           await sleep(PAUSE_BETWEEN);
           if (cancelled) return;
         }
 
-        const text = texts[index] ?? "";
+        const text = lines[index] ?? "";
 
         for (let charIndex = 0; charIndex <= text.length; charIndex += 1) {
           if (cancelled) return;
