@@ -46,28 +46,36 @@ export function CompanyProfileForm({
   }, [initialContext]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+    <div
+      className={cn(
+        "sk-company-field-wrap",
+        compact && "sk-company-field-wrap--profile",
+      )}
+    >
+      {!compact ? (
         <Label
           htmlFor="company-context"
-          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+          className="sk-company-field-label"
         >
           {t("settings.companyProfileLabel")}
         </Label>
-        <Textarea
-          id="company-context"
-          value={companyContext}
-          onChange={(e) => setCompanyContext(e.target.value)}
-          placeholder={t("settings.companyProfilePlaceholder")}
-          className={cn(
-            "sk-settings-field resize-none text-sm",
-            compact ? "min-h-0 flex-1" : "min-h-[180px] resize-y",
-          )}
-        />
-        {!compact ? (
-          <p className="text-xs text-muted-foreground">
-            {t("settings.companyProfileHint")}
-          </p>
-        ) : null}
+      ) : null}
+      <Textarea
+        id="company-context"
+        value={companyContext}
+        onChange={(e) => setCompanyContext(e.target.value)}
+        placeholder={t("settings.companyProfilePlaceholder")}
+        aria-label={t("settings.companyProfile")}
+        className={cn(
+          "sk-company-field resize-none",
+          compact ? "sk-company-field--grow" : "min-h-[180px] resize-y",
+        )}
+      />
+      {!compact ? (
+        <p className="sk-company-field-hint">
+          {t("settings.companyProfileHint")}
+        </p>
+      ) : null}
     </div>
   );
 }

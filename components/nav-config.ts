@@ -1,17 +1,17 @@
 import {
-  Crosshair,
-  LayoutDashboard,
-  Radio,
-  Users,
-  FolderOpen,
-} from "lucide-react";
+  GridIcon,
+  SniperIcon,
+  RadarIcon,
+  PeopleIcon,
+  FolderIcon,
+} from "@/components/sklyvo/nav-icons";
 
 export const MAIN_NAV = [
-  { href: "/", labelKey: "nav.overview", icon: LayoutDashboard, accent: "blue" },
-  { href: "/sniper", labelKey: "nav.sniper", icon: Crosshair, accent: "emerald" },
-  { href: "/radar", labelKey: "nav.radar", icon: Radio, accent: "cyan" },
-  { href: "/crm", labelKey: "nav.crm", icon: Users, accent: "violet" },
-  { href: "/uloziste", labelKey: "nav.storage", icon: FolderOpen, accent: "teal" },
+  { href: "/", labelKey: "nav.overview", icon: GridIcon },
+  { href: "/sniper", labelKey: "nav.sniper", icon: SniperIcon },
+  { href: "/radar", labelKey: "nav.radar", icon: RadarIcon },
+  { href: "/crm", labelKey: "nav.crm", icon: PeopleIcon },
+  { href: "/uloziste", labelKey: "nav.storage", icon: FolderIcon },
   // Generátor — schováno z navigace (PDF šablona ještě není ready); route /generator zůstává
 ] as const;
 

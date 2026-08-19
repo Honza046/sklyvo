@@ -1,20 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
-import { SklyvoWordmark } from "@/components/brand-marks";
+import { ResetPasswordForm } from "@/components/sklyvo/reset-password-form";
+import { StandaloneAuthShell } from "@/components/sklyvo/standalone-auth-shell";
 
 export default function UpdatePasswordPage() {
   const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [sessionOk, setSessionOk] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -54,100 +47,30 @@ export default function UpdatePasswordPage() {
     };
   }, [router]);
 
-  const handleUpdatePassword = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.updateUser({ password });
-
-      if (error) {
-        alert("Chyba při aktualizaci hesla: " + error.message);
-      } else {
-        alert("Heslo bylo úspěšně změněno! Nyní se můžete přihlásit.");
-        router.push("/login");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   if (sessionOk === null) {
     return (
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 ">
-        <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] " />
-        <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
-        <div className="relative z-10 w-full max-w-[400px] rounded-3xl border border-border/60 bg-card p-8 shadow-xl">
-          <Skeleton className="mx-auto mb-4 h-8 w-48" />
-          <Skeleton className="h-12 w-full rounded-xl" />
-        </div>
-      </div>
+      <StandaloneAuthShell>
+        <p className="sklyvo-card__sub" style={{ textAlign: "center" }}>
+          Ověřuji relaci…
+        </p>
+      </StandaloneAuthShell>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-muted/20 p-4 ">
-      <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-blue-600/10 blur-[120px] " />
-      <div className="absolute right-[-10%] bottom-[-10%] h-[30%] w-[30%] rounded-full bg-emerald-500/10 blur-[100px]" />
-
-      <div className="relative z-10 flex w-full max-w-[400px] flex-col gap-8">
-        <div className="flex justify-center">
-          <SklyvoWordmark
-            markSize={36}
-            textClassName="text-xl tracking-[0.2em]"
-          />
-        </div>
-
-        <div className="flex flex-col gap-8 rounded-3xl border border-border/60 bg-card p-8 shadow-xl">
-          <div className="space-y-1.5 text-center">
-            <h1 className="sk-type-h1">Nové heslo</h1>
-            <p className="sk-type-body">Zadejte nové heslo pro svůj účet.</p>
-          </div>
-
-          <form
-            onSubmit={(ev) => void handleUpdatePassword(ev)}
-            className="space-y-5"
-          >
-            <div className="space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Nové heslo
-              </Label>
-              <div className="relative">
-                <Lock className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                <Input
-                  type="password"
-                  name="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  disabled={isLoading}
-                  className="h-12 rounded-xl border-border/50 bg-background pl-10 text-base focus-visible:ring-blue-600"
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="mt-2 h-12 w-full rounded-xl bg-blue-600 font-bold text-white shadow-md hover:bg-blue-700"
-            >
-              {isLoading ? "Ukládám…" : "Uložit nové heslo"}
-            </Button>
-          </form>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground">
-          <Link
-            href="/login"
-            className="font-bold text-blue-600 hover:underline "
-          >
-            Zpět na přihlášení
-          </Link>
-        </p>
-      </div>
-    </div>
+    <StandaloneAuthShell>
+      <ResetPasswordForm
+        onSubmit={async (password) => {
+          const supabase = createSupabaseBrowserClient();
+          const { error } = await supabase.auth.updateUser({ password });
+          if (error) {
+            return `Chyba při aktualizaci hesla: ${error.message}`;
+          }
+          window.setTimeout(() => router.push("/login"), 1200);
+          return null;
+        }}
+        submitLabel="Uložit nové heslo"
+      />
+    </StandaloneAuthShell>
   );
 }

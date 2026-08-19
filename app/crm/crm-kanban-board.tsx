@@ -13,7 +13,6 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Banknote } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -39,6 +38,7 @@ export type KanbanColumnSpec = {
   title: string;
   color: string;
   dot: string;
+  tint: string;
 };
 
 export type KanbanLead = {
@@ -137,16 +137,21 @@ function DroppableStatusPill({
         isOver && "sk-crm-status--over",
       )}
     >
-      <div className="sk-crm-status__top">
-        <div className="sk-crm-status__label">
-          <span className={cn("sk-crm-status__dot", column.dot)} aria-hidden />
-          <span className="sk-crm-status__title">{column.title}</span>
-        </div>
+      <div className="sk-crm-status__row">
+        <span
+          className="sk-crm-status__dot"
+          style={{
+            background: column.tint,
+            boxShadow: active ? `0 0 0 3px ${column.tint}29` : undefined,
+          }}
+          aria-hidden
+        />
+        <span className="sk-crm-status__title">{column.title}</span>
         <span className="sk-crm-status__count">{count}</span>
       </div>
-      <p className="sk-crm-status__value" title={valueTitle}>
+      <div className="sk-crm-status__value" title={valueTitle}>
         {valueLabel}
-      </p>
+      </div>
     </button>
   );
 }
@@ -270,8 +275,8 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex min-h-0 w-full flex-1 flex-col gap-3 pb-2 pt-1">
-        <div className="grid shrink-0 grid-cols-2 gap-2 p-0.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-3 pb-2">
+        <div className="sk-crm-phases shrink-0">
           {columnStats.map(({ col, count, valueSum }) => (
             <DroppableStatusPill
               key={col.id}
@@ -286,68 +291,59 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
           ))}
         </div>
 
-        <p className="shrink-0 text-center text-[11px] text-muted-foreground">
-          Kartu přetáhni na fázi nahoře a změní se stav.
-          <br />
-          Hodnota u fáze je součet odhadovaných cen dealů.
+        <p className="sk-crm-board__hint shrink-0">
+          Kartu přetáhni na fázi nahoře a změní se stav. Hodnota u fáze je
+          součet odhadovaných cen dealů.
         </p>
 
         {isLoading ? (
           <CrmKanbanSkeleton />
         ) : selectedColumn ? (
-          <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-white shadow-sm">
-            <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  className={cn("h-2.5 w-2.5 rounded-full", selectedColumn.dot)}
-                />
-                <h3 className="truncate text-sm font-semibold uppercase tracking-wide">
-                  {selectedColumn.title}
-                </h3>
-                <span className="text-sm text-muted-foreground">
-                  · {selectedLeads.length}
-                </span>
-              </div>
-              <div
-                className="flex items-center text-xs font-semibold text-muted-foreground"
+          <div className="sk-crm-board flex min-h-0 flex-1 flex-col">
+            <div className="sk-crm-board__head">
+              <span
+                className="sk-crm-board__dot"
+                style={{ background: selectedColumn.tint }}
+                aria-hidden
+              />
+              <span className="sk-crm-board__title">{selectedColumn.title}</span>
+              <span className="sk-crm-board__count">· {selectedLeads.length}</span>
+              <span className="sk-crm-board__spacer" aria-hidden />
+              <span
+                className="sk-crm-board__value"
                 title="Součet odhadovaných cen dealů v této fázi. Cenu nastavíš při vytvoření nebo úpravě dealu."
               >
-                <Banknote className="mr-1 h-3.5 w-3.5 opacity-70" />
                 Hodnota: {formatCurrency(activeStat?.valueSum ?? 0)}
-              </div>
+              </span>
             </div>
 
-            <div
-              className={cn(
-                "sk-data-panel__scroll scrollbar-hide min-h-0 flex-1 overflow-y-auto px-3 pb-3",
-              )}
-            >
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {selectedLeads.map((lead) => (
-                  <DraggableLeadCard
-                    key={lead.id}
-                    lead={lead}
-                    column={selectedColumn}
-                  >
-                    {(drag) =>
-                      renderLeadCard({
-                        lead,
-                        column: selectedColumn,
-                        drag,
-                        isDragOverlay: false,
-                        onEdit: () => onEdit(lead),
-                        onDelete: () => onDelete(lead.id),
-                        onQuickStatus: (status) =>
-                          onQuickStatus(lead.id, status),
-                      })
-                    }
-                  </DraggableLeadCard>
-                ))}
-              </div>
-
-              {selectedLeads.length === 0 && (
-                <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl text-sm text-muted-foreground">
+            <div className="sk-crm-board__scroll scrollbar-hide min-h-0 flex-1 overflow-y-auto">
+              {selectedLeads.length === 0 ? (
+                <div className="sk-crm-board__empty">
                   V tomto stavu zatím nejsou žádné firmy.
+                </div>
+              ) : (
+                <div className="sk-crm-board__grid">
+                  {selectedLeads.map((lead) => (
+                    <DraggableLeadCard
+                      key={lead.id}
+                      lead={lead}
+                      column={selectedColumn}
+                    >
+                      {(drag) =>
+                        renderLeadCard({
+                          lead,
+                          column: selectedColumn,
+                          drag,
+                          isDragOverlay: false,
+                          onEdit: () => onEdit(lead),
+                          onDelete: () => onDelete(lead.id),
+                          onQuickStatus: (status) =>
+                            onQuickStatus(lead.id, status),
+                        })
+                      }
+                    </DraggableLeadCard>
+                  ))}
                 </div>
               )}
             </div>

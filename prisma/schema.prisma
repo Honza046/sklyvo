@@ -301,6 +301,8 @@ model Lead {
 
   /** Poslední odeslaný outreach e-mail. */
   lastContactedAt   DateTime?
+  /** Kdy inbox sync poprvé zachytil odpověď na outreach (jen Gmail/IMAP sync). */
+  repliedAt         DateTime?
   /** Kdy je další follow-up / breakup splatný. */
   nextOutreachAt    DateTime?
   nextOutreachKind  OutreachKind?
@@ -317,6 +319,7 @@ model Lead {
   @@index([workspaceId, domain])
   @@index([workspaceId, source])
   @@index([workspaceId, nextOutreachAt])
+  @@index([workspaceId, repliedAt])
 }
 
 model EmailQueue {

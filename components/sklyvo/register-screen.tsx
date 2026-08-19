@@ -47,130 +47,138 @@ export function RegisterScreen() {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="sklyvo-fields">
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <label className="sr-only" htmlFor={nameId}>
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={nameId}>
               {t.register.name}
             </label>
-            <input
-              id={nameId}
-              className="sklyvo-field__input"
-              type="text"
-              name="name"
-              autoComplete="name"
-              placeholder={t.register.name}
-              required
-              disabled={pending}
-            />
-          </div>
-
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m2 7 10 6 10-6" />
-            </svg>
-            <label className="sr-only" htmlFor={emailId}>
-              {t.register.email}
-            </label>
-            <input
-              id={emailId}
-              className="sklyvo-field__input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder={t.register.email}
-              required
-              disabled={pending}
-            />
-          </div>
-
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="3" y="11" width="18" height="10" rx="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <label className="sr-only" htmlFor={passwordId}>
-              {t.register.password}
-            </label>
-            <input
-              id={passwordId}
-              className="sklyvo-field__input"
-              type={showPassword ? "text" : "password"}
-              name="password"
-              autoComplete="new-password"
-              placeholder={t.register.password}
-              required
-              minLength={8}
-              disabled={pending}
-            />
-            <button
-              type="button"
-              className="sklyvo-field__reveal"
-              aria-label={
-                showPassword ? t.register.hidePassword : t.register.showPassword
-              }
-              aria-pressed={showPassword}
-              onClick={() => setShowPassword((value) => !value)}
-            >
+            <div className="sklyvo-field">
               <svg
-                width="16"
-                height="16"
+                width="15"
+                height="15"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--sk-icon)"
+                stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden
               >
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                <circle cx="12" cy="12" r="3" />
-                <line
-                  className="sklyvo-field__slash"
-                  x1="3"
-                  y1="21"
-                  x2="21"
-                  y2="3"
-                  style={{
-                    strokeDashoffset: showPassword ? 26 : 0,
-                    opacity: showPassword ? 0 : 1,
-                  }}
-                />
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
               </svg>
-            </button>
+              <input
+                id={nameId}
+                className="sklyvo-field__input"
+                type="text"
+                name="name"
+                autoComplete="name"
+                placeholder={t.register.namePlaceholder}
+                required
+                disabled={pending}
+              />
+            </div>
+          </div>
+
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={emailId}>
+              {t.register.email}
+            </label>
+            <div className="sklyvo-field">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m2 7 10 6 10-6" />
+              </svg>
+              <input
+                id={emailId}
+                className="sklyvo-field__input"
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder={t.register.emailPlaceholder}
+                required
+                disabled={pending}
+              />
+            </div>
+          </div>
+
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={passwordId}>
+              {t.register.password}
+            </label>
+            <div className="sklyvo-field">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <input
+                id={passwordId}
+                className="sklyvo-field__input"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="new-password"
+                placeholder={t.register.passwordPlaceholder}
+                required
+                minLength={8}
+                disabled={pending}
+              />
+              <button
+                type="button"
+                className="sklyvo-field__reveal"
+                aria-label={
+                  showPassword
+                    ? t.register.hidePassword
+                    : t.register.showPassword
+                }
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <line
+                    className="sklyvo-field__slash"
+                    x1="3"
+                    y1="21"
+                    x2="21"
+                    y2="3"
+                    style={{
+                      strokeDashoffset: showPassword ? 26 : 0,
+                      opacity: showPassword ? 0 : 1,
+                    }}
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 

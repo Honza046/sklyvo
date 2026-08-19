@@ -13,6 +13,9 @@
   --n-text-soft: #f2f3f5;
   --n-muted: #8a8f98;
   --n-dim: #6b7078;
+  --sk-icon: var(--n-dim);
+  --sk-link: var(--n-muted);
+  --sk-brand: #02a7ff;
   --sk-ease-pop: cubic-bezier(0.3, 0.9, 0.3, 1);
 
   position: relative;
@@ -240,7 +243,7 @@
   display: flex;
   flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 24px;
+  gap: 16px;
   margin: 96px 32px 48px;
 }
 
@@ -394,6 +397,18 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.sklyvo-login .sklyvo-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sklyvo-login .sklyvo-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--n-muted);
 }
 
 .sklyvo-login .sklyvo-field {
@@ -802,6 +817,25 @@
     top: 18px;
     right: 20px;
   }
+}
+
+/* Standalone password reset — single centered card, no globe */
+.sklyvo-login.sklyvo-login--solo .sklyvo-auth--solo {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 452px;
+  margin: 0 auto;
+  padding: 92px 20px 40px;
+}
+
+.sklyvo-login.sklyvo-login--solo .sklyvo-card--form {
+  width: 100%;
+  height: auto !important;
+}
+
+.sklyvo-login.sklyvo-login--solo .sklyvo-card__body {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 460px) {

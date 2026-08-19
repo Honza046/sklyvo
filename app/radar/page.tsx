@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -26,16 +25,17 @@ import {
   Check,
   Mail,
   Radio,
-  Info,
   MapPin,
   Linkedin,
 } from "lucide-react";
+import { ToolToggle } from "@/components/sklyvo/tool-toggle";
 import { cn } from "@/lib/utils";
 import { searchRadarLeads } from "@/app/actions/radar";
 import { addLeadFromRadar, importMultipleLeads } from "@/app/actions/crm";
 import { toast } from "sonner";
 import { useLanguage } from "@/context/LanguageContext";
 import { messages } from "@/lib/i18n/messages";
+import type { TranslationParams } from "@/lib/i18n/types";
 import {
   DEFAULT_RADAR_COUNTRY,
   RADAR_COUNTRY_NONE,
@@ -48,28 +48,46 @@ import {
 const RADAR_RECENT_STORAGE_KEY = "sklyvo-radar-recent-searches";
 const RADAR_RECENT_MAX = 4;
 
-function loadRecentSearches(): string[] {
+type RecentSearch = { query: string; count: number; at: number };
+
+function loadRecentSearches(): RecentSearch[] {
   try {
     const raw = window.localStorage.getItem(RADAR_RECENT_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed
-      .map((item) => (typeof item === "string" ? item.trim() : ""))
-      .filter(Boolean)
+      .map((item) => {
+        if (typeof item === "string") {
+          // legacy entries — query text only, no count/date yet
+          return { query: item.trim(), count: 0, at: 0 };
+        }
+        if (item && typeof item === "object") {
+          const r = item as Partial<RecentSearch>;
+          if (typeof r.query === "string" && r.query.trim()) {
+            return {
+              query: r.query.trim(),
+              count: typeof r.count === "number" ? r.count : 0,
+              at: typeof r.at === "number" ? r.at : 0,
+            };
+          }
+        }
+        return null;
+      })
+      .filter((item): item is RecentSearch => item !== null && item.query.length > 0)
       .slice(0, RADAR_RECENT_MAX);
   } catch {
     return [];
   }
 }
 
-function pushRecentSearch(query: string): string[] {
+function pushRecentSearch(query: string, count: number): RecentSearch[] {
   const q = query.trim();
   if (!q) return loadRecentSearches();
   const next = [
-    q,
+    { query: q, count, at: Date.now() },
     ...loadRecentSearches().filter(
-      (item) => item.toLowerCase() !== q.toLowerCase(),
+      (item) => item.query.toLowerCase() !== q.toLowerCase(),
     ),
   ].slice(0, RADAR_RECENT_MAX);
   try {
@@ -96,20 +114,21 @@ type RadarResult = {
   placeTypes?: string[];
 };
 
-const RADAR_HELP_SECTIONS = [
-  {
-    title: "Deep Scan",
-    description: "Prohledá i podstránky pro skryté emaily.",
-  },
-  {
-    title: "Vyloučit v CRM",
-    description: "Skryje firmy, které už máte uložené.",
-  },
-  {
-    title: "Pouze s emailem",
-    description: "Ukáže jen výsledky s nalezeným kontaktem.",
-  },
-] as const;
+function formatRelativeDate(
+  at: number,
+  t: (path: string, params?: TranslationParams) => string,
+): string {
+  const diffMs = Date.now() - at;
+  const minutes = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(diffMs / 3_600_000);
+  const days = Math.floor(diffMs / 86_400_000);
+  if (minutes < 1) return t("dashboard.timeNow");
+  if (hours < 1) return t("dashboard.timeMinutesAgo", { minutes });
+  if (days < 1) return t("dashboard.timeHoursAgo", { hours });
+  if (days === 1) return t("dashboard.timeYesterday");
+  const d = new Date(at);
+  return `${d.getDate()}. ${d.getMonth() + 1}.`;
+}
 
 /** Denní rotace tipů — stejný den = stejné 3 tipy, další den jiné. */
 function pickDailyInspirations(pool: readonly string[], count = 3): string[] {
@@ -135,7 +154,7 @@ export default function RadarPage() {
     return pickDailyInspirations(pool, 3);
   }, [language]);
   const [query, setQuery] = useState("");
-  const [count, setCount] = useState("5");
+  const [count, setCount] = useState("25");
   const [country, setCountry] = useState(DEFAULT_RADAR_COUNTRY);
   const [isSearching, setIsSearching] = useState(false);
   const [hasResults, setHasResults] = useState(false);
@@ -150,7 +169,7 @@ export default function RadarPage() {
   const [addedLeadIds, setAddedLeadIds] = useState<string[]>([]);
   const [addingLeadIds, setAddingLeadIds] = useState<string[]>([]);
   const [isImportingAll, setIsImportingAll] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
 
   useEffect(() => {
     setRecentSearches(loadRecentSearches());
@@ -236,14 +255,13 @@ export default function RadarPage() {
       return;
     }
 
-    setRecentSearches(pushRecentSearch(query.trim()));
-
     const raw = radarResponse.results ?? [];
     const filtered = onlyEmail
       ? raw.filter((r) => Boolean(r.email?.trim()))
       : raw;
     setResults(filtered);
     setHasResults(true);
+    setRecentSearches(pushRecentSearch(query.trim(), filtered.length));
   };
 
   const toggleLead = (id: string) => {
@@ -327,249 +345,185 @@ export default function RadarPage() {
     }
   };
 
+  const recentIn7Days = useMemo(
+    () =>
+      recentSearches.filter(
+        (s) => s.at === 0 || Date.now() - s.at < 7 * 86_400_000,
+      ),
+    [recentSearches],
+  );
+
   return (
-    <div
-      className={cn(
-        "flex h-full w-full flex-col items-center overflow-y-auto pb-8 scrollbar-hide",
-        !hasResults && "overflow-hidden",
-      )}
-    >
-      <div className="mb-2 text-center">
-        <div className="mb-1.5 flex items-center justify-center">
-          <div className="sk-page-badge" data-accent="cyan" aria-hidden>
-            <Radio strokeWidth={2} />
-          </div>
-        </div>
-        <h1 className="sk-type-h1 text-[28px]">{t("radar.title")}</h1>
-        <p className="sk-type-small mx-auto max-w-lg">{t("radar.subtitle")}</p>
+    <div className="sk-tool-page sk-tool-page--stack">
+      <div className="sk-page-head sk-page-head--tool shrink-0">
+        <h1 className="sk-page-head__title">{t("radar.title")}</h1>
+        <p className="sk-page-head__sub">{t("radar.subtitle")}</p>
       </div>
 
-      <div className="flex w-full flex-col gap-4">
-        <div className="relative flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr_1fr]">
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <Target className="h-3.5 w-3.5 text-sky-400" />
-                {t("radar.targetProfile")}
-              </Label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                <Input
-                  className="h-11 rounded-xl border-border/50 bg-background pl-10 text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0"
-                  placeholder={t("radar.searchPlaceholder")}
-                  value={query}
-                  onChange={(e) => handleQueryChange(e.target.value)}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <Globe className="h-3.5 w-3.5" />
-                {t("radar.country")}
-              </Label>
-              <Select value={country} onValueChange={handleCountryChange}>
-                <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
-                  <SelectItem value={RADAR_COUNTRY_NONE}>
-                    {t("radar.countryAny")}
-                  </SelectItem>
-                  {RADAR_COUNTRY_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.code} value={opt.code}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                <ListOrdered className="h-3.5 w-3.5" />
-                {t("radar.resultCount")}
-              </Label>
-              <Select value={count} onValueChange={setCount}>
-                <SelectTrigger className="h-11 rounded-xl border-border/50 bg-background text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border/60 bg-card shadow-lg">
-                  <SelectItem value="5">
-                    {t("radar.resultsN", { n: 5 })}
-                  </SelectItem>
-                  <SelectItem value="10">
-                    {t("radar.resultsN", { n: 10 })}
-                  </SelectItem>
-                  <SelectItem value="15">
-                    {t("radar.resultsN", { n: 15 })}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+      <div className="sk-tool-form shrink-0">
+        <div className="sk-tool-form__grid">
+          <div className="sk-tool-form__field">
+            <Label className="sk-field-label">
+              {t("radar.targetProfile")}
+            </Label>
+            <div className="sk-field">
+              <Search className="sk-field__icon" aria-hidden />
+              <input
+                className="sk-plain-field"
+                placeholder={t("radar.searchPlaceholder")}
+                value={query}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                autoComplete="off"
+              />
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="min-w-0 space-y-1.5">
-              <p className="text-[11px] text-muted-foreground">
-                {t("radar.inspirationLabel")}
-              </p>
-              <div className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
-                {searchInspirations.map((text) => (
-                  <button
-                    key={text}
-                    type="button"
-                    onClick={() => handleQueryChange(text)}
-                    className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-muted/60 px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
-                  >
-                    {text}
-                  </button>
+          <div className="sk-tool-form__field">
+            <Label className="sk-field-label">{t("radar.country")}</Label>
+            <Select value={country} onValueChange={handleCountryChange}>
+              <SelectTrigger className="sk-field w-full justify-between">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={RADAR_COUNTRY_NONE}>
+                  {t("radar.countryAny")}
+                </SelectItem>
+                {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.code} value={opt.code}>
+                    {opt.label}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-            <div className="min-w-0 space-y-1.5">
-              <p className="text-[11px] text-muted-foreground">
-                {t("radar.recentLabel")}
-              </p>
-              {recentSearches.length > 0 ? (
-                <div className="flex min-w-0 flex-nowrap gap-2 overflow-x-auto scrollbar-hide">
-                  {recentSearches.map((text) => (
-                    <button
-                      key={text}
-                      type="button"
-                      onClick={() => handleQueryChange(text)}
-                      className="shrink-0 whitespace-nowrap rounded-full border border-border/50 bg-background px-3 py-1 text-left text-xs font-medium text-foreground/90 transition-colors hover:border-border hover:bg-muted"
-                    >
-                      {text}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[11px] text-muted-foreground/80">
-                  {t("radar.recentEmpty")}
-                </p>
-              )}
-            </div>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-10 gap-y-3 border-t border-border/40 pt-3">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="deep-scan"
-                className="sk-switch--sm shrink-0"
-                checked={deepScan}
-                onCheckedChange={setDeepScan}
-              />
-              <Label
-                htmlFor="deep-scan"
-                className="flex cursor-pointer items-center gap-1.5 text-[13px] font-medium"
-              >
-                <Zap
-                  className={cn(
-                    "h-3.5 w-3.5 shrink-0",
-                    deepScan
-                      ? "fill-amber-500 text-amber-500"
-                      : "text-muted-foreground",
-                  )}
-                />
-                {t("radar.deepScanLabel")}
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="exclude-crm"
-                className="sk-switch--sm shrink-0"
-                checked={excludeCrm}
-                onCheckedChange={setExcludeCrm}
-              />
-              <Label
-                htmlFor="exclude-crm"
-                className="cursor-pointer text-[13px] font-medium"
-              >
-                {t("radar.excludeCrmLabel")}
-              </Label>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Switch
-                id="only-email"
-                className="sk-switch--sm shrink-0"
-                checked={onlyEmail}
-                onCheckedChange={setOnlyEmail}
-              />
-              <Label
-                htmlFor="only-email"
-                className="cursor-pointer text-[13px] font-medium"
-              >
-                {t("radar.emailOnlyLabel")}
-              </Label>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="primary"
-            onClick={handleSearch}
-            disabled={isSearching || !query.trim()}
-            className="h-11 w-full self-start px-6 text-sm md:w-auto"
-          >
-            {isSearching ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                {t("radar.searching")}
-              </>
-            ) : (
-              <>
-                <Search className="mr-2 h-4 w-4" /> {t("radar.runSearch")}
-              </>
-            )}
-          </Button>
-          {searchError && (
-            <p className="text-sm font-medium text-red-600 ">{searchError}</p>
-          )}
-
-          <div className="absolute bottom-4 right-4 z-40">
-            <div
-              tabIndex={0}
-              className="group relative inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2"
-            >
-              <div
-                id="radar-switch-help-tooltip"
-                role="tooltip"
-                className={cn(
-                  "absolute bottom-full right-1 z-50 mb-2 w-[min(20rem,calc(100vw-2.5rem))]",
-                  "origin-bottom-right translate-y-2 scale-[0.98] opacity-0 transition-all duration-200 ease-out",
-                  "pointer-events-none rounded-xl border border-border/70 bg-white p-4 shadow-xl ",
-                  "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100",
-                  "group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
-                )}
-              >
-                <div className="space-y-3">
-                  {RADAR_HELP_SECTIONS.map((section) => (
-                    <div key={section.title}>
-                      <p className="text-sm font-semibold text-foreground">
-                        {section.title}
-                      </p>
-                      <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                        {section.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <span
-                className="inline-flex cursor-default text-gray-400 transition-colors group-hover:text-gray-600 "
-                aria-describedby="radar-switch-help-tooltip"
-              >
-                <Info className="h-4 w-4" aria-hidden />
-              </span>
-            </div>
+          <div className="sk-tool-form__field">
+            <Label className="sk-field-label">{t("radar.resultCount")}</Label>
+            <Select value={count} onValueChange={setCount}>
+              <SelectTrigger className="sk-field w-full justify-between">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">
+                  {t("radar.resultsN", { n: 5 })}
+                </SelectItem>
+                <SelectItem value="10">
+                  {t("radar.resultsN", { n: 10 })}
+                </SelectItem>
+                <SelectItem value="15">
+                  {t("radar.resultsN", { n: 15 })}
+                </SelectItem>
+                <SelectItem value="25">
+                  {t("radar.resultsN", { n: 25 })}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {hasResults && (
+        <div className="sk-tool-ideas">
+          <span className="sk-tool-ideas__label">
+            {t("radar.inspirationLabel")}
+          </span>
+          {searchInspirations.map((text) => (
+            <button
+              key={text}
+              type="button"
+              onClick={() => handleQueryChange(text)}
+              className="sk-tool-chip"
+            >
+              {text}
+            </button>
+          ))}
+        </div>
+
+        <div className="sk-tool-toggles">
+          <ToolToggle
+            checked={deepScan}
+            onChange={setDeepScan}
+            label={t("radar.deepScanLabel")}
+          />
+          <ToolToggle
+            checked={excludeCrm}
+            onChange={setExcludeCrm}
+            label={t("radar.excludeCrmLabel")}
+          />
+          <ToolToggle
+            checked={onlyEmail}
+            onChange={setOnlyEmail}
+            label={t("radar.emailOnlyLabel")}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void handleSearch()}
+          disabled={isSearching || !query.trim()}
+          className="sk-tool-cta"
+        >
+          {isSearching ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {t("radar.searching")}
+            </>
+          ) : (
+            <>
+              <Search className="h-3.5 w-3.5" />
+              {t("radar.runSearch")}
+            </>
+          )}
+        </button>
+        {searchError && (
+          <p className="mt-2 text-sm font-medium text-red-500">{searchError}</p>
+        )}
+      </div>
+
+      {!hasResults ? (
+        <section
+          className="sk-sniper-recent"
+          aria-label={t("radar.recentLabel")}
+        >
+          <div className="sk-sniper-recent__head">
+            <h2 className="sk-sniper-recent__title">{t("radar.recentLabel")}</h2>
+            <span className="sk-sniper-recent__count">
+              {t("radar.recentCount", { count: recentIn7Days.length })}
+            </span>
+          </div>
+          <div className="sk-sniper-recent__list">
+            {recentSearches.length === 0 ? (
+              <p className="sk-sniper-recent__empty">{t("radar.recentEmpty")}</p>
+            ) : (
+              recentSearches.map((item) => (
+                <button
+                  key={item.query}
+                  type="button"
+                  onClick={() => handleQueryChange(item.query)}
+                  className="sk-history__row"
+                >
+                  <span className="sk-history__query">
+                    <span className="sk-history__dot" aria-hidden />
+                    <span className="sk-history__text">{item.query}</span>
+                  </span>
+                  <span className="sk-history__meta">
+                    {item.count > 0 && (
+                      <span className="sk-history__found">
+                        {t("radar.recentFoundCount", { count: item.count })}
+                      </span>
+                    )}
+                    {item.at > 0 && (
+                      <span className="sk-history__when">
+                        {formatRelativeDate(item.at, t)}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+      ) : null}
+
+      {hasResults && (
           <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex flex-wrap items-center justify-between gap-3 px-2">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
@@ -578,7 +532,7 @@ export default function RadarPage() {
               <Button
                 onClick={() => void handleImportAll()}
                 disabled={isImportingAll || results.length === 0}
-                className="h-9 rounded-xl bg-blue-600 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-blue-700"
+                className="h-9 rounded-xl bg-[color:var(--sk-brand)] px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[color:var(--sk-brand)]/90"
               >
                 {isImportingAll ? (
                   <>
@@ -592,13 +546,13 @@ export default function RadarPage() {
 
               {selectedLeads.length > 0 && (
                 <div className="flex items-center gap-2 animate-in fade-in zoom-in duration-300">
-                  <span className="text-xs font-bold text-blue-600 mr-2">
+                  <span className="text-xs font-bold text-[color:var(--sk-brand)] mr-2">
                     {selectedLeads.length} vybráno
                   </span>
                   {/* OPRAVENO: Tlačítko pro přidání do CRM */}
                   <Button
                     variant="outline"
-                    className="flex items-center justify-center h-9 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-all"
+                    className="sk-pill sk-pill--soft flex h-9 items-center justify-center px-4 text-[10px] font-bold uppercase tracking-widest transition-all"
                   >
                     <Plus className="mr-2 h-3.5 w-3.5" /> Uložit do CRM
                   </Button>
@@ -611,17 +565,17 @@ export default function RadarPage() {
                 <div
                   key={result.id}
                   className={cn(
-                    "sk-list-card group relative flex items-start gap-3 rounded-xl border bg-card p-3 shadow-sm transition-all sm:gap-5 sm:rounded-2xl sm:p-6",
+                    "sk-list-card group relative flex items-start gap-3 rounded-xl border p-3 transition-all sm:gap-5 sm:rounded-2xl sm:p-6",
                     selectedLeads.includes(result.id)
-                      ? "sk-list-card--selected border-blue-400 bg-blue-50/20"
-                      : "border-border/60 hover:border-blue-200 hover:shadow-md",
+                      ? "sk-list-card--selected border-[color:var(--sk-brand)]/50 bg-[color-mix(in_oklab,var(--sk-brand)_10%,var(--n-card))]"
+                      : "border-[color:var(--n-hairline)] bg-[color:var(--n-card)] hover:border-[color:var(--sk-brand)]/30",
                   )}
                 >
                   <div className="pt-0.5 sm:pt-1.5">
                     <Checkbox
                       checked={selectedLeads.includes(result.id)}
                       onCheckedChange={() => toggleLead(result.id)}
-                      className="h-4 w-4 rounded-md border-border/80 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600 sm:h-5 sm:w-5"
+                      className="h-4 w-4 rounded-md border-border/80 data-[state=checked]:border-[color:var(--sk-brand)] data-[state=checked]:bg-[color:var(--sk-brand)] sm:h-5 sm:w-5"
                     />
                   </div>
 
@@ -630,29 +584,29 @@ export default function RadarPage() {
                       <h4 className="sk-type-h3 truncate">{result.name}</h4>
                       <div className="flex shrink-0 flex-wrap gap-1.5 sm:gap-2">
                         {addedLeadIds.includes(result.id) && (
-                          <span className="flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-emerald-600 sm:px-2.5 sm:text-[10px]">
+                          <span className="sk-pill sk-pill--positive sk-pill--xs">
                             V CRM
                           </span>
                         )}
                         {(result.discoverySources?.includes("places") ||
                           (!result.discoverySources?.length &&
                             result.placeId)) && (
-                          <span className="flex items-center rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-blue-600 sm:px-2.5 sm:text-[10px]">
+                          <span className="sk-pill sk-pill--soft sk-pill--xs">
                             <MapPin className="mr-1 h-3 w-3" /> Maps
                           </span>
                         )}
                         {result.discoverySources?.includes("web") && (
-                          <span className="flex items-center rounded-full border border-sky-100 bg-sky-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-sky-700 sm:px-2.5 sm:text-[10px]">
+                          <span className="sk-pill sk-pill--sky sk-pill--xs">
                             <Globe className="mr-1 h-3 w-3" /> Web
                           </span>
                         )}
                         {result.discoverySources?.includes("linkedin") && (
-                          <span className="flex items-center rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-indigo-700 sm:px-2.5 sm:text-[10px]">
+                          <span className="sk-pill sk-pill--indigo sk-pill--xs">
                             <Linkedin className="mr-1 h-3 w-3" /> LinkedIn
                           </span>
                         )}
                         {result.rating !== null && (
-                          <span className="flex items-center rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-tighter text-emerald-600 sm:px-2.5 sm:text-[10px]">
+                          <span className="sk-pill sk-pill--positive sk-pill--xs">
                             Hodnocení {result.rating.toFixed(1)}
                           </span>
                         )}
@@ -743,7 +697,6 @@ export default function RadarPage() {
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 }

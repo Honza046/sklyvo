@@ -851,7 +851,7 @@ export async function updateSingleLeadStatus(
 
   const result = await prisma.lead.updateMany({
     where: { id: leadId, workspaceId: session.workspace.id },
-    data: { status } as any,
+    data: { status },
   });
 
   revalidatePath("/crm");

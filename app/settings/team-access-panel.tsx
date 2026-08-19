@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Lock, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Lock, Sparkles, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   removeTeamMember,
   type TeamMemberDto,
 } from "@/app/actions/team";
+import { TeamMemberAvatar } from "@/components/settings/team-member-avatar";
 
 function roleLabel(
   role: TeamMemberDto["role"],
@@ -32,9 +33,20 @@ function roleLabel(
   }
 }
 
-function StatusBadge({ label }: { label: string }) {
+function TeamStatusBadge({
+  active,
+  label,
+}: {
+  active: boolean;
+  label: string;
+}) {
   return (
-    <span className="inline-flex rounded-md bg-emerald-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ">
+    <span
+      className={cn(
+        "sk-team-badge",
+        active ? "sk-team-badge--active" : "sk-team-badge--invite",
+      )}
+    >
       {label}
     </span>
   );
@@ -45,7 +57,9 @@ export function TeamAccessPanel() {
   const [isPending, startTransition] = useTransition();
   const [loaded, setLoaded] = useState(false);
   const [isAgency, setIsAgency] = useState(false);
-  const [planTier, setPlanTier] = useState("NONE");
+  const [planDisplayName, setPlanDisplayName] = useState("AGENCY");
+  const [workspaceName, setWorkspaceName] = useState("Workspace");
+  const [seatPriceLabel, setSeatPriceLabel] = useState("—");
   const [maxMembers, setMaxMembers] = useState(5);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<string>("MEMBER");
@@ -69,7 +83,9 @@ export function TeamAccessPanel() {
       }
       if (!("success" in state)) return;
       setIsAgency(state.isAgency);
-      setPlanTier(state.planTier);
+      setPlanDisplayName(state.planDisplayName);
+      setWorkspaceName(state.workspaceName);
+      setSeatPriceLabel(state.seatPriceLabel);
       setMaxMembers(state.maxMembers);
       setCurrentUserId(state.currentUserId);
       setCurrentUserRole(state.currentUserRole);
@@ -83,40 +99,8 @@ export function TeamAccessPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!loaded) {
-    return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        {t("settings.teamPanel.loading")}
-      </p>
-    );
-  }
-
-  if (!isAgency) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 ">
-          <Lock className="h-7 w-7" aria-hidden />
-        </div>
-        <h3 className="sk-type-h3">
-          {t("settings.teamPanel.agencyOnlyTitle")}
-        </h3>
-        <p className="mt-2 mb-6 max-w-md text-sm text-gray-500 ">
-          {t("settings.teamPanel.agencyOnlyDesc", { plan: planTier })}
-        </p>
-        <Button
-          className="h-11 rounded-xl bg-blue-600 px-8 font-semibold text-white shadow-sm hover:bg-blue-700"
-          asChild
-        >
-          <Link href="/pricing">{t("settings.teamPanel.viewPlans")}</Link>
-        </Button>
-      </div>
-    );
-  }
-
   const seatsUsed = teamMembers.length;
   const canManage = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
-  const ownerName =
-    teamMembers.find((m) => m.role === "OWNER")?.name?.trim() || null;
 
   const handlePozvatClick = () => {
     setCapacityWarning(false);
@@ -169,136 +153,193 @@ export function TeamAccessPanel() {
     });
   };
 
-  return (
-    <div className="space-y-5 pb-2 pt-2">
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border/60 bg-muted/30 p-4 ">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">
-            Agency workspace
+  if (!loaded) {
+    return (
+      <div className="sk-team-page">
+        <p className="sk-team-page__loading">{t("settings.teamPanel.loading")}</p>
+      </div>
+    );
+  }
+
+  if (!isAgency) {
+    return (
+      <div className="sk-team-page">
+        <div className="sk-team-page__locked">
+          <div className="sk-team-page__locked-icon" aria-hidden>
+            <Lock strokeWidth={2} />
+          </div>
+          <h3 className="sk-team-page__locked-title">
+            {t("settings.teamPanel.agencyOnlyTitle")}
+          </h3>
+          <p className="sk-team-page__locked-desc">
+            {t("settings.teamPanel.agencyOnlyDesc", { plan: planDisplayName })}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {t("settings.teamPanel.membersLabel")}{" "}
-            <span className="font-semibold tabular-nums text-foreground">
+          <Button className="sk-btn sk-btn--white sk-team-page__locked-cta" asChild>
+            <Link href="/pricing">{t("settings.teamPanel.viewPlans")}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sk-team-page">
+      <header className="sk-team-page__header">
+        <div className="sk-page-head sk-page-head--tool">
+          <h1 className="sk-page-head__title">{t("settings.pages.team.title")}</h1>
+          <p className="sk-page-head__sub">{t("settings.hubSubtitle")}</p>
+        </div>
+
+        <div className="sk-team-page__toolbar">
+          <Link
+            href="/settings"
+            className="sk-team-page__back"
+            aria-label={t("settings.backToHub")}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            {t("settings.back")}
+          </Link>
+
+          <button
+            type="button"
+            className="sk-btn sk-btn--white"
+            onClick={() => toast.message(t("settings.teamPanel.nothingToSave"))}
+          >
+            {t("common.save")}
+          </button>
+        </div>
+      </header>
+
+      <div className="sk-team-page__body">
+        {capacityWarning ? (
+          <div role="alert" className="sk-team-alert sk-team-alert--warn">
+            {t("settings.teamPanel.capacityFull", { max: maxMembers })}
+          </div>
+        ) : null}
+
+        {tempPasswordInfo ? (
+          <div role="status" className="sk-team-alert sk-team-alert--info">
+            <p className="font-semibold">
+              {t("settings.teamPanel.tempPasswordFor", {
+                email: tempPasswordInfo.email,
+              })}
+            </p>
+            <p className="mt-1 font-mono text-base tracking-wide">
+              {tempPasswordInfo.password}
+            </p>
+            <p className="mt-1 text-xs opacity-80">
+              {t("settings.teamPanel.tempPasswordHint")}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="sk-team-bar">
+          <div className="sk-team-bar__info">
+            <div className="sk-team-bar__name">{workspaceName}</div>
+            <div className="sk-team-bar__note">{t("settings.teamPanel.teamNote")}</div>
+          </div>
+          <span className="sk-team-bar__spacer" aria-hidden />
+          <div className="sk-team-bar__stat">
+            <span className="sk-team-bar__label">{t("settings.teamPanel.planLabel")}</span>
+            <span className="sk-team-bar__plan">
+              {planDisplayName}
+              <Sparkles className="h-3 w-3" aria-hidden />
+            </span>
+          </div>
+          <div className="sk-team-bar__stat">
+            <span className="sk-team-bar__label">{t("settings.teamPanel.perSeatLabel")}</span>
+            <span className="sk-team-bar__price">{seatPriceLabel}</span>
+          </div>
+          <div className="sk-team-bar__seats">
+            <span className="sk-team-bar__seats-count">
               {seatsUsed} / {maxMembers}
             </span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t("settings.teamPanel.sharedHint")}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {ownerName
-              ? t("settings.teamPanel.billingByNamed", { name: ownerName })
-              : t("settings.teamPanel.billingByOwner")}
-          </p>
+            <span className="sk-team-bar__seats-label">
+              {t("settings.teamPanel.seatsOccupied")}
+            </span>
+          </div>
+          {canManage ? (
+            <button
+              type="button"
+              className="sk-btn sk-btn--white sk-team-bar__invite"
+              disabled={isPending}
+              onClick={handlePozvatClick}
+            >
+              {t("settings.teamPanel.invite")}
+            </button>
+          ) : null}
         </div>
-        {canManage && (
-          <Button
-            type="button"
-            className="h-11 shrink-0 rounded-xl bg-blue-600 px-5 font-semibold text-white shadow-sm hover:bg-blue-700"
-            disabled={isPending}
-            onClick={handlePozvatClick}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t("settings.teamPanel.invite")}
-          </Button>
-        )}
-      </div>
 
-      {capacityWarning && (
-        <div
-          role="alert"
-          className="rounded-xl border border-amber-300/80 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 "
-        >
-          {t("settings.teamPanel.capacityFull", { max: maxMembers })}
-        </div>
-      )}
+        <div className="sk-team-table">
+          <div className="sk-team-table__head">
+            <span className="sk-team-table__th">{t("settings.teamPanel.colName")}</span>
+            <span className="sk-team-table__th">{t("settings.teamPanel.colEmail")}</span>
+            <span className="sk-team-table__th">{t("settings.teamPanel.colRole")}</span>
+            <span className="sk-team-table__th">{t("settings.teamPanel.colPrice")}</span>
+            <span className="sk-team-table__th sk-team-table__th--end">
+              {t("settings.teamPanel.colStatus")}
+            </span>
+          </div>
+          <div className="sk-team-table__body">
+            {teamMembers.map((member) => {
+              const active = member.status === "AKTIVNÍ";
+              const canRemove =
+                canManage &&
+                currentUserRole === "OWNER" &&
+                member.id !== currentUserId &&
+                member.role !== "OWNER";
 
-      {tempPasswordInfo && (
-        <div
-          role="status"
-          className="rounded-xl border border-blue-300/80 bg-blue-500/10 px-4 py-3 text-sm text-blue-950 "
-        >
-          <p className="font-semibold">
-            {t("settings.teamPanel.tempPasswordFor", {
-              email: tempPasswordInfo.email,
-            })}
-          </p>
-          <p className="mt-1 font-mono text-base tracking-wide">
-            {tempPasswordInfo.password}
-          </p>
-          <p className="mt-1 text-xs opacity-80">
-            {t("settings.teamPanel.tempPasswordHint")}
-          </p>
-        </div>
-      )}
-
-      <div className="sk-data-panel overflow-hidden rounded-xl shadow-sm">
-        <div className="sk-data-panel__scroll overflow-x-auto">
-          <table className="w-full table-fixed text-sm">
-            <thead>
-              <tr className="text-left">
-                <th className="w-[28%] px-3.5">{t("settings.teamPanel.colName")}</th>
-                <th className="w-[34%] px-3.5">{t("settings.teamPanel.colEmail")}</th>
-                <th className="w-[16%] px-3.5">{t("settings.teamPanel.colRole")}</th>
-                <th className="w-[14%] px-3.5">{t("settings.teamPanel.colStatus")}</th>
-                <th className="w-10 px-2">
-                  <span className="sr-only">Akce</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {teamMembers.map((m) => (
-                <tr key={m.id}>
-                  <td className="px-3.5 py-2.5">
-                    <p className="truncate text-sm font-medium leading-none text-[color:var(--sk-ink)]">
-                      {m.name}
-                    </p>
-                  </td>
-                  <td className="px-3.5 py-2.5">
-                    <p className="truncate text-sm leading-none text-[color:var(--sk-muted)]">
-                      {m.email}
-                    </p>
-                  </td>
-                  <td className="px-3.5 py-2.5">
-                    <p className="text-sm leading-none text-[color:var(--sk-ink)]">
-                      {roleLabel(m.role, t)}
-                    </p>
-                  </td>
-                  <td className="px-3.5 py-2.5">
-                    <StatusBadge label={t("settings.teamPanel.active")} />
-                  </td>
-                  <td className="px-2 py-2.5 text-right">
-                    {canManage &&
-                    currentUserRole === "OWNER" &&
-                    m.id !== currentUserId &&
-                    m.role !== "OWNER" ? (
+              return (
+                <div key={member.id} className="sk-team-table__row">
+                  <div className="sk-team-table__name">
+                    <TeamMemberAvatar
+                      name={member.name}
+                      avatarUrl={member.avatarUrl}
+                    />
+                    <span className="sk-team-table__name-text">{member.name}</span>
+                    {canRemove ? (
                       <button
                         type="button"
-                        aria-label={t("settings.teamPanel.removeAria", { email: m.email })}
+                        className="sk-team-table__remove"
+                        aria-label={t("settings.teamPanel.removeAria", {
+                          email: member.email,
+                        })}
                         title={t("settings.teamPanel.removeTitle")}
-                        className="sk-row-icon-btn inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--sk-muted)] transition-colors hover:bg-rose-500/10 hover:text-rose-600"
                         disabled={isPending}
-                        onClick={() => handleRemove(m)}
+                        onClick={() => handleRemove(member)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     ) : null}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                  <span className="sk-team-table__email">{member.email}</span>
+                  <span className="sk-team-table__role">{roleLabel(member.role, t)}</span>
+                  <span className="sk-team-table__price">
+                    {active ? seatPriceLabel : "—"}
+                  </span>
+                  <TeamStatusBadge
+                    active={active}
+                    label={
+                      active
+                        ? t("settings.teamPanel.active")
+                        : t("settings.teamPanel.invited")
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {inviteOpen && (
+      {inviteOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setInviteOpen(false)}
           role="presentation"
         >
           <div
-            className="relative w-full max-w-md rounded-2xl border border-border/60 bg-card p-8 shadow-xl"
+            className="sk-settings-dialog relative w-full max-w-md p-8"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -344,7 +385,7 @@ export function TeamAccessPanel() {
               </div>
               <Button
                 type="button"
-                className="h-11 w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700"
+                className="h-11 w-full rounded-xl bg-[color:var(--sk-brand)] font-semibold text-white hover:bg-[color:var(--sk-brand)]/90"
                 disabled={isPending || !inviteEmail.trim()}
                 onClick={handleSendInvite}
               >
@@ -353,7 +394,7 @@ export function TeamAccessPanel() {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

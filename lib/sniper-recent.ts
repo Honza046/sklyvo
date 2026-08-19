@@ -32,18 +32,21 @@ export function companyLabelFromUrl(url: string): string {
   }
 }
 
-function storageKey(workspaceId: string) {
-  return `${STORAGE_PREFIX}:${workspaceId}`;
+function storageKey(workspaceId: string, userId: string) {
+  return `${STORAGE_PREFIX}:${workspaceId}:${userId}`;
 }
 
 function normalizeKey(url: string, email: string) {
   return `${url.trim().toLowerCase()}|${email.trim().toLowerCase()}`;
 }
 
-export function listSniperRecent(workspaceId: string | null | undefined): SniperRecentItem[] {
-  if (typeof window === "undefined" || !workspaceId) return [];
+export function listSniperRecent(
+  workspaceId: string | null | undefined,
+  userId: string | null | undefined,
+): SniperRecentItem[] {
+  if (typeof window === "undefined" || !workspaceId || !userId) return [];
   try {
-    const raw = window.localStorage.getItem(storageKey(workspaceId));
+    const raw = window.localStorage.getItem(storageKey(workspaceId, userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -63,24 +66,29 @@ export function listSniperRecent(workspaceId: string | null | undefined): Sniper
   }
 }
 
-function writeSniperRecent(workspaceId: string, items: SniperRecentItem[]) {
+function writeSniperRecent(
+  workspaceId: string,
+  userId: string,
+  items: SniperRecentItem[],
+) {
   window.localStorage.setItem(
-    storageKey(workspaceId),
+    storageKey(workspaceId, userId),
     JSON.stringify(items.slice(0, MAX_ITEMS)),
   );
 }
 
 export function upsertSniperRecent(
   workspaceId: string | null | undefined,
+  userId: string | null | undefined,
   input: Omit<SniperRecentItem, "id" | "createdAt" | "updatedAt" | "companyLabel"> & {
     id?: string;
     companyLabel?: string;
     status?: SniperRecentStatus;
   },
 ): SniperRecentItem[] {
-  if (typeof window === "undefined" || !workspaceId) return [];
+  if (typeof window === "undefined" || !workspaceId || !userId) return [];
   const now = Date.now();
-  const current = listSniperRecent(workspaceId);
+  const current = listSniperRecent(workspaceId, userId);
   const key = normalizeKey(input.targetUrl, input.contactEmail);
   const existingIndex = current.findIndex(
     (item) => normalizeKey(item.targetUrl, item.contactEmail) === key,
@@ -111,17 +119,18 @@ export function upsertSniperRecent(
 
   const without = current.filter((_, i) => i !== existingIndex);
   const next = [nextItem, ...without].slice(0, MAX_ITEMS);
-  writeSniperRecent(workspaceId, next);
+  writeSniperRecent(workspaceId, userId, next);
   return next;
 }
 
 export function markSniperRecentSent(
   workspaceId: string | null | undefined,
+  userId: string | null | undefined,
   targetUrl: string,
   contactEmail: string,
 ): SniperRecentItem[] {
-  if (typeof window === "undefined" || !workspaceId) return [];
-  const current = listSniperRecent(workspaceId);
+  if (typeof window === "undefined" || !workspaceId || !userId) return [];
+  const current = listSniperRecent(workspaceId, userId);
   const key = normalizeKey(targetUrl, contactEmail);
   const now = Date.now();
   const next = current
@@ -131,6 +140,6 @@ export function markSniperRecentSent(
         : item,
     )
     .sort((a, b) => b.updatedAt - a.updatedAt);
-  writeSniperRecent(workspaceId, next);
+  writeSniperRecent(workspaceId, userId, next);
   return next;
 }

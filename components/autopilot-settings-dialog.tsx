@@ -47,7 +47,6 @@ const SECTION_META: Record<
     title: string;
     description: string;
     icon: typeof Radio;
-    accent: "ink" | "brand";
   }
 > = {
   radar: {
@@ -55,20 +54,17 @@ const SECTION_META: Record<
     description:
       "Kdy a koho má Radar hledat. Změny platí od příštího automatického běhu.",
     icon: Radio,
-    accent: "ink",
   },
   sniper: {
     title: "Nastavení odesílání",
     description: "Generování hned · odeslání podle dnů, oken a limitu dávky.",
     icon: Rocket,
-    accent: "ink",
   },
   "full-auto": {
     title: "Nastavení Full Auto",
     description:
       "Jak často spustit celou smyčku: Radar najde firmy → Sniper je osloví.",
     icon: Sparkles,
-    accent: "ink",
   },
 };
 
@@ -163,11 +159,10 @@ export function AutopilotSettingsDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        data-accent={meta.accent}
         data-theme="dark"
         className={cn(
-          "sklyvo-app sk-settings-dialog flex w-full flex-col gap-0 overflow-hidden p-0",
-          "left-[50%] top-[50%] h-auto max-h-[min(90vh,720px)] w-full translate-x-[-50%] translate-y-[-50%] rounded-[20px]",
+          "sklyvo-app sk-dialog-flat sk-settings-dialog flex w-full flex-col gap-0 overflow-hidden p-0",
+          "left-[50%] top-[50%] h-auto max-h-[min(90vh,720px)] w-full translate-x-[-50%] translate-y-[-50%] rounded-[18px]",
           section === "radar"
             ? "max-w-3xl"
             : section === "sniper"
@@ -539,12 +534,7 @@ export function AutopilotSettingsDialog({
                         active && "sk-choice--active",
                       )}
                     >
-                      <p
-                        className={cn(
-                          "sk-choice__title text-[13px] font-semibold",
-                          !active && "text-foreground",
-                        )}
-                      >
+                      <p className="sk-choice__title text-[13px] font-semibold">
                         {option.title}
                       </p>
                       <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
@@ -733,7 +723,7 @@ export function AutopilotSettingsDialog({
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <p className="sk-type-label">1 · Jak často</p>
-                <div className="sk-choice-track grid gap-1 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-3">
                   {(
                     [
                       {
@@ -769,12 +759,7 @@ export function AutopilotSettingsDialog({
                           active && "sk-choice--active",
                         )}
                       >
-                        <p
-                          className={cn(
-                            "sk-choice__title text-[13px] font-semibold leading-tight",
-                            !active && "text-foreground",
-                          )}
-                        >
+                        <p className="sk-choice__title text-[13px] font-semibold leading-tight">
                           {option.title}
                         </p>
                         <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">
@@ -815,12 +800,13 @@ export function AutopilotSettingsDialog({
           )}
         </div>
 
-        <DialogFooter className="sk-settings-footer relative z-10 flex shrink-0 flex-row justify-end gap-3 bg-transparent px-6 py-3 sm:flex-row sm:space-x-0">
+        <DialogFooter className="sk-settings-footer sk-dialog-actions relative z-10 flex shrink-0 flex-row justify-end gap-3 border-t border-[rgba(255,255,255,0.09)] bg-transparent px-6 py-3 sm:flex-row sm:space-x-0">
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
+            className="sk-dialog-actions__cancel"
           >
             Zavřít
           </Button>
@@ -828,7 +814,7 @@ export function AutopilotSettingsDialog({
             type="button"
             variant="default"
             disabled={disabled}
-            className="relative z-10 shrink-0"
+            className="sk-dialog-actions__save relative z-10 shrink-0"
             onClick={() => {
               void (async () => {
                 await onSave?.();
@@ -861,16 +847,15 @@ function OptionalWindowToggle({
       aria-pressed={enabled}
       onClick={() => onEnabledChange(!enabled)}
       className={cn(
-        "sk-choice flex w-full items-center gap-2.5 border-dashed px-2.5 py-2 text-left disabled:opacity-50",
-        "hover:border-[color-mix(in_oklab,var(--sk-settings-accent)_35%,var(--sk-mix-base))]",
+        "sk-ap-window-toggle flex w-full items-center gap-2.5 px-2.5 py-2 text-left disabled:opacity-50",
       )}
     >
       <span
         className={cn(
           "flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border",
           enabled
-            ? "border-transparent bg-[color:var(--sk-settings-accent)] text-white shadow-[0_2px_6px_color-mix(in_oklab,var(--sk-settings-accent)_40%,transparent)]"
-            : "border-[color:var(--sk-panel-edge)] bg-[var(--sk-sunken)] shadow-[var(--sk-sunken-shadow)]",
+            ? "border-[rgba(255,255,255,0.35)] bg-[#131417] text-[#fafafb]"
+            : "border-[rgba(255,255,255,0.13)] bg-transparent text-transparent",
         )}
       >
         {enabled ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
@@ -934,7 +919,7 @@ function TimeWindowRow({
 }) {
   if (compact) {
     return (
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/40 bg-background/80 px-2.5 py-2">
+      <div className="sk-ap-time-window flex flex-wrap items-center gap-2 px-2.5 py-2">
         <span className="w-16 shrink-0 text-[10px] font-semibold text-muted-foreground">
           {label}
         </span>
@@ -960,7 +945,7 @@ function TimeWindowRow({
   }
 
   return (
-    <div className="rounded-lg border border-border/40 bg-background/80 px-2.5 py-2">
+    <div className="sk-ap-time-window px-2.5 py-2">
       <p className="mb-1.5 text-[10px] font-semibold text-muted-foreground">
         {label}
       </p>

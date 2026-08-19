@@ -8,15 +8,13 @@ import {
   Globe,
   Info,
   Loader2,
-  Maximize2,
   Phone,
-  Search,
   Send,
   Trash2,
   Wand2,
 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
-import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
+import { FilterSearch } from "@/components/autopilot/filter-search";
 import { CopyEmailButton } from "@/components/copy-email-button";
 import {
   AlertDialog,
@@ -50,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { humanizeEmailError } from "@/lib/humanize-email-error";
 import {
   clearAutopilotEmailQueue,
   forceSendAutopilotQueueItem,
@@ -72,10 +71,10 @@ import { toast } from "sonner";
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
-  AutopilotIconButton,
   AutopilotSettingsIconButton,
   AutopilotListEmptyState,
   AutopilotTableEmptyState,
+  AutopilotTableLoadingSpinner,
   AutopilotTablePagination,
   AUTOPILOT_TABLE_CARD_CLASS,
   AUTOPILOT_TABLE_HEAD_CELL_CLASS,
@@ -92,7 +91,6 @@ import {
   type WorkspaceLead,
 } from "@/components/autopilot/shared";
 import {
-  AutopilotListSkeleton,
   AutopilotTableSkeletonRows,
 } from "@/components/autopilot/autopilot-table-skeleton";
 import { useAutopilotSettings } from "@/components/autopilot/use-autopilot-settings";
@@ -118,8 +116,6 @@ export function AutopilotSniperView() {
   const [activeSubTab, setActiveSubTab] = useState<"selection" | "queue">(
     "selection",
   );
-  const [queueExpanded, setQueueExpanded] = useState(false);
-  const [selectionExpanded, setSelectionExpanded] = useState(false);
   const [selectionDateFilter, setSelectionDateFilter] = useState<
     "all" | "last_7_days" | "last_30_days" | "this_year"
   >("all");
@@ -183,7 +179,7 @@ export function AutopilotSniperView() {
               row.leadId,
               {
                 status: "error" as RunStatus,
-                message: row.errorMessage ?? "Chyba ve frontě",
+                message: humanizeEmailError(row.errorMessage ?? "Chyba ve frontě"),
                 queueId: row.queueId,
                 subject: row.subject,
                 htmlBody: row.htmlBody,
@@ -488,6 +484,95 @@ export function AutopilotSniperView() {
     { id: "error" as const, label: "Chyby", count: errorCount },
   ];
 
+  const filterControlClass =
+    "sk-filter-chip h-[46px] shrink-0 py-0 text-[13px] shadow-none";
+
+  const renderSelectionFilters = () => (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+        <FilterSearch
+          value={selectionSearch}
+          onChange={setSelectionSearch}
+          placeholder="Hledat firmu…"
+          className="min-w-0 flex-1 sm:min-w-[180px]"
+        />
+        <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
+          <SelectTrigger
+            className={cn(filterControlClass, "w-full sm:w-[180px]")}
+          >
+            <SelectValue placeholder="Obor / tag" />
+          </SelectTrigger>
+          <SelectContent className="z-[220]">
+            <SelectItem value="all">Všechny obory</SelectItem>
+            {availableSelectionTags.map(({ tag, label, count }) => (
+              <SelectItem key={tag} value={tag}>
+                {label} ({count})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={selectionDateFilter}
+          onValueChange={(v) =>
+            setSelectionDateFilter(
+              v as "all" | "last_7_days" | "last_30_days" | "this_year",
+            )
+          }
+        >
+          <SelectTrigger
+            className={cn(filterControlClass, "w-full sm:w-[170px]")}
+          >
+            <SelectValue placeholder="Datum" />
+          </SelectTrigger>
+          <SelectContent className="z-[220]">
+            <SelectItem value="all">Všechna data</SelectItem>
+            <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
+            <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
+            <SelectItem value="this_year">Tento rok</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex shrink-0 items-center justify-end gap-2">
+        <span className="text-[11px] font-medium text-muted-foreground">
+          Jen s e-mailem
+        </span>
+        <Switch
+          checked={onlyWithEmail}
+          onCheckedChange={setOnlyWithEmail}
+          className="sk-switch--sm shrink-0"
+          aria-label="Jen s e-mailem"
+        />
+      </div>
+    </div>
+  );
+
+  const renderQueueFilters = () => (
+    <div className="flex flex-col gap-3">
+      <FilterSearch
+        value={queueSearch}
+        onChange={setQueueSearch}
+        placeholder="Hledat firmu, e-mail, autora…"
+        className="min-w-0 w-full"
+      />
+      <div className="sk-ap-queue-filter-tabs">
+        {queueFilterTabs.map(({ id, label, count }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setQueueStatusFilter(id)}
+            className={cn(
+              "sk-ap-queue-filter-tab",
+              queueStatusFilter === id && "sk-ap-queue-filter-tab--active",
+            )}
+          >
+            <span>{label}</span>
+            <span className="sk-ap-queue-filter-tab__count">{count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   const updateLead = (id: string, next: RunState) => {
     setStates((prev) => ({ ...prev, [id]: next }));
   };
@@ -647,8 +732,10 @@ export function AutopilotSniperView() {
     const meta = STATUS_META[state.status];
     const errorDetail =
       state.status === "error"
-        ? state.message?.trim() ||
-          "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail."
+        ? humanizeEmailError(
+            state.message?.trim() ||
+              "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail.",
+          )
         : null;
 
     if (!errorDetail) {
@@ -753,7 +840,10 @@ export function AutopilotSniperView() {
           scheduledAt: scheduledTimes[index].toISOString(),
         });
         if ("error" in result) {
-          updateLead(lead.id, { status: "error", message: result.error });
+          updateLead(lead.id, {
+            status: "error",
+            message: humanizeEmailError(result.error),
+          });
         } else {
           updateLead(lead.id, {
             status: "queued",
@@ -976,14 +1066,11 @@ export function AutopilotSniperView() {
     }
   };
 
-  const renderSelectionTable = (mode: "compact" | "expanded") => {
-    const expanded = mode === "expanded";
-    return (
+  const renderSelectionTable = () => (
       <div
         className={cn(
           AUTOPILOT_TABLE_CARD_CLASS,
-          "relative z-0 flex min-h-0 flex-1 flex-col overflow-hidden",
-          expanded ? "mt-0 h-full min-h-0 sm:mt-0" : "mt-3 sm:mt-4",
+          "relative z-0 mt-3 flex min-h-0 flex-1 flex-col overflow-hidden sm:mt-4",
         )}
       >
         <div
@@ -1002,7 +1089,7 @@ export function AutopilotSniperView() {
               <col className="w-[22%]" />
               <col className="w-[7rem]" />
             </colgroup>
-            <thead className="sticky top-0 z-20 bg-white ">
+            <thead className="sticky top-0 z-20 bg-[color:var(--n-card)] ">
               <tr className="text-left">
                 <th
                   className={cn(
@@ -1045,7 +1132,7 @@ export function AutopilotSniperView() {
                 const checked = selectedIds.includes(lead.id);
                 return (
                   <tr
-                    key={`${mode}-d-${lead.id}`}
+                    key={`sel-d-${lead.id}`}
                     className="cursor-pointer"
                     onClick={() => toggleOne(lead.id)}
                   >
@@ -1134,8 +1221,10 @@ export function AutopilotSniperView() {
                   </tr>
                 );
               })}
-              {isLoading ? (
-                <AutopilotTableSkeletonRows rows={8} columns={6} />
+              {isLoading && leads.length === 0 ? (
+                <AutopilotTableLoadingSpinner colSpan={6} />
+              ) : isLoading ? (
+                <AutopilotTableSkeletonRows rows={8} columns={6} variant="sniper" />
               ) : (
                 paginatedLeads.length === 0 && (
                   <>
@@ -1172,38 +1261,24 @@ export function AutopilotSniperView() {
         />
       </div>
     );
-  };
 
-  const renderQueuePanel = (mode: "compact" | "expanded") => {
-    const expanded = mode === "expanded";
-
+  const renderQueuePanel = () => {
     if (isQueueLoading && campaignLeads.length === 0) {
       return (
-        <div
-          className={cn(
-            AUTOPILOT_TABLE_CARD_CLASS,
-            "shrink-0",
-            expanded
-              ? "flex min-h-0 flex-1 items-center justify-center"
-              : "mt-3 sm:mt-6",
-          )}
-        >
-          <AutopilotListSkeleton rows={5} />
+        <div className="sk-ap-queue flex min-h-[min(36dvh,260px)] items-center justify-center">
+          <Loader2
+            className="h-7 w-7 animate-spin text-[#6b7078]"
+            strokeWidth={2}
+            aria-hidden
+          />
+          <span className="sr-only">Načítání fronty</span>
         </div>
       );
     }
 
     if (campaignLeads.length === 0) {
       return (
-        <div
-          className={cn(
-            AUTOPILOT_TABLE_CARD_CLASS,
-            "shrink-0",
-            expanded
-              ? "flex min-h-0 flex-1 items-center justify-center"
-              : "mt-3 sm:mt-6",
-          )}
-        >
+        <div className="sk-ap-queue items-center justify-center">
           <AutopilotListEmptyState>
             Zatím nemáte naplánovanou frontu. Označ firmy a klikni na
             „Vygenerovat a naplánovat“.
@@ -1213,234 +1288,157 @@ export function AutopilotSniperView() {
     }
 
     return (
-      <>
-        <div
-          className={cn(
-            "sk-toolbar sk-surface shrink-0 overflow-hidden",
-            !expanded && "mt-3 sm:mt-4",
-          )}
-        >
-          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="flex shrink-0 items-center gap-2 text-xs font-semibold leading-none text-foreground sm:text-sm">
-                {isRunning ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      <div className="sk-ap-queue">
+        <div className="sk-ap-queue__head">
+          <div className="sk-ap-queue__status">
+            <span className="sk-ap-queue__status-label">
+              {isRunning ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              )}
+              {isRunning ? "Generuji…" : "Fronta připravena"}
+            </span>
+            <span className="sk-ap-queue__stat sk-ap-queue__stat--ok">
+              ✓ {queuedCount}
+            </span>
+            <span className="sk-ap-queue__stat sk-ap-queue__stat--err">
+              ✕ {errorCount}
+            </span>
+            <span className="sk-ap-queue__stat sk-ap-queue__stat--muted">
+              {processedCount}/{total}
+            </span>
+          </div>
+          <div className="sk-ap-queue__actions">
+            {queuedCount > 0 && (
+              <button
+                type="button"
+                disabled={
+                  isRunning || isForceSending || forceSendingQueueId !== null
+                }
+                onClick={() => void handleForceSendQueue()}
+                className="sk-ap-queue__btn sk-ap-queue__btn--success"
+              >
+                {isForceSending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <Send className="h-3.5 w-3.5" />
                 )}
-                {isRunning ? "Generuji…" : "Fronta připravena"}
-              </span>
-              <span className="shrink-0 text-[11px] font-medium leading-none text-emerald-600 sm:text-xs">
-                ✓ {queuedCount}
-              </span>
-              <span className="shrink-0 text-[11px] font-medium leading-none text-rose-600 sm:text-xs">
-                ✕ {errorCount}
-              </span>
-              <span className="text-[11px] leading-none text-muted-foreground sm:text-xs">
-                {processedCount}/{total}
-              </span>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {!expanded && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setQueueExpanded(true)}
-                  className="sk-press-btn h-8 gap-1.5 rounded-[12px] px-3 text-xs"
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                  Zvětšit
-                </Button>
-              )}
-              {queuedCount > 0 && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={
-                    isRunning || isForceSending || forceSendingQueueId !== null
-                  }
-                  onClick={() => void handleForceSendQueue()}
-                  className="sk-press-btn sk-selection__success h-8 gap-1.5 rounded-[12px] px-3 text-xs"
-                >
-                  {isForceSending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
-                  Odeslat vše
-                </Button>
-              )}
-              {errorCount > 0 && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={isRunning || isClearingQueue}
-                      className="sk-press-btn sk-selection__danger h-8 gap-1.5 rounded-[12px] px-3 text-xs"
-                    >
-                      {isClearingQueue ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
-                      Smazat chyby
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="border bg-card shadow-md ">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Smazat všechny chyby ve frontě?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Odstraní se {errorCount}{" "}
-                        {errorCount === 1
-                          ? "položka se stavem Chyba"
-                          : "položek se stavem Chyba"}
-                        . Potvrzené e-maily ve frontě zůstanou.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Zrušit</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => void handleClearQueue("failed")}
-                        className="bg-red-600 text-white hover:bg-red-700"
-                      >
-                        Smazat chyby
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
+                Odeslat vše
+              </button>
+            )}
+            {errorCount > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button
+                  <button
                     type="button"
-                    variant="secondary"
-                    disabled={
-                      isRunning || isClearingQueue || campaignLeads.length === 0
-                    }
-                    className="sk-press-btn sk-selection__danger h-8 gap-1.5 rounded-[12px] px-3 text-xs"
+                    disabled={isRunning || isClearingQueue}
+                    className="sk-ap-queue__btn sk-ap-queue__btn--danger"
                   >
                     {isClearingQueue ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                     ) : (
                       <Trash2 className="h-3.5 w-3.5" />
                     )}
-                    Vyčistit
-                  </Button>
+                    Smazat chyby
+                  </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="border bg-card shadow-md ">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      Opravdu chcete vyčistit frontu?
+                      Smazat všechny chyby ve frontě?
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Smažou se všechny položky ve frontě včetně chyb (
-                      {campaignLeads.length}). Tuto akci nelze vrátit.
+                      Odstraní se {errorCount}{" "}
+                      {errorCount === 1
+                        ? "položka se stavem Chyba"
+                        : "položek se stavem Chyba"}
+                      . Potvrzené e-maily ve frontě zůstanou.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Zrušit</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => void handleClearQueue("all")}
+                      onClick={() => void handleClearQueue("failed")}
                       className="bg-red-600 text-white hover:bg-red-700"
                     >
-                      Smazat frontu
+                      Smazat chyby
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            </div>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  disabled={
+                    isRunning || isClearingQueue || campaignLeads.length === 0
+                  }
+                  className="sk-ap-queue__btn sk-ap-queue__btn--danger"
+                >
+                  {isClearingQueue ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                  Vyčistit
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="border bg-card shadow-md ">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Opravdu chcete vyčistit frontu?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Smažou se všechny položky ve frontě včetně chyb (
+                    {campaignLeads.length}). Tuto akci nelze vrátit.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Zrušit</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => void handleClearQueue("all")}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    Smazat frontu
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-          {(isRunning || isForceSending) && (
-            <Progress
-              value={progressValue}
-              className="h-1 w-full basis-full rounded-none"
-            />
-          )}
+        </div>
+
+        {(isRunning || isForceSending) && (
+          <Progress
+            value={progressValue}
+            className="h-1 w-full shrink-0 rounded-none"
+          />
+        )}
+
+        <div className="sk-ap-queue__intro">
+          <h3 className="sk-ap-queue__title">Fronta k odeslání</h3>
+          <p className="sk-ap-queue__hint">
+            E-maily ve sloupci Kontakt můžete upravit kliknutím. Platí, dokud se
+            zpráva neodešle. U chyby po opravě e-mailu se položka znovu zařadí
+            do fronty.
+          </p>
         </div>
 
         <div
           className={cn(
-            AUTOPILOT_TABLE_CARD_CLASS,
-            expanded
-              ? "mt-3 flex min-h-0 flex-1 flex-col overflow-hidden"
-              : "mt-3 shrink-0 overflow-hidden sm:mt-4",
+            "sk-ap-queue__scroll sk-data-panel sk-data-panel__scroll",
+            AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
           )}
         >
-          <div className="shrink-0 px-3 pt-3 pb-2 sm:px-4 sm:pt-4 sm:pb-3">
-            <div className="mb-2 flex flex-col gap-2 sm:mb-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs font-semibold text-foreground sm:text-sm">
-                Fronta k odeslání
-              </p>
-              <div className="relative min-w-0 w-full sm:w-72 sm:max-w-none">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={queueSearch}
-                  onChange={(event) => setQueueSearch(event.target.value)}
-                  placeholder="Hledat firmu, e-mail, autora…"
-                  className="h-8 w-full pl-8 text-xs"
-                />
-              </div>
-            </div>
-            <div className="flex gap-1 overflow-x-auto sm:flex-wrap sm:items-center sm:gap-4">
-              {queueFilterTabs.map(({ id, label, count }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setQueueStatusFilter(id)}
-                  className={cn(
-                    "flex shrink-0 items-baseline gap-1.5 px-2 py-1 text-xs font-semibold transition-colors sm:px-0 sm:text-sm",
-                    queueStatusFilter === id
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span>{label}</span>
-                  <span className="tabular-nums opacity-80">{count}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] leading-snug text-blue-800">
-              E-maily ve sloupci Kontakt můžete upravit kliknutím. Platí, dokud
-              se zpráva neodešle. U chyby po opravě e-mailu se položka znovu
-              zařadí do fronty.
-            </p>
-          </div>
-
-          <div
-            className={cn(
-              "sk-data-panel__scroll",
-              expanded
-                ? "min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-                : cn(
-                    AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
-                    "h-[190px] min-h-[190px] max-h-[190px] overflow-x-auto overflow-y-auto",
-                  ),
-            )}
-          >
-            <table
-              className={cn(
-                "w-full text-sm",
-                expanded ? "table-auto" : "min-w-[980px] table-fixed",
-              )}
-            >
-              <thead className="sticky top-0 z-20 bg-white ">
+            <table className="min-w-[980px] w-full table-fixed text-sm">
+              <thead className="sticky top-0 z-20">
                 <tr className="text-left">
-                  <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[18%]" : "min-w-[180px]",
-                    )}
-                  >
+                  <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[180px]")}>
                     Firma
                   </th>
                   <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[22%]" : "min-w-[180px]",
-                    )}
+                    className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[180px]")}
                     title="E-mail můžete upravit, dokud se zpráva neodešle"
                   >
                     Kontakt
@@ -1448,19 +1446,11 @@ export function AutopilotSniperView() {
                       (upravit)
                     </span>
                   </th>
-                  <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[10%]" : "min-w-[72px]",
-                    )}
-                  >
+                  <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[72px]")}>
                     Autor
                   </th>
                   <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[12%]" : "min-w-[120px]",
-                    )}
+                    className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[120px]")}
                     title={
                       featureEnabled
                         ? "Plánovaný čas odeslání (automatický cron)"
@@ -1469,28 +1459,13 @@ export function AutopilotSniperView() {
                   >
                     Odeslat
                   </th>
-                  <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[12%]" : "min-w-[120px]",
-                    )}
-                  >
+                  <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[120px]")}>
                     Vytvořeno
                   </th>
-                  <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[16%]" : "min-w-[140px]",
-                    )}
-                  >
+                  <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[140px]")}>
                     Stav
                   </th>
-                  <th
-                    className={cn(
-                      "sticky top-0 z-10 h-9 bg-transparent px-3 py-2 align-middle",
-                      expanded ? "w-[14%]" : "min-w-[150px]",
-                    )}
-                  >
+                  <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[150px]")}>
                     Akce
                   </th>
                 </tr>
@@ -1508,7 +1483,7 @@ export function AutopilotSniperView() {
                     forceSendingQueueId === state.queueId;
 
                   return (
-                    <tr key={`${mode}-d-${lead.id}`}>
+                    <tr key={`queue-d-${lead.id}`}>
                       <td className="px-3 py-2.5">
                         <p className="max-w-[280px] truncate font-semibold text-foreground">
                           {lead.company}
@@ -1617,8 +1592,7 @@ export function AutopilotSniperView() {
               setQueueCurrentPage((p) => Math.min(queueTotalPages, p + 1))
             }
           />
-        </div>
-      </>
+      </div>
     );
   };
 
@@ -1640,7 +1614,6 @@ export function AutopilotSniperView() {
       <div className="sk-autopilot__panel">
         <AutopilotControlPanel
           icon={<Send className="h-5 w-5" />}
-          iconWrapClassName="sk-page-badge"
           iconAccent="emerald"
           title="Automatické odesílání e-mailů"
           powerEnabled={featureEnabled}
@@ -1648,6 +1621,13 @@ export function AutopilotSniperView() {
             featureEnabled
               ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
               : "Cron vypnutý. Maily z fronty se neodešlou, dokud nezapneš."
+          }
+          filters={
+            activeSubTab === "selection"
+              ? renderSelectionFilters()
+              : activeSubTab === "queue" && campaignLeads.length > 0
+                ? renderQueueFilters()
+                : undefined
           }
           actions={
             <>
@@ -1670,10 +1650,7 @@ export function AutopilotSniperView() {
         <div className="mt-0 flex shrink-0 gap-1 overflow-x-auto sm:gap-5">
           <button
             type="button"
-            onClick={() => {
-              setQueueExpanded(false);
-              setActiveSubTab("selection");
-            }}
+            onClick={() => setActiveSubTab("selection")}
             className={cn(
               "shrink-0 px-2 pb-1 text-xs font-medium transition-colors sm:px-0 sm:text-sm",
               activeSubTab === "selection"
@@ -1710,27 +1687,6 @@ export function AutopilotSniperView() {
                   ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
                   : "Označ firmy k oslovení"}
               </p>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="hidden text-[11px] font-medium text-muted-foreground sm:inline">
-                  Jen s e-mailem
-                </span>
-                <span className="text-[11px] font-medium text-muted-foreground sm:hidden">
-                  E-mail
-                </span>
-                <Switch
-                  checked={onlyWithEmail}
-                  onCheckedChange={setOnlyWithEmail}
-                  className="sk-switch--sm shrink-0"
-                  aria-label="Jen s e-mailem"
-                />
-              </div>
-              <AutopilotIconButton
-                label="Zvětšit výběr firem"
-                onClick={() => setSelectionExpanded(true)}
-                className="h-8 w-8"
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </AutopilotIconButton>
               <Button
                 type="button"
                 variant="default"
@@ -1776,112 +1732,14 @@ export function AutopilotSniperView() {
               </div>
             )}
 
-            {selectionExpanded ? (
-              <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
-                Výběr firem je otevřený ve zvětšeném okně.
-              </div>
-            ) : (
-              renderSelectionTable("compact")
-            )}
+            {renderSelectionTable()}
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {queueExpanded ? (
-              <div className="mt-3 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground sm:mt-6">
-                Fronta je otevřená ve zvětšeném okně.
-              </div>
-            ) : (
-              renderQueuePanel("compact")
-            )}
+            {renderQueuePanel()}
           </div>
         )}
       </div>
-
-      <ExpandOverlay
-        open={selectionExpanded}
-        onClose={() => setSelectionExpanded(false)}
-        title="Výběr firem k oslovení"
-        description={
-          selectedIds.length > 0
-            ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
-            : "Označ firmy k oslovení"
-        }
-      >
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-          <div className="shrink-0 overflow-visible p-0.5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <div className="relative min-w-0 flex-1 sm:min-w-[180px]">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={selectionSearch}
-                  onChange={(e) => setSelectionSearch(e.target.value)}
-                  placeholder="Hledat firmu…"
-                  className="sk-filter-chip h-9 w-full py-0 pl-8 text-xs shadow-none"
-                />
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  Jen s e-mailem
-                </span>
-                <Switch
-                  checked={onlyWithEmail}
-                  onCheckedChange={setOnlyWithEmail}
-                  className="sk-switch--sm shrink-0"
-                  aria-label="Jen s e-mailem"
-                />
-              </div>
-              <Select
-                value={selectionTagFilter}
-                onValueChange={setSelectionTagFilter}
-              >
-                <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[180px]">
-                  <SelectValue placeholder="Obor / tag" />
-                </SelectTrigger>
-                <SelectContent className="z-[220]">
-                  <SelectItem value="all">Všechny obory</SelectItem>
-                  {availableSelectionTags.map(({ tag, label, count }) => (
-                    <SelectItem key={tag} value={tag}>
-                      {label} ({count})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={selectionDateFilter}
-                onValueChange={(v) =>
-                  setSelectionDateFilter(
-                    v as "all" | "last_7_days" | "last_30_days" | "this_year",
-                  )
-                }
-              >
-                <SelectTrigger className="sk-filter-chip h-9 w-full shrink-0 py-0 text-xs shadow-none sm:w-[170px]">
-                  <SelectValue placeholder="Datum" />
-                </SelectTrigger>
-                <SelectContent className="z-[220]">
-                  <SelectItem value="all">Všechna data</SelectItem>
-                  <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-                  <SelectItem value="last_30_days">
-                    Posledních 30 dní
-                  </SelectItem>
-                  <SelectItem value="this_year">Tento rok</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-            {renderSelectionTable("expanded")}
-          </div>
-        </div>
-      </ExpandOverlay>
-
-      <ExpandOverlay
-        open={queueExpanded}
-        onClose={() => setQueueExpanded(false)}
-        title="Fronta k odeslání"
-        description="Rozšířený náhled fronty. Po zavření zůstane kompaktní fronta v záložce."
-      >
-        {renderQueuePanel("expanded")}
-      </ExpandOverlay>
 
       <Dialog
         open={activePreviewEmail !== null}
@@ -1993,7 +1851,7 @@ function QueueErrorStatus({
         onMouseLeave={() => setTip(null)}
       >
         <span>{label}</span>
-        <Info className="h-3 w-3 shrink-0 opacity-80" />
+        <Info className="h-3.5 w-3.5 shrink-0" strokeWidth={2.75} />
       </span>
       {tip &&
         typeof document !== "undefined" &&
@@ -2001,7 +1859,7 @@ function QueueErrorStatus({
           <div
             role="tooltip"
             style={{ top: tip.top, left: tip.left }}
-            className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-rose-200 bg-white p-3 text-left shadow-lg "
+            className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-[color-mix(in_oklab,#fb7185_32%,transparent)] bg-[color:var(--n-card)] p-3 text-left shadow-lg "
           >
             <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600 ">
               Důvod chyby

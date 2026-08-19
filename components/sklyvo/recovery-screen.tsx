@@ -51,34 +51,36 @@ export function RecoveryScreen() {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="sklyvo-fields">
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m2 7 10 6 10-6" />
-            </svg>
-            <label className="sr-only" htmlFor={emailId}>
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={emailId}>
               {t.recovery.email}
             </label>
-            <input
-              id={emailId}
-              className="sklyvo-field__input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder={t.recovery.email}
-              required
-              disabled={pending}
-            />
+            <div className="sklyvo-field">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m2 7 10 6 10-6" />
+              </svg>
+              <input
+                id={emailId}
+                className="sklyvo-field__input"
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder={t.recovery.emailPlaceholder}
+                required
+                disabled={pending}
+              />
+            </div>
           </div>
         </div>
 

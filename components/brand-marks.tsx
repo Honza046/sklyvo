@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 
 const MARK_MASK_SRC = "/brand/sklyvo-mark-mask.png";
-const AI_MASK_SRC = "/brand/ai-mask.png";
 
 /** Logo značka — jen geometrie, barva přes `text-*` / currentColor. */
 export function SklyvoBrandMark({
@@ -63,36 +62,5 @@ export function SklyvoWordmark({
         </span>
       ) : null}
     </div>
-  );
-}
-
-/** Mask cover ikona AI asistenta — geometrie přes CSS mask. */
-export function AiMaskIcon({
-  className,
-  size = 16,
-}: {
-  className?: string;
-  size?: number;
-}) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "inline-flex shrink-0 items-center justify-center bg-current",
-        className,
-      )}
-      style={{
-        width: size,
-        height: size,
-        WebkitMaskImage: `url(${AI_MASK_SRC})`,
-        maskImage: `url(${AI_MASK_SRC})`,
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-      }}
-    />
   );
 }

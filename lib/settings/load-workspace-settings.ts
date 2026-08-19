@@ -6,7 +6,21 @@ import type { EmailConnectionState } from "@/lib/email-connection-types";
 import { authorFromSessionUser } from "@/lib/lead-provenance";
 import { prisma } from "@/lib/prisma";
 
+export type HubTeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: "OWNER" | "ADMIN" | "MEMBER";
+  avatarUrl: string | null;
+};
+
+function displayNameFromEmail(email: string) {
+  const local = email.split("@")[0] ?? "Kolega";
+  return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
 export type WorkspaceSettingsData = {
+  workspaceId: string | null;
   isWorkspaceReady: boolean;
   isFreePlanTier: boolean;
   isAgencyPlan: boolean;
@@ -35,6 +49,7 @@ export type WorkspaceSettingsData = {
   hubMicrosoftConnected: boolean;
   hubFakturoidConnected: boolean;
   hubMemberCount: number;
+  hubTeamMembers: HubTeamMember[];
 };
 
 export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
@@ -126,6 +141,7 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
   let hubMicrosoftConnected = false;
   let hubFakturoidConnected = false;
   let hubMemberCount = 0;
+  let hubTeamMembers: HubTeamMember[] = [];
 
   if (workspace?.id) {
     const hubExtras = await prisma.workspace.findUnique({
@@ -134,7 +150,16 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
         googleSheetsConnection: { select: { status: true } },
         microsoftConnection: { select: { status: true } },
         fakturoidConnection: { select: { connectedAt: true } },
-        _count: { select: { members: true } },
+        members: {
+          orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
     hubSheetsConnected =
@@ -142,10 +167,19 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
     hubMicrosoftConnected =
       hubExtras?.microsoftConnection?.status === "CONNECTED";
     hubFakturoidConnected = Boolean(hubExtras?.fakturoidConnection?.connectedAt);
-    hubMemberCount = hubExtras?._count.members ?? 0;
+    hubTeamMembers =
+      hubExtras?.members.map((member) => ({
+        id: member.id,
+        name: member.name?.trim() || displayNameFromEmail(member.email),
+        email: member.email,
+        role: member.role,
+        avatarUrl: member.avatarUrl?.trim() || null,
+      })) ?? [];
+    hubMemberCount = hubTeamMembers.length;
   }
 
   return {
+    workspaceId: workspace?.id ?? null,
     isWorkspaceReady,
     isFreePlanTier,
     isAgencyPlan,
@@ -174,5 +208,6 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
     hubMicrosoftConnected,
     hubFakturoidConnected,
     hubMemberCount,
+    hubTeamMembers,
   };
 }

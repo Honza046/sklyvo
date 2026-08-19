@@ -11,7 +11,7 @@ function trimEnv(key: string): string | undefined {
 export const SKLYVO_BRAND = {
  name: "Sklyvo",
  companyName: trimEnv("SKLYVO_COMPANY_NAME") ?? "Venegard s.r.o.",
- supportEmail: trimEnv("SKLYVO_SUPPORT_EMAIL") ?? "podpora@venegard.com",
+ supportEmail: trimEnv("SKLYVO_SUPPORT_EMAIL") ?? "sklyvo@support.com",
  phone: trimEnv("SKLYVO_PHONE") ?? "+420 605 875 808",
  websiteLabel: trimEnv("SKLYVO_WEBSITE_LABEL") ?? "sklyvo.com",
  websiteUrl: trimEnv("SKLYVO_WEBSITE_URL") ?? "https://sklyvo.com",

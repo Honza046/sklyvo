@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { cn } from "@/lib/utils";
 
 type CompanyAvatarProps = {
@@ -12,6 +12,8 @@ type CompanyAvatarProps = {
   shape?: "square" | "circle";
   sizeClassName?: string;
   textClassName?: string;
+  /** Custom initials chip styling when favicon is unavailable. */
+  fallbackStyle?: CSSProperties;
 };
 
 /**
@@ -32,6 +34,7 @@ export function CompanyAvatar({
   shape = "square",
   sizeClassName = "h-9 w-9",
   textClassName = "text-[10px]",
+  fallbackStyle,
 }: CompanyAvatarProps) {
   const [failed, setFailed] = useState(false);
 
@@ -50,11 +53,17 @@ export function CompanyAvatar({
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden border border-blue-100 bg-blue-50 font-bold text-blue-700 ",
+        "relative flex shrink-0 items-center justify-center overflow-hidden font-bold",
         sizeClassName,
-        shape === "circle" ? "rounded-full" : "rounded-lg",
+        shape === "circle" ? "rounded-full" : "rounded-[9px]",
+        showImage
+          ? "border border-[rgba(255,255,255,0.1)] bg-[#131417]"
+          : fallbackStyle
+            ? null
+            : "border border-[color-mix(in_oklab,var(--sk-brand)_28%,transparent)] bg-[color-mix(in_oklab,var(--sk-brand)_14%,var(--n-field))] text-[color:var(--sk-brand)]",
         className,
       )}
+      style={!showImage && fallbackStyle ? fallbackStyle : undefined}
       title={name}
     >
       {showImage ? (

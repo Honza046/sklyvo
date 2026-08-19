@@ -113,6 +113,8 @@ export function useSlidingThumb(
   const thumbStyle: CSSProperties =
     axis === "y"
       ? {
+          left: thumb.x,
+          width: thumb.w || undefined,
           height: thumb.h || undefined,
           transform: `translateY(${thumb.y}px)`,
           opacity: thumb.ready ? 1 : 0,

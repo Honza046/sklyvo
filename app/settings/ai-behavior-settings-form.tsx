@@ -37,7 +37,18 @@ type SettingsSaveRegistry = {
   handlersRef: Map<string, () => Promise<boolean>>;
 };
 
+type AiBehaviorContextValue = {
+  emailSignature: string;
+  setEmailSignature: (value: string) => void;
+  forbiddenWords: string;
+  setForbiddenWords: (value: string) => void;
+  systemPrompt: string;
+  setSystemPrompt: (value: string) => void;
+  signaturePlaceholder: string;
+};
+
 const SettingsSaveContext = createContext<SettingsSaveRegistry | null>(null);
+const AiBehaviorContext = createContext<AiBehaviorContextValue | null>(null);
 
 export function SettingsSaveProvider({ children }: { children: ReactNode }) {
   const handlersRef = useMemo(
@@ -71,14 +82,31 @@ export function useSettingsSaveRegistry() {
   return useContext(SettingsSaveContext);
 }
 
-export function AiBehaviorSettingsForm({
+function useAiBehavior() {
+  const ctx = useContext(AiBehaviorContext);
+  if (!ctx) {
+    throw new Error("AI behavior components must be used within AiBehaviorSettingsProvider");
+  }
+  return ctx;
+}
+
+type AiBehaviorSettingsProviderProps = {
+  initialEmailSignature: string;
+  senderFullName?: string;
+  senderEmail?: string;
+  initialSystemPrompt: string;
+  initialForbiddenWords: string;
+  children: ReactNode;
+};
+
+export function AiBehaviorSettingsProvider({
   initialEmailSignature,
   senderFullName,
   senderEmail = "you@example.com",
   initialSystemPrompt,
   initialForbiddenWords,
-  compact = false,
-}: AiBehaviorSettingsFormProps) {
+  children,
+}: AiBehaviorSettingsProviderProps) {
   const { t } = useLanguage();
   const resolvedName = senderFullName?.trim() || t("settings.aiSenderFallback");
   const router = useRouter();
@@ -117,6 +145,128 @@ export function AiBehaviorSettingsForm({
     setForbiddenWords(initialForbiddenWords);
   }, [initialEmailSignature, initialForbiddenWords, initialSystemPrompt]);
 
+  const value = useMemo(
+    () => ({
+      emailSignature,
+      setEmailSignature,
+      forbiddenWords,
+      setForbiddenWords,
+      systemPrompt,
+      setSystemPrompt,
+      signaturePlaceholder,
+    }),
+    [
+      emailSignature,
+      forbiddenWords,
+      signaturePlaceholder,
+      systemPrompt,
+    ],
+  );
+
+  return (
+    <AiBehaviorContext.Provider value={value}>
+      {children}
+    </AiBehaviorContext.Provider>
+  );
+}
+
+export function EmailSignatureField({ matej = false }: { matej?: boolean }) {
+  const { t } = useLanguage();
+  const { emailSignature, setEmailSignature, signaturePlaceholder } = useAiBehavior();
+
+  return (
+    <div className={cn("sk-outreach-field-wrap", matej && "sk-outreach-field-wrap--signature")}>
+      <Label htmlFor="email-signature" className="sk-outreach-field-label">
+        {t("settings.emailIntegration.signatureLabel")}
+      </Label>
+      <Textarea
+        id="email-signature"
+        value={emailSignature}
+        onChange={(e) => setEmailSignature(e.target.value)}
+        placeholder={signaturePlaceholder}
+        aria-label={t("settings.emailIntegration.signatureLabel")}
+        className={cn(
+          "sk-outreach-field resize-none",
+          matej ? "sk-outreach-field--signature" : "min-h-[4.5rem]",
+        )}
+      />
+      {!matej ? (
+        <p className="sk-outreach-field-hint">{t("settings.aiSignatureHint")}</p>
+      ) : null}
+    </div>
+  );
+}
+
+export function AiBehaviorMatejPanel() {
+  return <AiBehaviorSettingsFormBody matej />;
+}
+
+export function AiBehaviorSettingsForm({
+  initialEmailSignature,
+  senderFullName,
+  senderEmail,
+  initialSystemPrompt,
+  initialForbiddenWords,
+  compact = false,
+}: AiBehaviorSettingsFormProps) {
+  return (
+    <AiBehaviorSettingsProvider
+      initialEmailSignature={initialEmailSignature}
+      senderFullName={senderFullName}
+      senderEmail={senderEmail}
+      initialSystemPrompt={initialSystemPrompt}
+      initialForbiddenWords={initialForbiddenWords}
+    >
+      <AiBehaviorSettingsFormBody compact={compact} />
+    </AiBehaviorSettingsProvider>
+  );
+}
+
+function AiBehaviorSettingsFormBody({
+  compact = false,
+  matej = false,
+}: {
+  compact?: boolean;
+  matej?: boolean;
+}) {
+  const { t } = useLanguage();
+  const {
+    forbiddenWords,
+    setForbiddenWords,
+    systemPrompt,
+    setSystemPrompt,
+  } = useAiBehavior();
+
+  if (matej) {
+    return (
+      <div className="sk-outreach-ai">
+        <div className="sk-outreach-field-wrap">
+          <Label htmlFor="forbidden-words" className="sk-outreach-field-label">
+            {t("settings.aiForbidden")}
+          </Label>
+          <Textarea
+            id="forbidden-words"
+            value={forbiddenWords}
+            onChange={(e) => setForbiddenWords(e.target.value)}
+            placeholder={t("settings.aiForbiddenPlaceholder")}
+            className="sk-outreach-field sk-outreach-field--input resize-none"
+          />
+        </div>
+        <div className="sk-outreach-field-wrap sk-outreach-field-wrap--grow">
+          <Label htmlFor="system-prompt" className="sk-outreach-field-label">
+            {t("settings.aiSystemPrompt")}
+          </Label>
+          <Textarea
+            id="system-prompt"
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            className="sk-outreach-field sk-outreach-field--grow resize-none"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -126,28 +276,7 @@ export function AiBehaviorSettingsForm({
       )}
     >
       <div className="grid shrink-0 grid-cols-2 items-stretch gap-2.5">
-        <div className="flex min-h-0 flex-col gap-1">
-          <Label
-            htmlFor="email-signature"
-            className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-          >
-            {t("settings.aiSignature")}
-          </Label>
-          <Textarea
-            id="email-signature"
-            value={emailSignature}
-            onChange={(e) => setEmailSignature(e.target.value)}
-            placeholder={signaturePlaceholder}
-            rows={3}
-            className="sk-settings-field min-h-[4.5rem] flex-1 resize-none text-sm"
-          />
-          {!compact ? (
-            <p className="text-[10px] text-muted-foreground">
-              {t("settings.aiSignatureHint")}
-            </p>
-          ) : null}
-        </div>
-
+        <EmailSignatureField />
         <div className="flex min-h-0 flex-col gap-1">
           <Label
             htmlFor="forbidden-words"

@@ -268,99 +268,103 @@ export function LoginScreen() {
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="sklyvo-fields">
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m2 7 10 6 10-6" />
-            </svg>
-            <label className="sr-only" htmlFor={emailId}>
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={emailId}>
               {t.login.email}
             </label>
-            <input
-              id={emailId}
-              className="sklyvo-field__input"
-              type="email"
-              name="email"
-              autoComplete="email"
-              placeholder={t.login.email}
-              required
-              disabled={pending}
-            />
-          </div>
-
-          <div className="sklyvo-field">
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--sk-icon)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <rect x="3" y="11" width="18" height="10" rx="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <label className="sr-only" htmlFor={passwordId}>
-              {t.login.password}
-            </label>
-            <input
-              id={passwordId}
-              className="sklyvo-field__input"
-              type={showPassword ? "text" : "password"}
-              name="password"
-              autoComplete="current-password"
-              placeholder={t.login.password}
-              required
-              disabled={pending}
-            />
-            <button
-              type="button"
-              className="sklyvo-field__reveal"
-              aria-label={
-                showPassword ? t.login.hidePassword : t.login.showPassword
-              }
-              aria-pressed={showPassword}
-              onClick={() => setShowPassword((value) => !value)}
-            >
+            <div className="sklyvo-field">
               <svg
-                width="16"
-                height="16"
+                width="15"
+                height="15"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="var(--sk-icon)"
+                stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 aria-hidden
               >
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
-                <circle cx="12" cy="12" r="3" />
-                <line
-                  className="sklyvo-field__slash"
-                  x1="3"
-                  y1="21"
-                  x2="21"
-                  y2="3"
-                  style={{
-                    strokeDashoffset: showPassword ? 26 : 0,
-                    opacity: showPassword ? 0 : 1,
-                  }}
-                />
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m2 7 10 6 10-6" />
               </svg>
-            </button>
+              <input
+                id={emailId}
+                className="sklyvo-field__input"
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder={t.login.emailPlaceholder}
+                required
+                disabled={pending}
+              />
+            </div>
+          </div>
+
+          <div className="sklyvo-group">
+            <label className="sklyvo-label" htmlFor={passwordId}>
+              {t.login.password}
+            </label>
+            <div className="sklyvo-field">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="3" y="11" width="18" height="10" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <input
+                id={passwordId}
+                className="sklyvo-field__input"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="current-password"
+                placeholder={t.login.passwordPlaceholder}
+                required
+                disabled={pending}
+              />
+              <button
+                type="button"
+                className="sklyvo-field__reveal"
+                aria-label={
+                  showPassword ? t.login.hidePassword : t.login.showPassword
+                }
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                  <circle cx="12" cy="12" r="3" />
+                  <line
+                    className="sklyvo-field__slash"
+                    x1="3"
+                    y1="21"
+                    x2="21"
+                    y2="3"
+                    style={{
+                      strokeDashoffset: showPassword ? 26 : 0,
+                      opacity: showPassword ? 0 : 1,
+                    }}
+                  />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 

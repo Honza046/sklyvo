@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronRight,
   Download,
-  ExternalLink,
   File,
   FileSpreadsheet,
   FileText,
@@ -13,21 +12,20 @@ import {
   HardDrive,
   Image as ImageIcon,
   Loader2,
-  Lock,
   Presentation,
   Search,
-  Trash2,
   Upload,
-  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   deleteWorkspaceDocument,
+  getStorageOverviewStats,
   getWorkspaceDocumentDownloadUrl,
   getWorkspaceDocumentFullPreviewUrl,
   listWorkspaceDocuments,
   uploadWorkspaceDocument,
+  type StorageOverviewStats,
   type WorkspaceDocumentRow,
 } from "@/app/actions/storage";
 import {
@@ -54,6 +52,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { StorageFilesTable } from "@/components/storage/storage-files-table";
 
 type StorageTab = "personal" | "shared";
 type DriveTypeFilter = "all" | "folder" | "doc" | "sheet" | "pdf" | "other";
@@ -83,13 +82,6 @@ function formatDate(iso: string) {
   } catch {
     return iso;
   }
-}
-
-function kindLabel(kind: WorkspaceDocumentRow["kind"]) {
-  if (kind === "OFFER") return "Nabídka";
-  if (kind === "CONTRACT") return "Smlouva";
-  if (kind === "INVOICE") return "Faktura";
-  return "Soubor";
 }
 
 function getDriveFileKind(file: GoogleDriveFileRow): DriveKind {
@@ -192,6 +184,7 @@ export default function StoragePage() {
   const { t } = useLanguage();
   const [tab, setTab] = useState<StorageTab>("personal");
   const [documents, setDocuments] = useState<WorkspaceDocumentRow[]>([]);
+  const [stats, setStats] = useState<StorageOverviewStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -234,12 +227,18 @@ export default function StoragePage() {
   const loadDocuments = useCallback(async (scope: "PERSONAL" | "SHARED") => {
     setIsLoading(true);
     try {
-      const result = await listWorkspaceDocuments(scope);
+      const [result, statsResult] = await Promise.all([
+        listWorkspaceDocuments(scope),
+        getStorageOverviewStats(scope),
+      ]);
       if ("error" in result) {
         toast.error(result.error);
         setDocuments([]);
       } else {
         setDocuments(result.documents);
+      }
+      if (!("error" in statsResult)) {
+        setStats(statsResult.stats);
       }
     } catch (error) {
       console.error("loadDocuments:", error);
@@ -328,25 +327,6 @@ export default function StoragePage() {
     };
   }, [previewDoc?.id, previewDoc?.previewUrl]);
 
-  const tabs = useMemo(
-    () =>
-      [
-        {
-          id: "personal" as const,
-          label: t("storage.tabPersonal"),
-          hint: t("storage.tabPersonalHint"),
-          icon: Lock,
-        },
-        {
-          id: "shared" as const,
-          label: t("storage.tabShared"),
-          hint: t("storage.tabSharedHint"),
-          icon: Users,
-        },
-      ] as const,
-    [t],
-  );
-
   const handleUpload = async (file: File | undefined) => {
     if (!file) return;
     setIsUploading(true);
@@ -362,6 +342,7 @@ export default function StoragePage() {
       }
       setDocuments((prev) => [result.document, ...prev]);
       toast.success("Soubor nahrán.");
+      await loadDocuments(tab === "personal" ? "PERSONAL" : "SHARED");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -392,6 +373,7 @@ export default function StoragePage() {
       }
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
       toast.success("Soubor smazán.");
+      await loadDocuments(tab === "personal" ? "PERSONAL" : "SHARED");
     } finally {
       setBusyId(null);
     }
@@ -446,7 +428,6 @@ export default function StoragePage() {
   const searchDrive = async () => {
     const q = driveQuery.trim();
     if (q) {
-      // Global search — leave folder path, search across Drive
       await loadDriveFiles({ query: q });
     } else {
       await loadDriveFiles({ folderId: driveFolderId });
@@ -462,7 +443,6 @@ export default function StoragePage() {
   };
 
   const goDrivePath = async (index: number) => {
-    // -1 = root
     setDriveQuery("");
     if (index < 0) {
       setDriveFolderId(null);
@@ -574,255 +554,155 @@ export default function StoragePage() {
     }
   };
 
+  const quotaPct = stats
+    ? Math.min(
+        100,
+        Math.round((stats.workspaceBytes / Math.max(1, stats.quotaBytes)) * 100),
+      )
+    : 0;
+
+  const quotaLabel = stats
+    ? stats.quotaBytes >= 1024 * 1024 * 1024
+      ? `${(stats.quotaBytes / (1024 * 1024 * 1024)).toLocaleString("cs-CZ", { maximumFractionDigits: 0 })} GB`
+      : `${(stats.quotaBytes / (1024 * 1024)).toLocaleString("cs-CZ", { maximumFractionDigits: 0 })} MB`
+    : "—";
+
+  const scopeBytesLabel = stats
+    ? stats.scopeBytes >= 1024 * 1024 * 1024
+      ? `${(stats.scopeBytes / (1024 * 1024 * 1024)).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} GB`
+      : stats.scopeBytes >= 1024 * 1024
+        ? `${(stats.scopeBytes / (1024 * 1024)).toLocaleString("cs-CZ", { maximumFractionDigits: 1 })} MB`
+        : `${(stats.scopeBytes / 1024).toLocaleString("cs-CZ", { maximumFractionDigits: 0 })} kB`
+    : "0 kB";
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-col overflow-hidden">
-      <div className="flex w-full shrink-0 flex-col items-center px-0 pb-3 pt-1 text-center sm:pb-4 sm:pt-2">
-        <div className="mb-2 flex items-center justify-center gap-2 md:mb-3 md:gap-3">
-          <div className="sk-page-badge" data-accent="teal" aria-hidden>
-            <FolderOpen strokeWidth={2} />
-          </div>
-        </div>
-        <h1 className="sk-type-h1">{t("storage.title")}</h1>
-        <p className="sk-type-body mt-1 max-w-xl px-2">
-          {t("storage.subtitle")}
-        </p>
+    <div className="sk-storage-page">
+      <div className="sk-page-head shrink-0">
+        <h1 className="sk-page-head__title">{t("storage.title")}</h1>
+        <p className="sk-page-head__sub">{t("storage.subtitle")}</p>
       </div>
 
-      <div className="flex w-full shrink-0 gap-1 border-b border-border/60 sm:gap-4">
-        {tabs.map(({ id, label, hint, icon: Icon }) => {
-          const active = tab === id;
-          return (
+      <div className="sk-storebar">
+        <div className="sk-storetabs">
+          {(
+            [
+              { id: "personal" as const, label: t("storage.tabPersonal") },
+              { id: "shared" as const, label: t("storage.tabShared") },
+            ] as const
+          ).map(({ id, label }) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={cn(
-                "-mb-px flex min-w-0 flex-1 flex-col items-center gap-0.5 border-b-2 px-1 pb-2 text-center transition-colors sm:flex-none sm:items-start sm:px-0 sm:pb-2.5 sm:text-left",
-                active
-                  ? "border-[color:var(--sk-ink)] text-[color:var(--sk-ink)]"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
+              aria-pressed={tab === id}
+              data-active={tab === id || undefined}
+              className="sk-storetabs__btn"
             >
-              <span className="flex items-center gap-1.5 text-xs font-medium sm:text-sm">
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                {label}
-              </span>
-              <span className="hidden text-[10px] text-muted-foreground sm:block">
-                {hint}
-              </span>
+              {label}
             </button>
-          );
-        })}
+          ))}
+        </div>
+        <div className="sk-storeactions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={(e) => void handleUpload(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="sk-storebtn"
+          >
+            {isUploading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            ) : (
+              <Upload className="h-3.5 w-3.5" strokeWidth={2} />
+            )}
+            {t("storage.upload")}
+          </button>
+          <button
+            type="button"
+            disabled={driveConnecting}
+            onClick={() =>
+              void (driveConnected ? openDrivePicker() : connectGoogleDrive())
+            }
+            className={cn("sk-storebtn", !driveConnected && "sk-storebtn--muted")}
+          >
+            {driveConnecting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            ) : null}
+            {t("storage.connectDrive")}
+          </button>
+          <button
+            type="button"
+            disabled={oneDriveConnecting}
+            onClick={() =>
+              void (oneDriveConnected ? openOneDrivePicker() : connectOneDrive())
+            }
+            className={cn(
+              "sk-storebtn",
+              !oneDriveConnected && "sk-storebtn--muted",
+            )}
+          >
+            {oneDriveConnecting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            ) : null}
+            {t("storage.connectOneDrive")}
+          </button>
+        </div>
       </div>
 
-      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden pt-3 sm:pt-4">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="mb-3 flex shrink-0 flex-col gap-2 sm:mb-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              {tab === "personal"
-                ? t("storage.privacyPersonal")
-                : t("storage.privacyShared")}
-            </p>
-            <div className="grid w-full grid-cols-3 gap-1.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => void handleUpload(e.target.files?.[0])}
-              />
-              <Button
-                type="button"
-                disabled={isUploading}
-                onClick={() => fileInputRef.current?.click()}
-                size="sm"
-                className="min-w-0"
-              >
-                {isUploading ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                ) : (
-                  <Upload className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                )}
-                <span className="truncate">
-                  <span className="sm:hidden">{t("storage.uploadShort")}</span>
-                  <span className="hidden sm:inline">{t("storage.upload")}</span>
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant={driveConnected ? "default" : "secondary"}
-                size="sm"
-                disabled={driveConnecting}
-                onClick={() =>
-                  void (driveConnected
-                    ? openDrivePicker()
-                    : connectGoogleDrive())
-                }
-                className={cn(
-                  "min-w-0",
-                  !driveConnected && "text-muted-foreground",
-                )}
-              >
-                {driveConnecting ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                ) : (
-                  <HardDrive className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                )}
-                <span className="truncate">
-                  <span className="sm:hidden">Drive</span>
-                  <span className="hidden sm:inline">
-                    {driveConnected ? "Google Drive" : t("storage.connectDrive")}
-                  </span>
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant={oneDriveConnected ? "default" : "secondary"}
-                size="sm"
-                disabled={oneDriveConnecting}
-                onClick={() =>
-                  void (oneDriveConnected
-                    ? openOneDrivePicker()
-                    : connectOneDrive())
-                }
-                className={cn(
-                  "min-w-0",
-                  !oneDriveConnected && "text-muted-foreground",
-                )}
-              >
-                {oneDriveConnecting ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 shrink-0 animate-spin sm:mr-2 sm:h-4 sm:w-4" />
-                ) : (
-                  <HardDrive className="mr-1 h-3.5 w-3.5 shrink-0 sm:mr-2 sm:h-4 sm:w-4" />
-                )}
-                <span className="truncate">
-                  <span className="sm:hidden">OneDrive</span>
-                  <span className="hidden sm:inline">
-                    {oneDriveConnected ? "OneDrive" : t("storage.connectOneDrive")}
-                  </span>
-                </span>
-              </Button>
-            </div>
+      <div className="sk-storestats">
+        <div className="sk-storestats__cell">
+          <span className="sk-storestats__label">{t("storage.statFiles")}</span>
+          <span className="sk-storestats__value">
+            {stats?.scopeFileCount ?? documents.length}
+          </span>
+        </div>
+        <div className="sk-storestats__cell">
+          <span className="sk-storestats__label">{t("storage.statSize")}</span>
+          <span className="sk-storestats__value">{scopeBytesLabel}</span>
+        </div>
+        <div className="sk-storestats__cell">
+          <span className="sk-storestats__label">{t("storage.statShared")}</span>
+          <span className="sk-storestats__value">{stats?.sharedFileCount ?? 0}</span>
+        </div>
+        <div className="sk-storestats__quota">
+          <div className="sk-storestats__bar">
+            <span
+              className="sk-storestats__bar-fill"
+              style={{ width: `${quotaPct}%` }}
+            />
           </div>
-
-          <div className="sk-data-panel flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl sm:rounded-2xl">
-            {isLoading ? (
-              <div className="flex min-h-0 flex-1 items-center justify-center gap-2 px-4 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Načítám soubory…
-              </div>
-            ) : documents.length === 0 ? (
-              <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-                <FileText className="h-8 w-8 text-muted-foreground/50" />
-                <p className="text-sm font-medium text-foreground">
-                  {t("storage.emptyTitle")}
-                </p>
-                <p className="max-w-sm text-xs text-muted-foreground">
-                  {t("storage.emptyDesc")}
-                </p>
-              </div>
-            ) : (
-              <ul className="sk-data-panel__scroll flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-                {documents.map((doc) => (
-                  <li
-                    key={doc.id}
-                    className="sk-data-row flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      {doc.previewUrl ? (
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDoc(doc)}
-                          className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/80 bg-white/70 transition hover:ring-2 hover:ring-[color:var(--sk-brand)]/35"
-                          title="Zobrazit náhled"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={doc.previewUrl}
-                            alt={doc.name}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover"
-                          />
-                        </button>
-                      ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-white/80 bg-white/70 text-muted-foreground">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {doc.name}
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          {kindLabel(doc.kind)} · {formatBytes(doc.sizeBytes)} ·{" "}
-                          {formatDate(doc.createdAt)}
-                          {tab === "shared" ? ` · ${doc.ownerName}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex w-full shrink-0 items-center justify-center gap-1.5 sm:w-auto sm:justify-end">
-                      {doc.previewUrl ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setPreviewDoc(doc)}
-                          className="h-8 rounded-lg px-2.5 text-xs"
-                        >
-                          <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
-                          Náhled
-                        </Button>
-                      ) : null}
-                      {doc.externalUrl ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() =>
-                            window.open(
-                              doc.externalUrl!,
-                              "_blank",
-                              "noopener,noreferrer",
-                            )
-                          }
-                          className="h-8 rounded-lg px-2.5 text-xs"
-                        >
-                          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                          {doc.externalLabel || "Otevřít"}
-                        </Button>
-                      ) : null}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={busyId === doc.id}
-                        onClick={() => void handleDownload(doc.id)}
-                        className="h-8 rounded-lg px-2.5 text-xs"
-                      >
-                        {busyId === doc.id ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Download className="mr-1.5 h-3.5 w-3.5" />
-                        )}
-                        {doc.externalUrl ? "Otevřít" : "Stáhnout"}
-                      </Button>
-                      {doc.canDelete ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={busyId === doc.id}
-                          onClick={() => void handleDelete(doc.id)}
-                          className="h-8 rounded-lg px-2.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 "
-                        >
-                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                          Smazat
-                        </Button>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="sk-storestats__quota-text">
+            {t("storage.statQuota", {
+              pct: quotaPct,
+              quota: quotaLabel,
+              plan: stats?.planLabel ?? "Free",
+            })}
           </div>
         </div>
       </div>
+
+      <StorageFilesTable
+        documents={documents}
+        isLoading={isLoading}
+        busyId={busyId}
+        emptyTitle={t("storage.emptyTitle")}
+        emptyDesc={t("storage.emptyDesc")}
+        colName={t("storage.colName")}
+        colSize={t("storage.colSize")}
+        colAdded={t("storage.colAdded")}
+        colUsedBy={t("storage.colUsedBy")}
+        onPreview={setPreviewDoc}
+        onDownload={handleDownload}
+        onDelete={handleDelete}
+        onOpenExternal={(url) =>
+          window.open(url, "_blank", "noopener,noreferrer")
+        }
+      />
 
       <Dialog
         open={Boolean(previewDoc)}
@@ -953,7 +833,7 @@ export default function StoragePage() {
                       className={cn(
                         "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
                         active
-                          ? "border-blue-600 bg-blue-50 text-blue-800 "
+                          ? "border-[color:var(--sk-brand)] bg-[color-mix(in_oklab,var(--sk-brand)_16%,var(--n-field))] text-[color:var(--sk-brand)] "
                           : "border-border/70 bg-background text-muted-foreground hover:text-foreground",
                       )}
                     >

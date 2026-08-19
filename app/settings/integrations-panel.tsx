@@ -3,7 +3,6 @@
 import { useEffect, useState, useTransition, type MouseEvent } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import {
   disconnectGoogleSheets,
   getGoogleSheetsConnectionState,
@@ -28,9 +27,10 @@ import {
   getFakturoidConnectionState,
   type FakturoidConnectionState,
 } from "@/app/actions/fakturoid";
-import { ExternalLink, RefreshCw, Unplug, Download } from "lucide-react";
+import { ExternalLink, RefreshCw, Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const integrations = [
+const webhookIntegrations = [
   {
     id: "make",
     name: "Make.com",
@@ -56,21 +56,39 @@ const integrations = [
   {
     id: "hubspot",
     name: "HubSpot",
-    description: "Sync kontaktů s HubSpot.",
+    description: "Synchronizace kontaktů.",
     fields: [{ label: "Access Token", placeholder: "HubSpot token" }],
   },
 ] as const;
 
 const inputClass =
-  "h-9 w-full max-w-xl rounded-xl border border-[color:var(--sk-panel-edge)] bg-[image:var(--sk-sunken)] px-3 text-sm text-[color:var(--sk-ink)] outline-none placeholder:text-[color:var(--sk-muted)] shadow-[var(--sk-sunken-shadow)] focus:ring-2 focus:ring-[color:var(--sk-brand)]/30";
+  "sk-integration-detail__input";
 
-const cardClass =
-  "w-full cursor-pointer rounded-2xl border border-[color:var(--sk-panel-edge)] bg-[image:var(--sk-raised)] p-4 text-left text-[color:var(--sk-ink)] shadow-[var(--sk-raised-shadow)] transition-all hover:-translate-y-px hover:shadow-[var(--sk-shadow-raised-hover)]";
-
-const statusBoxClass =
-  "rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2.5 text-xs text-emerald-950 ";
-
-const btnSm = "h-8 rounded-xl px-3 text-xs";
+function IntegrationStatus({
+  connected,
+}: {
+  connected: boolean;
+}) {
+  return (
+    <span className="sk-integration-row__status">
+      <span
+        className={cn(
+          "sk-integration-row__dot",
+          connected && "is-connected",
+        )}
+        aria-hidden
+      />
+      <span
+        className={cn(
+          "sk-integration-row__status-text",
+          connected && "is-connected",
+        )}
+      >
+        {connected ? "Připojeno" : "Nepřipojeno"}
+      </span>
+    </span>
+  );
+}
 
 function formatSyncedAt(iso: string | null) {
   if (!iso) return null;
@@ -93,7 +111,7 @@ export function IntegrationsPanel() {
     hubspot: "",
   });
   const [expandedIntegration, setExpandedIntegration] = useState<string | null>(
-    "google-sheets",
+    null,
   );
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(
@@ -165,10 +183,6 @@ export function IntegrationsPanel() {
     }
   }, [searchParams, router]);
 
-  const toggleCard = (id: string) => {
-    setExpandedIntegration((prev) => (prev === id ? null : id));
-  };
-
   const handleTestConnection = (
     id: string,
     e: MouseEvent<HTMLButtonElement>,
@@ -188,6 +202,7 @@ export function IntegrationsPanel() {
 
   const handleSave = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    toast.success("Uloženo.");
   };
 
   const handleConnectSheets = () => {
@@ -307,11 +322,8 @@ export function IntegrationsPanel() {
   };
 
   const sheetsActive = Boolean(sheets?.connected && sheets.spreadsheetUrl);
-  const sheetsExpanded = expandedIntegration === "google-sheets";
   const msActive = Boolean(microsoft?.connected);
-  const msExpanded = expandedIntegration === "microsoft";
   const fakturoidActive = Boolean(fakturoid?.connected);
-  const fakturoidExpanded = expandedIntegration === "fakturoid";
 
   const handleConnectMicrosoft = () => {
     startTransition(async () => {
@@ -382,598 +394,492 @@ export function IntegrationsPanel() {
     });
   };
 
+  const toggleExpanded = (id: string) => {
+    setExpandedIntegration((prev) => (prev === id ? null : id));
+  };
+
+  const handleRowAction = (
+    connected: boolean,
+    connect: () => void,
+    disconnect: () => void,
+  ) => {
+    if (connected) {
+      disconnect();
+      return;
+    }
+    connect();
+  };
+
+  const renderSheetsDetail = () => {
+    if (expandedIntegration !== "google-sheets") return null;
+
+    return (
+      <div className="sk-integration-row__detail">
+        {!sheets?.oauthConfigured && (
+          <p className="sk-integration-detail__warn">
+            Chybí Google OAuth (CLIENT_ID / SECRET). Redirect:{" "}
+            <code>/api/integrations/google-sheets/callback</code>
+          </p>
+        )}
+
+        {sheetsActive ? (
+          <div className="sk-integration-detail__body">
+            {sheets?.spreadsheetTitle && (
+              <p className="sk-integration-detail__meta">
+                {sheets.spreadsheetTitle}
+                {sheets.accountEmail ? ` · ${sheets.accountEmail}` : ""}
+              </p>
+            )}
+            {formatSyncedAt(sheets?.lastSyncedAt ?? null) && (
+              <p className="sk-integration-detail__meta">
+                Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
+              </p>
+            )}
+            {sheets?.lastError && (
+              <p className="sk-integration-detail__error">
+                Chyba: {sheets.lastError}
+              </p>
+            )}
+
+            <label className="sk-integration-detail__check">
+              <input
+                type="checkbox"
+                checked={Boolean(sheets?.syncEnabled)}
+                disabled={isPending}
+                onChange={(e) => handleToggleSync(e.target.checked)}
+              />
+              Auto-sync při změnách v CRM
+            </label>
+
+            <div className="sk-integration-detail__actions">
+              {sheets?.spreadsheetUrl && (
+                <a
+                  href={sheets.spreadsheetUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="sk-integration-detail__linkbtn"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                  Otevřít
+                </a>
+              )}
+              <button
+                type="button"
+                className="sk-integration-detail__linkbtn"
+                disabled={isPending}
+                onClick={handleSyncNow}
+              >
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                Sync teď
+              </button>
+            </div>
+
+            <div className="sk-integration-detail__block">
+              <p className="sk-integration-detail__label">Archiv outreach DB</p>
+              <p className="sk-integration-detail__hint">
+                Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
+              </p>
+              <input
+                type="url"
+                className={inputClass}
+                value={historySheetUrl}
+                onChange={(e) => setHistorySheetUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/…"
+              />
+              <div className="sk-integration-detail__actions">
+                <button
+                  type="button"
+                  className="sk-integration-detail__linkbtn"
+                  disabled={isPending || !historySheetUrl.trim()}
+                  onClick={handleSetArchive}
+                >
+                  Nastavit archiv
+                </button>
+                <button
+                  type="button"
+                  className="sk-integration-detail__linkbtn"
+                  disabled={isPending || !historySheetUrl.trim()}
+                  onClick={handleImportHistory}
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden />
+                  Import do CRM
+                </button>
+                <button
+                  type="button"
+                  className="sk-integration-detail__linkbtn"
+                  disabled={isPending || !historySheetUrl.trim()}
+                  onClick={handleBackfillAuthors}
+                >
+                  Doplnit Autory
+                </button>
+              </div>
+              <div className="sk-integration-detail__actions">
+                <input
+                  type="text"
+                  className={cn(inputClass, "max-w-[8rem]")}
+                  value={clearConfirm}
+                  onChange={(e) => setClearConfirm(e.target.value)}
+                  placeholder="SMAZAT"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="sk-integration-detail__linkbtn is-danger"
+                  disabled={
+                    isPending ||
+                    clearConfirm.trim().toUpperCase() !== "SMAZAT"
+                  }
+                  onClick={handleClearCrm}
+                >
+                  Vyčistit CRM
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="sk-integration-detail__hint">
+            Po připojení vznikne sheet s listy podle stavů CRM.
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderMicrosoftDetail = () => {
+    if (expandedIntegration !== "microsoft") return null;
+
+    return (
+      <div className="sk-integration-row__detail">
+        {!microsoft?.oauthConfigured && (
+          <p className="sk-integration-detail__warn">
+            Chybí Microsoft OAuth (CLIENT_ID / SECRET). Redirect:{" "}
+            <code>/api/integrations/microsoft/callback</code>
+          </p>
+        )}
+        {msActive ? (
+          <div className="sk-integration-detail__body">
+            {microsoft?.accountEmail && (
+              <p className="sk-integration-detail__meta">
+                {microsoft.displayName || "Microsoft 365"} ·{" "}
+                {microsoft.accountEmail}
+              </p>
+            )}
+            {microsoft?.lastError && (
+              <p className="sk-integration-detail__error">
+                Chyba: {microsoft.lastError}
+              </p>
+            )}
+            <div className="sk-integration-detail__actions">
+              <button
+                type="button"
+                className="sk-integration-detail__linkbtn"
+                disabled={isPending}
+                onClick={handleExportExcel}
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden />
+                Export CRM
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="sk-integration-detail__hint">
+            Import z OneDrive, Word v Generátoru, Excel export.
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderFakturoidDetail = () => {
+    if (expandedIntegration !== "fakturoid") return null;
+
+    return (
+      <div className="sk-integration-row__detail">
+        {fakturoidActive ? (
+          <div className="sk-integration-detail__body">
+            {fakturoid?.accountName && (
+              <p className="sk-integration-detail__meta">
+                {fakturoid.accountName}
+                {fakturoid.accountSlug ? ` · ${fakturoid.accountSlug}` : ""}
+              </p>
+            )}
+            {fakturoid?.lastError && (
+              <p className="sk-integration-detail__error">
+                Chyba: {fakturoid.lastError}
+              </p>
+            )}
+            <div className="sk-integration-detail__actions">
+              <a
+                href={
+                  fakturoid?.accountSlug
+                    ? `https://app.fakturoid.cz/${fakturoid.accountSlug}`
+                    : "https://app.fakturoid.cz"
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sk-integration-detail__linkbtn"
+              >
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                Otevřít
+              </a>
+            </div>
+          </div>
+        ) : (
+          <div className="sk-integration-detail__body">
+            <p className="sk-integration-detail__hint">
+              Ve Fakturoidu vytvoř Client ID + Secret a vlož je sem.
+            </p>
+            <div className="sk-integration-detail__grid">
+              <div>
+                <label className="sk-integration-detail__label">Client ID</label>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  className={inputClass}
+                  value={fakturoidClientId}
+                  onChange={(e) => setFakturoidClientId(e.target.value)}
+                  placeholder="xxxxxxxx-…"
+                />
+              </div>
+              <div>
+                <label className="sk-integration-detail__label">
+                  Client Secret
+                </label>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  className={inputClass}
+                  value={fakturoidClientSecret}
+                  onChange={(e) => setFakturoidClientSecret(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="sk-integration-detail__label">
+                Account slug (volitelné)
+              </label>
+              <input
+                type="text"
+                autoComplete="off"
+                className={cn(inputClass, "max-w-xs")}
+                value={fakturoidSlug}
+                onChange={(e) => setFakturoidSlug(e.target.value)}
+                placeholder="moje-firma"
+              />
+            </div>
+            <div className="sk-integration-detail__actions">
+              <button
+                type="button"
+                className="sk-integration-row__action"
+                disabled={
+                  isPending ||
+                  !fakturoidClientId.trim() ||
+                  !fakturoidClientSecret.trim()
+                }
+                onClick={handleConnectFakturoid}
+              >
+                Připojit
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderWebhookDetail = (item: (typeof webhookIntegrations)[number]) => {
+    if (expandedIntegration !== item.id) return null;
+
+    return (
+      <div className="sk-integration-row__detail">
+        <div className="sk-integration-detail__body">
+          {item.fields.map((field) => (
+            <div key={field.label}>
+              <label
+                className="sk-integration-detail__label"
+                htmlFor={`${item.id}-${field.label}`}
+              >
+                {field.label}
+              </label>
+              <input
+                id={`${item.id}-${field.label}`}
+                type={
+                  item.id === "pipedrive" || item.id === "hubspot"
+                    ? "password"
+                    : "text"
+                }
+                placeholder={field.placeholder}
+                className={inputClass}
+                autoComplete="off"
+                value={integrationValues[item.id] || ""}
+                onChange={(e) =>
+                  setIntegrationValues({
+                    ...integrationValues,
+                    [item.id]: e.target.value,
+                  })
+                }
+              />
+            </div>
+          ))}
+          <div className="sk-integration-detail__actions">
+            <button
+              type="button"
+              className="sk-integration-row__action"
+              onClick={handleSave}
+            >
+              Uložit
+            </button>
+            <button
+              type="button"
+              className="sk-integration-detail__linkbtn"
+              disabled={isTesting === item.id}
+              onClick={(e) => handleTestConnection(item.id, e)}
+            >
+              {isTesting === item.id ? "Testuji…" : "Otestovat"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="w-full pb-2 pt-1">
-      <p className="mb-3 text-xs text-muted-foreground">
-        Live sheet zrcadlí CRM. Starý outreach sheet slouží jako archiv pro
-        Radar.
+    <div className="sk-integrations-panel">
+      <p className="sk-integrations-panel__intro">
+        Propojte Sklyvo s nástroji, které už používáte.
       </p>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div
-          role="button"
-          tabIndex={0}
-          className={`${cardClass} sm:col-span-2`}
-          onClick={() => toggleCard("google-sheets")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              toggleCard("google-sheets");
-            }
-          }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="sk-type-h3">Google Sheets</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Live zrcadlo CRM podle stavů + list Vše.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <span
-                className={`h-2 w-2 rounded-full ${sheetsActive ? "bg-emerald-500" : "bg-gray-300 "}`}
-                aria-hidden
-              />
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {sheetsActive ? "Připojeno" : "Nepřipojeno"}
-              </span>
-            </div>
-          </div>
-
-          {sheetsExpanded && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
+      <div className="sk-integrations-panel__list">
+        <div className="sk-integration-row-wrap">
+          <div className="sk-integration-row">
+            <button
+              type="button"
+              className="sk-integration-row__info"
+              onClick={() => toggleExpanded("google-sheets")}
             >
-              {!sheets?.oauthConfigured && (
-                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 ">
-                  Chybí Google OAuth (CLIENT_ID / SECRET). Redirect:{" "}
-                  <code className="text-[10px]">
-                    /api/integrations/google-sheets/callback
-                  </code>
-                </p>
-              )}
-
-              {sheetsActive ? (
-                <>
-                  <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 ">
-                      {sheets?.spreadsheetTitle ?? "Sklyvo CRM"}
-                    </p>
-                    {sheets?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 ">
-                        {sheets.accountEmail}
-                      </p>
-                    )}
-                    {formatSyncedAt(sheets?.lastSyncedAt ?? null) && (
-                      <p className="mt-0.5 text-emerald-800/90 ">
-                        Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
-                      </p>
-                    )}
-                    {sheets?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 ">
-                        Chyba: {sheets.lastError}
-                      </p>
-                    )}
-                  </div>
-
-                  <label className="flex items-center gap-2 text-xs text-foreground">
-                    <input
-                      type="checkbox"
-                      className="h-3.5 w-3.5 rounded border-gray-300"
-                      checked={Boolean(sheets?.syncEnabled)}
-                      disabled={isPending}
-                      onChange={(e) => handleToggleSync(e.target.checked)}
-                    />
-                    Auto-sync při změnách v CRM
-                  </label>
-
-                  <div className="flex flex-wrap gap-1.5">
-                    {sheets?.spreadsheetUrl && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={btnSm}
-                        asChild
-                      >
-                        <a
-                          href={sheets.spreadsheetUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                          Otevřít
-                        </a>
-                      </Button>
-                    )}
-                    <Button
-                      type="button"
-                      className={btnSm}
-                      disabled={isPending}
-                      onClick={handleSyncNow}
-                    >
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                      Sync teď
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      disabled={isPending}
-                      onClick={handleDisconnectSheets}
-                    >
-                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
-                      Odpojit
-                    </Button>
-                  </div>
-
-                  <p className="text-[11px] leading-snug text-muted-foreground">
-                    Sloupce: Firma, Web, E-mail, Telefon, Stav… Listy podle CRM
-                    + Vše.
-                  </p>
-
-                  <div className="sk-data-row flex-col gap-2.5">
-                    <p className="text-xs font-semibold text-foreground">
-                      Archiv outreach DB
-                    </p>
-                    <p className="text-[11px] leading-snug text-muted-foreground">
-                      Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
-                    </p>
-                    {sheets?.archiveSpreadsheetUrl && (
-                      <p className="text-[11px] text-emerald-800 ">
-                        Archiv:{" "}
-                        <a
-                          href={sheets.archiveSpreadsheetUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="underline"
-                        >
-                          otevřít
-                        </a>
-                        {sheets.crmLeadCount > 0
-                          ? ` · CRM ${sheets.crmLeadCount} leadů`
-                          : " · CRM prázdné"}
-                      </p>
-                    )}
-                    <input
-                      type="url"
-                      className={`${inputClass} font-mono text-[11px]`}
-                      value={historySheetUrl}
-                      onChange={(e) => setHistorySheetUrl(e.target.value)}
-                      placeholder="https://docs.google.com/spreadsheets/d/…"
-                    />
-                    <div className="flex flex-wrap gap-1.5">
-                      <Button
-                        type="button"
-                        className={btnSm}
-                        disabled={isPending || !historySheetUrl.trim()}
-                        onClick={handleSetArchive}
-                      >
-                        Nastavit archiv
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={btnSm}
-                        disabled={isPending || !historySheetUrl.trim()}
-                        onClick={handleImportHistory}
-                      >
-                        <Download className="mr-1.5 h-3.5 w-3.5" />
-                        Import do CRM
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={btnSm}
-                        disabled={isPending || !historySheetUrl.trim()}
-                        onClick={handleBackfillAuthors}
-                      >
-                        Doplnit Autory
-                      </Button>
-                    </div>
-                    <div className="space-y-2 border-t border-[color:var(--sk-panel-edge)] pt-2.5">
-                      <p className="text-[11px] text-muted-foreground">
-                        Vyčistit CRM v appce. Napiš <strong>SMAZAT</strong>.
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        <input
-                          type="text"
-                          className={`${inputClass} max-w-[8rem] font-mono text-[11px]`}
-                          value={clearConfirm}
-                          onChange={(e) => setClearConfirm(e.target.value)}
-                          placeholder="SMAZAT"
-                          autoComplete="off"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className={`${btnSm} border-rose-300 text-rose-700 hover:bg-rose-50 `}
-                          disabled={
-                            isPending ||
-                            clearConfirm.trim().toUpperCase() !== "SMAZAT"
-                          }
-                          onClick={handleClearCrm}
-                        >
-                          Vyčistit CRM
-                        </Button>
-                      </div>
-                    </div>
-                    {sheets?.splitBySource &&
-                      !/(?:sklyvo|venegard)\s*crm/i.test(
-                        sheets.spreadsheetTitle ?? "",
-                      ) && (
-                        <p className="text-[11px] text-amber-700 ">
-                          Sync míří do staré tabulky. Odpoj a znovu připoj
-                          Sheets.
-                        </p>
-                      )}
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2.5">
-                  <p className="text-xs text-muted-foreground">
-                    Po připojení vznikne sheet s listy podle stavů CRM.
-                  </p>
-                  <Button
-                    type="button"
-                    className={btnSm}
-                    disabled={!sheets?.oauthConfigured || isPending}
-                    onClick={handleConnectSheets}
-                  >
-                    Připojit Google Sheets
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+              <span className="sk-integration-row__name">Google Sheets</span>
+              <span className="sk-integration-row__desc">
+                Live zrcadlo CRM podle stavů.
+              </span>
+            </button>
+            <IntegrationStatus connected={sheetsActive} />
+            <button
+              type="button"
+              className="sk-integration-row__action"
+              disabled={!sheetsActive && (!sheets?.oauthConfigured || isPending)}
+              onClick={() =>
+                handleRowAction(
+                  sheetsActive,
+                  handleConnectSheets,
+                  handleDisconnectSheets,
+                )
+              }
+            >
+              {sheetsActive ? "Odpojit" : "Připojit"}
+            </button>
+          </div>
+          {renderSheetsDetail()}
         </div>
 
-        <div
-          role="button"
-          tabIndex={0}
-          className={`${cardClass} sm:col-span-2`}
-          onClick={() => toggleCard("microsoft")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              toggleCard("microsoft");
-            }
-          }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="sk-type-h3">Microsoft 365</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                OneDrive, Excel a Word.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <span
-                className={`h-2 w-2 rounded-full ${msActive ? "bg-emerald-500" : "bg-gray-300 "}`}
-                aria-hidden
-              />
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {msActive ? "Připojeno" : "Nepřipojeno"}
-              </span>
-            </div>
-          </div>
-
-          {msExpanded && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
+        <div className="sk-integration-row-wrap">
+          <div className="sk-integration-row">
+            <button
+              type="button"
+              className="sk-integration-row__info"
+              onClick={() => toggleExpanded("microsoft")}
             >
-              {!microsoft?.oauthConfigured && (
-                <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 ">
-                  Chybí Microsoft OAuth (CLIENT_ID / SECRET). Redirect:{" "}
-                  <code className="text-[10px]">
-                    /api/integrations/microsoft/callback
-                  </code>
-                </p>
-              )}
-
-              {msActive ? (
-                <>
-                  <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 ">
-                      {microsoft?.displayName || "Microsoft 365"}
-                    </p>
-                    {microsoft?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 ">
-                        {microsoft.accountEmail}
-                      </p>
-                    )}
-                    {microsoft?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 ">
-                        Chyba: {microsoft.lastError}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      disabled={isPending}
-                      onClick={handleExportExcel}
-                    >
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      Export CRM
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      disabled={isPending}
-                      onClick={handleDisconnectMicrosoft}
-                    >
-                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
-                      Odpojit
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2.5">
-                  <p className="text-xs text-muted-foreground">
-                    Import z OneDrive, Word v Generátoru, Excel export.
-                  </p>
-                  <Button
-                    type="button"
-                    className={btnSm}
-                    disabled={!microsoft?.oauthConfigured || isPending}
-                    onClick={handleConnectMicrosoft}
-                  >
-                    Připojit Microsoft 365
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
+              <span className="sk-integration-row__name">Microsoft 365</span>
+              <span className="sk-integration-row__desc">
+                OneDrive, Excel, Word.
+              </span>
+            </button>
+            <IntegrationStatus connected={msActive} />
+            <button
+              type="button"
+              className="sk-integration-row__action"
+              disabled={!msActive && (!microsoft?.oauthConfigured || isPending)}
+              onClick={() =>
+                handleRowAction(
+                  msActive,
+                  handleConnectMicrosoft,
+                  handleDisconnectMicrosoft,
+                )
+              }
+            >
+              {msActive ? "Odpojit" : "Připojit"}
+            </button>
+          </div>
+          {renderMicrosoftDetail()}
         </div>
 
-        <div
-          role="button"
-          tabIndex={0}
-          className={`${cardClass} sm:col-span-2`}
-          onClick={() => toggleCard("fakturoid")}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              toggleCard("fakturoid");
-            }
-          }}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="sk-type-h3">Fakturoid</h3>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Faktury z Generátoru.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1.5">
-              <span
-                className={`h-2 w-2 rounded-full ${fakturoidActive ? "bg-emerald-500" : "bg-gray-300 "}`}
-                aria-hidden
-              />
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {fakturoidActive ? "Připojeno" : "Nepřipojeno"}
-              </span>
-            </div>
-          </div>
-
-          {fakturoidExpanded && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="mt-3 max-w-xl space-y-3 border-t border-border/50 pt-3"
+        <div className="sk-integration-row-wrap">
+          <div className="sk-integration-row">
+            <button
+              type="button"
+              className="sk-integration-row__info"
+              onClick={() => toggleExpanded("fakturoid")}
             >
-              {fakturoidActive ? (
-                <>
-                  <div className={statusBoxClass}>
-                    <p className="font-semibold text-emerald-900 ">
-                      {fakturoid?.accountName || "Fakturoid"}
-                    </p>
-                    {fakturoid?.accountSlug && (
-                      <p className="mt-0.5 text-emerald-800/90 ">
-                        {fakturoid.accountSlug}
-                      </p>
-                    )}
-                    {fakturoid?.accountEmail && (
-                      <p className="mt-0.5 text-emerald-800/90 ">
-                        {fakturoid.accountEmail}
-                      </p>
-                    )}
-                    {fakturoid?.lastError && (
-                      <p className="mt-1.5 font-medium text-rose-700 ">
-                        Chyba: {fakturoid.lastError}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      disabled={isPending}
-                      onClick={handleDisconnectFakturoid}
-                    >
-                      <Unplug className="mr-1.5 h-3.5 w-3.5" />
-                      Odpojit
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      asChild
-                    >
-                      <a
-                        href={
-                          fakturoid?.accountSlug
-                            ? `https://app.fakturoid.cz/${fakturoid.accountSlug}`
-                            : "https://app.fakturoid.cz"
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                        Otevřít
-                      </a>
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-2.5">
-                  <p className="text-xs text-muted-foreground">
-                    Ve Fakturoidu vytvoř Client ID + Secret a vlož je sem.
-                  </p>
-                  <div className="grid max-w-xl gap-2 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                        Client ID
-                      </label>
-                      <input
-                        type="text"
-                        autoComplete="off"
-                        className={`${inputClass} font-mono text-[11px]`}
-                        value={fakturoidClientId}
-                        onChange={(e) => setFakturoidClientId(e.target.value)}
-                        placeholder="xxxxxxxx-…"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                        Client Secret
-                      </label>
-                      <input
-                        type="password"
-                        autoComplete="off"
-                        className={`${inputClass} font-mono text-[11px]`}
-                        value={fakturoidClientSecret}
-                        onChange={(e) =>
-                          setFakturoidClientSecret(e.target.value)
-                        }
-                        placeholder="••••••••"
-                      />
-                    </div>
-                  </div>
-                  <div className="max-w-xs">
-                    <label className="mb-1 block text-[11px] font-medium text-muted-foreground">
-                      Account slug (volitelné)
-                    </label>
-                    <input
-                      type="text"
-                      autoComplete="off"
-                      className={`${inputClass} font-mono text-[11px]`}
-                      value={fakturoidSlug}
-                      onChange={(e) => setFakturoidSlug(e.target.value)}
-                      placeholder="moje-firma"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    className={btnSm}
-                    disabled={
-                      isPending ||
-                      !fakturoidClientId.trim() ||
-                      !fakturoidClientSecret.trim()
-                    }
-                    onClick={handleConnectFakturoid}
-                  >
-                    Připojit Fakturoid
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {integrations.map((item) => {
-          const stored = integrationValues[item.id];
-          const isActive = Boolean(stored && stored.length > 0);
-          const isExpanded = expandedIntegration === item.id;
-
-          return (
-            <div
-              key={item.id}
-              role="button"
-              tabIndex={0}
-              className={cardClass}
-              onClick={() => toggleCard(item.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleCard(item.id);
+              <span className="sk-integration-row__name">Fakturoid</span>
+              <span className="sk-integration-row__desc">
+                Faktury z generátoru.
+              </span>
+            </button>
+            <IntegrationStatus connected={fakturoidActive} />
+            <button
+              type="button"
+              className="sk-integration-row__action"
+              disabled={isPending}
+              onClick={() => {
+                if (fakturoidActive) {
+                  handleDisconnectFakturoid();
+                  return;
                 }
+                setExpandedIntegration("fakturoid");
               }}
             >
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="sk-type-h3">{item.name}</h3>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span
-                    className={`h-2 w-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-gray-300 "}`}
-                    aria-hidden
-                  />
-                  <span className="text-[11px] font-medium text-muted-foreground">
-                    {isActive ? "Aktivní" : "Nepřipojeno"}
-                  </span>
-                </div>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {item.description}
-              </p>
+              {fakturoidActive ? "Odpojit" : "Připojit"}
+            </button>
+          </div>
+          {renderFakturoidDetail()}
+        </div>
 
-              {isExpanded && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="border-t border-border/50 pt-1"
+        {webhookIntegrations.map((item) => {
+          const stored = integrationValues[item.id];
+          const isActive = Boolean(stored && stored.length > 0);
+
+          return (
+            <div key={item.id} className="sk-integration-row-wrap">
+              <div className="sk-integration-row">
+                <button
+                  type="button"
+                  className="sk-integration-row__info"
+                  onClick={() => toggleExpanded(item.id)}
                 >
-                  {item.fields.map((field) => (
-                    <div key={field.label}>
-                      <label
-                        className="sr-only"
-                        htmlFor={`${item.id}-${field.label}`}
-                      >
-                        {field.label}
-                      </label>
-                      <input
-                        id={`${item.id}-${field.label}`}
-                        type={
-                          item.id === "pipedrive" || item.id === "hubspot"
-                            ? "password"
-                            : "text"
-                        }
-                        placeholder={field.placeholder}
-                        className={`${inputClass} mt-3 font-mono text-[11px]`}
-                        autoComplete="off"
-                        value={integrationValues[item.id] || ""}
-                        onChange={(e) =>
-                          setIntegrationValues({
-                            ...integrationValues,
-                            [item.id]: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Button
-                      type="button"
-                      className={btnSm}
-                      onClick={handleSave}
-                    >
-                      Uložit
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={btnSm}
-                      disabled={isTesting === item.id}
-                      onClick={(e) => handleTestConnection(item.id, e)}
-                    >
-                      {isTesting === item.id ? "Testuji…" : "Otestovat"}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                  <span className="sk-integration-row__name">{item.name}</span>
+                  <span className="sk-integration-row__desc">
+                    {item.description}
+                  </span>
+                </button>
+                <IntegrationStatus connected={isActive} />
+                <button
+                  type="button"
+                  className="sk-integration-row__action"
+                  onClick={() => {
+                    if (isActive) {
+                      setIntegrationValues({
+                        ...integrationValues,
+                        [item.id]: "",
+                      });
+                      return;
+                    }
+                    setExpandedIntegration(item.id);
+                  }}
+                >
+                  {isActive ? "Odpojit" : "Připojit"}
+                </button>
+              </div>
+              {renderWebhookDetail(item)}
             </div>
           );
         })}

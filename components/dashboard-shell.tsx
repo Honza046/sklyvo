@@ -4,17 +4,15 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { LogOut, User, CreditCard, Shield, ChevronRight } from "lucide-react";
 import {
-  Settings,
-  LogOut,
-  User,
-  LifeBuoy,
-  Zap,
-  Rocket,
-  CreditCard,
-  Lock,
-  Shield,
-} from "lucide-react";
+  RocketIcon,
+  BotGlyphIcon,
+  PlaneIcon,
+  BoltIcon,
+  LockIcon,
+  ArrowOutIcon,
+} from "@/components/sklyvo/nav-icons";
 import { cn } from "@/lib/utils";
 import { isPremiumToolsLocked } from "@/components/plan-feature-gate";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -175,8 +173,12 @@ export function DashboardShell({
     pathname.startsWith("/generator/") ||
     pathname === "/help" ||
     pathname.startsWith("/help/") ||
+    pathname === "/pricing" ||
+    pathname.startsWith("/pricing/") ||
     pathname === "/settings" ||
-    pathname.startsWith("/settings/");
+    pathname.startsWith("/settings/") ||
+    pathname === "/account" ||
+    pathname.startsWith("/account/");
 
   const [sessionUser, setSessionUser] = useState(user ?? null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
@@ -268,6 +270,28 @@ export function DashboardShell({
       cancelled = true;
     };
   }, [loadWorkspaceSession]);
+
+  /** Prefetch main routes so sidebar clicks feel instant after first paint. */
+  useEffect(() => {
+    const routes = [
+      "/",
+      "/sniper",
+      "/radar",
+      "/crm",
+      "/uloziste",
+      "/generator",
+      "/help",
+      "/settings",
+      "/account",
+      "/autopilot",
+      "/autopilot/radar",
+      "/autopilot/sniper",
+      "/autopilot/full-auto",
+    ];
+    for (const href of routes) {
+      router.prefetch(href);
+    }
+  }, [router]);
 
   // Refresh when tab becomes visible again — debounced to avoid focus spam.
   useEffect(() => {
@@ -473,7 +497,7 @@ export function DashboardShell({
     <div className="sklyvo-app flex h-dvh max-h-dvh w-full overflow-hidden">
       <ImpersonationBanner />
       {/* BOČNÍ PANEL */}
-      <aside className="sk-sidebar flex h-full w-64 flex-shrink-0 flex-col">
+      <aside className="sk-sidebar flex h-full w-[254px] flex-shrink-0 flex-col">
         {/* LOGO */}
         <div className="flex h-14 shrink-0 items-center px-4 pl-5">
           <Link
@@ -500,14 +524,13 @@ export function DashboardShell({
 
           <div className="relative z-[1] shrink-0 px-3 pb-1 pt-1">
             {MAIN_NAV.filter(({ href }) => href === "/").map(
-              ({ href, labelKey, icon: Icon, accent }) => {
+              ({ href, labelKey, icon: Icon }) => {
                 const active = navMatches(navActiveHref, href);
                 return (
                   <Link
                     key={href}
                     href={href}
                     data-slide-item
-                    data-accent={accent}
                     data-tour="onboarding-overview"
                     className={navItemClass(active)}
                     aria-current={active ? "page" : undefined}
@@ -523,7 +546,7 @@ export function DashboardShell({
 
           <div
             data-nav-scroll
-            className="scrollbar-hide relative z-[1] flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto px-3 pb-2"
+            className="scrollbar-hide relative z-[1] flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overflow-x-visible px-3 pb-2"
           >
             <span className="sk-nav-label">{t("nav.tools")}</span>
             <div className="sk-nav-tree flex flex-col gap-0.5">
@@ -536,10 +559,13 @@ export function DashboardShell({
                 aria-current={isAutopilotActive ? "page" : undefined}
                 {...navPendingProps("/autopilot/radar")}
               >
-                <Rocket className="sk-nav-icon" aria-hidden />
+                <RocketIcon className="sk-nav-icon" aria-hidden />
                 {t("nav.autopilot")}
                 {premiumToolsLocked ? (
-                  <Lock className="sk-nav-lock" aria-hidden />
+                  <span className="sk-nav-plus">
+                    <LockIcon aria-hidden />
+                    {t("nav.plusBadge")}
+                  </span>
                 ) : null}
               </Link>
 
@@ -569,14 +595,13 @@ export function DashboardShell({
             </div>
 
             {MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)).map(
-              ({ href, labelKey, icon: Icon, accent }) => {
+              ({ href, labelKey, icon: Icon }) => {
                 const active = navMatches(navActiveHref, href);
                 return (
                   <Link
                     key={href}
                     href={href}
                     data-slide-item
-                    data-accent={accent}
                     data-tour={
                       href === "/radar"
                         ? "onboarding-radar"
@@ -597,7 +622,7 @@ export function DashboardShell({
 
             <span className="sk-nav-label">{t("nav.work")}</span>
             {MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)).map(
-              ({ href, labelKey, icon: Icon, accent }) => {
+              ({ href, labelKey, icon: Icon }) => {
                 const active = navMatches(navActiveHref, href);
                 const locked =
                   premiumToolsLocked && PREMIUM_NAV_HREFS.has(href);
@@ -606,7 +631,6 @@ export function DashboardShell({
                     key={href}
                     href={href}
                     data-slide-item
-                    data-accent={accent}
                     data-tour={href === "/crm" ? "onboarding-crm" : undefined}
                     className={navItemClass(active, locked)}
                     aria-current={active ? "page" : undefined}
@@ -615,7 +639,7 @@ export function DashboardShell({
                     <Icon className="sk-nav-icon" aria-hidden />
                     {t(labelKey)}
                     {locked ? (
-                      <Lock className="sk-nav-lock" aria-hidden />
+                      <LockIcon className="sk-nav-lock" aria-hidden />
                     ) : null}
                   </Link>
                 );
@@ -638,7 +662,6 @@ export function DashboardShell({
             <Link
               href="/help"
               data-slide-item
-              data-accent="sky"
               data-tour="onboarding-help"
               className={navItemClass(navMatches(navActiveHref, "/help"))}
               aria-current={
@@ -646,19 +669,18 @@ export function DashboardShell({
               }
               {...navPendingProps("/help")}
             >
-              <LifeBuoy className="sk-nav-icon size-4" aria-hidden />
+              <BotGlyphIcon className="sk-nav-icon size-4" aria-hidden />
               {t("nav.help")}
             </Link>
             <Link
               href="/settings"
               data-slide-item
-              data-accent="indigo"
               data-tour="onboarding-settings"
               className={navItemClass(isWorkspaceSettingsActive)}
               aria-current={isWorkspaceSettingsActive ? "page" : undefined}
               {...navPendingProps("/settings")}
             >
-              <Settings className="sk-nav-icon size-4" aria-hidden />
+              <PlaneIcon className="sk-nav-icon size-4" aria-hidden />
               {t("nav.workspace")}
             </Link>
           </nav>
@@ -681,19 +703,19 @@ export function DashboardShell({
 
             <Link
               href={creditsWidgetHref}
-              className="sk-credits ring-offset-background focus-visible:outline-none"
+              className="sk-credits sk-credits--brand ring-offset-background focus-visible:outline-none"
             >
               {hasSessionData ? (
                 <>
-                  <div className="mb-1.5 flex items-center justify-between">
+                  <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Zap className="sk-credits__zap h-3 w-3" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--sk-muted)]">
+                      <BoltIcon className="sk-credits__zap h-3 w-3" />
+                      <span className="text-[10.5px] font-bold uppercase tracking-[0.1em] text-[rgba(255,255,255,0.72)]">
                         {t("nav.credits")}
                       </span>
                     </div>
                     <span
-                      className={`sk-credits__pct sk-credits__pct--${meterTone} text-[10px] font-bold`}
+                      className={`sk-credits__pct sk-credits__pct--${meterTone} text-[11.5px] font-bold`}
                     >
                       {t("nav.usagePercent", {
                         pct: String(usagePercentRounded),
@@ -706,9 +728,10 @@ export function DashboardShell({
                       style={{ width: `${creditsPercentage}%` }}
                     />
                   </div>
-                  <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--sk-muted)]">
+                  <p className="mt-2.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-[rgba(255,255,255,0.82)]">
                     {t("nav.plan")}:{" "}
                     <span className="sk-credits__plan">{displayPlan}</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-[#ffd36b] opacity-80" aria-hidden><path d="M11 3.5 12.7 8l4.5 1.7-4.5 1.7L11 15.9 9.3 11.4 4.8 9.7l4.5-1.7L11 3.5Z" /><path d="M18 14.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9.9-2.3Z" /></svg>
                   </p>
                   {subscriptionDateLabel && (
                     <p className="mt-1 text-[9px] leading-snug text-[color:var(--sk-muted-soft)]">
@@ -728,37 +751,51 @@ export function DashboardShell({
               )}
             </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="sk-user outline-none focus:outline-none focus-visible:ring-0">
-                  {hasSessionData ? (
-                    <>
-                      <Avatar className="h-9 w-9 rounded-xl border border-[color:var(--n-hairline)]">
-                        <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
-                        <AvatarFallback className="rounded-xl bg-[color-mix(in_oklab,var(--sk-brand)_22%,transparent)] text-sm font-bold text-[color:var(--sk-brand)]">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex flex-1 flex-col overflow-hidden">
-                        <span className="truncate text-sm font-semibold text-[color:var(--sk-ink)]">
-                          {displayName}
-                        </span>
-                        <span className="truncate text-[10px] text-[color:var(--sk-muted)]">
-                          {displayEmail?.toLowerCase()}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Skeleton className="h-9 w-9 rounded-xl" />
-                      <div className="flex flex-1 flex-col gap-1.5">
-                        <Skeleton className="h-3 w-24 rounded" />
-                        <Skeleton className="h-3 w-32 rounded" />
-                      </div>
-                    </>
-                  )}
-                </button>
-              </DropdownMenuTrigger>
+            {hasSessionData && usagePercentRounded >= 80 && (
+              <Link href="/pricing" className="sk-upsell sk-upsell--inline">
+                <span className="sk-upsell__dot" aria-hidden />
+                {t("nav.upsellQuestion")} <strong>{t("nav.upsellAction")}</strong>
+                <ArrowOutIcon className="sk-upsell__arrow" aria-hidden />
+              </Link>
+            )}
+
+            <div className="sk-sidebar__profile-wrap">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="sk-user outline-none focus:outline-none focus-visible:ring-0">
+                    {hasSessionData ? (
+                      <>
+                        <Avatar className="h-9 w-9 rounded-xl border border-[color:var(--n-hairline)]">
+                          <AvatarImage src={avatarSrc} alt={displayName ?? ""} />
+                          <AvatarFallback className="rounded-xl bg-[color-mix(in_oklab,var(--sk-brand)_22%,transparent)] text-sm font-bold text-[color:var(--sk-brand)]">
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                          <span className="truncate text-sm font-semibold text-[color:var(--sk-ink)]">
+                            {displayName}
+                          </span>
+                          <span className="truncate text-[10px] text-[color:var(--sk-muted)]">
+                            {displayEmail?.toLowerCase()}
+                          </span>
+                        </div>
+                        <ChevronRight
+                          className="sk-user__chevron"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Skeleton className="h-9 w-9 rounded-xl" />
+                        <div className="flex flex-1 flex-col gap-1.5">
+                          <Skeleton className="h-3 w-24 rounded" />
+                          <Skeleton className="h-3 w-32 rounded" />
+                        </div>
+                      </>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
 
               <DropdownMenuContent
                 className="w-60 rounded-xl border-border/60 bg-card p-2 shadow-xl"
@@ -813,6 +850,7 @@ export function DashboardShell({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
           </div>
         </div>
       </aside>

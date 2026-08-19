@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
-import { getSessionUser } from "@/app/actions/auth";
+import { clearSession, getSessionUser } from "@/app/actions/auth";
+import { verifyPassword } from "@/lib/password";
 
 export async function uploadProfileAvatar(file: File) {
   try {
@@ -73,4 +74,135 @@ export async function uploadProfileAvatar(file: File) {
     console.error("Kritická chyba v uploadu:", error);
     return { error: error.message || "Nepodařilo se nahrát avatar." };
   }
+}
+
+export async function exportAccountData(): Promise<
+  { success: true; data: string; filename: string } | { error: string }
+> {
+  const session = await getSessionUser();
+  if (!session.user?.id || !session.workspace?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const [user, workspace, leads] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true, role: true, createdAt: true },
+    }),
+    prisma.workspace.findUnique({
+      where: { id: session.workspace.id },
+      select: {
+        name: true,
+        companyName: true,
+        planTier: true,
+        creditsUsed: true,
+        creditsTotal: true,
+        emailsSent: true,
+        leadsCount: true,
+      },
+    }),
+    prisma.lead.findMany({
+      where: { workspaceId: session.workspace.id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        companyName: true,
+        domain: true,
+        email: true,
+        phone: true,
+        contactEmail: true,
+        contactPhone: true,
+        status: true,
+        source: true,
+        value: true,
+        createdAt: true,
+        lastContactedAt: true,
+      },
+    }),
+  ]);
+
+  if (!user || !workspace) {
+    return { error: "Účet nebo workspace nebyl nalezen." };
+  }
+
+  const exportedAt = new Date().toISOString();
+  const payload = {
+    exportedAt,
+    user: {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      memberSince: user.createdAt.toISOString(),
+    },
+    workspace: {
+      name: workspace.name,
+      companyName: workspace.companyName,
+      planTier: workspace.planTier,
+      creditsUsed: workspace.creditsUsed,
+      creditsTotal: workspace.creditsTotal,
+      emailsSent: workspace.emailsSent,
+      leadsCount: workspace.leadsCount,
+    },
+    leads: leads.map((lead) => ({
+      ...lead,
+      createdAt: lead.createdAt.toISOString(),
+      lastContactedAt: lead.lastContactedAt?.toISOString() ?? null,
+    })),
+  };
+
+  const stamp = exportedAt.slice(0, 10);
+  return {
+    success: true,
+    data: JSON.stringify(payload, null, 2),
+    filename: `sklyvo-export-${stamp}.json`,
+  };
+}
+
+export async function requestAccountDeletion(
+  password: string,
+): Promise<{ success: true } | { error: string }> {
+  const session = await getSessionUser();
+  if (!session.user?.id) {
+    return { error: "Nejste přihlášen." };
+  }
+
+  const trimmedPassword = password.trim();
+  if (!trimmedPassword) {
+    return { error: "Zadejte heslo pro potvrzení." };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, passwordHash: true, workspaceId: true, role: true },
+  });
+
+  if (!user) {
+    return { error: "Účet nebyl nalezen." };
+  }
+
+  const check = await verifyPassword(trimmedPassword, user.passwordHash);
+  if (!check.ok) {
+    return { error: "Heslo není správné." };
+  }
+
+  if (user.role === "OWNER") {
+    const memberCount = await prisma.user.count({
+      where: { workspaceId: user.workspaceId },
+    });
+    if (memberCount > 1) {
+      return {
+        error:
+          "Nejdřív odeberte ostatní členy týmu nebo převeďte vlastnictví workspace.",
+      };
+    }
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { disabledAt: new Date() },
+  });
+
+  await clearSession();
+  revalidatePath("/account");
+  return { success: true };
 }

@@ -19,6 +19,12 @@ import { isPlatformAdminEmail } from "@/lib/platform-admin";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING"]);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const AGENCY_MAX_SEATS = 5;
+
+function maxSeatsForPlanTier(planTier: string | null | undefined) {
+  const tier = (planTier ?? "NONE").toUpperCase();
+  return tier.includes("AGENCY") ? AGENCY_MAX_SEATS : 1;
+}
 
 function getFirstName(fullName: string | null | undefined) {
   if (!fullName) return null;
@@ -183,6 +189,10 @@ export async function getSessionUser(options?: { includeWorkspaceContent?: boole
     return { user: null, workspace: null };
   }
 
+  const memberCount = await prisma.user.count({
+    where: { workspaceId: user.workspaceId },
+  });
+
   const workspace = workspaceRaw as {
     id: string;
     name: string;
@@ -242,6 +252,8 @@ export async function getSessionUser(options?: { includeWorkspaceContent?: boole
       activeDeals: workspace.activeDeals ?? 0,
       pipelineValue: workspace.pipelineValue ?? 0,
       offeredServices: workspace.offeredServices ?? [],
+      memberCount,
+      maxSeats: maxSeatsForPlanTier(workspace.planTier),
       companyContext: includeWorkspaceContent
         ? (workspace.companyContext ?? null)
         : null,

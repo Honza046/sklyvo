@@ -32,6 +32,10 @@ const nextConfig = {
   // Skrýt Next.js badge „N / Rendering“ vlevo dole (není to chatbot).
   devIndicators: false,
   experimental: {
+    staleTimes: {
+      dynamic: 60,
+      static: 300,
+    },
     serverActions: {
       /** Base64 PDF v `generateEmailContent` — výchozí limit Next je příliš malý. */
       bodySizeLimit: "8mb",

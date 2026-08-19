@@ -18,7 +18,7 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
   color-scheme: dark;
-  background: #191a1c;
+  background: #0e0f11;
 }
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
@@ -28,25 +28,25 @@ body::-webkit-scrollbar {
 }
 @layer base {
   :root {
-    --background: 220 6% 10%;
+    --background: 220 10% 6%;
     --foreground: 240 14% 98%;
 
-    --card: 220 9% 6%;
+    --card: 220 13% 5%;
     --card-foreground: 240 14% 98%;
 
-    --popover: 220 9% 6%;
+    --popover: 220 13% 5%;
     --popover-foreground: 240 14% 98%;
 
     --primary: 0 0% 100%;
     --primary-foreground: 210 11% 3.5%;
 
-    --secondary: 228 11% 9%;
+    --secondary: 225 10% 8%;
     --secondary-foreground: 240 14% 98%;
 
-    --muted: 228 11% 9%;
+    --muted: 225 10% 8%;
     --muted-foreground: 216 6% 57%;
 
-    --accent: 225 9% 10%;
+    --accent: 220 10% 12%;
     --accent-foreground: 240 14% 98%;
 
     --destructive: 0 62% 46%;

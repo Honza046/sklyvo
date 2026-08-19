@@ -625,7 +625,7 @@ export default function GeneratorPage() {
                     key={file.id}
                     className="flex items-center gap-2 px-3 py-2.5"
                   >
-                    <FileText className="h-4 w-4 shrink-0 text-blue-600" />
+                    <FileText className="h-4 w-4 shrink-0 text-[color:var(--sk-brand)]" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">
                         {file.name}
@@ -967,7 +967,7 @@ export default function GeneratorPage() {
       disabled={isGenerating}
       onClick={() => void handleGeneratePdf()}
       className={cn(
-        "h-11 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white hover:bg-blue-700",
+        "h-11 rounded-xl bg-[color:var(--sk-brand)] px-5 text-sm font-semibold text-white hover:bg-[color:var(--sk-brand)]/90",
         className,
       )}
     >
@@ -998,7 +998,7 @@ export default function GeneratorPage() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="z-50 w-56 border bg-white shadow-md "
+        className="z-50 w-56 border bg-[color:var(--n-card)] shadow-md "
       >
         <DropdownMenuItem
           disabled={isGeneratingDoc || googleConnecting}

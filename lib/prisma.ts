@@ -5,7 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const connectionString = process.env.DATABASE_URL;
 
  // Bump when schema changes require a fresh client
- const PRISMA_SCHEMA_FINGERPRINT = "platform-admin-v1";
+ const PRISMA_SCHEMA_FINGERPRINT = "lead-replied-at-v3";
 
 type PrismaSingleton = PrismaClient & {
  __fingerprint?: string;
@@ -44,13 +44,13 @@ function runtimeModelHasField(client: PrismaClient, model: string, field: string
  }
  )._runtimeDataModel;
  const fields = runtime?.models?.[model]?.fields;
- if (!fields) return true;
+ if (!fields) return false;
  if (Array.isArray(fields)) {
  return fields.some((f) => f?.name === field);
  }
  return field in fields;
  } catch {
- return true;
+ return false;
  }
 }
 
@@ -106,8 +106,12 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
  }
 
  // Generated package itself is behind (should not happen after prisma generate).
+ if (!generatedSchemaHasLeadField("repliedAt")) {
+   return true;
+ }
+
  if (!generatedSchemaHasLeadField("websiteVisitedAt")) {
- return true;
+   return true;
  }
 
  if (!runtimeModelHasField(client, "Lead", "websiteVisitedAt")) {
@@ -132,7 +136,10 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
  return true;
  }
  if (!runtimeModelHasField(client, "Lead", "linkedinUrl")) {
- return true;
+   return true;
+ }
+ if (!runtimeModelHasField(client, "Lead", "repliedAt")) {
+   return true;
  }
  if (!runtimeModelHasField(client, "RadarSettings", "sourcePlaces")) {
  return true;
@@ -152,6 +159,35 @@ function isStalePrismaClient(client: PrismaClient | undefined): boolean {
  !runtimeHasModelDelegate(client, "workspaceDocument") ||
  !runtimeHasModelDelegate(client, "adminAuditLog")
  );
+}
+
+function resetPrismaSingleton() {
+ disposePrismaClient(globalThis.prisma);
+ if (globalThis.__prismaPool) {
+   void globalThis.__prismaPool.end().catch(() => undefined);
+ }
+ globalThis.prisma = undefined;
+ globalThis.__prismaPool = undefined;
+}
+
+function isRepliedAtValidationError(error: unknown): boolean {
+ return (
+   error instanceof Prisma.PrismaClientValidationError &&
+   error.message.includes("Unknown argument `repliedAt`")
+ );
+}
+
+/** Dev safety net — po prisma generate obnoví singleton, když runtime ještě nezná repliedAt. */
+export async function runPrismaQuery<T>(fn: () => Promise<T>): Promise<T> {
+ try {
+   return await fn();
+ } catch (error) {
+   if (process.env.NODE_ENV !== "production" && isRepliedAtValidationError(error)) {
+     resetPrismaSingleton();
+     return fn();
+   }
+   throw error;
+ }
 }
 
 function getPrismaClient(): PrismaClient {

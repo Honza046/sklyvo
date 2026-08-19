@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -13,12 +13,10 @@ import {
   Copy,
   Settings2,
   RefreshCw,
-  Info,
   X,
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
@@ -109,23 +107,6 @@ const INITIAL_EMAIL_BODY = `Dobrý den,
 zde se po vygenerování zobrazí tělo e-mailu včetně oslovení. Vyplňte URL cílového webu a klikněte na Vygenerovat email.
 
 S pozdravem`;
-
-const SNIPER_HELP_SECTIONS = [
-  {
-    title: "Ikona nastavení (vlevo dole)",
-    description:
-      "Otevře filtry pro volbu tónu a jazyka e-mailu. Segment se určí automaticky z webu.",
-  },
-  {
-    title: "Cílová URL adresa",
-    description:
-      "Web klienta, který AI projde. Zjistí obor, nabídku a na co navázat.",
-  },
-  {
-    title: "Přidat PDF kontext",
-    description: "Možnost nahrát vlastní materiály pro chytřejší výstup.",
-  },
-] as const;
 
 /** Vytáhne pole předmětů z odpovědi (nové vygenerovane_predmety nebo legacy jeden řetězec). */
 function parsePredmetyFromPayload(o: Record<string, unknown>): string[] {
@@ -231,13 +212,14 @@ function truncateFilename(name: string, max = 26): string {
 }
 
 function SniperContent() {
-  const { t, language: uiLanguage } = useLanguage();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [targetUrl, setTargetUrl] = useState("");
   const [emailTarget, setEmailTarget] = useState("");
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [recentItems, setRecentItems] = useState<SniperRecentItem[]>([]);
 
   const [language, setLanguage] = useState("cs");
@@ -292,23 +274,26 @@ function SniperContent() {
         getWorkspaceAccessState(),
         getEmailConnectionState(),
       ]);
-      if (state.workspace) {
+      if (state.workspace && state.user) {
         const left = Math.max(
           0,
           state.workspace.creditsTotal - state.workspace.creditsUsed,
         );
         setCreditsLeft(left);
         setWorkspaceId(state.workspace.id);
-        setRecentItems(listSniperRecent(state.workspace.id));
+        setUserId(state.user.id);
+        setRecentItems(
+          listSniperRecent(state.workspace.id, state.user.id),
+        );
       }
       setEmailConnected(emailState.connected);
     })();
   }, []);
 
   useEffect(() => {
-    if (!workspaceId) return;
-    setRecentItems(listSniperRecent(workspaceId));
-  }, [workspaceId]);
+    if (!workspaceId || !userId) return;
+    setRecentItems(listSniperRecent(workspaceId, userId));
+  }, [workspaceId, userId]);
 
   useEffect(() => {
     const rawUrl = searchParams.get("url")?.trim() ?? "";
@@ -450,7 +435,7 @@ function SniperContent() {
           prev === null ? prev : Math.max(0, prev - 1),
         );
         setRecentItems(
-          upsertSniperRecent(workspaceId, {
+          upsertSniperRecent(workspaceId, userId, {
             targetUrl,
             contactEmail: resolvedEmail || emailTarget.trim(),
             status: "draft",
@@ -553,7 +538,7 @@ function SniperContent() {
         return;
       }
       toast.success("E-mail odeslán. V CRM je kontaktováno.");
-      setRecentItems(markSniperRecentSent(workspaceId, targetUrl, to));
+      setRecentItems(markSniperRecentSent(workspaceId, userId, targetUrl, to));
       // Zavři editor a vrať Sniper do výchozího stavu (ne Autopilot).
       setIsGenerated(false);
       setGeneratedParams(null);
@@ -643,334 +628,269 @@ function SniperContent() {
 
   const hasCredits = (creditsLeft ?? 1) > 0;
 
-  const dateLocale =
-    uiLanguage === "cz"
-      ? "cs-CZ"
-      : uiLanguage === "de"
-        ? "de-DE"
-        : uiLanguage === "es"
-          ? "es-ES"
-          : "en-GB";
+  const recentThisWeek = useMemo(() => {
+    const weekAgo = Date.now() - 7 * 86_400_000;
+    return recentItems.filter((item) => item.updatedAt >= weekAgo);
+  }, [recentItems]);
 
   return (
-    <>
-      <div
-        className={cn(
-          "flex h-full w-full flex-col overflow-y-auto pb-6 scrollbar-hide",
-          !isGenerated && "overflow-hidden",
-        )}
-      >
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f && f.type && f.type !== "application/pdf") {
-                toast.error(t("sniper.pdfOnly"));
-                e.target.value = "";
-                return;
-              }
-              setPdfFile(f ?? null);
-            }}
-          />
+    <div className="sk-tool-page sk-tool-page--stack">
+      <div className="sk-page-head sk-page-head--tool shrink-0">
+        <h1 className="sk-page-head__title">{t("sniper.title")}</h1>
+        <p className="sk-page-head__sub">{t("sniper.subtitle")}</p>
+      </div>
 
-          {/* Desktop form card */}
-          <div className="relative flex shrink-0 flex-col gap-4 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {t("sniper.targetUrlLabel")}
-                </label>
-                <div className="relative">
-                  <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                  <Input
-                    className="h-11 rounded-xl pl-9 text-sm"
-                    placeholder="https://domain.com"
-                    value={targetUrl}
-                    onChange={(e) => setTargetUrl(e.target.value)}
-                    autoComplete="off"
-                    name="target-url-field-x-desktop"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {t("sniper.contactEmail")}
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                  <Input
-                    className="h-11 rounded-xl pl-9 text-sm"
-                    placeholder="info@domain.com"
-                    value={emailTarget}
-                    onChange={(e) => setEmailTarget(e.target.value)}
-                    autoComplete="off"
-                    name="target-email-field-y-desktop"
-                  />
-                </div>
-              </div>
-            </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f && f.type && f.type !== "application/pdf") {
+            toast.error(t("sniper.pdfOnly"));
+            e.target.value = "";
+            return;
+          }
+          setPdfFile(f ?? null);
+        }}
+      />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {t("sniper.offerType")}
-                </label>
-                <Select value={selectedOffer} onValueChange={setSelectedOffer}>
-                  <SelectTrigger className="h-11 w-full rounded-xl text-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 data-[state=open]:ring-0">
-                    <SelectValue placeholder={t("sniper.offerType")} />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 rounded-xl border-border/50 bg-card shadow-xl">
-                    {SNIPER_OFFER_OPTIONS.map((option) => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className={cn(
-                          "cursor-pointer",
-                          option.value === SNIPER_AUTODETECT_VALUE &&
-                            "font-medium",
-                        )}
-                      >
-                        {option.value === SNIPER_AUTODETECT_VALUE
-                          ? t("sniper.autoDetect")
-                          : tService(t, option.value)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-end justify-end pb-0.5">
-                <div
-                  className={cn(
-                    "flex max-w-full items-center gap-0.5 rounded-md border",
-                    pdfFile
-                      ? "border-border/70 bg-muted/60 pr-0.5"
-                      : "border-transparent",
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      "flex min-w-0 flex-1 items-center gap-1.5 px-2 py-1 text-left text-[11px] font-medium transition-colors",
-                      pdfFile
-                        ? "rounded-md text-foreground hover:bg-muted/80"
-                        : "lowercase tracking-normal text-muted-foreground hover:text-foreground hover:underline",
-                    )}
-                  >
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    {pdfFile ? (
-                      <span className="min-w-0 truncate" title={pdfFile.name}>
-                        {truncateFilename(pdfFile.name)}
-                      </span>
-                    ) : (
-                      <span className="lowercase tracking-normal">
-                        {t("sniper.addPdfContext")}
-                      </span>
-                    )}
-                  </button>
-                  {pdfFile ? (
-                    <button
-                      type="button"
-                      aria-label="Odebrat PDF"
-                      className="inline-flex shrink-0 rounded p-1 text-muted-foreground hover:bg-background/90 hover:text-foreground"
-                      onClick={() => {
-                        setPdfFile(null);
-                        if (fileInputRef.current)
-                          fileInputRef.current.value = "";
-                      }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2.5">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    aria-label="Parametry zprávy"
-                    className="sk-press-btn h-11 w-11 shrink-0 rounded-xl p-0"
-                  >
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-80 rounded-2xl border-border/50 bg-card p-4 shadow-xl"
-                  align="start"
-                  side="top"
-                  sideOffset={16}
-                >
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="sk-type-h3">Parametry zprávy</h4>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Změňte výchozí nastavení pro tento konkrétní e-mail.
-                      </p>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          {t("sniper.outputLanguage")}
-                        </label>
-                        <Select
-                          value={language}
-                          onValueChange={handleLanguageChange}
-                        >
-                          <SelectTrigger className="h-9 rounded-lg bg-background text-xs">
-                            <SelectValue placeholder={t("sniper.outputLanguage")} />
-                          </SelectTrigger>
-                          <SelectContent className="border-border/60 bg-card shadow-lg">
-                            {SNIPER_LANGUAGES.map(({ value }) => (
-                              <SelectItem key={value} value={value}>
-                                <span className="inline-flex items-center gap-2">
-                                  <LanguageFlag code={value} />
-                                  {t(`sniper.languages.${value}`)}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                          {t("sniper.toneLabel")}
-                        </label>
-                        <Select value={tone} onValueChange={setTone}>
-                          <SelectTrigger className="h-9 rounded-lg bg-background text-xs">
-                            <SelectValue placeholder={t("sniper.tonePlaceholder")} />
-                          </SelectTrigger>
-                          <SelectContent className="border-border/60 bg-card shadow-lg">
-                            {Object.entries(toneMap).map(
-                              ([value, { emoji }]) => (
-                                <SelectItem key={value} value={value}>
-                                  {emoji}{" "}
-                                  {t(`sniper.tones.${value}`)}
-                                </SelectItem>
-                              ),
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                        {t("sniper.segmentAutoHint")}
-                      </p>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => void handleGenerate()}
-                disabled={!hasCredits || !selectedOffer}
-                aria-busy={isLoading}
-                className={cn(
-                  "h-11 flex-1 text-sm",
-                  isLoading && "pointer-events-none",
-                )}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("sniper.generating")}
-                  </>
-                ) : (
-                  <>
-                    {hasCredits ? t("sniper.generate") : t("sniper.insufficientCreditsShort")}
-                    <Wand2 className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-            {!hasCredits && (
-              <div className="mt-1.5">
-                <Link
-                  href="/settings/billing"
-                  className="text-xs text-blue-600 hover:underline"
-                >
-                  Zvýšit limit kreditů
-                </Link>
-              </div>
-            )}
-
-            <div className="absolute right-6 top-6 z-40">
-              <div
-                tabIndex={0}
-                className="group relative inline-flex rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2"
-              >
-                <div
-                  role="tooltip"
-                  className={cn(
-                    "absolute right-1 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2.5rem))]",
-                    "origin-top-right -translate-y-2 scale-[0.98] opacity-0 transition-all duration-200 ease-out",
-                    "pointer-events-none rounded-xl border border-border/70 bg-white p-4 shadow-xl ",
-                    "group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100",
-                    "group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
-                  )}
-                >
-                  <div className="space-y-3">
-                    {SNIPER_HELP_SECTIONS.map((section) => (
-                      <div key={section.title}>
-                        <p className="text-sm font-semibold text-foreground">
-                          {section.title}
-                        </p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                          {section.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <span className="inline-flex cursor-default text-gray-400 transition-colors group-hover:text-gray-600 ">
-                  <Info className="h-4 w-4" aria-hidden />
-                </span>
-              </div>
+      <div className="sk-tool-form sk-tool-form--compact shrink-0">
+        <div className="sk-tool-form__grid sk-tool-form__grid--2">
+          <div className="sk-tool-form__field">
+            <label className="sk-field-label">
+              {t("sniper.targetUrlLabel")}
+            </label>
+            <div className="sk-field">
+              <Globe className="sk-field__icon" aria-hidden />
+              <input
+                className="sk-plain-field"
+                placeholder="https://domain.com"
+                value={targetUrl}
+                onChange={(e) => setTargetUrl(e.target.value)}
+                autoComplete="off"
+                name="target-url-field-x-desktop"
+              />
             </div>
           </div>
+          <div className="sk-tool-form__field">
+            <label className="sk-field-label">
+              {t("sniper.contactEmail")}
+            </label>
+            <div className="sk-field">
+              <Mail className="sk-field__icon" aria-hidden />
+              <input
+                className="sk-plain-field"
+                placeholder="info@domain.com"
+                value={emailTarget}
+                onChange={(e) => setEmailTarget(e.target.value)}
+                autoComplete="off"
+                name="target-email-field-y-desktop"
+              />
+            </div>
+          </div>
+        </div>
 
-          {!isGenerated ? (
-            <SniperRecentPanel
-              items={recentItems}
-              onOpen={handleOpenRecent}
-              title={t("sniper.recentTitle")}
-              emptyHint={t("sniper.recentEmpty")}
-              draftLabel={t("sniper.recentDraft")}
-              sentLabel={t("sniper.recentSent")}
-              openLabel={t("sniper.recentOpen")}
-              dateLocale={dateLocale}
-            />
-          ) : null}
+        <div className="sk-tool-form__offer">
+          <div className="sk-tool-form__field">
+            <label className="sk-field-label">{t("sniper.offerType")}</label>
+            <Select value={selectedOffer} onValueChange={setSelectedOffer}>
+              <SelectTrigger className="sk-field w-full justify-between">
+                <SelectValue placeholder={t("sniper.offerType")} />
+              </SelectTrigger>
+              <SelectContent>
+                {SNIPER_OFFER_OPTIONS.map((option) => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={cn(
+                      "cursor-pointer",
+                      option.value === SNIPER_AUTODETECT_VALUE &&
+                        "font-medium",
+                    )}
+                  >
+                    {option.value === SNIPER_AUTODETECT_VALUE
+                      ? t("sniper.autoDetect")
+                      : tService(t, option.value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* VÝSTUPNÍ E-MAIL */}
-          {isGenerated && (
-            <div className="rounded-2xl bg-muted/40 p-3 animate-in fade-in slide-in-from-top-8 duration-500 sm:rounded-2xl sm:border sm:border-border/60 sm:bg-card sm:p-6 sm:shadow-sm md:p-8">
+          {pdfFile ? (
+            <div className="sk-pdfbtn__file">
+              <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="min-w-0 truncate" title={pdfFile.name}>
+                {truncateFilename(pdfFile.name)}
+              </span>
+              <button
+                type="button"
+                aria-label="Odebrat PDF"
+                className="inline-flex shrink-0 rounded p-1 text-[color:var(--n-dim)] hover:text-[color:var(--n-text-soft)]"
+                onClick={() => {
+                  setPdfFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="sk-pdfbtn"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileText className="h-3.5 w-3.5" aria-hidden />
+              {t("sniper.addPdfContext")}
+            </button>
+          )}
+        </div>
+
+        <div className="sk-tool-form__cta-row">
+          <button
+            type="button"
+            onClick={() => void handleGenerate()}
+            disabled={!hasCredits || !selectedOffer}
+            aria-busy={isLoading}
+            className={cn("sk-tool-cta", isLoading && "pointer-events-none")}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {t("sniper.generating")}
+              </>
+            ) : (
+              <>
+                {hasCredits
+                  ? t("sniper.generate")
+                  : t("sniper.insufficientCreditsShort")}
+                <Wand2 className="h-3.5 w-3.5" />
+              </>
+            )}
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Parametry zprávy"
+                className="sk-tool-settings-btn sk-tool-settings-btn--cta"
+              >
+                <Settings2 className="h-4 w-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="sk-popover-dark w-80 p-4"
+              align="end"
+              side="bottom"
+              sideOffset={8}
+            >
+              <div className="space-y-4">
+                <div>
+                  <h4 className="sk-type-h3">Parametry zprávy</h4>
+                  <p className="sk-popover-dark__desc">
+                    Změňte výchozí nastavení pro tento konkrétní e-mail.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="sk-field-label">
+                      {t("sniper.outputLanguage")}
+                    </label>
+                    <Select
+                      value={language}
+                      onValueChange={handleLanguageChange}
+                    >
+                      <SelectTrigger className="sk-select h-9 rounded-lg text-xs">
+                        <SelectValue placeholder={t("sniper.outputLanguage")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SNIPER_LANGUAGES.map(({ value }) => (
+                          <SelectItem key={value} value={value}>
+                            <span className="inline-flex items-center gap-2">
+                              <LanguageFlag code={value} />
+                              {t(`sniper.languages.${value}`)}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="sk-field-label">
+                      {t("sniper.toneLabel")}
+                    </label>
+                    <Select value={tone} onValueChange={setTone}>
+                      <SelectTrigger className="sk-select h-9 rounded-lg text-xs">
+                        <SelectValue placeholder={t("sniper.tonePlaceholder")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(toneMap).map(
+                          ([value, { emoji }]) => (
+                            <SelectItem key={value} value={value}>
+                              {emoji} {t(`sniper.tones.${value}`)}
+                            </SelectItem>
+                          ),
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <p className="sk-popover-dark__hint">
+                    {t("sniper.segmentAutoHint")}
+                  </p>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        {!hasCredits && (
+          <div className="mt-2">
+            <Link
+              href="/settings/billing"
+              className="text-xs font-semibold text-[color:var(--sk-brand)] hover:text-[color:var(--n-text-soft)]"
+            >
+              Zvýšit limit kreditů
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {!isGenerated ? (
+        <SniperRecentPanel
+          items={recentItems}
+          onOpen={handleOpenRecent}
+          title={t("sniper.recentTitle")}
+          countLabel={t("sniper.recentWeekCount", {
+            count: recentThisWeek.length,
+          })}
+          emptyHint={t("sniper.recentEmpty")}
+          draftLabel={t("sniper.recentDraft")}
+          sentLabel={t("sniper.recentSent")}
+          t={t}
+        />
+      ) : null}
+
+      {isGenerated && (
+            <div className="sk-surface sk-surface--pad animate-in fade-in slide-in-from-top-8 duration-500">
               <div className="mb-3 flex flex-col justify-between gap-2 sm:mb-6 sm:flex-row sm:items-center sm:gap-4">
-                <h3 className="text-[15px] font-semibold text-foreground sm:text-lg">
+                <h3 className="sk-type-h3 text-[15px] sm:text-lg">
                   Vygenerovaná sekvence
                 </h3>
 
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-2.5 py-1 rounded-md bg-blue-50 border border-blue-100 text-xs font-bold text-blue-700 ">
+                  <span className="sk-pill sk-pill--soft">
                     {generatedParams?.segment &&
                     segmentMap[generatedParams.segment]
                       ? `${segmentMap[generatedParams.segment].emoji} ${segmentMap[generatedParams.segment].label}`
                       : "🔍 Z webu"}
                   </span>
-                  <span className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 ">
+                  <span className="sk-pill">
                     {toneMap[generatedParams?.tone ?? ""]?.emoji}{" "}
                     {toneMap[generatedParams?.tone ?? ""]?.label}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 ">
+                  <span className="sk-pill">
                     <LanguageFlag code={generatedParams?.language ?? ""} />
                     {SNIPER_LANGUAGE_LABELS[generatedParams?.language ?? ""] ??
                       (generatedParams?.language ?? "").toUpperCase()}
@@ -979,11 +899,9 @@ function SniperContent() {
               </div>
 
               {generatedParams?.analysis && (
-                <div className="mb-3 rounded-lg border border-emerald-200/80 bg-emerald-50/60 p-2.5 sm:mb-6 sm:rounded-xl sm:p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800 ">
-                    Analýza webu
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-emerald-950/90 sm:mt-1.5 sm:text-sm">
+                <div className="sk-note-box sk-note-box--positive mb-3 sm:mb-6">
+                  <p className="sk-note-box__label">Analýza webu</p>
+                  <p className="mt-1 text-xs leading-relaxed text-[color:var(--sk-ink-soft)] sm:mt-1.5 sm:text-sm">
                     {generatedParams.analysis}
                   </p>
                 </div>
@@ -1085,7 +1003,7 @@ function SniperContent() {
                 <Button
                   onClick={() => void handleSendNow()}
                   disabled={isSending}
-                  className="col-span-2 h-11 rounded-xl bg-blue-600 font-semibold text-white shadow-sm hover:bg-blue-700 sm:col-span-1 sm:h-10"
+                  className="col-span-2 h-11 rounded-xl bg-[color:var(--sk-brand)] font-semibold text-white shadow-sm hover:bg-[color:var(--sk-brand)]/90 sm:col-span-1 sm:h-10"
                   title={
                     emailConnected
                       ? "Odeslat přes napojený firemní e-mail"
@@ -1116,9 +1034,7 @@ function SniperContent() {
               <div ref={bottomRef} className="h-1" />
             </div>
           )}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
 

@@ -59,22 +59,10 @@ export type RunState = {
 export const ITEMS_PER_PAGE = 50;
 
 export const AUTOPILOT_TABLE_CARD_CLASS =
-  "sk-data-panel mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-white shadow-sm sm:rounded-2xl";
-
-export const AUTOPILOT_TABLE_SCROLL_CLASS =
-  "max-h-[min(42dvh,280px)] min-h-[160px] overflow-x-auto overflow-y-auto sm:h-[350px] sm:min-h-[350px] sm:max-h-[350px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
-
-/** Desktop tabulka — bez min-width na mobilu (mobil používá seznam). */
-export const AUTOPILOT_DESKTOP_TABLE_CLASS =
-  "hidden w-full table-fixed text-sm md:table";
+  "sk-data-panel mt-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-[color:var(--n-card)] shadow-sm sm:rounded-2xl";
 
 export const AUTOPILOT_HIDDEN_SCROLLBAR_CLASS =
   "scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
-
-export const SNIPER_SELECTION_TABLE_SCROLL_CLASS = AUTOPILOT_TABLE_SCROLL_CLASS;
-
-export const SNIPER_QUEUE_TABLE_SCROLL_CLASS =
-  "max-h-[min(35dvh,190px)] min-h-[140px] overflow-x-auto overflow-y-auto sm:h-[190px] sm:min-h-[190px] sm:max-h-[190px] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 export const AUTOPILOT_TABLE_HEAD_CELL_CLASS =
   "h-8 bg-transparent px-3 py-1.5 align-middle sk-type-label";
@@ -89,7 +77,7 @@ export const FULL_AUTO_STATUS_BADGES: Record<
 > = {
   found: {
     label: "Nalezeno",
-    className: "bg-emerald-50 text-emerald-700 ",
+    className: "bg-[color-mix(in_oklab,#34d399_14%,var(--n-field))] text-emerald-700 ",
   },
   generating: {
     label: "Generování AI",
@@ -97,7 +85,7 @@ export const FULL_AUTO_STATUS_BADGES: Record<
   },
   queued: {
     label: "Ve frontě",
-    className: "bg-blue-50 text-blue-700 ",
+    className: "bg-[color-mix(in_oklab,var(--sk-brand)_14%,var(--n-field))] text-[color:var(--sk-brand)] ",
   },
   sent: {
     label: "Odesláno",
@@ -206,7 +194,7 @@ export function leadStatusClassName(
   status: WorkspaceLead["leadStatus"],
 ): string {
   if (status === "NEW") return "text-emerald-700 ";
-  if (status === "CONTACTED" || status === "REPLIED") return "text-blue-700 ";
+  if (status === "CONTACTED" || status === "REPLIED") return "text-[color:var(--sk-brand)] ";
   if (status === "MEETING_SET" || status === "CLOSED_WON")
     return "text-sky-700 ";
   if (status === "BREAK_UP") return "text-amber-700 ";
@@ -241,12 +229,12 @@ export function AutopilotPowerBadge({ enabled }: { enabled: boolean | null }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+        "sk-autopilot-power-badge",
         enabled === null
-          ? "bg-zinc-100 text-zinc-400 "
+          ? "sk-autopilot-power-badge--loading"
           : enabled
-            ? "bg-emerald-100 text-emerald-800 "
-            : "bg-zinc-200 text-zinc-600 ",
+            ? "sk-autopilot-power-badge--on"
+            : "sk-autopilot-power-badge--off",
       )}
     >
       {enabled === null ? "…" : enabled ? "Zapnuto" : "Vypnuto"}
@@ -269,27 +257,29 @@ export function AutopilotPowerButton({
   const loading = enabled === null || disabled;
   const isOn = enabled === true;
 
+  const label = disabled
+    ? "Ukládám…"
+    : enabled === null
+      ? "…"
+      : enabled
+        ? "Vypnout"
+        : "Zapnout";
+
   return (
-    <Button
+    <button
       type="button"
       disabled={loading}
       onClick={onClick}
-      variant={isOn ? "secondary" : "primary"}
       className={cn(
-        "h-9 shrink-0 rounded-[12px] px-4 text-sm font-semibold sm:px-5",
-        loading && "opacity-70",
-        isOn && "sk-press-btn",
-        !isOn && !loading && "sk-press-brand",
+        "sk-autopilot-power-btn",
+        isOn
+          ? "sk-autopilot-power-btn--deactivate"
+          : "sk-autopilot-power-btn--activate",
+        loading && "sk-autopilot-power-btn--loading",
       )}
     >
-      {disabled
-        ? "Ukládám…"
-        : enabled === null
-          ? "…"
-          : enabled
-            ? "Vypnout"
-            : "Zapnout"}
-    </Button>
+      {label}
+    </button>
   );
 }
 
@@ -305,80 +295,64 @@ export function AutopilotIconButton({
   className?: string;
 }) {
   return (
-    <Button
+    <button
       type="button"
-      variant="secondary"
-      size="icon"
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={cn(
-        "sk-press-btn h-9 w-9 shrink-0 rounded-[12px] p-0",
-        className,
-      )}
+      className={cn("sk-autopilot-icon-btn", className)}
     >
       {children}
-    </Button>
+    </button>
   );
 }
 
 export function AutopilotControlPanel({
   icon,
-  iconWrapClassName,
+  iconWrapClassName = "",
   iconAccent,
   title,
   description,
-  extra,
+  filters,
   actions,
   powerEnabled,
 }: {
   icon: React.ReactNode;
-  iconWrapClassName: string;
+  iconWrapClassName?: string;
   iconAccent?: string;
   title: string;
   description: string;
-  extra?: React.ReactNode;
+  filters?: React.ReactNode;
   actions: React.ReactNode;
   /** Pokud je předáno, zobrazí badge Zapnuto/Vypnuto u názvu. */
   powerEnabled?: boolean | null;
 }) {
   return (
-    <>
-      <div className="sk-autopilot-control relative flex min-h-12 shrink-0 items-start px-2.5 py-2.5 sm:min-h-16 sm:items-center sm:px-5 sm:py-3">
-        <div className="flex w-full flex-row items-start justify-between gap-1.5 sm:items-center sm:gap-4">
-          <div className="flex min-w-0 flex-1 items-start gap-1.5 sm:items-center sm:gap-3">
-            <div
-              className={cn(
-                "mt-0.5 shrink-0 rounded-lg p-1.5 sm:mt-0 sm:rounded-xl sm:p-2",
-                iconWrapClassName,
-              )}
-              data-accent={iconAccent}
-            >
-              {icon}
-            </div>
-            <div className="min-w-0 flex-1 text-left">
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <h2 className="text-xs font-semibold leading-snug text-foreground sm:text-base">
-                  {title}
-                </h2>
-                {powerEnabled != null ? (
-                  <span className="shrink-0">
-                    <AutopilotPowerBadge enabled={powerEnabled} />
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-1 text-[10px] leading-snug text-muted-foreground sm:mt-1.5 sm:text-xs">
-                {description}
-              </p>
-            </div>
+    <div className="sk-autopilot-control">
+      <div className="sk-autopilot-control__inner">
+        <div className="sk-autopilot-control__main">
+          <div
+            className={cn("sk-autopilot-control__icon", iconWrapClassName)}
+            data-accent={iconAccent}
+          >
+            {icon}
           </div>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
-            {actions}
+          <div className="sk-autopilot-control__copy">
+            <div className="sk-autopilot-control__title-row">
+              <h2 className="sk-autopilot-control__title">{title}</h2>
+              {powerEnabled != null ? (
+                <AutopilotPowerBadge enabled={powerEnabled} />
+              ) : null}
+            </div>
+            <p className="sk-autopilot-control__desc">{description}</p>
           </div>
         </div>
+        <div className="sk-autopilot-control__actions">{actions}</div>
       </div>
-      {extra}
-    </>
+      {filters ? (
+        <div className="sk-autopilot-control__filters">{filters}</div>
+      ) : null}
+    </div>
   );
 }
 
@@ -453,6 +427,24 @@ export function AutopilotTablePagination({
         </Button>
       </div>
     </div>
+  );
+}
+
+/** Vycentrované kolečko při prvním načtení tabulky bez dat. */
+export function AutopilotTableLoadingSpinner({
+  colSpan,
+}: {
+  colSpan: number;
+}) {
+  return (
+    <AutopilotTableEmptyState colSpan={colSpan}>
+      <Loader2
+        className="h-7 w-7 animate-spin text-[#6b7078]"
+        strokeWidth={2}
+        aria-hidden
+      />
+      <span className="sr-only">Načítání</span>
+    </AutopilotTableEmptyState>
   );
 }
 

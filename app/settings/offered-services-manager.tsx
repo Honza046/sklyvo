@@ -111,67 +111,53 @@ export function OfferedServicesPicker({ compact = false }: { compact?: boolean }
   const { services, toggleService } = useCompanyServices();
 
   return (
-    <div
-      className={cn(
-        "flex min-h-0 flex-col",
-        compact ? "h-full" : "space-y-4",
-      )}
-    >
-      <div className={cn(compact ? "min-h-0 flex-1 overflow-y-auto pr-1" : "")}>
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {t("settings.servicesBasic")}
-          </p>
-          {!compact ? (
-            <p className="text-xs text-muted-foreground">
-              {t("settings.servicesBasicHint")}
-            </p>
-          ) : null}
+    <div className={cn("sk-company-services", compact && "sk-company-services--compact")}>
+      {!compact ? (
+        <div className="sk-company-services__intro">
+          <p className="sk-company-field-label">{t("settings.servicesBasic")}</p>
+          <p className="sk-company-field-hint">{t("settings.servicesBasicHint")}</p>
         </div>
+      ) : null}
 
-        <div className={cn(compact ? "space-y-3 pt-1" : "space-y-5")}>
-          {PREDEFINED_SERVICE_GROUPS.map((group) => (
-            <div key={group.id} className="space-y-1.5">
-              <p className="text-[10px] font-semibold text-foreground/80 sm:text-[11px]">
-                {tServiceGroup(t, group.id)}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {group.services.map((service) => {
-                  const selected = services.includes(service);
-                  return (
-                    <button
-                      key={service}
-                      type="button"
-                      onClick={() => toggleService(service)}
-                      className={cn(
-                        "rounded-full border px-2.5 py-1 text-[11px] font-semibold leading-snug transition-all sm:px-3 sm:py-1.5 sm:text-xs",
-                        selected
-                          ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                          : "border-border/60 bg-background text-muted-foreground hover:border-blue-200 hover:text-foreground",
-                      )}
-                    >
-                      {tService(t, service)}
-                    </button>
-                  );
-                })}
-              </div>
+      <div className="sk-company-service-groups">
+        {PREDEFINED_SERVICE_GROUPS.map((group) => (
+          <div key={group.id} className="sk-company-service-group">
+            <p className="sk-company-group-label">{tServiceGroup(t, group.id)}</p>
+            <div className="sk-company-chips">
+              {group.services.map((service) => {
+                const selected = services.includes(service);
+                return (
+                  <button
+                    key={service}
+                    type="button"
+                    onClick={() => toggleService(service)}
+                    aria-pressed={selected}
+                    className={cn(
+                      "sk-company-chip",
+                      selected && "sk-company-chip--selected",
+                    )}
+                  >
+                    {tService(t, service)}
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
-
-        {services.length > 0 ? (
-          <p className="pt-2 text-[10px] text-muted-foreground sm:text-xs">
-            {t(
-              services.length === 1
-                ? "settings.servicesSelectedOne"
-                : services.length >= 2 && services.length <= 4
-                  ? "settings.servicesSelectedFew"
-                  : "settings.servicesSelectedMany",
-              { count: services.length },
-            )}
-          </p>
-        ) : null}
+          </div>
+        ))}
       </div>
+
+      {!compact && services.length > 0 ? (
+        <p className="sk-company-field-hint sk-company-services__count">
+          {t(
+            services.length === 1
+              ? "settings.servicesSelectedOne"
+              : services.length >= 2 && services.length <= 4
+                ? "settings.servicesSelectedFew"
+                : "settings.servicesSelectedMany",
+            { count: services.length },
+          )}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -185,11 +171,8 @@ export function CompanyServicesDetailForm({
   const { companyServices, setCompanyServices } = useCompanyServices();
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-      <Label
-        htmlFor="company-services"
-        className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-      >
+    <div className="sk-company-field-wrap sk-company-field-wrap--detail">
+      <Label htmlFor="company-services" className="sk-company-field-label">
         {t("settings.servicesDetail")}
       </Label>
       <Textarea
@@ -198,14 +181,12 @@ export function CompanyServicesDetailForm({
         onChange={(e) => setCompanyServices(e.target.value)}
         placeholder={t("settings.servicesDetailPlaceholder")}
         className={cn(
-          "sk-settings-field resize-none text-sm",
-          compact ? "min-h-0 flex-1" : "min-h-[220px] resize-y",
+          "sk-company-field resize-none",
+          compact ? "sk-company-field--detail" : "min-h-[220px] resize-y",
         )}
       />
       {!compact ? (
-        <p className="text-xs text-muted-foreground">
-          {t("settings.servicesDetailHint")}
-        </p>
+        <p className="sk-company-field-hint">{t("settings.servicesDetailHint")}</p>
       ) : null}
     </div>
   );

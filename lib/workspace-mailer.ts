@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
+import { humanizeEmailError } from "@/lib/humanize-email-error";
 import { decryptSecret, encryptSecret } from "@/lib/email-connection-crypto";
 import type { SendEmailResult } from "@/lib/email-types";
 import { htmlToPlainText } from "@/lib/email-format";
@@ -370,7 +371,7 @@ export async function sendWorkspaceEmail({
  () => undefined,
  );
 
- return { success: false, error: message };
+ return { success: false, error: humanizeEmailError(message) };
  } finally {
  transporter.close();
  }

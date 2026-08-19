@@ -73,6 +73,15 @@ export function getContextualPrompts(_pathname: string, t: Translator): string[]
  return [t("copilot.prompt1"), t("copilot.prompt2"), t("copilot.prompt3")];
 }
 
+export function getHelpBotPrompts(t: Translator): string[] {
+ return [
+  t("help.prompt1"),
+  t("help.prompt2"),
+  t("help.prompt3"),
+  t("help.prompt4"),
+ ];
+}
+
 export function getSlashCommands(t: Translator): SlashCommand[] {
  return [
  {

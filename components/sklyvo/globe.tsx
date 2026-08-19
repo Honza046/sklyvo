@@ -14,7 +14,7 @@ import type { GeometryCollection, Topology } from "topojson-specification";
 const MASK_W = 1440;
 const MASK_H = 720;
 
-type LandMask = { mask: Uint8Array; w: number; h: number };
+export type LandMask = { mask: Uint8Array; w: number; h: number };
 
 let maskRequest: Promise<LandMask | null> | null = null;
 
@@ -51,7 +51,7 @@ async function loadLandMask(): Promise<LandMask | null> {
   return { mask, w: MASK_W, h: MASK_H };
 }
 
-function getLandMask() {
+export function getLandMask() {
   maskRequest ??= loadLandMask().catch(() => null);
   return maskRequest;
 }

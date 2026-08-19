@@ -122,7 +122,23 @@ Vynecháno: `node_modules`, `.next`, drobné config soubory (`postcss`, `eslint`
 
 ---
 
-## 5. Auth (detail)
+## 6. Design 2.0 (Matej) vs. produkční UI
+
+Kořenový repozitář (`matejmix/sklyvo`, port **3001**) je **designový sandbox** — `/login`, `/workspace`, `/design` bez DB a bez auth.
+
+Produkční app v **`Backend/`** (port **3000**) přebírá vizuál přes:
+
+| Reference (root) | Produkce (Backend) |
+|----------------|-------------------|
+| `components/login-screen-v2.tsx` | `components/sklyvo/login-screen.tsx` + `auth.css` |
+| `components/workspace-v2.tsx` | `components/dashboard-shell.tsx` + `dashboard/dashboard-overview.tsx` |
+| `components/design-system-v2.tsx` | `components/sklyvo/app-ui.css` (tokeny, tlačítka, sidebar) |
+
+**Pravidlo pro úpravy:** logiku a data měnit jen v `Backend/`. Z rootu kopírovat layout, barvy a spacing — ne routy ani placeholder data.
+
+---
+
+## 7. Auth (detail)
 
 ### Dva režimy přihlášení
 

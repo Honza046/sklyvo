@@ -1,4 +1,6 @@
-import { PlanFeatureGateClient } from "@/components/plan-feature-gate-client";
+import { getWorkspaceAccessState } from "@/app/actions/auth";
+import { StorageAccessGate } from "@/components/storage/storage-access-gate";
+import { isPremiumToolsLocked } from "@/lib/plan-gate";
 import { requireSessionUserId } from "@/lib/require-session";
 
 export default async function UlozisteLayout({
@@ -7,7 +9,13 @@ export default async function UlozisteLayout({
   children: React.ReactNode;
 }) {
   await requireSessionUserId();
-  return (
-    <PlanFeatureGateClient tool="storage">{children}</PlanFeatureGateClient>
-  );
+  const accessState = await getWorkspaceAccessState();
+  const locked = isPremiumToolsLocked({
+    planTier: accessState.workspace?.planTier,
+    subscriptionStatus: accessState.workspace?.subscriptionStatus,
+    isTrial: accessState.isTrial,
+    trialRemainingDays: accessState.trialRemainingDays,
+  });
+
+  return <StorageAccessGate locked={locked}>{children}</StorageAccessGate>;
 }

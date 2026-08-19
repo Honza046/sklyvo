@@ -19,11 +19,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/context/LanguageContext";
 import type { EmailConnectionState } from "@/lib/email-connection-types";
+import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-form";
 import { cn } from "@/lib/utils";
 
 type EmailIntegrationPanelProps = {
   initialState: EmailConnectionState;
   compact?: boolean;
+  matej?: boolean;
 };
 
 type ConnectionTab = "google" | "smtp";
@@ -35,7 +37,7 @@ function smtpModeToggleClass(active: boolean, compact?: boolean) {
     "rounded-lg font-medium transition-all duration-200",
     compact ? "flex-1 px-2 py-1.5 text-[11px]" : "flex-1 rounded-xl px-3 py-2 text-sm",
     active
-      ? "bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+      ? "bg-[color:var(--sk-brand)] text-white shadow-sm hover:bg-[color:var(--sk-brand)]/90"
       : "bg-gray-100 text-gray-600 hover:bg-gray-200/80",
   );
 }
@@ -44,7 +46,7 @@ function connectionTabClass(active: boolean) {
   return cn(
     "flex-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-all sm:text-xs",
     active
-      ? "bg-blue-600 text-white shadow-sm"
+      ? "bg-[color:var(--sk-brand)] text-white shadow-sm"
       : "bg-muted/50 text-muted-foreground hover:text-foreground",
   );
 }
@@ -52,8 +54,10 @@ function connectionTabClass(active: boolean) {
 export function EmailIntegrationPanel({
   initialState,
   compact = false,
+  matej = false,
 }: EmailIntegrationPanelProps) {
   const { t } = useLanguage();
+  const registry = useSettingsSaveRegistry();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState(initialState);
@@ -141,8 +145,7 @@ export function EmailIntegrationPanel({
     window.location.href = "/api/email/google/authorize";
   };
 
-  const handleSaveSmtp = async () => {
-    setIsSaving(true);
+  const handleSaveSmtp = useCallback(async () => {
     const result = await saveSmtpEmailConnection({
       provider: smtpProvider,
       senderName: form.senderName,
@@ -151,17 +154,41 @@ export function EmailIntegrationPanel({
       smtpPort: Number(form.smtpPort),
       appPassword: form.appPassword,
     });
-    setIsSaving(false);
 
     if ("error" in result && result.error) {
       toast.error(result.error);
-      return;
+      return false;
     }
 
     toast.success(t("settings.emailIntegration.connectedSmtp"));
     setForm((prev) => ({ ...prev, appPassword: "" }));
     startTransition(() => router.refresh());
+    return true;
+  }, [
+    form.appPassword,
+    form.senderEmail,
+    form.senderName,
+    form.smtpHost,
+    form.smtpPort,
+    router,
+    smtpProvider,
+    t,
+  ]);
+
+  const handleSaveSmtpClick = async () => {
+    setIsSaving(true);
+    await handleSaveSmtp();
+    setIsSaving(false);
   };
+
+  useEffect(() => {
+    if (!registry || !matej) return;
+    return registry.registerSaveHandler("email-smtp", async () => {
+      if (connectionTab !== "smtp") return true;
+      if (!form.appPassword.trim()) return true;
+      return handleSaveSmtp();
+    });
+  }, [connectionTab, form.appPassword, handleSaveSmtp, matej, registry]);
 
   const handleDisconnect = useCallback(async () => {
     const result = await disconnectEmailConnection();
@@ -174,7 +201,7 @@ export function EmailIntegrationPanel({
   }, [router, t]);
 
   const statusCardClass = state.connected
-    ? "border-emerald-200 bg-emerald-50/70"
+    ? "border-[color-mix(in_oklab,#34d399_30%,transparent)] bg-[color-mix(in_oklab,#34d399_14%,var(--n-field))]"
     : "border-amber-200 bg-amber-50/70";
 
   const smtpForm = (
@@ -334,10 +361,10 @@ export function EmailIntegrationPanel({
 
         <Button
           type="button"
-          onClick={() => void handleSaveSmtp()}
+          onClick={() => void handleSaveSmtpClick()}
           disabled={isSaving}
           className={cn(
-            "w-full rounded-xl bg-blue-600 font-semibold text-white hover:bg-blue-700",
+            "w-full rounded-xl bg-[color:var(--sk-brand)] font-semibold text-white hover:bg-[color:var(--sk-brand)]/90",
             compact ? "mt-auto h-9 shrink-0 text-xs" : "",
           )}
         >
@@ -354,6 +381,236 @@ export function EmailIntegrationPanel({
     </>
   );
 
+  if (matej) {
+    return (
+      <div className="sk-outreach-email">
+        <div
+          className={cn(
+            "sk-outreach-status",
+            state.connected && "sk-outreach-status--connected",
+          )}
+        >
+          <span className="sk-outreach-status__dot" aria-hidden />
+          <div className="sk-outreach-status__copy">
+            <p className="sk-outreach-status__text">
+              {state.connected
+                ? t("settings.emailIntegration.statusConnectedPlain")
+                : t("settings.emailIntegration.statusDisconnectedPlain")}
+            </p>
+            {state.connected && state.senderEmail ? (
+              <p className="sk-outreach-status__meta">
+                {state.senderName ? `${state.senderName} · ` : ""}
+                {state.senderEmail}
+              </p>
+            ) : null}
+            {state.lastError ? (
+              <p className="sk-outreach-status__error">{state.lastError}</p>
+            ) : null}
+          </div>
+          {state.connected ? (
+            <button
+              type="button"
+              className="sk-outreach-status__disconnect"
+              onClick={() => void handleDisconnect()}
+              disabled={isPending}
+            >
+              {t("settings.emailIntegration.disconnect")}
+            </button>
+          ) : null}
+        </div>
+
+        <div className="sk-outreach-tabs" role="tablist" aria-label={t("settings.companyEmail")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={connectionTab === "google"}
+            className={cn(
+              "sk-outreach-tabs__btn",
+              connectionTab === "google" && "sk-outreach-tabs__btn--active",
+            )}
+            onClick={() => setConnectionTab("google")}
+          >
+            Google / Gmail
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={connectionTab === "smtp"}
+            className={cn(
+              "sk-outreach-tabs__btn",
+              connectionTab === "smtp" && "sk-outreach-tabs__btn--active",
+            )}
+            onClick={() => setConnectionTab("smtp")}
+          >
+            Outlook / SMTP
+          </button>
+        </div>
+
+        {connectionTab === "google" ? (
+          <div className="sk-outreach-google">
+            <p className="sk-outreach-google__desc">
+              {t("settings.emailIntegration.googleDescription")}
+            </p>
+            <button
+              type="button"
+              className="sk-btn sk-btn--white sk-outreach-google__btn"
+              onClick={handleGoogleConnect}
+            >
+              {t("settings.emailIntegration.googleButton")}
+            </button>
+          </div>
+        ) : (
+          <div className="sk-outreach-smtp">
+            <div className="sk-outreach-pills">
+              <button
+                type="button"
+                className={cn(
+                  "sk-outreach-pill",
+                  smtpProvider === "OUTLOOK_SMTP" && "sk-outreach-pill--active",
+                )}
+                onClick={() => {
+                  setSmtpProvider("OUTLOOK_SMTP");
+                  setForm((prev) => ({
+                    ...prev,
+                    smtpHost: "smtp.office365.com",
+                    smtpPort: "587",
+                  }));
+                }}
+              >
+                Outlook
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "sk-outreach-pill",
+                  smtpProvider === "CUSTOM_SMTP" &&
+                    form.smtpHost.includes("seznam") &&
+                    "sk-outreach-pill--active",
+                )}
+                onClick={applySeznamPreset}
+              >
+                Seznam
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "sk-outreach-pill",
+                  smtpProvider === "CUSTOM_SMTP" &&
+                    !form.smtpHost.includes("seznam") &&
+                    "sk-outreach-pill--active",
+                )}
+                onClick={() => setSmtpProvider("CUSTOM_SMTP")}
+              >
+                {t("settings.emailIntegration.customSmtp")}
+              </button>
+            </div>
+
+            {form.smtpHost.includes("seznam") ? (
+              <p className="sk-outreach-note">
+                Seznam: heslo k e-mailu nebo heslo aplikace. Host{" "}
+                <code>smtp.seznam.cz</code>, port <code>465</code>.
+              </p>
+            ) : null}
+
+            <div className="sk-outreach-form-grid sk-outreach-form-grid--two">
+              <div className="sk-outreach-field-wrap">
+                <Label htmlFor="sender-name" className="sk-outreach-field-label">
+                  {t("settings.emailIntegration.senderNameLabel")}
+                </Label>
+                <input
+                  id="sender-name"
+                  value={form.senderName}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      senderName: event.target.value,
+                    }))
+                  }
+                  className="sk-outreach-input"
+                  placeholder="Jan Novák"
+                />
+              </div>
+              <div className="sk-outreach-field-wrap">
+                <Label htmlFor="sender-email" className="sk-outreach-field-label">
+                  {t("settings.emailIntegration.senderEmailLabel")}
+                </Label>
+                <input
+                  id="sender-email"
+                  type="email"
+                  value={form.senderEmail}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      senderEmail: event.target.value,
+                    }))
+                  }
+                  className="sk-outreach-input"
+                  placeholder="jan@firma.cz"
+                />
+              </div>
+            </div>
+
+            {smtpProvider === "CUSTOM_SMTP" ? (
+              <div className="sk-outreach-form-grid sk-outreach-form-grid--smtp">
+                <div className="sk-outreach-field-wrap sk-outreach-field-wrap--host">
+                  <Label htmlFor="smtp-host" className="sk-outreach-field-label">
+                    {t("settings.emailIntegration.smtpHostLabel")}
+                  </Label>
+                  <input
+                    id="smtp-host"
+                    value={form.smtpHost}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        smtpHost: event.target.value,
+                      }))
+                    }
+                    className="sk-outreach-input"
+                  />
+                </div>
+                <div className="sk-outreach-field-wrap">
+                  <Label htmlFor="smtp-port" className="sk-outreach-field-label">
+                    {t("settings.emailIntegration.smtpPortLabel")}
+                  </Label>
+                  <input
+                    id="smtp-port"
+                    value={form.smtpPort}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        smtpPort: event.target.value,
+                      }))
+                    }
+                    className="sk-outreach-input"
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <div className="sk-outreach-field-wrap">
+              <Label htmlFor="app-password" className="sk-outreach-field-label">
+                {t("settings.emailIntegration.appPasswordLabel")}
+              </Label>
+              <input
+                id="app-password"
+                type="password"
+                value={form.appPassword}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    appPassword: event.target.value,
+                  }))
+                }
+                className="sk-outreach-input"
+                placeholder="••••••••••••••••"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (compact) {
     return (
       <div className="flex h-full min-h-0 flex-col gap-2">
@@ -364,7 +621,7 @@ export function EmailIntegrationPanel({
           )}
         >
           {state.connected ? (
-            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[color:#6ee7b7]" />
           ) : (
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
           )}
@@ -445,7 +702,7 @@ export function EmailIntegrationPanel({
           ) : (
             <div className="flex h-full min-h-0 flex-col rounded-xl border border-border/60 bg-card/50 p-3">
               <div className="mb-2 flex shrink-0 items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-[color-mix(in_oklab,var(--sk-brand)_28%,transparent)] bg-[color-mix(in_oklab,var(--sk-brand)_14%,var(--n-field))] text-[color:var(--sk-brand)]">
                   <Mail className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
@@ -474,7 +731,7 @@ export function EmailIntegrationPanel({
       <div className={cn("rounded-2xl border p-4", statusCardClass)}>
         <div className="flex items-start gap-3">
           {state.connected ? (
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[color:#6ee7b7]" />
           ) : (
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           )}
@@ -539,7 +796,7 @@ export function EmailIntegrationPanel({
 
         <div className="rounded-2xl border border-border/60 bg-card p-5">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_oklab,var(--sk-brand)_28%,transparent)] bg-[color-mix(in_oklab,var(--sk-brand)_14%,var(--n-field))] text-[color:var(--sk-brand)]">
               <Mail className="h-5 w-5" />
             </div>
             <div className="min-w-0">

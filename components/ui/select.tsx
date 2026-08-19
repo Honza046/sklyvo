@@ -19,7 +19,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between whitespace-nowrap rounded-[10px] border border-[color:var(--n-edge,rgba(255,255,255,0.1))] bg-[color:var(--n-field,#15161a)] px-3 py-2 text-sm text-[color:var(--sk-ink,#fafafb)] shadow-none outline-none ring-0 ring-offset-0 data-[placeholder]:text-muted-foreground focus:border-[color:var(--n-edge-hover,rgba(255,255,255,0.22))] focus:bg-[color:var(--n-field-focus,#1d1f24)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 data-[state=open]:outline-none data-[state=open]:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-[42px] w-full items-center justify-between whitespace-nowrap rounded-[11px] border border-[color:var(--n-edge,rgba(255,255,255,0.13))] bg-[color:var(--n-field,#131417)] px-3 py-2 text-[13px] text-[color:var(--sk-ink,#fafafb)] shadow-none outline-none ring-0 ring-offset-0 data-[placeholder]:text-muted-foreground focus:border-[rgba(255,255,255,0.24)] focus:bg-[color:var(--n-field-focus,#1d1f24)] focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 data-[state=open]:outline-none data-[state=open]:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     {...props}

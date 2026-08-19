@@ -3,6 +3,14 @@ import {
   verifySignedOAuthState,
 } from "@/lib/oauth-state";
 
+const GOOGLE_SHEETS_CALLBACK_PATH = "/api/integrations/google-sheets/callback";
+
+function resolveOAuthRedirectUri(appUrl: string, envValue: string | undefined) {
+  const explicit = envValue?.trim();
+  if (explicit) return explicit;
+  return `${appUrl.replace(/\/+$/, "")}${GOOGLE_SHEETS_CALLBACK_PATH}`;
+}
+
 const GOOGLE_WORKSPACE_SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/drive.file",
@@ -21,9 +29,10 @@ export function getGoogleSheetsOAuthConfig() {
     process.env.GOOGLE_SHEETS_CLIENT_SECRET?.trim() ||
     process.env.GOOGLE_EMAIL_CLIENT_SECRET?.trim() ||
     "";
-  const redirectUri =
-    process.env.GOOGLE_SHEETS_REDIRECT_URI?.trim() ||
-    `${appUrl}/api/integrations/google-sheets/callback`;
+  const redirectUri = resolveOAuthRedirectUri(
+    appUrl,
+    process.env.GOOGLE_SHEETS_REDIRECT_URI,
+  );
 
   return {
     appUrl,

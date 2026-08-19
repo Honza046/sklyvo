@@ -1,35 +1,50 @@
 "use client";
 
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { Suspense } from "react";
-import { Plug } from "lucide-react";
 import { IntegrationsPanel } from "@/app/settings/integrations-panel";
-import { SettingsPageShell } from "@/components/settings/settings-page-shell";
 import { useLanguage } from "@/context/LanguageContext";
 
 export function SettingsIntegrationsView() {
   const { t } = useLanguage();
 
   return (
-    <SettingsPageShell
-      title={t("settings.pages.integrations.title")}
-      description={t("settings.pages.integrations.desc")}
-      icon={Plug}
-      showSave={false}
-    >
-      <section
-        id="integrations"
-        className="sk-settings-panel h-full min-h-0 scroll-mt-4"
-      >
-        <div className="sk-settings-panel__content overflow-y-auto">
-          <Suspense
-            fallback={
-              <div className="h-full min-h-[12rem] animate-pulse rounded-xl bg-muted/40" />
-            }
-          >
-            <IntegrationsPanel />
-          </Suspense>
+    <div className="sk-integrations-page sk-company-page">
+      <header className="sk-company-page__header">
+        <div className="sk-page-head sk-page-head--tool">
+          <h1 className="sk-page-head__title">
+            {t("settings.pages.integrations.title")}
+          </h1>
+          <p className="sk-page-head__sub">{t("settings.hubSubtitle")}</p>
         </div>
-      </section>
-    </SettingsPageShell>
+
+        <div className="sk-company-page__toolbar">
+          <Link
+            href="/settings"
+            className="sk-company-page__back"
+            aria-label={t("settings.backToHub")}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+            {t("settings.back")}
+          </Link>
+          <button type="button" className="sk-btn sk-btn--white">
+            {t("common.save")}
+          </button>
+        </div>
+      </header>
+
+      <div className="sk-company-page__body">
+        <Suspense
+          fallback={
+            <div className="sk-integrations-panel">
+              <div className="h-full min-h-[16rem] animate-pulse rounded-[18px] bg-[color:var(--n-field)]" />
+            </div>
+          }
+        >
+          <IntegrationsPanel />
+        </Suspense>
+      </div>
+    </div>
   );
 }

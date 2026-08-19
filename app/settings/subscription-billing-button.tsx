@@ -40,7 +40,7 @@ export function SubscriptionBillingButton({
     return (
       <Button
         asChild
-        className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+        className="h-10 w-full rounded-xl bg-[color:var(--sk-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[color:var(--sk-brand)]/90 sm:w-auto"
       >
         <Link href="/settings/billing">{t("settings.choosePlan")}</Link>
       </Button>
@@ -50,7 +50,7 @@ export function SubscriptionBillingButton({
   return (
     <Button
       type="button"
-      className="h-10 w-full rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 sm:w-auto"
+      className="h-10 w-full rounded-xl bg-[color:var(--sk-brand)] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[color:var(--sk-brand)]/90 sm:w-auto"
       onClick={(e) => void handleBillingPortal(e)}
     >
       {t("settings.manageBilling")}

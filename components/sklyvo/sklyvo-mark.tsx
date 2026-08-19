@@ -64,14 +64,31 @@ function orbTransform(size: number, g: Gaze) {
   );
 }
 
-function orbBackground(g: Gaze) {
+/** the product mark is blue, Skly Bot is the same shape in grey */
+export type MarkTone = "brand" | "grey";
+
+const TONE = {
+  brand: {
+    plate: "var(--sk-brand, #02a7ff)",
+    sky: "#00B0FB 14%, #61BBF8 51%, #8BCDFA 65%, #BEE3FC 82%, #FFFFFF 100%",
+    eye: "linear-gradient(180deg, #FFFFFF 0%, #BBE2FC 100%)",
+    shadow: "rgba(0,110,190,0.5)",
+  },
+  grey: {
+    plate: "#4A5058",
+    sky: "#646A74 14%, #939AA4 51%, #AEB4BE 65%, #D0D5DC 82%, #FFFFFF 100%",
+    eye: "linear-gradient(180deg, #FFFFFF 0%, #DDE1E6 100%)",
+    shadow: "rgba(0,0,0,0.45)",
+  },
+} as const;
+
+function orbBackground(g: Gaze, tone: MarkTone) {
   const pulse = 1 + Math.sin(g.t * 0.62 + 1.1) * 0.024;
   const x = 50 - g.gx * 1.4;
   const y = 74 - g.gy * 1.1;
   return (
     `radial-gradient(${(54 * pulse).toFixed(1)}% ${(64 * pulse).toFixed(1)}% ` +
-    `at ${x.toFixed(1)}% ${y.toFixed(1)}%, ` +
-    "#00B0FB 14%, #61BBF8 51%, #8BCDFA 65%, #BEE3FC 82%, #FFFFFF 100%)"
+    `at ${x.toFixed(1)}% ${y.toFixed(1)}%, ${TONE[tone].sky})`
   );
 }
 
@@ -91,7 +108,12 @@ function eyeTransform(spec: EyeSpec, size: number, g: Gaze) {
   );
 }
 
-function tileStyle(size: number): CSSProperties {
+function tileStyle(
+  size: number,
+  tone: MarkTone,
+  shadow: boolean,
+  embed: boolean,
+): CSSProperties {
   const radius = (size * 100) / 450;
   return {
     position: "relative",
@@ -99,30 +121,37 @@ function tileStyle(size: number): CSSProperties {
     width: size,
     height: size,
     flex: "none",
-    overflow: "hidden",
-    borderRadius: radius,
+    overflow: embed ? "visible" : "hidden",
+    borderRadius: embed ? undefined : radius,
     boxShadow:
-      `0 ${(size * 0.09).toFixed(1)}px ${(size * 0.16).toFixed(1)}px ` +
-      `-${(size * 0.07).toFixed(1)}px rgba(0,110,190,0.5)`,
+      shadow && !embed
+        ? `0 ${(size * 0.09).toFixed(1)}px ${(size * 0.16).toFixed(1)}px ` +
+          `-${(size * 0.07).toFixed(1)}px ${TONE[tone].shadow}`
+        : undefined,
   };
 }
 
 /** only the blue plate fades out over the bottom fifth of the tile */
-function plateStyle(size: number): CSSProperties {
+function plateStyle(size: number, tone: MarkTone): CSSProperties {
   const mask =
     "linear-gradient(180deg, #000 0%, #000 80%, transparent 80%, transparent 100%)";
   return {
     position: "absolute",
     inset: 0,
     borderRadius: (size * 100) / 450,
-    background: "var(--sk-brand, #02a7ff)",
+    background: TONE[tone].plate,
     pointerEvents: "none",
     WebkitMaskImage: mask,
     maskImage: mask,
   };
 }
 
-function orbStyle(size: number): CSSProperties {
+function orbStyle(
+  size: number,
+  tone: MarkTone,
+  embed: boolean,
+  blend = false,
+): CSSProperties {
   const w = size * 1.06;
   const h = size * 0.8;
   const glow = (size * 0.1).toFixed(1);
@@ -136,16 +165,21 @@ function orbStyle(size: number): CSSProperties {
     borderRadius: "50% 50% 0 0 / 62% 62% 0 0",
     transformOrigin: "50% 100%",
     transform: orbTransform(size, REST),
-    background: orbBackground(REST),
-    boxShadow:
-      `0 0 ${glow}px rgba(0,0,0,0.10), ` +
-      `0 0 ${glow}px rgba(255,255,255,1), ` +
-      `inset 0 0 ${inner}px rgba(0,0,0,0.05)`,
+    background: orbBackground(REST, tone),
+    boxShadow: embed
+      ? blend
+        ? `0 0 ${(size * 0.22).toFixed(1)}px rgba(2,167,255,0.42), ` +
+          `0 0 ${(size * 0.4).toFixed(1)}px rgba(2,167,255,0.14)`
+        : `0 0 ${(size * 0.14).toFixed(1)}px rgba(255,255,255,0.28), ` +
+          `inset 0 0 ${inner}px rgba(0,0,0,0.04)`
+      : `0 0 ${glow}px rgba(0,0,0,0.10), ` +
+        `0 0 ${glow}px rgba(255,255,255,1), ` +
+        `inset 0 0 ${inner}px rgba(0,0,0,0.05)`,
     pointerEvents: "none",
   };
 }
 
-function eyeStyle(spec: EyeSpec, size: number): CSSProperties {
+function eyeStyle(spec: EyeSpec, size: number, tone: MarkTone): CSSProperties {
   const k = size / 500;
   const blur = Math.max(1, 5 * k * 2.2).toFixed(1);
   const offset = (4 * k * 2.2).toFixed(1);
@@ -157,7 +191,7 @@ function eyeStyle(spec: EyeSpec, size: number): CSSProperties {
     width: (size * EYE_W) / 100,
     height: (size * EYE_H) / 100,
     borderRadius: "50%",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #BBE2FC 100%)",
+    background: TONE[tone].eye,
     boxShadow:
       `0 0 ${blur}px rgba(0,0,0,0.10), ` +
       `0 ${offset}px ${blur}px rgba(0,0,0,0.10), ` +
@@ -188,11 +222,22 @@ export function SklyvoMark({
   size = 30,
   className,
   interactive = true,
+  shadow = true,
+  embed = false,
+  blend = false,
+  tone = "brand",
 }: {
   size?: number;
   className?: string;
   /** Sidebar / chrome — skip rAF + global mousemove (much lighter). */
   interactive?: boolean;
+  /** Blue drop shadow the mark normally casts. */
+  shadow?: boolean;
+  /** Strip / banner — no square plate, blends into a gradient background. */
+  embed?: boolean;
+  /** Softer orb glow for gradient banners (today strip). */
+  blend?: boolean;
+  tone?: MarkTone;
 }) {
   const tileRef = useRef<HTMLSpanElement>(null);
   const orbRef = useRef<HTMLSpanElement>(null);
@@ -301,7 +346,7 @@ export function SklyvoMark({
       }
 
       orb.style.transform = orbTransform(size, g);
-      orb.style.background = orbBackground(g);
+      orb.style.background = orbBackground(g, tone);
       left.style.transform = eyeTransform(EYE_LEFT, size, g);
       right.style.transform = eyeTransform(EYE_RIGHT, size, g);
 
@@ -347,19 +392,19 @@ export function SklyvoMark({
       tile.removeEventListener("mouseenter", onEnter);
       tile.removeEventListener("mouseleave", onLeave);
     };
-  }, [size, interactive]);
+  }, [size, interactive, tone]);
 
   return (
     <span
       ref={tileRef}
       className={className}
-      style={tileStyle(size)}
+      style={tileStyle(size, tone, shadow, embed)}
       aria-hidden
     >
-      <span style={plateStyle(size)} />
-      <span ref={orbRef} style={orbStyle(size)} />
-      <span ref={leftRef} style={eyeStyle(EYE_LEFT, size)} />
-      <span ref={rightRef} style={eyeStyle(EYE_RIGHT, size)} />
+      {!embed ? <span style={plateStyle(size, tone)} /> : null}
+      <span ref={orbRef} style={orbStyle(size, tone, embed, blend)} />
+      <span ref={leftRef} style={eyeStyle(EYE_LEFT, size, tone)} />
+      <span ref={rightRef} style={eyeStyle(EYE_RIGHT, size, tone)} />
     </span>
   );
 }

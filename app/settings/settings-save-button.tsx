@@ -8,7 +8,13 @@ import { useSettingsSaveRegistry } from "@/app/settings/ai-behavior-settings-for
 import { useLanguage } from "@/context/LanguageContext";
 import { cn } from "@/lib/utils";
 
-export function SettingsSaveButton({ compact = false }: { compact?: boolean }) {
+export function SettingsSaveButton({
+  compact = false,
+  variant = "brand",
+}: {
+  compact?: boolean;
+  variant?: "brand" | "white";
+}) {
   const { t } = useLanguage();
   const registry = useSettingsSaveRegistry();
   const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +38,22 @@ export function SettingsSaveButton({ compact = false }: { compact?: boolean }) {
     }
   };
 
+  const label =
+    variant === "white" ? t("common.save") : t("settings.saveProject");
+
+  if (variant === "white") {
+    return (
+      <button
+        type="button"
+        disabled={isSaving}
+        onClick={() => void handleSave()}
+        className={cn("sk-btn sk-btn--white", isSaving && "is-saving")}
+      >
+        {isSaving ? t("settings.saving") : label}
+      </button>
+    );
+  }
+
   return (
     <Button
       type="button"
@@ -39,10 +61,8 @@ export function SettingsSaveButton({ compact = false }: { compact?: boolean }) {
       disabled={isSaving}
       onClick={() => void handleSave()}
       className={cn(
-        "rounded-xl border-0 bg-blue-600 font-bold text-white shadow-md transition-all duration-200 hover:bg-blue-700 disabled:opacity-100",
-        compact
-          ? "h-9 px-4 text-xs"
-          : "h-12 px-8",
+        "rounded-xl border-0 bg-[color:var(--sk-brand)] font-bold text-white shadow-md transition-all duration-200 hover:bg-[color:var(--sk-brand)]/90 disabled:opacity-100",
+        compact ? "h-9 px-4 text-xs" : "h-12 px-8",
       )}
     >
       {isSaving ? (
@@ -53,7 +73,7 @@ export function SettingsSaveButton({ compact = false }: { compact?: boolean }) {
       ) : (
         <>
           <Save className="mr-2 h-4 w-4 shrink-0" aria-hidden />
-          {t("settings.saveProject")}
+          {label}
         </>
       )}
     </Button>

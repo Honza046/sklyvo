@@ -1,390 +1,280 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Briefcase,
   Check,
   ChevronRight,
-  CreditCard,
-  Lock,
   Mail,
   Plug,
-  Settings,
-  User,
   Users,
-  type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import type { WorkspaceSettingsData } from "@/lib/settings/load-workspace-settings";
+import type {
+  HubTeamMember,
+  WorkspaceSettingsData,
+} from "@/lib/settings/load-workspace-settings";
+import { TeamMemberAvatar } from "@/components/settings/team-member-avatar";
 import { cn } from "@/lib/utils";
 
-type HubCardPreview =
-  | "company"
-  | "outreach"
-  | "integrations"
-  | "team"
-  | "billing"
-  | "account";
-
-type HubCard = {
-  href?: string;
-  icon: LucideIcon;
+type CardDef = {
+  href: string;
+  icon: typeof Briefcase;
   titleKey: string;
-  preview: HubCardPreview;
-  status?: string;
-  statusTone?: "ok" | "warn" | "muted";
-  disabled?: boolean;
-  accent?: string;
+  descKey: string;
+  accent: string;
+  statusKey?: string;
+  statusTone?: "ok" | "warn";
 };
 
-function truncate(text: string, max: number) {
-  const trimmed = text.trim();
-  if (trimmed.length <= max) return trimmed;
-  return `${trimmed.slice(0, max).trim()}…`;
-}
-
-function HubCardShell(props: {
-  card: HubCard;
-  children: React.ReactNode;
-}) {
-  const { card, children } = props;
-  const baseClass = cn(
-    "sk-settings-hub-card sk-ghost-card flex h-full min-h-0 flex-col rounded-xl border p-4 sm:rounded-2xl sm:p-5",
-    card.disabled
-      ? "cursor-default border-dashed border-border/60 bg-muted/20"
-      : "group border-border/60 bg-card shadow-sm transition-all hover:border-border",
-  );
-
-  if (card.disabled || !card.href) {
-    return <div className={baseClass}>{children}</div>;
-  }
-
-  return (
-    <Link href={card.href} className={baseClass}>
-      {children}
-    </Link>
-  );
-}
-
-function HubCardPreviewPanel(props: {
-  preview: HubCardPreview;
-  data: WorkspaceSettingsData;
-  emailConnected: boolean;
-  disabled?: boolean;
-}) {
-  const { t } = useLanguage();
-  const { preview, data, emailConnected, disabled } = props;
-
-  if (preview === "company") {
-    const snippet = data.companyContext.trim();
-    return (
-      <div className="sk-settings-hub-card__preview">
-        <p className="sk-settings-hub-card__snippet">
-          {snippet
-            ? truncate(snippet, 140)
-            : t("settings.hub.preview.companyEmpty")}
-        </p>
-        {data.offeredServices.length > 0 ? (
-          <div className="sk-settings-hub-card__tags">
-            {data.offeredServices.slice(0, 4).map((service) => (
-              <span key={service} className="sk-settings-hub-card__tag">
-                {service}
-              </span>
-            ))}
-            {data.offeredServices.length > 4 ? (
-              <span className="sk-settings-hub-card__tag sk-settings-hub-card__tag--more">
-                +{data.offeredServices.length - 4}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        {data.offeredServices.length > 0 ? (
-          <p className="sk-settings-hub-card__meta">
-            {t("settings.hub.preview.servicesCount", {
-              count: data.offeredServices.length,
-            })}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  if (preview === "outreach") {
-    const sender =
-      data.emailConnection?.senderEmail ||
-      data.signatureEmail ||
-      null;
-    return (
-      <div className="sk-settings-hub-card__preview">
-        {emailConnected && sender ? (
-          <>
-            <p className="sk-settings-hub-card__email">
-              {t("settings.hub.preview.emailConnected", { email: sender })}
-            </p>
-            <p className="sk-settings-hub-card__meta">
-              {data.emailConnection?.provider?.replace("_", " ") ?? "SMTP"}
-            </p>
-          </>
-        ) : (
-          <p className="sk-settings-hub-card__hint sk-settings-hub-card__hint--warn">
-            {t("settings.hub.preview.emailDisconnected")}
-          </p>
-        )}
-        <p className="sk-settings-hub-card__meta">
-          {data.systemPrompt.trim()
-            ? t("settings.hub.preview.aiReady")
-            : data.personalizedEmailSignature.trim() || "—"}
-        </p>
-      </div>
-    );
-  }
-
-  if (preview === "integrations") {
-    const items = [
-      {
-        label: "E-mail",
-        on: emailConnected,
-      },
-      {
-        label: "Sheets",
-        on: data.hubSheetsConnected,
-      },
-      {
-        label: "Microsoft",
-        on: data.hubMicrosoftConnected,
-      },
-      {
-        label: "Fakturoid",
-        on: data.hubFakturoidConnected,
-      },
-    ];
-    return (
-      <div className="sk-settings-hub-card__preview">
-        <div className="sk-settings-hub-card__integrations">
-          {items.map((item) => (
-            <span
-              key={item.label}
-              className={cn(
-                "sk-settings-hub-card__integration",
-                item.on && "is-on",
-              )}
-            >
-              <span className="sk-settings-hub-card__integration-dot" aria-hidden />
-              {item.label}
-            </span>
-          ))}
-        </div>
-        <p className="sk-settings-hub-card__meta">
-          {t("settings.hub.preview.integrationsHint")}
-        </p>
-      </div>
-    );
-  }
-
-  if (preview === "team") {
-    return (
-      <div className="sk-settings-hub-card__preview">
-        {disabled ? (
-          <div className="sk-settings-hub-card__locked">
-            <Lock className="h-4 w-4" aria-hidden />
-            <p>{t("settings.hub.preview.teamLocked")}</p>
-          </div>
-        ) : (
-          <>
-            <p className="sk-settings-hub-card__stat">
-              {t("settings.hub.preview.teamMembers", {
-                count: data.hubMemberCount,
-              })}
-            </p>
-            <p className="sk-settings-hub-card__meta">
-              {t("settings.hub.preview.teamAgency")}
-            </p>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  if (preview === "billing") {
-    const pct = Math.min(100, Math.max(0, data.creditPercentage));
-    const plan = data.planTier?.replace(/_/g, " ") ?? "FREE";
-    return (
-      <div className="sk-settings-hub-card__preview">
-        <p className="sk-settings-hub-card__stat">
-          {t("settings.hub.preview.planLabel", { plan })}
-        </p>
-        {typeof data.creditsLeft === "number" &&
-        typeof data.creditsTotal === "number" ? (
-          <>
-            <div className="sk-settings-hub-card__meter" aria-hidden>
-              <div
-                className="sk-settings-hub-card__meter-fill"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="sk-settings-hub-card__meta">
-              {t("settings.hub.preview.creditsLeft", {
-                left: data.creditsLeft,
-                total: data.creditsTotal,
-              })}
-            </p>
-          </>
-        ) : null}
-        {data.daysUntilRenewal != null ? (
-          <p className="sk-settings-hub-card__meta">
-            {t("settings.hub.preview.renewalIn", {
-              days: data.daysUntilRenewal,
-            })}
-          </p>
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <div className="sk-settings-hub-card__preview">
-      <p className="sk-settings-hub-card__stat">
-        {t("settings.hub.preview.accountUser", {
-          name: data.signatureAuthor,
-        })}
-      </p>
-      <p className="sk-settings-hub-card__email">{data.signatureEmail}</p>
-      <p className="sk-settings-hub-card__meta">{data.subscriptionStatus}</p>
-    </div>
-  );
+function progressDismissStorageKey(workspaceId: string | null) {
+  return `sklyvo-settings-progress-dismissed:${workspaceId ?? "unknown"}`;
 }
 
 function SettingsHubProgress(props: {
+  workspaceId: string | null;
   hasCompanyProfile: boolean;
   hasOfferedServices: boolean;
+  hasTeam: boolean;
   emailConnected: boolean;
 }) {
   const { t } = useLanguage();
+  const [dismissed, setDismissed] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [hiding, setHiding] = useState(false);
+
   const steps = [
-    {
-      done: props.hasCompanyProfile,
-      label: t("settings.hub.steps.profile"),
-      href: "/settings/company",
-    },
-    {
-      done: props.hasOfferedServices,
-      label: t("settings.hub.steps.services"),
-      href: "/settings/company",
-    },
-    {
-      done: props.emailConnected,
-      label: t("settings.hub.steps.email"),
-      href: "/settings/outreach",
-    },
+    { done: props.hasCompanyProfile, label: t("settings.hub.steps.profile") },
+    { done: props.hasOfferedServices, label: t("settings.hub.steps.services") },
+    { done: props.hasTeam, label: t("settings.hub.steps.team") },
+    { done: props.emailConnected, label: t("settings.hub.steps.email") },
   ];
-  const doneCount = steps.filter((step) => step.done).length;
-  const allDone = doneCount === steps.length;
+  const doneCount = steps.filter((s) => s.done).length;
   const pct = Math.round((doneCount / steps.length) * 100);
+  const isComplete = pct === 100;
 
-  if (allDone) {
-    return (
-      <p className="sk-settings-hub-footnote sk-page-desc sk-type-body">
-        {t("settings.hubUsageHint")}
-      </p>
-    );
+  useEffect(() => {
+    const key = progressDismissStorageKey(props.workspaceId);
+    const stored = window.localStorage.getItem(key) === "1";
+    setDismissed(stored);
+    setHydrated(true);
+  }, [props.workspaceId]);
+
+  useEffect(() => {
+    if (!isComplete && dismissed) {
+      const key = progressDismissStorageKey(props.workspaceId);
+      window.localStorage.removeItem(key);
+      setDismissed(false);
+      setHiding(false);
+    }
+  }, [isComplete, dismissed, props.workspaceId]);
+
+  useEffect(() => {
+    if (!hydrated || !isComplete || dismissed) return;
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const fadeDelayMs = reduced ? 0 : 1400;
+    const hideDelayMs = reduced ? 500 : 2100;
+
+    const fadeTimer = window.setTimeout(() => setHiding(true), fadeDelayMs);
+    const hideTimer = window.setTimeout(() => {
+      const key = progressDismissStorageKey(props.workspaceId);
+      window.localStorage.setItem(key, "1");
+      setDismissed(true);
+    }, hideDelayMs);
+
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [hydrated, isComplete, dismissed, props.workspaceId]);
+
+  if (hydrated && isComplete && dismissed) {
+    return null;
   }
-
-  const nextStep = steps.find((step) => !step.done);
 
   return (
     <section
-      className="sk-settings-hub-progress sk-settings-hub-progress--compact"
+      className={cn(
+        "sk-settings-hub-progress shrink-0",
+        hiding && "is-hiding",
+      )}
       aria-label={t("settings.hub.progressTitle")}
     >
-      <div className="sk-settings-hub-progress__head">
-        <div className="min-w-0">
-          <p className="sk-settings-hub-progress__title">
-            {t("settings.hub.progressTitle")}
-          </p>
-          <p className="sk-settings-hub-progress__meta">
-            {t("settings.hub.progressDone", {
-              done: doneCount,
-              total: steps.length,
-            })}
-          </p>
-        </div>
-        <div
-          className="sk-settings-hub-progress__ring"
-          style={{ "--sk-hub-progress": `${pct}%` } as React.CSSProperties}
-          aria-hidden
-        >
-          <span>{pct}%</span>
-        </div>
+      <div className="sk-settings-hub-progress__status">
+        <p className="sk-settings-hub-progress__title">
+          {t("settings.hub.progressTitle")}
+        </p>
+        <p className="sk-settings-hub-progress__meta">
+          {t("settings.hub.progressDone", {
+            done: doneCount,
+            total: steps.length,
+          })}
+        </p>
       </div>
 
       <ul className="sk-settings-hub-progress__steps">
         {steps.map((step) => (
-          <li key={step.label}>
-            {step.done ? (
-              <span className="sk-settings-hub-progress__step is-done">
-                <span className="sk-settings-hub-progress__mark" aria-hidden>
-                  <Check className="h-3 w-3" strokeWidth={2.5} />
-                </span>
-                {step.label}
-              </span>
-            ) : (
-              <Link
-                href={step.href}
-                className="sk-settings-hub-progress__step"
-              >
-                <span className="sk-settings-hub-progress__mark" aria-hidden />
-                {step.label}
-              </Link>
+          <li
+            key={step.label}
+            className={cn(
+              "sk-settings-hub-progress__step",
+              step.done && "is-done",
             )}
+          >
+            <span className="sk-settings-hub-progress__mark" aria-hidden>
+              {step.done ? (
+                <Check className="h-3 w-3" strokeWidth={3} />
+              ) : null}
+            </span>
+            <span className="sk-settings-hub-progress__label">{step.label}</span>
           </li>
         ))}
       </ul>
 
-      {nextStep ? (
-        <Link href={nextStep.href} className="sk-settings-hub-progress__cta">
-          {t("settings.hub.progressCta")}
-          <ChevronRight className="h-4 w-4" aria-hidden />
-        </Link>
-      ) : null}
+      <div className="sk-settings-hub-progress__end">
+        <p className="sk-settings-hub-progress__pct" aria-hidden>
+          {pct} %
+        </p>
+      </div>
     </section>
   );
 }
 
+function SettingsHubTeamSection(props: {
+  isAgencyPlan: boolean;
+  members: HubTeamMember[];
+}) {
+  const { t } = useLanguage();
+  const maxMembers = 5;
+  const showRoster = props.isAgencyPlan && props.members.length > 1;
+
+  const shellClass =
+    "sk-settings-hub-team sk-surface sk-surface--pad flex min-h-[120px] flex-col rounded-xl";
+
+  const titleBlock = (
+    <>
+      <div className="flex min-w-0 items-center gap-3">
+        <span
+          className="sk-settings-row-icon shrink-0"
+          data-accent="green"
+          aria-hidden
+        >
+          <Users strokeWidth={2} />
+        </span>
+        <h2 className="text-[14px] font-bold text-[color:var(--sk-ink)]">
+          {t("settings.sections.team.title")}
+        </h2>
+      </div>
+      <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--sk-muted)]">
+        {t("settings.sections.team.desc")}
+      </p>
+    </>
+  );
+
+  if (!props.isAgencyPlan) {
+    return (
+      <section className={cn(shellClass, "is-locked")}>
+        {titleBlock}
+        <p className="sk-settings-hub-team__locked mt-auto pt-3">
+          {t("settings.sections.team.agencyOnly")}
+        </p>
+      </section>
+    );
+  }
+
+  if (!showRoster) {
+    return (
+      <Link href="/settings/team" className={cn(shellClass, "group transition-all")}>
+        {titleBlock}
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          <p className="sk-settings-hub-team__meta">
+            {t("settings.hub.preview.teamAgency")}
+          </p>
+          <ChevronRight
+            className="h-4 w-4 shrink-0 text-[color:var(--sk-muted)] transition-transform group-hover:translate-x-0.5"
+            strokeWidth={2}
+            aria-hidden
+          />
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <section className={shellClass}>
+      {titleBlock}
+
+      <div className="sk-settings-hub-team__meta-row pt-1">
+        <span>
+          {t("settings.sections.team.statusMembers", {
+            count: props.members.length,
+            total: maxMembers,
+          })}
+        </span>
+        <Link href="/settings/team" className="sk-settings-hub-team__link">
+          {t("settings.hub.teamManage")}
+        </Link>
+      </div>
+
+      <ul className="sk-settings-hub-team__list">
+        {props.members.map((member) => (
+          <li key={member.id} className="sk-settings-hub-team__member">
+            <TeamMemberAvatar
+              name={member.name}
+              avatarUrl={member.avatarUrl}
+            />
+            <div className="sk-settings-hub-team__member-main">
+              <span className="sk-settings-hub-team__member-name">
+                {member.name}
+              </span>
+              <span className="sk-settings-hub-team__member-email">
+                {member.email}
+              </span>
+            </div>
+            <span className="sk-settings-hub-team__member-role">
+              {teamRoleLabel(member.role, t)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function teamRoleLabel(
+  role: HubTeamMember["role"],
+  t: (path: string) => string,
+) {
+  switch (role) {
+    case "OWNER":
+      return t("settings.teamPanel.owner");
+    case "ADMIN":
+      return t("settings.teamPanel.admin");
+    case "MEMBER":
+      return t("settings.teamPanel.member");
+    default:
+      return role;
+  }
+}
+
 export function SettingsHubView(props: WorkspaceSettingsData) {
   const { t } = useLanguage();
-  const router = useRouter();
-
-  useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, "");
-    if (hash === "email-integration") {
-      router.replace("/settings/outreach#email-integration");
-      return;
-    }
-    if (hash === "integrations") {
-      router.replace("/settings/integrations");
-      return;
-    }
-    if (hash === "credits") {
-      router.replace("/account#billing");
-    }
-  }, [router]);
 
   const emailConnected = props.emailConnection?.connected === true;
-  const usagePct = props.creditPercentage.toFixed(0);
 
-  const cards: HubCard[] = [
+  const cards: CardDef[] = [
     {
       href: "/settings/company",
       icon: Briefcase,
       titleKey: "settings.sections.company.title",
-      preview: "company",
+      descKey: "settings.sections.company.desc",
       accent: "amber",
-      status:
+      statusKey:
         props.hasCompanyProfile && props.hasOfferedServices
-          ? t("settings.sections.company.statusReady")
-          : t("settings.sections.company.statusIncomplete"),
+          ? "settings.sections.company.statusReady"
+          : "settings.sections.company.statusIncomplete",
       statusTone:
         props.hasCompanyProfile && props.hasOfferedServices ? "ok" : "warn",
     },
@@ -392,125 +282,102 @@ export function SettingsHubView(props: WorkspaceSettingsData) {
       href: "/settings/outreach",
       icon: Mail,
       titleKey: "settings.sections.outreach.title",
-      preview: "outreach",
+      descKey: "settings.sections.outreach.desc",
       accent: "emerald",
-      status: emailConnected
-        ? t("settings.sections.outreach.statusConnected")
-        : t("settings.sections.outreach.statusDisconnected"),
+      statusKey: emailConnected
+        ? "settings.sections.outreach.statusConnected"
+        : "settings.sections.outreach.statusDisconnected",
       statusTone: emailConnected ? "ok" : "warn",
     },
     {
       href: "/settings/integrations",
       icon: Plug,
       titleKey: "settings.sections.integrations.title",
-      preview: "integrations",
+      descKey: "settings.sections.integrations.desc",
       accent: "cyan",
-    },
-    props.isAgencyPlan
-      ? {
-          href: "/settings/team",
-          icon: Users,
-          titleKey: "settings.sections.team.title",
-          preview: "team",
-          accent: "violet",
-        }
-      : {
-          icon: Users,
-          titleKey: "settings.sections.team.title",
-          preview: "team",
-          accent: "violet",
-          disabled: true,
-        },
-    {
-      href: "/account#billing",
-      icon: CreditCard,
-      titleKey: "settings.sections.billing.title",
-      preview: "billing",
-      accent: "blue",
-      status: t("settings.sections.billing.statusUsage", { pct: usagePct }),
-      statusTone: "muted",
-    },
-    {
-      href: "/account",
-      icon: User,
-      titleKey: "settings.sections.account.title",
-      preview: "account",
-      accent: "rose",
     },
   ];
 
   return (
-    <div className="sk-settings-hub">
-      <div className="sk-settings-hub__head shrink-0">
-        <div className="mb-2 flex items-center justify-center gap-3">
-          <span className="sk-page-badge" data-accent="indigo" aria-hidden>
-            <Settings strokeWidth={2} />
-          </span>
-        </div>
-        <h1 className="sk-type-h1">{t("settings.title")}</h1>
-        <p className="sk-page-desc sk-type-body">
-          {t("settings.hubSubtitle")}
-        </p>
+    <div className="sk-settings-hub flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+      <div className="sk-page-head shrink-0">
+        <h1 className="sk-page-head__title">{t("settings.title")}</h1>
+        <p className="sk-page-head__sub">{t("settings.hubSubtitle")}</p>
       </div>
 
-      <div className="sk-settings-hub__grid">
+      <SettingsHubProgress
+        workspaceId={props.workspaceId}
+        hasCompanyProfile={props.hasCompanyProfile}
+        hasOfferedServices={props.hasOfferedServices}
+        hasTeam={props.isAgencyPlan && (props.hubMemberCount ?? 0) > 1}
+        emailConnected={emailConnected}
+      />
+
+      <div className="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3 md:gap-3">
         {cards.map((card) => {
           const Icon = card.icon;
+          const status = card.statusKey ? t(card.statusKey) : null;
+          const isWarn = card.statusTone === "warn";
+          const isOk = card.statusTone === "ok";
+
           return (
-            <HubCardShell key={card.titleKey} card={card}>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className={cn(
-                      "sk-settings-row-icon shrink-0",
-                      card.disabled && "opacity-60",
-                    )}
-                    data-accent={card.accent}
-                    aria-hidden
-                  >
-                    <Icon strokeWidth={2} />
-                  </span>
-                  <h2 className="text-sm font-bold leading-snug text-foreground sm:text-base">
-                    {t(card.titleKey)}
-                  </h2>
-                </div>
-                {!card.disabled ? (
-                  <ChevronRight
-                    className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground"
-                    aria-hidden
-                  />
-                ) : null}
+            <Link
+              key={card.titleKey}
+              href={card.href}
+              className="sk-surface sk-surface--pad group flex min-h-[120px] flex-col rounded-xl transition-all"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="sk-settings-row-icon shrink-0"
+                  data-accent={card.accent}
+                  aria-hidden
+                >
+                  <Icon strokeWidth={2} />
+                </span>
+                <h2 className="text-[14px] font-bold text-[color:var(--sk-ink)]">
+                  {t(card.titleKey)}
+                </h2>
               </div>
 
-              <HubCardPreviewPanel
-                preview={card.preview}
-                data={props}
-                emailConnected={emailConnected}
-                disabled={card.disabled}
-              />
+              <p className="mt-2 text-[12px] leading-relaxed text-[color:var(--sk-muted)]">
+                {t(card.descKey)}
+              </p>
 
-              {card.status ? (
-                <p
-                  className={cn(
-                    "sk-settings-hub-card__status",
-                    card.statusTone === "ok" && "is-ok",
-                    card.statusTone === "warn" && "is-warn",
-                    card.statusTone === "muted" && "is-muted",
-                  )}
-                >
-                  {card.status}
-                </p>
-              ) : null}
-            </HubCardShell>
+              <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+                {status ? (
+                  <p className="flex min-w-0 items-center gap-2 text-[12px] font-semibold">
+                    <span
+                      className={cn(
+                        "inline-block h-[7px] w-[7px] shrink-0 rounded-full",
+                        isOk && "bg-emerald-500",
+                        isWarn && "bg-rose-400",
+                        !isOk && !isWarn && "bg-[color:var(--sk-muted)]",
+                      )}
+                      aria-hidden
+                    />
+                    <span
+                      className={cn(
+                        isOk && "text-[color:var(--sk-ink-soft)]",
+                        isWarn && "text-rose-400",
+                      )}
+                    >
+                      {status}
+                    </span>
+                  </p>
+                ) : (
+                  <span aria-hidden />
+                )}
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-[color:var(--sk-muted)] transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
+              </div>
+            </Link>
           );
         })}
-      </div>
-
-      <div className="sk-settings-hub__foot shrink-0">
-        <SettingsHubProgress
-          hasCompanyProfile={props.hasCompanyProfile}
-          hasOfferedServices={props.hasOfferedServices}
-          emailConnected={emailConnected}
+        <SettingsHubTeamSection
+          isAgencyPlan={props.isAgencyPlan}
+          members={props.hubTeamMembers}
         />
       </div>
     </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Globe, Maximize2, Search, Sparkles } from "lucide-react";
+import { Globe, Sparkles } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
-import { ExpandOverlay } from "@/components/autopilot/expand-overlay";
+import { FilterSearch } from "@/components/autopilot/filter-search";
 import { CopyEmailButton } from "@/components/copy-email-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,9 @@ import {
 import {
   AutopilotControlPanel,
   AutopilotPowerButton,
-  AutopilotIconButton,
   AutopilotSettingsIconButton,
   AutopilotTableEmptyState,
+  AutopilotTableLoadingSpinner,
   AutopilotTablePagination,
   AUTOPILOT_HIDDEN_SCROLLBAR_CLASS,
   AUTOPILOT_TABLE_CARD_CLASS,
@@ -74,7 +74,6 @@ export function AutopilotFullAutoView() {
   const [fullAutoHistoryError, setFullAutoHistoryError] = useState<
     string | null
   >(null);
-  const [tableExpanded, setTableExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [onlyWithEmail, setOnlyWithEmail] = useState(false);
   const [statusFilter, setStatusFilter] = useState<FullAutoStatusFilter>("all");
@@ -179,18 +178,69 @@ export function AutopilotFullAutoView() {
     "sk-filter-chip h-9 shrink-0 py-0 text-xs shadow-none";
 
   const renderFilters = () => (
-    <div className="flex shrink-0 flex-col gap-2 overflow-visible sm:flex-row sm:flex-wrap sm:items-center">
-      <div className="relative min-w-0 flex-1 sm:min-w-[160px]">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+        <FilterSearch
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={setSearchQuery}
           placeholder="Hledat firmu, e-mail, web…"
-          className={cn(filterControlClass, "w-full pl-8")}
-          autoComplete="off"
+          className="min-w-0 flex-1 sm:min-w-[160px]"
         />
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as FullAutoStatusFilter)}
+        >
+          <SelectTrigger
+            className={cn(filterControlClass, "w-full sm:w-[150px]")}
+          >
+            <SelectValue placeholder="Stav" />
+          </SelectTrigger>
+          <SelectContent className="z-[220]">
+            {FULL_AUTO_STATUS_FILTERS.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status === "all"
+                  ? "Všechny stavy"
+                  : FULL_AUTO_STATUS_BADGES[status].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={dateSort}
+          onValueChange={(v) => setDateSort(v as FullAutoDateSort)}
+        >
+          <SelectTrigger
+            className={cn(filterControlClass, "w-full sm:w-[130px]")}
+          >
+            <SelectValue placeholder="Datum" />
+          </SelectTrigger>
+          <SelectContent className="z-[220]">
+            <SelectItem value="newest">Nejnovější</SelectItem>
+            <SelectItem value="oldest">Nejstarší</SelectItem>
+            <SelectItem value="range">Od–do</SelectItem>
+          </SelectContent>
+        </Select>
+        {dateSort === "range" ? (
+          <div className="flex items-center gap-1.5">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className={cn(filterControlClass, "w-full sm:w-[132px]")}
+              title="Od data"
+            />
+            <span className="text-[11px] text-muted-foreground">–</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className={cn(filterControlClass, "w-full sm:w-[132px]")}
+              title="Do data"
+            />
+          </div>
+        ) : null}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center justify-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground">
           Jen s e-mailem
         </span>
@@ -201,59 +251,6 @@ export function AutopilotFullAutoView() {
           aria-label="Jen s e-mailem"
         />
       </div>
-      <Select
-        value={statusFilter}
-        onValueChange={(v) => setStatusFilter(v as FullAutoStatusFilter)}
-      >
-        <SelectTrigger
-          className={cn(filterControlClass, "w-full sm:w-[150px]")}
-        >
-          <SelectValue placeholder="Stav" />
-        </SelectTrigger>
-        <SelectContent className="z-[220]">
-          {FULL_AUTO_STATUS_FILTERS.map((status) => (
-            <SelectItem key={status} value={status}>
-              {status === "all"
-                ? "Všechny stavy"
-                : FULL_AUTO_STATUS_BADGES[status].label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={dateSort}
-        onValueChange={(v) => setDateSort(v as FullAutoDateSort)}
-      >
-        <SelectTrigger
-          className={cn(filterControlClass, "w-full sm:w-[130px]")}
-        >
-          <SelectValue placeholder="Datum" />
-        </SelectTrigger>
-        <SelectContent className="z-[220]">
-          <SelectItem value="newest">Nejnovější</SelectItem>
-          <SelectItem value="oldest">Nejstarší</SelectItem>
-          <SelectItem value="range">Od–do</SelectItem>
-        </SelectContent>
-      </Select>
-      {dateSort === "range" ? (
-        <div className="flex items-center gap-1.5">
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className={cn(filterControlClass, "w-full sm:w-[132px]")}
-            title="Od data"
-          />
-          <span className="text-[11px] text-muted-foreground">–</span>
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className={cn(filterControlClass, "w-full sm:w-[132px]")}
-            title="Do data"
-          />
-        </div>
-      ) : null}
     </div>
   );
 
@@ -275,9 +272,7 @@ export function AutopilotFullAutoView() {
       ? 0
       : fullAutoPageStart + paginatedFullAutoRows.length;
 
-  const renderTable = (mode: "compact" | "expanded") => {
-    const expanded = mode === "expanded";
-    return (
+  const renderTable = () => (
       <div
         className={cn(
           AUTOPILOT_TABLE_CARD_CLASS,
@@ -291,7 +286,7 @@ export function AutopilotFullAutoView() {
           )}
         >
           <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-20 bg-white ">
+            <thead className="sticky top-0 z-20 bg-[color:var(--n-card)] ">
               <tr className="text-left">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
                   Firma
@@ -308,9 +303,14 @@ export function AutopilotFullAutoView() {
               </tr>
             </thead>
             <tbody>
-              {!isFullAutoHistoryLoading &&
-                paginatedFullAutoRows.map((row) => (
-                <tr key={`${mode}-d-${row.id}`}>
+              {isFullAutoHistoryLoading && fullAutoRows.length === 0 ? (
+                <AutopilotTableLoadingSpinner colSpan={4} />
+              ) : isFullAutoHistoryLoading && fullAutoRows.length > 0 ? (
+                <AutopilotTableSkeletonRows rows={8} columns={4} variant="full-auto" />
+              ) : (
+                <>
+                  {paginatedFullAutoRows.map((row) => (
+                <tr key={`full-auto-d-${row.id}`}>
                   <td className="px-6 py-3.5">
                     <div className="min-w-0">
                       <p className="truncate font-medium text-foreground">
@@ -356,10 +356,8 @@ export function AutopilotFullAutoView() {
                   </td>
                 </tr>
               ))}
-              {isFullAutoHistoryLoading ? (
-                <AutopilotTableSkeletonRows rows={8} columns={4} />
-              ) : (
-                paginatedFullAutoRows.length === 0 && (
+                  {!isFullAutoHistoryLoading &&
+                    paginatedFullAutoRows.length === 0 && (
                   <>
                     {fullAutoHistoryError && (
                       <AutopilotTableEmptyState colSpan={4}>
@@ -381,7 +379,8 @@ export function AutopilotFullAutoView() {
                         </AutopilotTableEmptyState>
                       )}
                   </>
-                )
+                )}
+                </>
               )}
             </tbody>
           </table>
@@ -399,7 +398,6 @@ export function AutopilotFullAutoView() {
         />
       </div>
     );
-  };
 
   return (
     <div className="sk-autopilot__stack">
@@ -419,7 +417,6 @@ export function AutopilotFullAutoView() {
       <div className="sk-autopilot__panel">
         <AutopilotControlPanel
           icon={<Sparkles className="h-5 w-5" />}
-          iconWrapClassName="sk-page-badge"
           iconAccent="amber"
           title="Plná automatizace (Full Auto)"
           powerEnabled={featureEnabled}
@@ -428,6 +425,7 @@ export function AutopilotFullAutoView() {
               ? "Cron kolem 8:00 najde firmy a pošle maily."
               : "Cron neběží. Zapni, až budeš chtít celou smyčku."
           }
+          filters={renderFilters()}
           actions={
             <>
               <AutopilotPowerButton
@@ -436,12 +434,6 @@ export function AutopilotFullAutoView() {
                 accent="blue"
                 onClick={() => void toggleFeaturePower()}
               />
-              <AutopilotIconButton
-                label="Zvětšit tabulku"
-                onClick={() => setTableExpanded(true)}
-              >
-                <Maximize2 className="h-4 w-4" />
-              </AutopilotIconButton>
               <AutopilotSettingsIconButton
                 label="Nastavení Full Auto"
                 onClick={openSettings}
@@ -451,29 +443,7 @@ export function AutopilotFullAutoView() {
         />
       </div>
 
-      {tableExpanded ? (
-        <div className="sk-autopilot__table mt-0 flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 text-center text-sm text-muted-foreground">
-          Historie Full Auto je otevřená ve zvětšeném okně.
-        </div>
-      ) : (
-        <div className="sk-autopilot__table mt-0">{renderTable("compact")}</div>
-      )}
-
-      <ExpandOverlay
-        open={tableExpanded}
-        onClose={() => setTableExpanded(false)}
-        title="Historie Full Auto"
-        description="Hledání a filtry jsou tady. Po zavření zůstane kompaktní tabulka na stránce."
-      >
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-          <div className="shrink-0 overflow-visible p-px">
-            {renderFilters()}
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {renderTable("expanded")}
-          </div>
-        </div>
-      </ExpandOverlay>
+      <div className="sk-autopilot__table mt-0">{renderTable()}</div>
     </div>
   );
 }

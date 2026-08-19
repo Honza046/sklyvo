@@ -3,6 +3,7 @@
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/app/actions/auth";
+import { AGENCY_SIZE_CATALOG, formatCzk } from "@/lib/pricing/plan-catalog";
 import { prisma } from "@/lib/prisma";
 
 export type TeamMemberDto = {
@@ -11,6 +12,7 @@ export type TeamMemberDto = {
   email: string;
   role: "OWNER" | "ADMIN" | "MEMBER";
   status: "AKTIVNÍ";
+  avatarUrl: string | null;
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,6 +21,24 @@ const AGENCY_MAX_MEMBERS = 5;
 function displayNameFromEmail(email: string) {
   const local = email.split("@")[0] ?? "Kolega";
   return local.charAt(0).toUpperCase() + local.slice(1);
+}
+
+function formatPlanDisplayName(planTier: string) {
+  const tier = planTier.toUpperCase();
+  if (tier === "AGENCY_GROWTH") return "AGENCY PRO";
+  if (tier === "AGENCY_STARTER") return "AGENCY STANDARD";
+  if (tier === "AGENCY_SCALE") return "AGENCY SCALE";
+  return tier.replace(/_/g, " ");
+}
+
+function seatPriceForTier(planTier: string) {
+  const tier = planTier.toUpperCase();
+  if (tier === "AGENCY_STARTER") return AGENCY_SIZE_CATALOG.small.priceMonthlyCzk;
+  if (tier === "AGENCY_GROWTH" || tier === "AGENCY_SCALE") {
+    return AGENCY_SIZE_CATALOG.big.priceMonthlyCzk;
+  }
+  if (tier.includes("AGENCY")) return AGENCY_SIZE_CATALOG.big.priceMonthlyCzk;
+  return null;
 }
 
 export async function getTeamAccessState() {
@@ -33,7 +53,7 @@ export async function getTeamAccessState() {
   const members = await prisma.user.findMany({
     where: { workspaceId: session.user.workspaceId },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, avatarUrl: true },
   });
 
   const team: TeamMemberDto[] = members.map((m) => ({
@@ -42,12 +62,22 @@ export async function getTeamAccessState() {
     email: m.email,
     role: m.role,
     status: "AKTIVNÍ",
+    avatarUrl: m.avatarUrl?.trim() || null,
   }));
+
+  const planTierValue = session.workspace.planTier ?? "NONE";
+  const seatPrice = seatPriceForTier(planTierValue);
 
   return {
     success: true as const,
     isAgency,
-    planTier: session.workspace.planTier ?? "NONE",
+    planTier: planTierValue,
+    planDisplayName: formatPlanDisplayName(planTierValue),
+    workspaceName:
+      session.workspace.companyName?.trim() ||
+      session.workspace.name?.trim() ||
+      "Workspace",
+    seatPriceLabel: seatPrice != null ? formatCzk(seatPrice) : "—",
     maxMembers: AGENCY_MAX_MEMBERS,
     sharedCredits: Math.max(
       0,

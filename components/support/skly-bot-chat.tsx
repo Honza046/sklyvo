@@ -10,7 +10,7 @@ import {
   useImperativeHandle,
 } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, ArrowUp, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUp, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CopilotMessage } from "@/components/ai/copilot-message";
@@ -22,14 +22,17 @@ import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import { useCopilot } from "@/context/CopilotContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { askCopilot } from "@/app/actions/copilot";
+import { getWorkspaceAccessState } from "@/app/actions/auth";
 import {
   getContextualPrompts,
+  getHelpBotPrompts,
   getSlashCommands,
   resolveCopilotResponse,
   type SlashCommand,
 } from "@/lib/copilot/copilot-engine";
 import type { CopilotGuideResponse } from "@/lib/copilot/setup-knowledge";
 import type { CopilotAction } from "@/lib/copilot/action-links";
+import { toCzechVocative } from "@/lib/sklyvo/czech-vocative";
 import { cn } from "@/lib/utils";
 
 type ChatMessage =
@@ -47,12 +50,67 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function useIntroTypewriter(texts: string[] | null) {
+  const [displayed, setDisplayed] = useState<string[]>([]);
+  const [currentPartial, setCurrentPartial] = useState("");
+  const [complete, setComplete] = useState(false);
+
+  useEffect(() => {
+    if (!texts?.length) return;
+
+    let cancelled = false;
+    const CHAR_MS = 16;
+    const PAUSE_BETWEEN = 480;
+
+    async function run() {
+      setDisplayed([]);
+      setCurrentPartial("");
+      setComplete(false);
+
+      for (let index = 0; index < texts.length; index += 1) {
+        if (index > 0) {
+          await sleep(PAUSE_BETWEEN);
+          if (cancelled) return;
+        }
+
+        const text = texts[index] ?? "";
+
+        for (let charIndex = 0; charIndex <= text.length; charIndex += 1) {
+          if (cancelled) return;
+          setCurrentPartial(text.slice(0, charIndex));
+          if (charIndex < text.length) {
+            await sleep(CHAR_MS);
+          }
+        }
+
+        setDisplayed((prev) => [...prev, text]);
+        setCurrentPartial("");
+      }
+
+      setComplete(true);
+    }
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [texts?.join("\u0000") ?? ""]);
+
+  return { displayed, currentPartial, complete };
+}
+
 export type SklyBotChatHandle = {
   focusInput: () => void;
   ask: (question: string) => void;
 };
 
-export type SklyBotChatVariant = "teaser" | "fullscreen";
+export type SklyBotChatVariant = "teaser" | "fullscreen" | "panel";
 
 type SklyBotChatProps = {
   className?: string;
@@ -72,6 +130,8 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
     const [input, setInput] = useState("");
     const [isThinking, setIsThinking] = useState(false);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [introTexts, setIntroTexts] = useState<string[] | null>(null);
+    const [clientReady, setClientReady] = useState(false);
     const [slashActiveIndex, setSlashActiveIndex] = useState(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +139,11 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
     onExpandRef.current = onExpand;
 
     const isTeaser = variant === "teaser";
-    const quickPrompts = useMemo(() => getContextualPrompts("/help", t), [t]);
+    const isPanel = variant === "panel";
+    const quickPrompts = useMemo(
+      () => (isPanel ? getHelpBotPrompts(t) : getContextualPrompts("/help", t)),
+      [isPanel, t],
+    );
     const slashCommands = useMemo(() => getSlashCommands(t), [t]);
     const slashQuery = input.startsWith("/") ? input : "";
     const filteredSlashCommands = useMemo(
@@ -89,6 +153,34 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
     const slashMenuOpen =
       slashQuery.length > 0 && filteredSlashCommands.length > 0;
 
+    useEffect(() => {
+      setClientReady(true);
+    }, []);
+
+    useEffect(() => {
+      if (!clientReady) return;
+      void getWorkspaceAccessState().then((session) => {
+        const first =
+          session.user?.firstName?.trim() ||
+          session.user?.name?.trim().split(/\s+/)[0] ||
+          "";
+        const raw = first.trim();
+        const name =
+          !raw
+            ? language === "cz"
+              ? "Uživateli"
+              : "there"
+            : language === "cz"
+              ? toCzechVocative(raw)
+              : raw;
+        setIntroTexts([t("help.botHello", { name }), t("help.botHello2")]);
+      });
+    }, [clientReady, language, t]);
+
+    const introTypewriter = useIntroTypewriter(
+      clientReady && isPanel ? introTexts : null,
+    );
+
     const messagesRef = useRef(messages);
     messagesRef.current = messages;
 
@@ -97,7 +189,9 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
         const trimmed = question.trim();
         if (!trimmed) return;
 
-        onExpandRef.current?.();
+        if (!isPanel) {
+          onExpandRef.current?.();
+        }
 
         const history = messagesRef.current
           .filter((m) => m.content.trim().length > 0)
@@ -181,7 +275,7 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
           setIsThinking(false);
         }
       },
-      [language, pathname, t],
+      [isPanel, language, pathname, t],
     );
 
     useImperativeHandle(
@@ -205,7 +299,13 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
     useEffect(() => {
       if (!scrollRef.current || isTeaser) return;
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }, [messages, isThinking, isTeaser]);
+    }, [
+      messages,
+      isThinking,
+      isTeaser,
+      introTypewriter.displayed,
+      introTypewriter.currentPartial,
+    ]);
 
     useEffect(() => {
       setSlashActiveIndex(0);
@@ -235,10 +335,6 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
       setIsThinking(false);
       setInput("");
       setSlashActiveIndex(0);
-    };
-
-    const handleCollapse = () => {
-      onCollapse?.();
     };
 
     const handleInputKeyDown = (
@@ -272,19 +368,143 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
       }
     };
 
+    const slashMenu = slashMenuOpen ? (
+      <div className="absolute inset-x-3 bottom-full z-10 mb-2">
+        <CopilotSlashMenu
+          commands={filteredSlashCommands}
+          query={slashQuery}
+          activeIndex={slashActiveIndex}
+          onSelect={handleSlashSelect}
+          onHover={setSlashActiveIndex}
+        />
+      </div>
+    ) : null;
+
+    if (isPanel) {
+      return (
+        <section className={cn("sk-help-chat flex min-h-0 flex-col", className)}>
+          <header className="sk-help-chat__head">
+            <SklyvoMark size={30} tone="grey" interactive={false} />
+            <div className="min-w-0">
+              <div className="sk-help-chat__name">{t("copilot.title")}</div>
+              <div className="sk-help-chat__status">
+                <span className="sk-help-chat__dot" aria-hidden />
+                {t("copilot.online")}
+              </div>
+            </div>
+          </header>
+
+          <div ref={scrollRef} className="sk-help-chat__body">
+            {clientReady ? (
+              <>
+                {introTypewriter.displayed.map((text, index) => (
+                  <div
+                    key={`intro-${index}`}
+                    className="sk-help-bubble sk-help-bubble--bot"
+                  >
+                    {text}
+                  </div>
+                ))}
+
+                {introTypewriter.currentPartial ? (
+                  <div className="sk-help-bubble sk-help-bubble--bot">
+                    {introTypewriter.currentPartial}
+                    <span className="sk-typewriter-cursor" aria-hidden>
+                      |
+                    </span>
+                  </div>
+                ) : null}
+
+                {introTypewriter.complete &&
+                messages.length === 0 &&
+                !isThinking ? (
+                  <div className="flex flex-col gap-2 pt-1.5">
+                    <span className="sk-help-prompts-label">
+                      {t("help.browseTools")}
+                    </span>
+                    {quickPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        className="sk-help-prompt"
+                        onClick={() => void respondToUser(prompt)}
+                      >
+                        <span>{prompt}</span>
+                        <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+              </>
+            ) : null}
+
+            {messages.map((message) =>
+              message.role === "user" ? (
+                <div
+                  key={message.id}
+                  className="sk-help-bubble sk-help-bubble--me"
+                >
+                  {message.content}
+                </div>
+              ) : (
+                <div
+                  key={message.id}
+                  className="sk-help-bubble sk-help-bubble--bot"
+                >
+                  {message.content}
+                </div>
+              ),
+            )}
+
+            {isThinking ? (
+              <div
+                className="sk-help-typing"
+                aria-label={t("copilot.analyzing")}
+                role="status"
+              >
+                <span className="sk-typing-dot" />
+                <span className="sk-typing-dot" />
+                <span className="sk-typing-dot" />
+              </div>
+            ) : null}
+          </div>
+
+          <form
+            className="sk-help-chat__form relative"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+          >
+            {slashMenu}
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder={t("help.chatPlaceholder")}
+              aria-label={t("help.chatPlaceholder")}
+              disabled={isThinking}
+              className="sk-plain-field"
+            />
+            <button
+              type="submit"
+              className="sk-help-chat__send"
+              aria-label={t("copilot.send")}
+              disabled={isThinking || (!input.trim() && !slashMenuOpen)}
+            >
+              <ArrowUp className="h-[15px] w-[15px]" strokeWidth={2.4} />
+            </button>
+          </form>
+        </section>
+      );
+    }
+
     const composer = (
       <div className="sk-support-chat__composer relative">
-        {slashMenuOpen ? (
-          <div className="absolute inset-x-3 bottom-full z-10 mb-2">
-            <CopilotSlashMenu
-              commands={filteredSlashCommands}
-              query={slashQuery}
-              activeIndex={slashActiveIndex}
-              onSelect={handleSlashSelect}
-              onHover={setSlashActiveIndex}
-            />
-          </div>
-        ) : null}
+        {slashMenu}
         <div
           className={cn(
             "sk-support-chat__input-row",
@@ -306,9 +526,7 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
             placeholder={
               isTeaser ? t("help.chatPlaceholder") : t("copilot.placeholder")
             }
-            className={cn(
-              "sk-plain-field h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0",
-            )}
+            className="sk-plain-field h-11 flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0"
             disabled={isThinking}
           />
           <button
@@ -348,7 +566,7 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={handleCollapse}
+                onClick={onCollapse}
                 className="h-9 w-9 shrink-0 rounded-xl p-0 text-[color:var(--sk-muted)] hover:text-[color:var(--sk-ink)]"
                 aria-label={t("help.chatClose")}
               >

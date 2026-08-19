@@ -4,25 +4,9 @@ import { Lock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
+import { isPremiumToolsLocked, type PremiumTool } from "@/lib/plan-gate";
 
-export type PremiumTool = "autopilot" | "storage" | "generator";
-
-/** Free 10-kreditový účet bez aktivního trialu / placeného tarifu. */
-export function isPremiumToolsLocked(input: {
-  planTier?: string | null;
-  subscriptionStatus?: string | null;
-  isTrial?: boolean;
-  trialRemainingDays?: number;
-}): boolean {
-  const planTier = (input.planTier ?? "NONE").toUpperCase();
-  const status = (input.subscriptionStatus ?? "FREE").toUpperCase();
-  const hasPaidPlanTier = planTier !== "NONE" && planTier !== "FREE";
-  const hasFullCreditAllowance =
-    status === "ACTIVE" ||
-    hasPaidPlanTier ||
-    (Boolean(input.isTrial) && (input.trialRemainingDays ?? 0) > 0);
-  return !hasFullCreditAllowance;
-}
+export { isPremiumToolsLocked, type PremiumTool };
 
 export function PlanFeatureGate({
   locked,

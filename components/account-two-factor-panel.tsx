@@ -5,14 +5,10 @@ import {
   Fingerprint,
   KeyRound,
   Loader2,
-  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { startRegistration } from "@simplewebauthn/browser";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   beginPasskeyRegistration,
   beginTotpSetup,
@@ -22,6 +18,7 @@ import {
   finishPasskeyRegistration,
   getTwoFactorStatus,
 } from "@/app/actions/two-factor";
+import { AccountPanel } from "@/components/account/account-panel";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
 
@@ -176,220 +173,223 @@ export function AccountTwoFactorPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        {t("account.twoFactor.loading")}
-      </div>
+      <AccountPanel
+        title={t("account.twoFactor.title")}
+        titleId="account-2fa-title"
+        loading
+        loadingLabel={t("account.twoFactor.loading")}
+      />
     );
   }
 
   return (
-    <div className="space-y-6 border-t border-border/50 pt-5">
-      <div>
-        <div className="mb-1 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-[color:var(--sk-brand)]" />
-          <h3 className="sk-type-h3">{t("account.twoFactor.title")}</h3>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {t("account.twoFactor.desc")}
-        </p>
-      </div>
-
-      {/* TOTP */}
-      <div className="space-y-3 rounded-xl border border-border/50 bg-muted/20 p-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-lg bg-[color-mix(in_oklab,var(--sk-brand)_14%,transparent)] p-2 text-[color:var(--sk-brand)]">
-            <KeyRound className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">{t("account.twoFactor.authenticatorTitle")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("account.twoFactor.authenticatorDesc")}{" "}
-              {totpEnabled ? t("account.twoFactor.on") : t("account.twoFactor.off")}
-            </p>
-          </div>
-        </div>
-
-        {!totpEnabled && !totpSetup ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="sk-press-btn rounded-xl"
-            disabled={totpBusy}
-            onClick={() => void handleBeginTotp()}
-          >
-            {totpBusy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            {t("account.twoFactor.enableAuthenticator")}
-          </Button>
-        ) : null}
-
-        {totpSetup ? (
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              {t("account.twoFactor.scanQr")}
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={totpSetup.qrDataUrl}
-              alt={t("account.twoFactor.qrAlt")}
-              className="h-[220px] w-[220px] rounded-xl border border-border/60 bg-white p-2"
-            />
-            <p className="break-all font-mono text-[11px] text-muted-foreground">
-              {totpSetup.secret}
-            </p>
-            <div className="max-w-xs space-y-2">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                {t("account.twoFactor.verificationCode")}
-              </Label>
-              <Input
-                value={totpCode}
-                onChange={(e) => setTotpCode(e.target.value)}
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                className="h-11 rounded-xl"
-                disabled={totpBusy}
-              />
+    <AccountPanel
+      title={t("account.twoFactor.title")}
+      titleId="account-2fa-title"
+      description={t("account.twoFactor.desc")}
+    >
+      <div className="sk-account-sub__2fa-grid">
+        <div className="sk-account-sub__2fa-block">
+          <div className="sk-account-sub__2fa-head">
+            <div className="sk-account-sub__2fa-icon">
+              <KeyRound className="h-4 w-4" aria-hidden />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                className="rounded-xl"
-                disabled={totpBusy || totpCode.trim().length < 6}
-                onClick={() => void handleConfirmTotp()}
-              >
-                {totpBusy ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                {t("account.twoFactor.confirmEnable")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="rounded-xl"
-                disabled={totpBusy}
-                onClick={() => {
-                  setTotpSetup(null);
-                  setTotpCode("");
-                }}
-              >
-                {t("account.cancel")}
-              </Button>
+            <div className="sk-account-sub__2fa-copy">
+              <p className="sk-account-sub__2fa-title">
+                {t("account.twoFactor.authenticatorTitle")}
+              </p>
+              <p className="sk-account-sub__2fa-desc">
+                {t("account.twoFactor.authenticatorDesc")}{" "}
+                <span className="sk-account-sub__2fa-status">
+                  {totpEnabled
+                    ? t("account.twoFactor.on")
+                    : t("account.twoFactor.off")}
+                </span>
+              </p>
             </div>
           </div>
-        ) : null}
 
-        {totpEnabled ? (
-          <div className="max-w-sm space-y-2">
-            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              {t("account.twoFactor.disablePassword")}
-            </Label>
-            <Input
-              type="password"
-              value={disablePassword}
-              onChange={(e) => setDisablePassword(e.target.value)}
-              className="h-11 rounded-xl"
-              placeholder={t("account.twoFactor.yourPassword")}
-              disabled={totpBusy}
-            />
-            <Button
+          {!totpEnabled && !totpSetup ? (
+            <button
               type="button"
-              variant="outline"
-              className="sk-press-btn rounded-xl"
+              className="sk-btn sk-btn--secondary"
               disabled={totpBusy}
-              onClick={() => void handleDisableTotp()}
+              onClick={() => void handleBeginTotp()}
             >
-              {t("account.twoFactor.disableAuthenticator")}
-            </Button>
-          </div>
-        ) : null}
-      </div>
+              {totpBusy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                t("account.twoFactor.enableAuthenticator")
+              )}
+            </button>
+          ) : null}
 
-      {/* Passkeys */}
-      <div className="space-y-3 rounded-xl border border-border/50 bg-muted/20 p-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-lg bg-[color-mix(in_oklab,var(--sk-brand)_14%,transparent)] p-2 text-[color:var(--sk-brand)]">
-            <Fingerprint className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold">{t("account.twoFactor.passkeyTitle")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("account.twoFactor.passkeyDesc")}
-            </p>
-          </div>
-        </div>
-
-        {passkeys.length > 0 ? (
-          <ul className="space-y-2">
-            {passkeys.map((pk) => (
-              <li
-                key={pk.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-background/60 px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {pk.name || "Passkey"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {t("account.twoFactor.addedOn", {
-                      date: new Date(pk.createdAt).toLocaleDateString(
-                        DATE_LOCALE[language] || "cs-CZ",
-                      ),
-                    })}
-                  </p>
-                </div>
-                <Button
+          {totpSetup ? (
+            <div className="sk-account-sub__2fa-setup">
+              <p className="sk-account-sub__2fa-desc">
+                {t("account.twoFactor.scanQr")}
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={totpSetup.qrDataUrl}
+                alt={t("account.twoFactor.qrAlt")}
+                className="sk-account-sub__2fa-qr"
+              />
+              <p className="sk-account-sub__2fa-secret">{totpSetup.secret}</p>
+              <div className="sk-profile-field">
+                <label className="sk-field-label" htmlFor="account-totp-code">
+                  {t("account.twoFactor.verificationCode")}
+                </label>
+                <input
+                  id="account-totp-code"
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value)}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  className="sk-profile-input"
+                  disabled={totpBusy}
+                />
+              </div>
+              <div className="sk-account-sub__actions">
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
-                  disabled={deletingId === pk.id}
-                  onClick={() => void handleDeletePasskey(pk.id)}
-                  aria-label={t("account.twoFactor.removePasskey")}
+                  className="sk-btn sk-btn--white"
+                  disabled={totpBusy || totpCode.trim().length < 6}
+                  onClick={() => void handleConfirmTotp()}
                 >
-                  {deletingId === pk.id ? (
+                  {totpBusy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Trash2 className="h-4 w-4" />
+                    t("account.twoFactor.confirmEnable")
                   )}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-xs text-muted-foreground">{t("account.twoFactor.noPasskeys")}</p>
-        )}
-
-        {passkeys.length > 0 ? (
-          <div className="max-w-sm space-y-2">
-            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              {t("account.twoFactor.deletePassword")}
-            </Label>
-            <Input
-              type="password"
-              value={deletePassword}
-              onChange={(e) => setDeletePassword(e.target.value)}
-              className="h-11 rounded-xl"
-              placeholder={t("account.twoFactor.yourPassword")}
-            />
-          </div>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="outline"
-          className="sk-press-btn rounded-xl"
-          disabled={passkeyBusy}
-          onClick={() => void handleAddPasskey()}
-        >
-          {passkeyBusy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                </button>
+                <button
+                  type="button"
+                  className="sk-btn sk-btn--secondary"
+                  disabled={totpBusy}
+                  onClick={() => {
+                    setTotpSetup(null);
+                    setTotpCode("");
+                  }}
+                >
+                  {t("account.cancel")}
+                </button>
+              </div>
+            </div>
           ) : null}
-          {t("account.twoFactor.addPasskey")}
-        </Button>
+
+          {totpEnabled ? (
+            <div className="sk-account-sub__2fa-setup">
+              <div className="sk-profile-field">
+                <label className="sk-field-label" htmlFor="account-disable-totp">
+                  {t("account.twoFactor.disablePassword")}
+                </label>
+                <input
+                  id="account-disable-totp"
+                  type="password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.target.value)}
+                  className="sk-profile-input"
+                  placeholder={t("account.twoFactor.yourPassword")}
+                  disabled={totpBusy}
+                />
+              </div>
+              <button
+                type="button"
+                className="sk-btn sk-btn--secondary"
+                disabled={totpBusy}
+                onClick={() => void handleDisableTotp()}
+              >
+                {t("account.twoFactor.disableAuthenticator")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="sk-account-sub__2fa-block">
+          <div className="sk-account-sub__2fa-head">
+            <div className="sk-account-sub__2fa-icon">
+              <Fingerprint className="h-4 w-4" aria-hidden />
+            </div>
+            <div className="sk-account-sub__2fa-copy">
+              <p className="sk-account-sub__2fa-title">
+                {t("account.twoFactor.passkeyTitle")}
+              </p>
+              <p className="sk-account-sub__2fa-desc">
+                {t("account.twoFactor.passkeyDesc")}
+              </p>
+            </div>
+          </div>
+
+          {passkeys.length > 0 ? (
+            <ul className="sk-account-sub__2fa-passkeys">
+              {passkeys.map((pk) => (
+                <li key={pk.id} className="sk-account-sub__2fa-passkey-row">
+                  <div className="sk-account-sub__2fa-passkey-main">
+                    <p className="sk-account-sub__2fa-passkey-name">
+                      {pk.name || "Passkey"}
+                    </p>
+                    <p className="sk-account-sub__2fa-passkey-date">
+                      {t("account.twoFactor.addedOn", {
+                        date: new Date(pk.createdAt).toLocaleDateString(
+                          DATE_LOCALE[language] || "cs-CZ",
+                        ),
+                      })}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="sk-account-sub__2fa-passkey-delete"
+                    disabled={deletingId === pk.id}
+                    onClick={() => void handleDeletePasskey(pk.id)}
+                    aria-label={t("account.twoFactor.removePasskey")}
+                  >
+                    {deletingId === pk.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="sk-account-sub__2fa-desc">
+              {t("account.twoFactor.noPasskeys")}
+            </p>
+          )}
+
+          {passkeys.length > 0 ? (
+            <div className="sk-profile-field">
+              <label className="sk-field-label" htmlFor="account-delete-passkey-pw">
+                {t("account.twoFactor.deletePassword")}
+              </label>
+              <input
+                id="account-delete-passkey-pw"
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="sk-profile-input"
+                placeholder={t("account.twoFactor.yourPassword")}
+              />
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className="sk-btn sk-btn--secondary"
+            disabled={passkeyBusy}
+            onClick={() => void handleAddPasskey()}
+          >
+            {passkeyBusy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              t("account.twoFactor.addPasskey")
+            )}
+          </button>
+        </div>
       </div>
-    </div>
+    </AccountPanel>
   );
 }

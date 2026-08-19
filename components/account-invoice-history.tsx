@@ -6,7 +6,6 @@ import {
   listWorkspaceInvoices,
   type WorkspaceInvoiceRow,
 } from "@/app/actions/billing";
-import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
@@ -61,29 +60,29 @@ export function AccountInvoiceHistory() {
       case "paid":
         return {
           text: t("account.invoices.paid"),
-          className: "bg-emerald-50 text-emerald-700 ",
+          className: "sk-account-sub__invoice-badge--paid",
         };
       case "open":
         return {
           text: t("account.invoices.open"),
-          className: "bg-amber-50 text-amber-700 ",
+          className: "sk-account-sub__invoice-badge--open",
         };
       case "uncollectible":
         return {
           text: t("account.invoices.uncollectible"),
-          className: "bg-rose-50 text-rose-700 ",
+          className: "sk-account-sub__invoice-badge--bad",
         };
       default:
         return {
           text: status || "—",
-          className: "bg-muted text-muted-foreground",
+          className: "sk-account-sub__invoice-badge--neutral",
         };
     }
   };
 
   if (invoices === null) {
     return (
-      <div className="flex items-center justify-center gap-2 rounded-xl border border-border/60 bg-background px-4 py-6 text-sm text-muted-foreground">
+      <div className="sk-account-sub__invoice-empty">
         <Loader2 className="h-4 w-4 animate-spin" />
         {t("account.invoices.loading")}
       </div>
@@ -92,79 +91,68 @@ export function AccountInvoiceHistory() {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50/50 px-4 py-3 text-sm text-rose-700 ">
-        {error}
-      </div>
+      <div className="sk-account-sub__invoice-error">{error}</div>
     );
   }
 
   if (invoices.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/60 bg-background px-4 py-6 text-center">
-        <Receipt className="h-5 w-5 text-muted-foreground/70" />
-        <p className="text-sm text-muted-foreground">
-          {t("account.invoices.empty")}
-        </p>
+      <div className="sk-account-sub__invoice-empty sk-account-sub__invoice-empty--dashed">
+        <Receipt className="h-5 w-5" aria-hidden />
+        <p>{t("account.invoices.empty")}</p>
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-border/50 overflow-hidden rounded-xl border border-border/60 bg-background">
+    <ul className="sk-account-sub__invoice-list">
       {invoices.map((inv) => {
         const status = statusLabel(inv.status);
         const openUrl = inv.pdfUrl || inv.hostedUrl;
         return (
-          <li
-            key={inv.id}
-            className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4"
-          >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-foreground">
+          <li key={inv.id} className="sk-account-sub__invoice-row">
+            <div className="sk-account-sub__invoice-main">
+              <div className="sk-account-sub__invoice-headline">
+                <p className="sk-account-sub__invoice-number">
                   {inv.number || inv.id}
                 </p>
                 <span
                   className={cn(
-                    "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                    "sk-account-sub__invoice-badge",
                     status.className,
                   )}
                 >
                   {status.text}
                 </span>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="sk-account-sub__invoice-meta">
                 {formatInvoiceDate(inv.createdAt)} ·{" "}
                 {formatInvoiceAmount(inv.amountPaid, inv.currency)}
               </p>
             </div>
             {openUrl ? (
-              <div className="flex shrink-0 gap-1.5">
+              <div className="sk-account-sub__invoice-actions">
                 {inv.pdfUrl ? (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="h-8 rounded-lg text-xs"
+                  <a
+                    href={inv.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="sk-btn sk-btn--secondary sk-account-sub__invoice-btn"
                   >
-                    <a href={inv.pdfUrl} target="_blank" rel="noreferrer">
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      PDF
-                    </a>
-                  </Button>
+                    <Download className="h-3.5 w-3.5" aria-hidden />
+                    PDF
+                  </a>
                 ) : null}
                 {inv.hostedUrl ? (
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 rounded-lg text-xs"
+                  <a
+                    href={inv.hostedUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="sk-btn sk-btn--secondary sk-account-sub__invoice-btn"
                   >
-                    <a href={inv.hostedUrl} target="_blank" rel="noreferrer">
-                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                      {t("account.invoices.detail")}
-                    </a>
-                  </Button>
+                    <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                    {t("account.invoices.detail")}
+                  </a>
                 ) : null}
               </div>
             ) : null}

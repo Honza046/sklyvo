@@ -5,32 +5,35 @@ export type Language = (typeof LANGUAGES)[number];
 export const DEFAULT_LANGUAGE: Language = "cs";
 
 type AuthCopy = {
- email: string;
- password: string;
- showPassword: string;
- hidePassword: string;
- or: string;
- globeTitle: string;
- globeBody: string;
+  email: string;
+  emailPlaceholder: string;
+  password: string;
+  passwordPlaceholder: string;
+  showPassword: string;
+  hidePassword: string;
+  or: string;
+  globeTitle: string;
+  globeBody: string;
 };
 
 export type Dictionary = {
- login: AuthCopy & {
- title: string;
- sub: string;
- forgot: string;
- cta: string;
- noAccount: string;
- signUp: string;
- };
- register: AuthCopy & {
- title: string;
- sub: string;
- name: string;
- cta: string;
- hasAccount: string;
- signIn: string;
- };
+  login: AuthCopy & {
+    title: string;
+    sub: string;
+    forgot: string;
+    cta: string;
+    noAccount: string;
+    signUp: string;
+  };
+  register: AuthCopy & {
+    title: string;
+    sub: string;
+    name: string;
+    namePlaceholder: string;
+    cta: string;
+    hasAccount: string;
+    signIn: string;
+  };
  recovery: AuthCopy & {
  title: string;
  sub: string;
@@ -47,7 +50,9 @@ const cs: Dictionary = {
  title: "Přihlášení e-mailem",
  sub: "Přihlaste se do svého Sklyvo workspace a sledujte, jak přibývají noví klienti.",
  email: "E-mail",
+ emailPlaceholder: "you@company.com",
  password: "Heslo",
+ passwordPlaceholder: "••••••••",
  showPassword: "Zobrazit heslo",
  hidePassword: "Skrýt heslo",
  forgot: "Zapomenuté heslo?",
@@ -63,8 +68,11 @@ const cs: Dictionary = {
  title: "Založení účtu",
  sub: "Vytvořte Sklyvo workspace a začněte budovat pipeline nových klientů.",
  name: "Jméno",
+ namePlaceholder: "Jan Novák",
  email: "E-mail",
+ emailPlaceholder: "you@company.com",
  password: "Heslo",
+ passwordPlaceholder: "••••••••",
  showPassword: "Zobrazit heslo",
  hidePassword: "Skrýt heslo",
  cta: "Založit účet",
@@ -79,7 +87,9 @@ const cs: Dictionary = {
  title: "Zapomenuté heslo",
  sub: "Zadejte e-mail svého účtu a pošleme vám odkaz pro nastavení nového hesla.",
  email: "E-mail",
+ emailPlaceholder: "you@company.com",
  password: "Heslo",
+ passwordPlaceholder: "••••••••",
  showPassword: "Zobrazit heslo",
  hidePassword: "Skrýt heslo",
  cta: "Odeslat odkaz",
@@ -100,7 +110,9 @@ const en: Dictionary = {
  title: "Sign in with email",
  sub: "Sign in to your Sklyvo workspace and watch new clients land in your pipeline.",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Password",
+ passwordPlaceholder: "••••••••",
  showPassword: "Show password",
  hidePassword: "Hide password",
  forgot: "Forgot password?",
@@ -116,8 +128,11 @@ const en: Dictionary = {
  title: "Create your account",
  sub: "Set up your Sklyvo workspace and start building a pipeline of new clients.",
  name: "Name",
+ namePlaceholder: "Jane Doe",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Password",
+ passwordPlaceholder: "••••••••",
  showPassword: "Show password",
  hidePassword: "Hide password",
  cta: "Create account",
@@ -132,7 +147,9 @@ const en: Dictionary = {
  title: "Forgot password",
  sub: "Enter your account email and we’ll send a link to set a new password.",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Password",
+ passwordPlaceholder: "••••••••",
  showPassword: "Show password",
  hidePassword: "Hide password",
  cta: "Send reset link",
@@ -152,7 +169,9 @@ const de: Dictionary = {
  title: "Mit E-Mail anmelden",
  sub: "Melden Sie sich in Ihrem Sklyvo-Workspace an und sehen Sie, wie neue Kunden eintreffen.",
  email: "E-Mail",
+ emailPlaceholder: "you@company.com",
  password: "Passwort",
+ passwordPlaceholder: "••••••••",
  showPassword: "Passwort anzeigen",
  hidePassword: "Passwort verbergen",
  forgot: "Passwort vergessen?",
@@ -168,8 +187,11 @@ const de: Dictionary = {
  title: "Konto erstellen",
  sub: "Richten Sie Ihren Sklyvo-Workspace ein und bauen Sie eine Pipeline neuer Kunden auf.",
  name: "Name",
+ namePlaceholder: "Max Mustermann",
  email: "E-Mail",
+ emailPlaceholder: "you@company.com",
  password: "Passwort",
+ passwordPlaceholder: "••••••••",
  showPassword: "Passwort anzeigen",
  hidePassword: "Passwort verbergen",
  cta: "Konto erstellen",
@@ -184,7 +206,9 @@ const de: Dictionary = {
  title: "Passwort vergessen",
  sub: "Geben Sie Ihre Konto-E-Mail ein und wir senden Ihnen einen Link zum Festlegen eines neuen Passworts.",
  email: "E-Mail",
+ emailPlaceholder: "you@company.com",
  password: "Passwort",
+ passwordPlaceholder: "••••••••",
  showPassword: "Passwort anzeigen",
  hidePassword: "Passwort verbergen",
  cta: "Link senden",
@@ -205,7 +229,9 @@ const es: Dictionary = {
  title: "Iniciar sesión con email",
  sub: "Entra a tu workspace de Sklyvo y mira cómo llegan nuevos clientes.",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Contraseña",
+ passwordPlaceholder: "••••••••",
  showPassword: "Mostrar contraseña",
  hidePassword: "Ocultar contraseña",
  forgot: "¿Olvidaste la contraseña?",
@@ -221,8 +247,11 @@ const es: Dictionary = {
  title: "Crear cuenta",
  sub: "Configura tu workspace de Sklyvo y empieza a construir un pipeline de nuevos clientes.",
  name: "Nombre",
+ namePlaceholder: "María García",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Contraseña",
+ passwordPlaceholder: "••••••••",
  showPassword: "Mostrar contraseña",
  hidePassword: "Ocultar contraseña",
  cta: "Crear cuenta",
@@ -237,7 +266,9 @@ const es: Dictionary = {
  title: "Contraseña olvidada",
  sub: "Introduce el email de tu cuenta y te enviaremos un enlace para establecer una nueva contraseña.",
  email: "Email",
+ emailPlaceholder: "you@company.com",
  password: "Contraseña",
+ passwordPlaceholder: "••••••••",
  showPassword: "Mostrar contraseña",
  hidePassword: "Ocultar contraseña",
  cta: "Enviar enlace",

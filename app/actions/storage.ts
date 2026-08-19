@@ -120,6 +120,80 @@ function mapDocument(
   };
 }
 
+export type StorageOverviewStats = {
+  scopeFileCount: number;
+  scopeBytes: number;
+  sharedFileCount: number;
+  workspaceBytes: number;
+  quotaBytes: number;
+  planLabel: string;
+};
+
+function storageQuotaBytes(planTier: string | null | undefined): number {
+  const tier = (planTier ?? "NONE").toUpperCase();
+  if (tier.startsWith("AGENCY")) return 5 * 1024 * 1024 * 1024;
+  if (tier === "PRO" || tier === "BUSINESS") return 2 * 1024 * 1024 * 1024;
+  return 500 * 1024 * 1024;
+}
+
+function storagePlanLabel(planTier: string | null | undefined): string {
+  const tier = (planTier ?? "NONE").toUpperCase();
+  if (tier.startsWith("AGENCY")) return "Agency";
+  if (tier === "PRO") return "Pro";
+  if (tier === "BUSINESS") return "Business";
+  return "Free";
+}
+
+export async function getStorageOverviewStats(
+  scope: DocumentScope,
+): Promise<{ stats: StorageOverviewStats } | { error: string }> {
+  try {
+    const session = await requireSession();
+    if (!session) return { error: "Nejste přihlášen." };
+
+    const workspaceId = session.workspace.id;
+    const userId = session.user.id;
+
+    const [scopeAgg, sharedAgg, workspaceAgg] = await Promise.all([
+      prisma.workspaceDocument.aggregate({
+        where:
+          scope === "PERSONAL"
+            ? { workspaceId, scope: "PERSONAL", ownerUserId: userId }
+            : { workspaceId, scope: "SHARED" },
+        _count: { id: true },
+        _sum: { sizeBytes: true },
+      }),
+      prisma.workspaceDocument.aggregate({
+        where: { workspaceId, scope: "SHARED" },
+        _count: { id: true },
+      }),
+      prisma.workspaceDocument.aggregate({
+        where: { workspaceId },
+        _sum: { sizeBytes: true },
+      }),
+    ]);
+
+    return {
+      stats: {
+        scopeFileCount: scopeAgg._count.id,
+        scopeBytes: scopeAgg._sum.sizeBytes ?? 0,
+        sharedFileCount: sharedAgg._count.id,
+        workspaceBytes: workspaceAgg._sum.sizeBytes ?? 0,
+        quotaBytes: storageQuotaBytes(session.workspace.planTier),
+        planLabel: storagePlanLabel(session.workspace.planTier),
+      },
+    };
+  } catch (error) {
+    console.error("getStorageOverviewStats:", error);
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Nepodařilo se načíst statistiky úložiště.",
+    };
+  }
+}
+
 export async function listWorkspaceDocuments(
   scope: DocumentScope,
 ): Promise<{ documents: WorkspaceDocumentRow[] } | { error: string }> {

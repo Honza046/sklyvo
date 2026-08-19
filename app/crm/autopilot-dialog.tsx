@@ -141,7 +141,7 @@ export function AutopilotDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Rocket className="h-5 w-5 text-blue-600" />
+            <Rocket className="h-5 w-5 text-[color:var(--sk-brand)]" />
             Autopilot kampaň
           </DialogTitle>
           <DialogDescription>
@@ -159,7 +159,7 @@ export function AutopilotDialog({
                 Zpracováno {processedCount} / {total}
               </span>
               <span className="flex items-center gap-3">
-                <span className="text-emerald-600">✓ {sentCount}</span>
+                <span className="text-[color:#6ee7b7]">✓ {sentCount}</span>
                 <span className="text-rose-600">✕ {errorCount}</span>
               </span>
             </div>
@@ -227,7 +227,7 @@ export function AutopilotDialog({
             disabled={
               isRunning || total === 0 || (hasRun && processedCount === total)
             }
-            className="bg-blue-600 font-semibold text-white hover:bg-blue-700"
+            className="bg-[color:var(--sk-brand)] font-semibold text-white hover:bg-[color:var(--sk-brand)]/90"
           >
             {isRunning ? (
               <>

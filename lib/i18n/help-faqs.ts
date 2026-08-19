@@ -1,6 +1,6 @@
 import type { Language } from "@/lib/i18n/types";
 
-export type HelpFaqSectionId = "billing" | "email" | "tools";
+export type HelpFaqSectionId = "billing" | "autopilot" | "email";
 
 export type HelpFaqItem = {
   section: HelpFaqSectionId;
@@ -16,24 +16,24 @@ export type HelpFaqSection = {
 
 const sectionTitles: Record<Language, Record<HelpFaqSectionId, string>> = {
   cz: {
-    billing: "Kredity a tarif",
-    email: "E-mail a odesílání",
-    tools: "CRM a nástroje",
+    billing: "Kredity a plán",
+    autopilot: "Autopilot",
+    email: "E-maily a odesílání",
   },
   en: {
     billing: "Credits & plan",
+    autopilot: "Autopilot",
     email: "Email & sending",
-    tools: "CRM & tools",
   },
   es: {
     billing: "Créditos y plan",
+    autopilot: "Autopilot",
     email: "Email y envío",
-    tools: "CRM y herramientas",
   },
   de: {
     billing: "Credits & Tarif",
+    autopilot: "Autopilot",
     email: "E-Mail & Versand",
-    tools: "CRM & Tools",
   },
 };
 
@@ -41,57 +41,105 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
   cz: [
     {
       section: "billing",
-      question: "Jak se počítá spotřeba kreditů?",
+      question: "Jak se kredity spotřebovávají?",
       answer:
-        "Kredity se odečítají za úspěšné AI/Radar operace. Vygenerování jednoho e-mailu přes Sniper stojí 1 kredit. Ruční vyhledávání v Radaru stojí 1 kredit za hledání. Noční / Autopilot sběr stojí 1 kredit za každou nově uloženou firmu (včetně dohledání kontaktů z webu). Nevyužité kredity se do dalšího měsíce nepřevádějí.",
+        "Kredit se odečte za každé odeslané oslovení a za každé ověření kontaktu. Náhledy a koncepty nic nestojí.",
     },
     {
       section: "billing",
-      question: "Mohu používat vlastní klíč k OpenAI (BYOK)?",
+      question: "Co se stane, když vyčerpám kredity uprostřed kampaně?",
       answer:
-        "Z důvodu optimalizace našich modelů a kvality výstupů nepodporujeme vkládání vlastních API klíčů. Celý systém běží na našich serverech. Kupujete balíčky kreditů bez skrytých poplatků u OpenAI nebo Googlu.",
+        "Kampaň se pozastaví a rozjede se sama, jakmile kredity doplníte. Nic se neztratí.",
     },
     {
       section: "billing",
-      question: "Kde najdu svoje měsíční faktury za předplatné?",
+      question: "Přenášejí se nevyužité kredity do dalšího měsíce?",
       answer:
-        "Faktury a správu platební karty najdete v Osobním profilu v sekci Fakturace a předplatné. Faktury si stáhněte jako PDF. Generují se první den zúčtovacího období.",
+        "Ne, kredity se každý měsíc obnovují. Nevyužité propadají.",
+    },
+    {
+      section: "billing",
+      question: "Jaký je rozdíl mezi Single a Agency účtem?",
+      answer:
+        "Single je jedna firma a jedna doména. Agency spravuje víc klientů a každý má vlastní kampaně i statistiky.",
+    },
+    {
+      section: "billing",
+      question: "Můžu plán kdykoli zrušit?",
+      answer:
+        "Ano, ke konci zaplaceného období. Data zůstanou dostupná k exportu.",
+    },
+    {
+      section: "billing",
+      question: "Můžu použít vlastní OpenAI klíč (BYOK)?",
+      answer:
+        "Ano. V nastavení vložíte vlastní klíč a generování textů se pak účtuje přímo u OpenAI.",
+    },
+    {
+      section: "billing",
+      question: "Kde najdu měsíční faktury?",
+      answer:
+        "V Nastavení Sklyvo → Fakturace. Faktury se zakládají vždy první den v měsíci.",
+    },
+    {
+      section: "autopilot",
+      question: "Jak Sklyvo vybírá firmy k oslovení?",
+      answer:
+        "Podle vašeho profilu ideálního klienta, oboru, regionu a velikosti. Radar pak doplňuje signály jako nábor nebo změna webu.",
+    },
+    {
+      section: "autopilot",
+      question: "Můžu zkontrolovat zprávy před odesláním?",
+      answer:
+        "Ano. Zapněte režim schvalování a každá zpráva čeká na vaše potvrzení.",
+    },
+    {
+      section: "autopilot",
+      question: "Co když chci kampaň okamžitě zastavit?",
+      answer:
+        "Jedním tlačítkem v Autopilotu. Rozeslané zprávy už zpět nevezmeme, frontu ale zastavíme okamžitě.",
     },
     {
       section: "email",
-      question: "Jak napojím svůj Google Workspace nebo Outlook?",
+      question: "Jak připojím Google Workspace nebo Outlook?",
       answer:
-        "Přejděte do Osobního profilu a sekce Propojené e-mailové účty. Tam můžete přes OAuth propojit firemní schránku. Sklyvo získá oprávnění pouze k odesílání e-mailů.",
+        "Přes OAuth v Nastavení Sklyvo. Připojení trvá minutu a nepotřebujete heslo aplikace.",
     },
     {
       section: "email",
-      question: "Jaké jsou limity pro odesílání e-mailů?",
+      question: "Kolik e-mailových adres můžu připojit?",
       answer:
-        "Limity závisí na tarifu a ochraně domény. Počet zpráv za hodinu/den držíme v bezpečném pásmu. Přesný strop je v nastavení předplatného nebo u podpory.",
+        "Single účet tři, Agency neomezeně. Odesílání se mezi adresami rozkládá automaticky.",
     },
     {
       section: "email",
-      question: "Jak funguje ochrana domény proti spamu?",
+      question: "Jaké jsou limity odesílání?",
       answer:
-        "Postupné odesílání, střídání šablon a respektování odhlášení. Doporučujeme SPF, DKIM a DMARC u odesílací domény.",
+        "Nová doména začíná na 30 e-mailech denně a limit se automaticky navyšuje podle doručitelnosti.",
     },
     {
       section: "email",
-      question: "Kde nastavím podpis do e-mailu?",
+      question: "Jak dlouho trvá zahřátí nové domény?",
       answer:
-        "Podpis nastavíte v Osobním profilu u propojených účtů nebo ve šablonách ve Sniperovi. Změny platí u nově generovaných kampaní.",
+        "Obvykle dva až tři týdny. Sklyvo navyšuje objem samo, nemusíte nic řešit.",
     },
     {
-      section: "tools",
-      question: "Jak importovat vlastní kontakty (CSV)?",
+      section: "email",
+      question: "Co když mi e-mail spadne do spamu?",
       answer:
-        "V CRM nebo v přípravě kampaně vyberte import kontaktů a nahrajte CSV (firma, jméno, e-mail, pozice). Systém kontroluje duplicity podle e-mailu.",
+        "Sklyvo to pozná z chybějících otevření, zpomalí odesílání a navrhne úpravu textu i technického nastavení.",
     },
     {
-      section: "tools",
-      question: "Lze propojit CRM s Pipedrive?",
+      section: "email",
+      question: "Můžu si nastavit vlastní odesílací okno?",
       answer:
-        "Ano, typicky přes webhooky nebo Make.com/Zapier. Nové leady a změny stavů mohou odejít do Pipedrive. Mapování nastavíte v Integracích.",
+        "Ano, například jen 9–17 v pracovní dny. Nastavíte v Odesílání.",
+    },
+    {
+      section: "email",
+      question: "Odpovídá Sklyvo na odpovědi automaticky?",
+      answer:
+        "Ne. Odpovědi vždy schvalujete vy, Sklyvo jen připraví návrh.",
     },
   ],
   en: [
@@ -99,55 +147,102 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
       section: "billing",
       question: "How are credits consumed?",
       answer:
-        "Credits are deducted for successful AI/Radar operations. One Sniper email costs 1 credit. A manual Radar search costs 1 credit. Overnight / Autopilot collection costs 1 credit per newly saved company (including contact scraping). Unused credits do not roll over.",
+        "One credit is deducted for each outreach sent and each contact verification. Previews and drafts are free.",
+    },
+    {
+      section: "billing",
+      question: "What happens if I run out of credits mid-campaign?",
+      answer:
+        "The campaign pauses and resumes automatically once you top up credits. Nothing is lost.",
+    },
+    {
+      section: "billing",
+      question: "Do unused credits roll over to the next month?",
+      answer: "No. Credits renew each month. Unused credits expire.",
+    },
+    {
+      section: "billing",
+      question: "What's the difference between Single and Agency accounts?",
+      answer:
+        "Single is one company and one domain. Agency manages multiple clients, each with their own campaigns and stats.",
+    },
+    {
+      section: "billing",
+      question: "Can I cancel my plan anytime?",
+      answer:
+        "Yes, at the end of the paid period. Your data remains available for export.",
     },
     {
       section: "billing",
       question: "Can I use my own OpenAI key (BYOK)?",
       answer:
-        "We do not support custom API keys. The system runs on our optimized servers — you buy credit packs without hidden OpenAI or Google fees.",
+        "Yes. Add your key in settings and text generation is billed directly by OpenAI.",
     },
     {
       section: "billing",
-      question: "Where are my monthly invoices?",
+      question: "Where do I find monthly invoices?",
       answer:
-        "Invoices and payment card management are in your profile under Billing & subscription. Download PDFs generated on the first day of each billing period.",
+        "In Sklyvo Settings → Billing. Invoices are issued on the first day of each month.",
+    },
+    {
+      section: "autopilot",
+      question: "How does Sklyvo choose companies to reach out to?",
+      answer:
+        "Based on your ideal client profile, industry, region, and size. Radar adds signals like hiring or website changes.",
+    },
+    {
+      section: "autopilot",
+      question: "Can I review messages before they're sent?",
+      answer:
+        "Yes. Turn on approval mode and each message waits for your confirmation.",
+    },
+    {
+      section: "autopilot",
+      question: "What if I need to stop a campaign immediately?",
+      answer:
+        "One button in Autopilot. Sent messages can't be recalled, but the queue stops instantly.",
     },
     {
       section: "email",
       question: "How do I connect Google Workspace or Outlook?",
       answer:
-        "Go to your profile → Connected email accounts and connect via OAuth. Sklyvo only gets permission to send emails.",
+        "Via OAuth in Sklyvo Settings. Connection takes a minute — no app password needed.",
     },
     {
       section: "email",
-      question: "What are email sending limits?",
+      question: "How many email addresses can I connect?",
       answer:
-        "Limits depend on your plan and domain protection. We throttle sends to safe levels. Exact caps are in subscription settings or from support.",
+        "Single accounts: three. Agency: unlimited. Sending is distributed across addresses automatically.",
     },
     {
       section: "email",
-      question: "How does domain spam protection work?",
+      question: "What are the sending limits?",
       answer:
-        "Gradual sending, template rotation, and unsubscribe respect. We strongly recommend SPF, DKIM, and DMARC on your sending domain.",
+        "A new domain starts at 30 emails per day. The limit increases automatically based on deliverability.",
     },
     {
       section: "email",
-      question: "Where do I set my email signature?",
+      question: "How long does domain warm-up take?",
       answer:
-        "Set it in your profile under connected accounts or in Sniper templates. Changes apply to newly generated campaigns.",
+        "Usually two to three weeks. Sklyvo increases volume on its own — nothing for you to manage.",
     },
     {
-      section: "tools",
-      question: "How do I import contacts (CSV)?",
+      section: "email",
+      question: "What if my email lands in spam?",
       answer:
-        "In CRM or campaign setup, choose import and upload CSV (company, name, email, role). Duplicates are checked by email.",
+        "Sklyvo detects missing opens, slows sending, and suggests copy and technical setting changes.",
     },
     {
-      section: "tools",
-      question: "Can I connect CRM to Pipedrive?",
+      section: "email",
+      question: "Can I set a custom sending window?",
       answer:
-        "Yes, typically via webhooks or Make.com/Zapier. Map fields in Integrations.",
+        "Yes — for example 9–17 on weekdays only. Set it in Sending settings.",
+    },
+    {
+      section: "email",
+      question: "Does Sklyvo reply to responses automatically?",
+      answer:
+        "No. You always approve replies — Sklyvo only prepares a draft.",
     },
   ],
   es: [
@@ -155,55 +250,102 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
       section: "billing",
       question: "¿Cómo se consumen los créditos?",
       answer:
-        "Los créditos se descuentan por cada operación IA exitosa. Un email de Sniper suele costar 1 crédito. Deep Scan en Radar cuesta 2 créditos por empresa.",
+        "Se descuenta un crédito por cada outreach enviado y por cada verificación de contacto. Las vistas previas y borradores son gratis.",
     },
     {
       section: "billing",
-      question: "¿Puedo usar mi propia clave de OpenAI?",
+      question: "¿Qué pasa si me quedo sin créditos a mitad de campaña?",
       answer:
-        "No admitimos claves API propias. El sistema corre en nuestros servidores — compras paquetes de créditos sin costes ocultos.",
+        "La campaña se pausa y se reanuda sola cuando recargues créditos. No se pierde nada.",
     },
     {
       section: "billing",
-      question: "¿Dónde están mis facturas mensuales?",
+      question: "¿Los créditos no usados pasan al mes siguiente?",
+      answer: "No. Los créditos se renuevan cada mes. Los no usados caducan.",
+    },
+    {
+      section: "billing",
+      question: "¿Cuál es la diferencia entre cuenta Single y Agency?",
       answer:
-        "En tu perfil, sección Facturación y suscripción. Descarga PDFs generados el primer día del período.",
+        "Single es una empresa y un dominio. Agency gestiona varios clientes, cada uno con sus campañas y estadísticas.",
+    },
+    {
+      section: "billing",
+      question: "¿Puedo cancelar el plan en cualquier momento?",
+      answer:
+        "Sí, al final del periodo pagado. Tus datos siguen disponibles para exportar.",
+    },
+    {
+      section: "billing",
+      question: "¿Puedo usar mi propia clave de OpenAI (BYOK)?",
+      answer:
+        "Sí. Añade tu clave en ajustes y la generación de textos se factura directamente en OpenAI.",
+    },
+    {
+      section: "billing",
+      question: "¿Dónde encuentro las facturas mensuales?",
+      answer:
+        "En Ajustes de Sklyvo → Facturación. Las facturas se emiten el primer día de cada mes.",
+    },
+    {
+      section: "autopilot",
+      question: "¿Cómo elige Sklyvo las empresas a contactar?",
+      answer:
+        "Según tu perfil de cliente ideal, sector, región y tamaño. Radar añade señales como contratación o cambios web.",
+    },
+    {
+      section: "autopilot",
+      question: "¿Puedo revisar los mensajes antes de enviarlos?",
+      answer:
+        "Sí. Activa el modo de aprobación y cada mensaje espera tu confirmación.",
+    },
+    {
+      section: "autopilot",
+      question: "¿Qué pasa si quiero parar una campaña al instante?",
+      answer:
+        "Un botón en Autopilot. Los mensajes enviados no se pueden recuperar, pero la cola se detiene al momento.",
     },
     {
       section: "email",
       question: "¿Cómo conecto Google Workspace u Outlook?",
       answer:
-        "Ve a tu perfil → Cuentas de email conectadas y conecta vía OAuth. Sklyvo solo obtiene permiso para enviar emails.",
+        "Mediante OAuth en Ajustes de Sklyvo. La conexión tarda un minuto — no necesitas contraseña de aplicación.",
+    },
+    {
+      section: "email",
+      question: "¿Cuántas direcciones de email puedo conectar?",
+      answer:
+        "Cuenta Single: tres. Agency: ilimitadas. El envío se reparte automáticamente entre direcciones.",
     },
     {
       section: "email",
       question: "¿Cuáles son los límites de envío?",
       answer:
-        "Dependen del plan y protección del dominio. Limitamos envíos a niveles seguros.",
+        "Un dominio nuevo empieza con 30 emails al día. El límite sube automáticamente según la entregabilidad.",
     },
     {
       section: "email",
-      question: "¿Cómo funciona la protección anti-spam?",
+      question: "¿Cuánto dura el calentamiento de un dominio nuevo?",
       answer:
-        "Envío gradual, rotación de plantillas y respeto de bajas. Recomendamos SPF, DKIM y DMARC.",
+        "Normalmente dos o tres semanas. Sklyvo aumenta el volumen solo — no tienes que hacer nada.",
     },
     {
       section: "email",
-      question: "¿Dónde configuro la firma del email?",
+      question: "¿Qué pasa si mi email cae en spam?",
       answer:
-        "En tu perfil o plantillas de Sniper. Los cambios aplican a campañas nuevas.",
+        "Sklyvo lo detecta por aperturas faltantes, ralentiza el envío y sugiere cambios de texto y configuración técnica.",
     },
     {
-      section: "tools",
-      question: "¿Cómo importo contactos (CSV)?",
+      section: "email",
+      question: "¿Puedo definir una ventana de envío propia?",
       answer:
-        "En CRM o preparación de campaña, sube un CSV (empresa, nombre, email, cargo). Se comprueban duplicados por email.",
+        "Sí — por ejemplo solo 9–17 en días laborables. Configúralo en Envío.",
     },
     {
-      section: "tools",
-      question: "¿Puedo conectar CRM con Pipedrive?",
+      section: "email",
+      question: "¿Sklyvo responde automáticamente a las respuestas?",
       answer:
-        "Sí, vía webhooks o Make.com/Zapier. Configura el mapeo en Integraciones.",
+        "No. Siempre apruebas tú las respuestas — Sklyvo solo prepara un borrador.",
     },
   ],
   de: [
@@ -211,59 +353,107 @@ const helpFaqs: Record<Language, HelpFaqItem[]> = {
       section: "billing",
       question: "Wie werden Credits verbraucht?",
       answer:
-        "Credits werden pro erfolgreicher KI-Operation abgezogen. Eine Sniper-E-Mail kostet typisch 1 Credit. Radar Deep Scan kostet 2 Credits pro Firma.",
+        "Pro gesendetem Outreach und pro Kontaktverifizierung wird ein Credit abgezogen. Vorschauen und Entwürfe sind kostenlos.",
     },
     {
       section: "billing",
-      question: "Kann ich einen eigenen OpenAI-Schlüssel nutzen?",
+      question: "Was passiert, wenn mir mitten in der Kampagne die Credits ausgehen?",
       answer:
-        "Eigene API-Schlüssel werden nicht unterstützt. Sie kaufen Credit-Pakete ohne versteckte Gebühren.",
+        "Die Kampagne pausiert und läuft automatisch weiter, sobald Sie Credits nachladen. Nichts geht verloren.",
+    },
+    {
+      section: "billing",
+      question: "Werden ungenutzte Credits in den nächsten Monat übernommen?",
+      answer: "Nein. Credits erneuern sich monatlich. Ungenutzte verfallen.",
+    },
+    {
+      section: "billing",
+      question: "Was ist der Unterschied zwischen Single- und Agency-Konto?",
+      answer:
+        "Single ist eine Firma und eine Domain. Agency verwaltet mehrere Kunden mit eigenen Kampagnen und Statistiken.",
+    },
+    {
+      section: "billing",
+      question: "Kann ich den Tarif jederzeit kündigen?",
+      answer:
+        "Ja, zum Ende des bezahlten Zeitraums. Ihre Daten bleiben zum Export verfügbar.",
+    },
+    {
+      section: "billing",
+      question: "Kann ich einen eigenen OpenAI-Schlüssel nutzen (BYOK)?",
+      answer:
+        "Ja. Schlüssel in den Einstellungen hinterlegen — Textgenerierung wird dann direkt bei OpenAI abgerechnet.",
     },
     {
       section: "billing",
       question: "Wo finde ich monatliche Rechnungen?",
       answer:
-        "Im Profil unter Abrechnung & Abo. PDFs werden am ersten Tag des Abrechnungszeitraums erstellt.",
+        "In Sklyvo-Einstellungen → Abrechnung. Rechnungen werden am ersten Tag jedes Monats erstellt.",
+    },
+    {
+      section: "autopilot",
+      question: "Wie wählt Sklyvo Firmen für Outreach aus?",
+      answer:
+        "Nach Ihrem Ideal-Kundenprofil, Branche, Region und Größe. Radar ergänzt Signale wie Einstellungen oder Website-Änderungen.",
+    },
+    {
+      section: "autopilot",
+      question: "Kann ich Nachrichten vor dem Versand prüfen?",
+      answer:
+        "Ja. Freigabe-Modus aktivieren — jede Nachricht wartet auf Ihre Bestätigung.",
+    },
+    {
+      section: "autopilot",
+      question: "Was, wenn ich eine Kampagne sofort stoppen muss?",
+      answer:
+        "Ein Knopf im Autopilot. Gesendete Nachrichten sind nicht rückholbar, die Warteschlange stoppt sofort.",
     },
     {
       section: "email",
       question: "Wie verbinde ich Google Workspace oder Outlook?",
       answer:
-        "Profil → Verbundene E-Mail-Konten → per OAuth verbinden. Sklyvo erhält nur Sendeberechtigung.",
+        "Per OAuth in den Sklyvo-Einstellungen. Verbindung dauert eine Minute — kein App-Passwort nötig.",
+    },
+    {
+      section: "email",
+      question: "Wie viele E-Mail-Adressen kann ich verbinden?",
+      answer:
+        "Single-Konto: drei. Agency: unbegrenzt. Versand wird automatisch auf Adressen verteilt.",
     },
     {
       section: "email",
       question: "Welche Versandlimits gibt es?",
       answer:
-        "Abhängig von Tarif und Domain-Schutz. Wir drosseln auf sichere Werte.",
+        "Neue Domain startet mit 30 E-Mails pro Tag. Das Limit steigt automatisch je nach Zustellbarkeit.",
     },
     {
       section: "email",
-      question: "Wie funktioniert Spam-Schutz der Domain?",
+      question: "Wie lange dauert das Aufwärmen einer neuen Domain?",
       answer:
-        "Schrittweises Senden, Template-Rotation, Abmeldungen respektieren. SPF, DKIM, DMARC empfohlen.",
+        "In der Regel zwei bis drei Wochen. Sklyvo erhöht das Volumen selbst — Sie müssen nichts tun.",
     },
     {
       section: "email",
-      question: "Wo stelle ich die E-Mail-Signatur ein?",
-      answer: "Im Profil bei verbundenen Konten oder in Sniper-Vorlagen.",
+      question: "Was, wenn meine E-Mail im Spam landet?",
+      answer:
+        "Sklyvo erkennt fehlende Öffnungen, drosselt den Versand und schlägt Text- und Technik-Anpassungen vor.",
     },
     {
-      section: "tools",
-      question: "Wie importiere ich Kontakte (CSV)?",
+      section: "email",
+      question: "Kann ich ein eigenes Sendezeitfenster festlegen?",
       answer:
-        "Im CRM oder Kampagnen-Setup CSV hochladen (Firma, Name, E-Mail, Rolle). Duplikate werden per E-Mail geprüft.",
+        "Ja — z. B. nur 9–17 an Werktagen. Einstellung unter Versand.",
     },
     {
-      section: "tools",
-      question: "CRM mit Pipedrive verbinden?",
+      section: "email",
+      question: "Antwortet Sklyvo automatisch auf Antworten?",
       answer:
-        "Ja, per Webhooks oder Make.com/Zapier. Mapping in Integrationen.",
+        "Nein. Antworten genehmigen Sie immer selbst — Sklyvo bereitet nur einen Entwurf vor.",
     },
   ],
 };
 
-const SECTION_ORDER: HelpFaqSectionId[] = ["billing", "email", "tools"];
+const SECTION_ORDER: HelpFaqSectionId[] = ["billing", "autopilot", "email"];
 
 export function getHelpFaqs(language: Language): HelpFaqItem[] {
   return helpFaqs[language];

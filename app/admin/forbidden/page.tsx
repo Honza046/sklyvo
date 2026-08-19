@@ -1,21 +1,23 @@
 import Link from "next/link";
+import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 
 /** Outside the gated admin layout — no requirePlatformAdmin. */
 export default function AdminForbiddenPage() {
   return (
-    <div className="sklyvo-app flex min-h-dvh items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card p-6 text-center shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Sklyvo Admin
-        </p>
-        <h1 className="mt-2 text-xl font-bold tracking-tight">
-          Nemáš přístup k Admin
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <div className="sklyvo-app sk-admin-login">
+      <div className="sk-admin-login__card sk-admin-login__card--forbidden">
+        <div className="sk-admin-login__brand">
+          <SklyvoMark size={40} />
+          <div>
+            <p className="sk-admin-login__eyebrow">Sklyvo Admin</p>
+            <h1 className="sk-admin-login__title">Nemáš přístup</h1>
+          </div>
+        </div>
+        <p className="sk-admin-login__lede">
           Tato konzole je jen pro správce platformy. Tvůj účet není v allowlistu{" "}
-          <code className="text-xs">PLATFORM_ADMIN_EMAILS</code>.
+          <code className="font-mono text-xs">PLATFORM_ADMIN_EMAILS</code>.
         </p>
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
+        <div className="sk-admin-login__actions">
           <Link href="/admin/login" className="sk-btn sk-btn--primary sk-btn--md">
             Admin přihlášení
           </Link>
