@@ -1041,6 +1041,11 @@
     padding-top: 92px;
   }
 
+  .lp-page .sklyvo-lang {
+    top: 18px;
+    right: 20px;
+  }
+
   .lp-footer__grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1098,4 +1103,48 @@
   top: 26px;
   right: 28px;
   z-index: 40;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--n-hairline);
+  background: #101113;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.lp-page .sklyvo-lang__thumb {
+  display: none;
+}
+
+.lp-page .sklyvo-lang__btn {
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  color: var(--n-dim);
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.lp-page .sklyvo-lang__btn[aria-pressed="true"] {
+  background: #22242a;
+  color: var(--n-text);
+}
+
+.lp-page .sklyvo-lang__btn:disabled,
+.lp-page .sklyvo-lang__btn[aria-disabled="true"] {
+  opacity: 0.38;
+  cursor: not-allowed;
+  color: oklch(0.52 0.02 245);
 }
