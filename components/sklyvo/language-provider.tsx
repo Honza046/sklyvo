@@ -181,8 +181,12 @@ export function LanguageProvider({
   );
 }
 
+export function useOptionalSklyvoLanguage() {
+  return useContext(LanguageContext);
+}
+
 export function useLanguage() {
-  const context = useContext(LanguageContext);
+  const context = useOptionalSklyvoLanguage();
   if (!context) {
     throw new Error("useLanguage must be used inside a LanguageProvider");
   }

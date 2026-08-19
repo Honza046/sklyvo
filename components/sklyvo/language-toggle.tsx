@@ -1,13 +1,57 @@
 "use client";
 
-import { useLanguage } from "@/components/sklyvo/language-provider";
+import { useOptionalSklyvoLanguage } from "@/components/sklyvo/language-provider";
+import {
+  displayCodeForLanguage,
+  languageFromToggleCode,
+  useOptionalAppLanguage,
+} from "@/context/LanguageContext";
 import { isLanguage } from "@/lib/sklyvo/i18n";
+import type { ToggleSlot } from "@/lib/sklyvo/locale";
+
+function useLanguageToggleState(): {
+  displayLanguage: string;
+  toggleSlots: ToggleSlot[];
+  pickLanguage: (code: string) => void;
+} {
+  const sklyvo = useOptionalSklyvoLanguage();
+  const app = useOptionalAppLanguage();
+
+  if (sklyvo) {
+    return {
+      displayLanguage: sklyvo.language,
+      toggleSlots: sklyvo.toggleSlots,
+      pickLanguage: (code) => {
+        if (!isLanguage(code)) return;
+        sklyvo.setLanguage(code);
+      },
+    };
+  }
+
+  if (app) {
+    const displayLanguage = displayCodeForLanguage(app.language);
+    return {
+      displayLanguage,
+      toggleSlots: app.toggleSlots,
+      pickLanguage: (code) => {
+        const next = languageFromToggleCode(code);
+        if (!next) return;
+        app.setLanguage(next);
+      },
+    };
+  }
+
+  throw new Error("LanguageToggle must be used inside a LanguageProvider");
+}
 
 export function LanguageToggle() {
-  const { language, setLanguage, toggleSlots } = useLanguage();
+  const { displayLanguage, toggleSlots, pickLanguage } =
+    useLanguageToggleState();
   const index = Math.max(
     0,
-    toggleSlots.findIndex((slot) => slot.code === language && slot.enabled),
+    toggleSlots.findIndex(
+      (slot) => slot.code === displayLanguage && slot.enabled,
+    ),
   );
   const single = toggleSlots.length < 2;
 
@@ -28,7 +72,7 @@ export function LanguageToggle() {
         style={{ transform: `translateX(${index * 42}px)` }}
       />
       {toggleSlots.map((slot) => {
-        const pressed = slot.enabled && slot.code === language;
+        const pressed = slot.enabled && slot.code === displayLanguage;
         return (
           <button
             key={slot.code}
@@ -43,8 +87,8 @@ export function LanguageToggle() {
                 : "Translation coming soon — using English"
             }
             onClick={() => {
-              if (!slot.enabled || !isLanguage(slot.code)) return;
-              setLanguage(slot.code);
+              if (!slot.enabled) return;
+              pickLanguage(slot.code);
             }}
           >
             {slot.code.toUpperCase()}
