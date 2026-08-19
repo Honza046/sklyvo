@@ -706,19 +706,18 @@
   color: var(--n-muted);
 }
 
-/* closing panel */
+/* closing panel — one surface, no nested card */
 
 .lp-end {
   position: relative;
-  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.88fr);
-  gap: 40px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 0;
   align-items: center;
-  padding: 44px 40px 46px;
-  border-radius: 20px;
-  background: var(--n-card);
-  border: 1px solid var(--n-hairline);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
 }
 
 .lp-end__glow {
@@ -727,6 +726,7 @@
 
 .lp-end__col {
   position: relative;
+  padding-right: 48px;
 }
 
 .lp-end__title {
@@ -764,16 +764,17 @@
 
 .lp-end__stage {
   position: relative;
-  perspective: none;
+  padding-left: 48px;
+  border-left: 1px solid var(--n-hairline);
 }
 
 .lp-seat {
   transform: none;
-  overflow: hidden;
-  padding: 24px 22px;
-  border-radius: 16px;
-  background: var(--n-field);
-  border: 1px solid var(--n-edge);
+  overflow: visible;
+  padding: 4px 0 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
   animation: none;
 }
 
@@ -1009,12 +1010,20 @@
   }
 
   .lp-end {
-    padding: 40px 28px 44px;
-    gap: 34px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .lp-end__col {
+    padding-right: 0;
   }
 
   .lp-end__stage {
-    perspective: none;
+    margin-top: 36px;
+    padding-left: 0;
+    padding-top: 32px;
+    border-left: none;
+    border-top: 1px solid var(--n-hairline);
   }
 
   .lp-seat {
