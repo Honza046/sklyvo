@@ -3461,8 +3461,8 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 .sklyvo-app .sk-chart-panel__svg.is-ready .sk-chart-panel__clip-rect {
   transform: scaleX(1);
   transition:
-    transform var(--sk-chart-anim-ms, 1500ms)
-    var(--sk-chart-anim-ease, cubic-bezier(0.22, 1, 0.36, 1));
+    transform var(--sk-chart-anim-ms, 480ms)
+    var(--sk-chart-anim-ease, cubic-bezier(0.33, 1, 0.68, 1));
 }
 
 .sklyvo-app .sk-chart-panel__line--sent,
@@ -3488,8 +3488,8 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 }
 
 .sklyvo-app .sk-chart-panel__svg.is-ready .sk-chart-panel__label {
-  animation: sk-chart-label-rise 520ms var(--sk-chart-anim-ease, cubic-bezier(0.22, 1, 0.36, 1)) forwards;
-  animation-delay: var(--sk-chart-anim-ms, 1500ms);
+  animation: sk-chart-label-rise 260ms var(--sk-chart-anim-ease, cubic-bezier(0.33, 1, 0.68, 1)) forwards;
+  animation-delay: var(--sk-chart-anim-ms, 480ms);
 }
 
 .sklyvo-app .sk-chart-panel__svg.is-loading .sk-chart-panel__line--sent,
@@ -5026,7 +5026,7 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   width: 0;
   border-radius: 99px;
   background: var(--sk-brand);
-  transition: width 900ms cubic-bezier(0.33, 1, 0.68, 1);
+  transition: width 380ms cubic-bezier(0.33, 1, 0.68, 1);
   transition-delay: 0ms;
 }
 

@@ -46,9 +46,9 @@ export type DashboardOverviewProps = {
   geoStats: DashboardGeoStat[];
 };
 
-const OVERVIEW_ANIM_MS = 900;
-const CHART_DRAW_MS = 1500;
-const CHART_ANIM_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const OVERVIEW_ANIM_MS = 380;
+const CHART_DRAW_MS = 480;
+const CHART_ANIM_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 const CHART_REPLIED_DELAY_MS = 0;
 const CHART_REPLIED_DRAW_MS = CHART_DRAW_MS;
 

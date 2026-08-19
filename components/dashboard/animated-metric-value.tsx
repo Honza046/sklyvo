@@ -8,7 +8,7 @@ function easeOutCubic(t: number) {
 
 export function AnimatedMetricValue({
   value,
-  duration = 720,
+  duration = 380,
   delay = 0,
   suffix = "",
   className,

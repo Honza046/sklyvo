@@ -19,7 +19,7 @@ const FUNNEL_ROWS: Array<{
 ];
 
 const FUNNEL_ANIM_DELAY_MS = 0;
-const FUNNEL_ANIM_DURATION_MS = 900;
+const FUNNEL_ANIM_DURATION_MS = 380;
 
 const REST_KEYS: LeadStatus[] = ["REPLIED", "MEETING_SET", "CLOSED_LOST"];
 
