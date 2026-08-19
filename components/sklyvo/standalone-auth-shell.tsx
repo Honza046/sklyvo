@@ -38,7 +38,7 @@ export function StandaloneAuthShell({
   return (
     <div className={`${jakarta.variable} min-h-dvh bg-[#08090a]`}>
       <main className="sklyvo-login sklyvo-login--solo">
-        <Link className="sklyvo-brand" href="/landing" aria-label="Sklyvo — zpět na úvod">
+        <Link className="sklyvo-brand" href="/" aria-label="Sklyvo — zpět na úvod">
           <SklyvoMark size={30} />
           <span className="sklyvo-brand__word">Sklyvo</span>
         </Link>

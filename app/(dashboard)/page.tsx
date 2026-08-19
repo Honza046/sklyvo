@@ -1,5 +1,5 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
 import { getSessionUser } from "@/app/actions/auth";
 import { DashboardBody } from "@/app/dashboard-body";
 import { DashboardBodySkeleton } from "@/components/dashboard-loading";
@@ -7,13 +7,25 @@ import { MetricsStripSkeleton } from "@/components/dashboard/animated-metric-val
 import { DashboardLoadingSubtitle } from "@/components/dashboard/dashboard-loading-client";
 import { DashboardFrame } from "@/components/dashboard/dashboard-frame";
 import { DashboardOnboardingGate } from "@/components/dashboard-onboarding-gate";
+import { LandingPage } from "@/components/sklyvo/landing-page";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await getSessionUser();
+  if (!session.user?.workspaceId) {
+    return {
+      title: { absolute: "Sklyvo — outreach na autopilota" },
+      description: "Sklyvo finds the clients you need and reaches them for you.",
+    };
+  }
+  return {};
+}
 
 export default async function DashboardPage() {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
-    redirect("/landing");
+    return <LandingPage />;
   }
   const firstName = session.user?.firstName ?? "Uživatel";
   const needsOnboarding =

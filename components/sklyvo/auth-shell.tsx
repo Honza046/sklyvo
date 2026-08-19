@@ -279,7 +279,7 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       <div className="scene__layer scene__layer--low" />
       <div className="scene__haze" />
 
-      <Link className="sklyvo-brand" href="/landing" aria-label="Sklyvo — zpět na úvod">
+      <Link className="sklyvo-brand" href="/" aria-label="Sklyvo — zpět na úvod">
         <SklyvoMark size={30} />
         <span className="sklyvo-brand__word">Sklyvo</span>
       </Link>

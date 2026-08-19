@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { getWorkspaceAccessState } from "@/app/actions/auth";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
 
@@ -19,9 +20,34 @@ const PERSISTENT_SIDEBAR_PATHS = new Set([
   "/pricing",
 ]);
 
+function useHomeWorkspaceGate(activeHref: string) {
+  const isHome = activeHref === "/";
+  const [hasWorkspace, setHasWorkspace] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!isHome) {
+      setHasWorkspace(null);
+      return;
+    }
+
+    let cancelled = false;
+    void getWorkspaceAccessState().then((session) => {
+      if (cancelled) return;
+      setHasWorkspace(Boolean(session.user?.workspaceId));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeHref, isHome]);
+
+  return { isHome, hasWorkspace };
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const activeHref = useMemo(() => normalizeActiveHref(pathname), [pathname]);
+  const { isHome, hasWorkspace } = useHomeWorkspaceGate(activeHref);
 
   // #region agent log
   useEffect(() => {
@@ -56,7 +82,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, activeHref]);
   // #endregion
 
-  if (PERSISTENT_SIDEBAR_PATHS.has(activeHref)) {
+  const usePersistentShell =
+    PERSISTENT_SIDEBAR_PATHS.has(activeHref) &&
+    !(isHome && hasWorkspace !== true);
+
+  if (usePersistentShell) {
     return (
       <Suspense fallback={null}>
         <DashboardShell activeHref={activeHref}>{children}</DashboardShell>

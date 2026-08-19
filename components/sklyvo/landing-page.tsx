@@ -1,5 +1,6 @@
 "use client";
 
+import "@/components/sklyvo/landing.css";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LanguageToggle } from "@/components/sklyvo/language-toggle";
