@@ -5034,6 +5034,11 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   width: var(--funnel-width, 0%);
 }
 
+.sklyvo-app .sk-funnel-bar.is-instant .sk-funnel-bar__fill {
+  width: var(--funnel-width, 0%);
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sklyvo-app .sk-funnel-bar__fill {
     transition: none;

@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const session = await getSessionUser();
   if (!session.user?.workspaceId) {
-    redirect("/login");
+    redirect("/landing");
   }
   const firstName = session.user?.firstName ?? "Uživatel";
   const needsOnboarding =

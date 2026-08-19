@@ -1,4 +1,5 @@
 import type { MessageTree } from "@/lib/i18n/messages/cz";
+import { landingEn } from "./landing";
 
 export const en: MessageTree = {
   common: {
@@ -1110,4 +1111,5 @@ export const en: MessageTree = {
       ],
     },
   },
+  landing: landingEn,
 };

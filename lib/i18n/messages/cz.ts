@@ -1,3 +1,5 @@
+import { landingCz, type LandingMessages } from "./landing";
+
 /** Czech (default) UI strings */
 export const cz = {
   common: {
@@ -1125,6 +1127,9 @@ export const cz = {
       ],
     },
   },
+  landing: landingCz,
 };
 
-export type MessageTree = typeof cz;
+export type MessageTree = Omit<typeof cz, "landing"> & {
+  landing: LandingMessages;
+};

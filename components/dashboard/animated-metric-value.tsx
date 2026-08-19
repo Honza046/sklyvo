@@ -12,16 +12,24 @@ export function AnimatedMetricValue({
   delay = 0,
   suffix = "",
   className,
+  animate = true,
 }: {
   value: number;
   duration?: number;
   delay?: number;
   suffix?: string;
   className?: string;
+  /** When false, show the final value immediately (e.g. after a range tab change). */
+  animate?: boolean;
 }) {
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(animate ? 0 : value);
 
   useEffect(() => {
+    if (!animate) {
+      setDisplay(value);
+      return;
+    }
+
     setDisplay(0);
     let raf = 0;
     let startTime: number | null = null;
@@ -42,7 +50,7 @@ export function AnimatedMetricValue({
       clearTimeout(timeout);
       cancelAnimationFrame(raf);
     };
-  }, [value, duration, delay]);
+  }, [value, duration, delay, animate]);
 
   return (
     <span className={className}>
