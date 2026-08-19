@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
@@ -12,45 +12,53 @@ export function AnimatedMetricValue({
   delay = 0,
   suffix = "",
   className,
-  animate = true,
 }: {
   value: number;
   duration?: number;
   delay?: number;
   suffix?: string;
   className?: string;
-  /** When false, show the final value immediately (e.g. after a range tab change). */
-  animate?: boolean;
 }) {
-  const [display, setDisplay] = useState(animate ? 0 : value);
+  const fromRef = useRef(0);
+  const displayRef = useRef(0);
+  const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    if (!animate) {
-      setDisplay(value);
-      return;
-    }
+    const from = fromRef.current;
+    const to = value;
+    if (from === to) return;
 
-    setDisplay(0);
     let raf = 0;
     let startTime: number | null = null;
+    let cancelled = false;
 
     const timeout = window.setTimeout(() => {
       const tick = (now: number) => {
+        if (cancelled) return;
         if (startTime === null) startTime = now;
         const progress = Math.min((now - startTime) / duration, 1);
-        setDisplay(Math.round(value * easeOutCubic(progress)));
+        const eased = easeOutCubic(progress);
+        const next = Math.round(from + (to - from) * eased);
+        displayRef.current = next;
+        setDisplay(next);
         if (progress < 1) {
           raf = requestAnimationFrame(tick);
+        } else {
+          fromRef.current = to;
+          displayRef.current = to;
+          setDisplay(to);
         }
       };
       raf = requestAnimationFrame(tick);
     }, delay);
 
     return () => {
+      cancelled = true;
       clearTimeout(timeout);
       cancelAnimationFrame(raf);
+      fromRef.current = displayRef.current;
     };
-  }, [value, duration, delay, animate]);
+  }, [value, duration, delay]);
 
   return (
     <span className={className}>

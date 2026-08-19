@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useState, useTransition } from "react";
 import { getDashboardFunnelStats } from "@/app/actions/dashboard";
 import type { LeadStatus } from "@/app/actions/dashboard";
 import { useDashboardRange } from "@/components/dashboard/dashboard-range-context";
@@ -32,20 +32,12 @@ export function DashboardConversionFunnel({
 }: DashboardConversionFunnelProps) {
   const { t } = useLanguage();
   const { days, periodLabelKey } = useDashboardRange();
-  const rangeMountedRef = useRef(false);
-  const [animateMetrics, setAnimateMetrics] = useState(true);
   const [counts, setCounts] =
     useState<Record<LeadStatus, number>>(initialCounts);
   const [isPending, startTransition] = useTransition();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (rangeMountedRef.current) {
-      setAnimateMetrics(false);
-    } else {
-      rangeMountedRef.current = true;
-    }
-
     startTransition(() => {
       void getDashboardFunnelStats(days).then(setCounts);
     });
@@ -57,15 +49,10 @@ export function DashboardConversionFunnel({
   ).join(",")}|${REST_KEYS.reduce((sum, k) => sum + (counts[k] ?? 0), 0)}`;
 
   useLayoutEffect(() => {
-    if (!animateMetrics) {
-      setReady(true);
-      return;
-    }
-
     setReady(false);
     const frame = requestAnimationFrame(() => setReady(true));
     return () => cancelAnimationFrame(frame);
-  }, [countsKey, animateMetrics]);
+  }, [countsKey]);
 
   const getFunnelWidth = (value: number) => {
     if (total <= 0 || value <= 0) return 0;
@@ -103,11 +90,10 @@ export function DashboardConversionFunnel({
                     value={count}
                     delay={FUNNEL_ANIM_DELAY_MS}
                     duration={FUNNEL_ANIM_DURATION_MS}
-                    animate={animateMetrics}
                   />
                 </span>
               </div>
-              <div className={cn("sk-funnel-bar", ready && "is-ready", !animateMetrics && "is-instant")}>
+              <div className={cn("sk-funnel-bar", ready && "is-ready")}>
                 <div
                   className="sk-funnel-bar__fill"
                   style={
@@ -134,7 +120,6 @@ export function DashboardConversionFunnel({
               value={restCount}
               delay={FUNNEL_ANIM_DELAY_MS}
               duration={FUNNEL_ANIM_DURATION_MS}
-              animate={animateMetrics}
             />
           </span>
         </div>

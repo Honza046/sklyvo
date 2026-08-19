@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
+import React, { useEffect, useLayoutEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import type { LeadStatus } from "@/app/actions/dashboard";
 import {
@@ -331,8 +331,6 @@ export function DashboardOverview({
 }: DashboardOverviewProps) {
   const { t } = useLanguage();
   const { days, periodLabelKey } = useDashboardRange();
-  const rangeMountedRef = useRef(false);
-  const [animateMetrics, setAnimateMetrics] = useState(true);
   const [newCompanies, setNewCompanies] = useState(initialNewCompanies);
   const [emailsSent, setEmailsSent] = useState(initialEmailsSent);
   const [totalLeadsInCrm, setTotalLeadsInCrm] = useState(initialTotalLeadsInCrm);
@@ -342,12 +340,6 @@ export function DashboardOverview({
   const [chartPending, startChartTransition] = useTransition();
 
   useEffect(() => {
-    if (rangeMountedRef.current) {
-      setAnimateMetrics(false);
-    } else {
-      rangeMountedRef.current = true;
-    }
-
     startMetricsTransition(() => {
       void getDashboardOverviewStats(days).then((stats) => {
         setNewCompanies(stats.newCompanies);
@@ -447,7 +439,7 @@ export function DashboardOverview({
             {t("dashboard.statsNewLeads")}
           </div>
           <div className="sk-metrics-strip__value">
-            <AnimatedMetricValue value={newCompanies} delay={0} duration={OVERVIEW_ANIM_MS} animate={animateMetrics} />
+            <AnimatedMetricValue value={newCompanies} delay={0} duration={OVERVIEW_ANIM_MS} />
           </div>
         </div>
 
@@ -456,7 +448,7 @@ export function DashboardOverview({
             {t("dashboard.statsEmailsSent")}
           </div>
           <div className="sk-metrics-strip__value">
-            <AnimatedMetricValue value={emailsSent} delay={0} duration={OVERVIEW_ANIM_MS} animate={animateMetrics} />
+            <AnimatedMetricValue value={emailsSent} delay={0} duration={OVERVIEW_ANIM_MS} />
           </div>
         </div>
 
@@ -465,7 +457,7 @@ export function DashboardOverview({
             {t("dashboard.statsDealsInCrm")}
           </div>
           <div className="sk-metrics-strip__value">
-            <AnimatedMetricValue value={totalLeadsInCrm} delay={0} duration={OVERVIEW_ANIM_MS} animate={animateMetrics} />
+            <AnimatedMetricValue value={totalLeadsInCrm} delay={0} duration={OVERVIEW_ANIM_MS} />
             <span className="sk-metrics-strip__suffix">
               {t("dashboard.statsDealsInCrmSuffix")}
             </span>
@@ -477,7 +469,7 @@ export function DashboardOverview({
             {t("dashboard.statsPipelineValue")}
           </div>
           <div className="sk-metrics-strip__value">
-            <AnimatedMetricValue value={pipelineValue} delay={0} duration={OVERVIEW_ANIM_MS} suffix=" Kč" animate={animateMetrics} />
+            <AnimatedMetricValue value={pipelineValue} delay={0} duration={OVERVIEW_ANIM_MS} suffix=" Kč" />
             {pipelineValue > 0 ? (
               <span className="sk-metrics-strip__pipeline-change">
                 <span className="sk-metrics-strip__pipeline-arrow" aria-hidden>
@@ -545,7 +537,7 @@ export function DashboardOverview({
               </span>
             </div>
             <div className="sk-chart-panel__plot">
-              <ChartSvg series={chartSeries} play={animateMetrics} />
+              <ChartSvg series={chartSeries} play />
             </div>
           </div>
         </div>
