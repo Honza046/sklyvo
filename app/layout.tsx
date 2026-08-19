@@ -6,6 +6,7 @@ import { AppProviders } from "@/components/app-providers";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { UnregisterServiceWorker } from "@/components/unregister-service-worker";
+import { getSessionUser } from "@/app/actions/auth";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin", "latin-ext"],
@@ -74,11 +75,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSessionUser();
+  const homeMode = session.user?.workspaceId ? "dashboard" : "landing";
+
   return (
     <html lang="cs">
       <body
@@ -89,7 +93,7 @@ export default function RootLayout({
       >
         <UnregisterServiceWorker />
         <AppProviders>
-          <AppShell>{children}</AppShell>
+          <AppShell homeMode={homeMode}>{children}</AppShell>
         </AppProviders>
         <Toaster position="bottom-center" richColors />
       </body>

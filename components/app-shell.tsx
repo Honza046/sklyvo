@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { getWorkspaceAccessState } from "@/app/actions/auth";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
 
@@ -20,71 +19,21 @@ const PERSISTENT_SIDEBAR_PATHS = new Set([
   "/pricing",
 ]);
 
-function useHomeWorkspaceGate(activeHref: string) {
-  const isHome = activeHref === "/";
-  const [hasWorkspace, setHasWorkspace] = useState<boolean | null>(null);
+export type HomeShellMode = "landing" | "dashboard";
 
-  useEffect(() => {
-    if (!isHome) {
-      setHasWorkspace(null);
-      return;
-    }
-
-    let cancelled = false;
-    void getWorkspaceAccessState().then((session) => {
-      if (cancelled) return;
-      setHasWorkspace(Boolean(session.user?.workspaceId));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeHref, isHome]);
-
-  return { isHome, hasWorkspace };
-}
-
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  homeMode,
+}: {
+  children: React.ReactNode;
+  homeMode: HomeShellMode;
+}) {
   const pathname = usePathname();
   const activeHref = useMemo(() => normalizeActiveHref(pathname), [pathname]);
-  const { isHome, hasWorkspace } = useHomeWorkspaceGate(activeHref);
-
-  // #region agent log
-  useEffect(() => {
-    const nav =
-      typeof performance !== "undefined"
-        ? performance.getEntriesByType("navigation")[0]
-        : undefined;
-    const navTiming = nav as PerformanceNavigationTiming | undefined;
-    fetch("http://127.0.0.1:7726/ingest/2b791012-cefe-498e-8f7b-78369eeb4e50", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "088b81",
-      },
-      body: JSON.stringify({
-        sessionId: "088b81",
-        runId: "cleanup-v1",
-        hypothesisId: "A-B-C",
-        location: "app-shell.tsx:route-change",
-        message: "route navigation timing",
-        data: {
-          pathname,
-          activeHref,
-          domContentLoadedMs: navTiming?.domContentLoadedEventEnd,
-          loadEventEndMs: navTiming?.loadEventEnd,
-          transferSize: navTiming?.transferSize,
-          resourceCount: performance.getEntriesByType("resource").length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }, [pathname, activeHref]);
-  // #endregion
 
   const usePersistentShell =
     PERSISTENT_SIDEBAR_PATHS.has(activeHref) &&
-    !(isHome && hasWorkspace !== true);
+    !(activeHref === "/" && homeMode === "landing");
 
   if (usePersistentShell) {
     return (
