@@ -4,30 +4,38 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
+  AUTH_HANDOFF_EASE,
+  AUTH_HANDOFF_MS,
   clearAuthFromLanding,
   peekAuthFromLanding,
-  revealAuthCurtain,
 } from "@/components/sklyvo/landing-auth-link";
 import { Globe } from "@/components/sklyvo/globe";
 import { LanguageToggle } from "@/components/sklyvo/language-toggle";
 import { useLanguage } from "@/components/sklyvo/language-provider";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
+import { useFitToViewport } from "@/lib/use-fit-to-viewport";
+import { LegalDocumentDialog } from "@/components/legal/legal-document-dialog";
+import { LEGAL_DOCUMENT_IDS } from "@/lib/legal/types";
+import type { LegalDocumentId } from "@/lib/legal/types";
+import "@/components/sklyvo/login-v2.css";
 
 const HEIGHT_MS = 560;
 const EASING = "cubic-bezier(0.33, 0.01, 0.2, 1)";
 const LOGIN_HEIGHT_KEY = "sklyvo-auth-login-h";
-/** Fallback when recovery is opened before login was ever measured. */
-const LOGIN_HEIGHT_FALLBACK = 560;
 
 export type AuthMode = "login" | "register" | "recovery";
 
 let persistedCardHeight: number | null = null;
 let persistedLoginHeight: number | null = null;
 
+/** Prevents Strict Mode remount from restarting the rise mid-flight. */
+let landingEnterActive = false;
+
 function readStoredLoginHeight() {
   if (typeof window === "undefined") return null;
   const value = Number(sessionStorage.getItem(LOGIN_HEIGHT_KEY));
-  return Number.isFinite(value) && value > 200 ? value : null;
+  // Ignore stale inflated values from the old 560px fallback era.
+  return Number.isFinite(value) && value > 200 && value < 700 ? value : null;
 }
 
 function storeLoginHeight(height: number) {
@@ -36,16 +44,33 @@ function storeLoginHeight(height: number) {
 }
 
 function resolveLoginHeight(natural: number) {
-  return (
-    persistedLoginHeight ??
-    readStoredLoginHeight() ??
-    Math.max(natural, LOGIN_HEIGHT_FALLBACK)
-  );
+  return persistedLoginHeight ?? readStoredLoginHeight() ?? natural;
 }
 
-function initialCardHeight(): number {
-  // Must match SSR — never read sessionStorage here (would hydrate mismatch).
-  return persistedCardHeight ?? LOGIN_HEIGHT_FALLBACK;
+/**
+ * Natural height of the form card. Crest lives inside `.l2-card__body`, so we
+ * only sum body + seats — counting crest again left empty space under the form.
+ */
+function measureContentHeight(card: HTMLElement) {
+  const body = card.querySelector(".l2-card__body");
+  const seats = card.querySelector(".l2-seats");
+  const seatsH =
+    seats instanceof HTMLElement && seats.getAttribute("data-open") === "true"
+      ? seats.offsetHeight
+      : 0;
+
+  let bodyH = 0;
+  if (body instanceof HTMLElement) {
+    const prevHeight = card.style.height;
+    const prevFlex = body.style.flex;
+    card.style.height = "auto";
+    body.style.flex = "0 0 auto";
+    bodyH = body.scrollHeight;
+    body.style.flex = prevFlex;
+    card.style.height = prevHeight;
+  }
+
+  return Math.ceil(bodyH + seatsH);
 }
 
 function modeFromPath(pathname: string): AuthMode {
@@ -58,8 +83,8 @@ function Crest({ mode }: { mode: AuthMode }) {
   if (mode === "register") {
     return (
       <svg
-        width="22"
-        height="22"
+        width="21"
+        height="21"
         viewBox="0 0 24 24"
         fill="none"
         stroke="#F2F3F5"
@@ -79,8 +104,8 @@ function Crest({ mode }: { mode: AuthMode }) {
   if (mode === "recovery") {
     return (
       <svg
-        width="22"
-        height="22"
+        width="21"
+        height="21"
         viewBox="0 0 24 24"
         fill="none"
         stroke="#F2F3F5"
@@ -96,8 +121,8 @@ function Crest({ mode }: { mode: AuthMode }) {
 
   return (
     <svg
-      width="22"
-      height="22"
+      width="21"
+      height="21"
       viewBox="0 0 24 24"
       fill="none"
       stroke="#F2F3F5"
@@ -113,64 +138,130 @@ function Crest({ mode }: { mode: AuthMode }) {
   );
 }
 
-/**
- * Measure the height the card NEEDS for its content.
- * Sum crest + body children — don't use the card's bounding box (flex stretch /
- * locked height would report the tall size and skip the shrink animation).
- */
-function measureContentHeight(card: HTMLElement) {
-  const crest = card.querySelector(".sklyvo-card__crest");
-  const body = card.querySelector(".sklyvo-card__body");
-  const styles = getComputedStyle(card);
-  const pad =
-    (parseFloat(styles.paddingTop) || 0) +
-    (parseFloat(styles.paddingBottom) || 0);
-  const crestH = crest instanceof HTMLElement ? crest.offsetHeight : 0;
-
-  let bodyH = 0;
-  if (body instanceof HTMLElement) {
-    const prevFlex = body.style.flex;
-    body.style.flex = "0 0 auto";
-    bodyH = body.scrollHeight;
-    body.style.flex = prevFlex;
-  }
-
-  return Math.ceil(crestH + bodyH + pad);
-}
-
 export function AuthChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mode = modeFromPath(pathname);
   const { t } = useLanguage();
   const copy = t[mode];
+  const loginCopy = t.login as typeof t.login & {
+    slotsLine?: string;
+    close?: string;
+    legalList?: string[];
+  };
 
   const formCardRef = useRef<HTMLElement>(null);
   const globeCardRef = useRef<HTMLElement>(null);
+  const authRef = useRef<HTMLDivElement>(null);
+  const enterRef = useRef<HTMLDivElement>(null);
   const prevModeRef = useRef<AuthMode | null>(null);
   const prevStepRef = useRef<string | null>(null);
 
-  const [cardHeight, setCardHeight] = useState<number>(initialCardHeight);
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
   const [authStep, setAuthStep] = useState<string | null>(null);
   const [fromLanding, setFromLanding] = useState(false);
+  const [chromeReady, setChromeReady] = useState(false);
+  const [globeReady, setGlobeReady] = useState(true);
+  const [banner, setBanner] = useState(true);
+  const [legalDoc, setLegalDoc] = useState<LegalDocumentId | null>(null);
 
+  useFitToViewport(authRef, !fromLanding);
+
+  // Imperative enter: avoid CSS keyframes tied to React state (Strict Mode
+  // remounts restart them mid-flight and it reads as stutter).
   useLayoutEffect(() => {
     if (!peekAuthFromLanding()) return;
 
+    // Hide real logo/lang before paint (layout effect re-render is sync enough).
     setFromLanding(true);
+    setGlobeReady(false);
 
-    requestAnimationFrame(() => {
+    const stage = enterRef.current;
+    const legal = document.querySelector(".l2-page .l2-legal");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (stage && !reduced) {
+      if (!landingEnterActive) {
+        landingEnterActive = true;
+        // Transform only — opacity:0 before first paint is what flashed black.
+        stage.style.transform = "translate3d(0, 36px, 0)";
+        stage.style.willChange = "transform";
+        void stage.offsetHeight;
+        stage.style.transition = `transform ${AUTH_HANDOFF_MS}ms ${AUTH_HANDOFF_EASE}`;
+        stage.style.transform = "translate3d(0, 0, 0)";
+      } else {
+        stage.style.transform = "translate3d(0, 0, 0)";
+      }
+    }
+
+    // Legal can soft-fade on the next frame (never force a blank first paint).
+    if (legal instanceof HTMLElement && !reduced && !legal.dataset.handOff) {
+      legal.dataset.handOff = "1";
+      legal.style.opacity = "0";
       requestAnimationFrame(() => {
-        revealAuthCurtain();
+        legal.style.transition = `opacity ${AUTH_HANDOFF_MS}ms ${AUTH_HANDOFF_EASE}`;
+        legal.style.opacity = "1";
       });
-    });
+    }
 
-    const timer = window.setTimeout(() => {
+    const bridge = document.getElementById("sk-auth-chrome-bridge");
+    let settled = false;
+    let settleTimer = 0;
+    let globeTimer = 0;
+
+    // Hard cut after the FULL spread — settling on the first transitionend
+    // (top OR left) cut the bridge away mid-move and read as a blink.
+    const settleChrome = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(settleTimer);
+
+      // Reveal real chrome in the DOM first, then drop the bridge — same frame,
+      // no flushSync (illegal inside layout/lifecycle).
+      const page = document.querySelector(".l2-page");
+      if (page instanceof HTMLElement) {
+        page.setAttribute("data-chrome-ready", "true");
+      }
+      for (const el of document.querySelectorAll(".l2-brand, .lang--night")) {
+        if (el instanceof HTMLElement) el.style.visibility = "visible";
+      }
+      document.getElementById("sk-auth-chrome-bridge")?.remove();
+      setChromeReady(true);
+    };
+
+    settleTimer = window.setTimeout(
+      settleChrome,
+      bridge ? AUTH_HANDOFF_MS + 32 : 0,
+    );
+
+    // Mount the heavy globe after the rise is underway so it doesn't hitch frames.
+    globeTimer = window.setTimeout(() => setGlobeReady(true), 420);
+
+    const clearTimer = window.setTimeout(() => {
+      landingEnterActive = false;
       setFromLanding(false);
+      setChromeReady(false);
       clearAuthFromLanding();
-    }, 820);
+      if (stage) {
+        stage.style.willChange = "";
+        stage.style.transition = "";
+        stage.style.transform = "";
+      }
+      for (const el of document.querySelectorAll(".l2-brand, .lang--night")) {
+        if (el instanceof HTMLElement) el.style.visibility = "";
+      }
+      if (legal instanceof HTMLElement) {
+        delete legal.dataset.handOff;
+        legal.style.transition = "";
+        legal.style.opacity = "";
+      }
+    }, AUTH_HANDOFF_MS + 160);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(settleTimer);
+      window.clearTimeout(globeTimer);
+      window.clearTimeout(clearTimer);
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -191,6 +282,9 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   }, []);
 
   useLayoutEffect(() => {
+    // Don't thrash card heights while the landing enter is running.
+    if (fromLanding || peekAuthFromLanding()) return;
+
     const form = formCardRef.current;
     const globe = globeCardRef.current;
     if (!form || !globe) return;
@@ -210,7 +304,6 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       storeLoginHeight(natural);
       target = natural;
     } else if (mode === "recovery" || isTwoFactor) {
-      // Slightly shorter than login so the shrink animation reads.
       const loginH = resolveLoginHeight(natural);
       const slack = Math.max(0, loginH - natural);
       target = Math.max(natural, Math.round(loginH - slack * 0.25));
@@ -232,8 +325,6 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     prevModeRef.current = mode;
     prevStepRef.current = liveStep;
 
-    // Refresh / first mount: snap to target — never animate (avoids the
-    // globe card shrinking from auto-height then growing back).
     const stepChanged = prevStep !== liveStep;
     const modeChanged = prevMode != null && prevMode !== mode;
     const shouldAnimate =
@@ -251,7 +342,6 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     const startHeight = persistedCardHeight!;
     let cancelledEarly = false;
 
-    // Expand or shrink: keep overflow:hidden so content reveals/hides with height.
     setAnimating(true);
     paint(startHeight, "none");
     void form.offsetHeight;
@@ -290,64 +380,129 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       form.removeEventListener("transitionend", onEnd);
       window.clearTimeout(settleTimer);
       if (!finished) {
-        // Keep the height we were animating from so a remount can continue cleanly.
         persistedCardHeight = startHeight;
         for (const el of cards) el.style.transition = "none";
       }
     };
-  }, [mode, authStep]);
+  }, [mode, authStep, banner, fromLanding]);
+
+  const legalList = loginCopy.legalList ?? [
+    "Zásady ochrany osobních údajů",
+    "Podmínky použití",
+    "Zpracování dat",
+    "Cookies",
+  ];
 
   return (
     <main
-      className="sklyvo-login"
+      className="l2-page"
       data-from-landing={fromLanding ? "true" : undefined}
+      data-chrome-ready={chromeReady ? "true" : undefined}
     >
-      <div className="scene__layer scene__layer--high" />
-      <div className="scene__layer scene__layer--mid" />
-      <div className="scene__layer scene__layer--low" />
-      <div className="scene__haze" />
-
-      <Link className="sklyvo-brand" href="/" aria-label="Sklyvo — zpět na úvod">
-        <SklyvoMark size={30} />
-        <span className="sklyvo-brand__word">Sklyvo</span>
+      <Link className="l2-brand" href="/" aria-label="Sklyvo — zpět na úvod">
+        <SklyvoMark size={28} reachY={0.72} interactive={false} />
+        <span className="l2-brand__word">Sklyvo</span>
       </Link>
 
-      <LanguageToggle />
+      <LanguageToggle variant="night" />
 
-      <div
-        className="sklyvo-auth"
-        data-mode={mode}
-        data-animating={animating ? "true" : undefined}
-      >
-        <section
-          ref={formCardRef}
-          className="sklyvo-card sklyvo-card--form"
-          style={{ height: cardHeight }}
+      <div ref={enterRef} className="l2-auth-enter">
+        <div
+          className="l2-auth sklyvo-auth"
+          ref={authRef}
+          data-mode={mode}
+          data-animating={animating ? "true" : undefined}
+          data-from-landing={fromLanding ? "true" : undefined}
         >
-          <div className="sklyvo-card__crest">
-            <span className="sklyvo-crest">
-              <Crest mode={mode} />
-            </span>
-          </div>
-          <div key={mode} className="sklyvo-card__body sklyvo-auth-panel">
-            {children}
-          </div>
-        </section>
+          <section
+            ref={formCardRef}
+            className="l2-card"
+            style={cardHeight != null ? { height: cardHeight } : undefined}
+          >
+            {mode === "login" ? (
+              <div className="l2-seats" data-open={banner}>
+                <span className="l2-seats__label">
+                  <span className="l2-seats__dot" />
+                  <span className="l2-seats__text">
+                    {loginCopy.slotsLine ?? "27 z 500 míst zbývá"}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="l2-seats__close"
+                  aria-label={loginCopy.close ?? "Zavřít"}
+                  onClick={() => setBanner(false)}
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#08090A"
+                    strokeWidth="2.6"
+                    strokeLinecap="round"
+                    aria-hidden
+                  >
+                    <line x1="5" y1="5" x2="19" y2="19" />
+                    <line x1="19" y1="5" x2="5" y2="19" />
+                  </svg>
+                </button>
+              </div>
+            ) : null}
 
-        <aside
-          ref={globeCardRef}
-          className="sklyvo-card sklyvo-card--globe"
-          style={{ height: cardHeight }}
-        >
-          <div className="globe-card__head">
-            <h2 className="globe-card__title">{copy.globeTitle}</h2>
-            <p className="globe-card__body">{copy.globeBody}</p>
-          </div>
-          <div className="globe-card__stage">
-            <Globe size={500} className="globe-card__canvas" />
-          </div>
-        </aside>
+            <div className="l2-card__body">
+              <div className="l2-crest">
+                <span className="l2-crest__box">
+                  <Crest mode={mode} />
+                </span>
+              </div>
+              <div key={mode} className="sklyvo-auth-panel">
+                {children}
+              </div>
+            </div>
+          </section>
+
+          <aside
+            ref={globeCardRef}
+            className="l2-globe-card"
+            style={cardHeight != null ? { height: cardHeight } : undefined}
+          >
+            <div className="l2-globe-card__head">
+              <h2 className="l2-globe-card__title">{copy.globeTitle}</h2>
+              <p className="l2-globe-card__body">{copy.globeBody}</p>
+            </div>
+            <div className="l2-globe-card__stage">
+              {globeReady ? (
+                <Globe
+                  size={500}
+                  theme="night"
+                  className="l2-globe-card__canvas"
+                />
+              ) : null}
+            </div>
+          </aside>
+        </div>
       </div>
+
+      <div className="l2-legal">
+        {LEGAL_DOCUMENT_IDS.map((id, index) => (
+          <button
+            key={id}
+            type="button"
+            data-legal
+            onClick={() => setLegalDoc(id)}
+          >
+            {legalList[index] ?? id}
+          </button>
+        ))}
+      </div>
+
+      <LegalDocumentDialog
+        documentId={legalDoc}
+        onOpenChange={(open) => {
+          if (!open) setLegalDoc(null);
+        }}
+      />
     </main>
   );
 }

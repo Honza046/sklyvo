@@ -21,11 +21,12 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  getSessionUser,
+  getWorkspaceAccessState,
   requestEmailChange,
   verifyEmailChange,
 } from "@/app/actions/auth";
 import { uploadProfileAvatar } from "@/app/actions/user";
+import { TrialStrip } from "@/components/account/trial-strip";
 import { AvatarCropDialog } from "@/components/avatar-crop-dialog";
 import { LegalDocumentLinks } from "@/components/legal/legal-document-links";
 import {
@@ -59,6 +60,8 @@ export default function AccountPage() {
     avatarUrl: string | null;
   } | null>(null);
   const [workspace, setWorkspace] = useState<any>(null);
+  const [isTrial, setIsTrial] = useState(false);
+  const [trialRemainingDays, setTrialRemainingDays] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,7 +78,7 @@ export default function AccountPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const session = await getSessionUser();
+        const session = await getWorkspaceAccessState();
         if (session.user?.email) {
           setUser({
             name:
@@ -90,6 +93,8 @@ export default function AccountPage() {
         if (session.workspace) {
           setWorkspace(session.workspace);
         }
+        setIsTrial(Boolean(session.isTrial));
+        setTrialRemainingDays(session.trialRemainingDays ?? 0);
       } finally {
         setIsLoading(false);
       }
@@ -228,8 +233,10 @@ export default function AccountPage() {
 
   if (isLoading) return <ProfilePageLoadingSpinner />;
 
+  const creditsUsed = workspace?.creditsUsed || 0;
+  const creditsTotal = workspace?.creditsTotal || 0;
   const usagePct = Math.round(
-    ((workspace?.creditsUsed || 0) / Math.max(1, workspace?.creditsTotal || 0)) * 100,
+    (creditsUsed / Math.max(1, creditsTotal)) * 100,
   );
   const planName =
     workspace?.planTier === "NONE" || !workspace?.planTier
@@ -237,6 +244,7 @@ export default function AccountPage() {
       : formatPlanDisplayName(workspace.planTier);
   const isAgency = workspace?.planTier?.startsWith("AGENCY");
   const avatarSrc = previewUrl || user?.avatarUrl || undefined;
+  const showTrialStrip = isTrial && trialRemainingDays > 0;
 
   const NAV_ROWS: Array<{ label: string; sub: string; href: string }> = [
     { label: t("account.security"), sub: t("account.securitySub"), href: "/account/security" },
@@ -248,10 +256,19 @@ export default function AccountPage() {
   ];
 
   return (
-    <div className="sk-profile-page flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-      <div className="sk-page-head shrink-0">
-        <h1 className="sk-page-head__title">{t("account.profileTitle")}</h1>
-        <p className="sk-page-head__sub">{t("account.profileSubtitle")}</p>
+    <div className="sk-profile-page">
+      <div className="sk-profile-page__head shrink-0">
+        <div className="sk-page-head sk-page-head--tool">
+          <h1 className="sk-page-head__title">{t("account.profileTitle")}</h1>
+          <p className="sk-page-head__sub">{t("account.profileSubtitle")}</p>
+        </div>
+        {showTrialStrip ? (
+          <TrialStrip
+            remainingDays={trialRemainingDays}
+            creditsUsed={creditsUsed}
+            creditsTotal={creditsTotal}
+          />
+        ) : null}
       </div>
 
       {/* Profile strip — Matej ws2-profilehead */}
@@ -328,7 +345,14 @@ export default function AccountPage() {
             <span className="sk-profile-head__stat-label">
               {t("account.profileUsageLabel")}
             </span>
-            <span className="sk-profile-head__stat-usage">{usagePct} %</span>
+            <span
+              className="sk-profile-head__stat-usage"
+              data-level={
+                usagePct >= 90 ? "high" : usagePct >= 70 ? "mid" : "low"
+              }
+            >
+              {usagePct} %
+            </span>
           </div>
           {isAgency ? (
             <div className="sk-profile-head__stat">
@@ -343,9 +367,8 @@ export default function AccountPage() {
         </div>
       </div>
 
-      {/* 3-column grid + settings rows (Matej: rows same width as first panel) */}
-      <div className="sk-profile-grid shrink-0">
-        {/* Personal data */}
+      {/* Matej 2×2 — fills remaining page height */}
+      <div className="sk-profile-grid">
         <section className="sk-profile-panel" aria-labelledby="profile-personal-title">
           <h2 id="profile-personal-title" className="sk-profile-panel__title">
             {t("account.personalData")}
@@ -407,8 +430,10 @@ export default function AccountPage() {
           <p className="sk-profile-personal__hint">{t("account.emailChangeHint")}</p>
         </section>
 
-        {/* Agency settings */}
-        <section className="sk-profile-panel" aria-labelledby="profile-agency-title">
+        <section
+          className="sk-profile-panel sk-profile-panel--agency"
+          aria-labelledby="profile-agency-title"
+        >
           <div className="sk-profile-agency__head">
             <h2 id="profile-agency-title" className="sk-profile-panel__title">
               {t("account.agencyTitle")}
@@ -418,7 +443,7 @@ export default function AccountPage() {
               {t("account.agencyLocked")}
             </span>
           </div>
-          <div className="sk-profile-personal__names">
+          <div className="sk-profile-personal__names sk-profile-agency__fields">
             <div className="sk-profile-field">
               <span className="sk-field-label">{t("account.agencyNameLabel")}</span>
               <div className="sk-profile-locked">{workspace?.companyName ?? "—"}</div>
@@ -439,8 +464,10 @@ export default function AccountPage() {
           </div>
         </section>
 
-        {/* Plan & usage */}
-        <section className="sk-profile-panel" aria-labelledby="profile-plan-title">
+        <section
+          className="sk-profile-panel sk-profile-panel--plan"
+          aria-labelledby="profile-plan-title"
+        >
           <div className="sk-profile-plan__head">
             <h2 id="profile-plan-title" className="sk-profile-panel__title">
               {t("account.planTitle")}
@@ -454,13 +481,23 @@ export default function AccountPage() {
             <span
               className="sk-profile-plan__bar-fill"
               style={{ width: `${Math.min(100, usagePct)}%` }}
+              data-level={
+                usagePct >= 90 ? "high" : usagePct >= 70 ? "mid" : "low"
+              }
             />
           </div>
           <div className="sk-profile-plan__usage">
             <span className="sk-profile-plan__usage-label">
               {t("account.profileUsageLabel")}
             </span>
-            <span className="sk-profile-plan__usage-value">{usagePct} %</span>
+            <span
+              className="sk-profile-plan__usage-value"
+              data-level={
+                usagePct >= 90 ? "high" : usagePct >= 70 ? "mid" : "low"
+              }
+            >
+              {usagePct} %
+            </span>
           </div>
           <div className="sk-profile-plan__lines">
             {[
@@ -510,7 +547,7 @@ export default function AccountPage() {
             <span className="sk-profile-plan__note-text">{t("account.planNote")}</span>
           </div>
           <Link href="/pricing" className="sk-btn sk-btn--white sk-profile-plan__cta">
-            {t("account.changePlan")}
+            {t("account.upgradePlan")}
           </Link>
         </section>
 

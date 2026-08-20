@@ -151,8 +151,8 @@ export function LoginScreen() {
   if (twoFactorMethods) {
     return (
       <>
-        <h1 className="sklyvo-card__title">Dvoufázové ověření</h1>
-        <p className="sklyvo-card__sub">
+        <h1 className="l2-title">Dvoufázové ověření</h1>
+        <p className="l2-sub">
           Dokončete přihlášení kódem z authenticatoru nebo passkey.
         </p>
 
@@ -163,7 +163,7 @@ export function LoginScreen() {
                 type="button"
                 className={
                   twoFactorMode === "totp"
-                    ? "sklyvo-btn-primary"
+                    ? "l2-cta"
                     : "sklyvo-btn-provider"
                 }
                 style={{ flex: 1 }}
@@ -178,7 +178,7 @@ export function LoginScreen() {
                 type="button"
                 className={
                   twoFactorMode === "passkey"
-                    ? "sklyvo-btn-primary"
+                    ? "l2-cta"
                     : "sklyvo-btn-provider"
                 }
                 style={{ flex: 1 }}
@@ -193,7 +193,7 @@ export function LoginScreen() {
 
         {twoFactorMode === "totp" ? (
           <form onSubmit={(e) => void handleTotpVerify(e)} noValidate>
-            <div className="sklyvo-fields">
+            <div className="l2-fields">
               <TotpCodeInput
                 id={totpId}
                 value={totpCode}
@@ -205,17 +205,17 @@ export function LoginScreen() {
               />
             </div>
 
-            <div className="sklyvo-form__aside" aria-hidden />
+            <div className="l2-forgot-row" aria-hidden />
 
             {errorMessage ? (
-              <p className="sklyvo-error" role="alert">
+              <p className="l2-error" role="alert">
                 {errorMessage}
               </p>
             ) : null}
 
             <button
               type="submit"
-              className="sklyvo-btn-primary"
+              className="l2-cta"
               disabled={pending || totpCode.replace(/\D/g, "").length < 6}
             >
               {pending ? <AuthButtonLoader /> : "Ověřit kód"}
@@ -226,13 +226,13 @@ export function LoginScreen() {
         {twoFactorMode === "passkey" ? (
           <div>
             {errorMessage ? (
-              <p className="sklyvo-error" role="alert">
+              <p className="l2-error" role="alert">
                 {errorMessage}
               </p>
             ) : null}
             <button
               type="button"
-              className="sklyvo-btn-primary"
+              className="l2-cta"
               disabled={pending}
               onClick={() => void handlePasskeyVerify()}
             >
@@ -241,10 +241,10 @@ export function LoginScreen() {
           </div>
         ) : null}
 
-        <p className="sklyvo-form__footer">
+        <p className="l2-foot">
           <button
             type="button"
-            className="sklyvo-link"
+            className="l2-link"
             onClick={() => {
               setTwoFactorMethods(null);
               setTwoFactorMode(null);
@@ -261,16 +261,13 @@ export function LoginScreen() {
 
   return (
     <>
-      <h1 className="sklyvo-card__title">{t.login.title}</h1>
-      <p className="sklyvo-card__sub">{t.login.sub}</p>
+      <h1 className="l2-title">{t.login.title}</h1>
+      <p className="l2-sub">{t.login.sub}</p>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="sklyvo-fields">
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={emailId}>
-              {t.login.email}
-            </label>
-            <div className="sklyvo-field">
+        <div className="l2-fields">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -287,7 +284,7 @@ export function LoginScreen() {
               </svg>
               <input
                 id={emailId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type="email"
                 name="email"
                 autoComplete="email"
@@ -298,11 +295,8 @@ export function LoginScreen() {
             </div>
           </div>
 
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={passwordId}>
-              {t.login.password}
-            </label>
-            <div className="sklyvo-field">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -319,7 +313,7 @@ export function LoginScreen() {
               </svg>
               <input
                 id={passwordId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete="current-password"
@@ -329,7 +323,7 @@ export function LoginScreen() {
               />
               <button
                 type="button"
-                className="sklyvo-field__reveal"
+                className="l2-field__reveal"
                 aria-label={
                   showPassword ? t.login.hidePassword : t.login.showPassword
                 }
@@ -350,7 +344,7 @@ export function LoginScreen() {
                   <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
                   <circle cx="12" cy="12" r="3" />
                   <line
-                    className="sklyvo-field__slash"
+                    className="field__slash"
                     x1="3"
                     y1="21"
                     x2="21"
@@ -366,25 +360,25 @@ export function LoginScreen() {
           </div>
         </div>
 
-        <div className="sklyvo-form__aside">
-          <Link className="sklyvo-link" href="/recovery">
+        <div className="l2-forgot-row">
+          <Link className="l2-link" href="/recovery">
             {t.login.forgot}
           </Link>
         </div>
 
         {errorMessage ? (
-          <p className="sklyvo-error" role="alert">
+          <p className="l2-error" role="alert">
             {errorMessage}
           </p>
         ) : null}
 
-        <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
+        <button type="submit" className="l2-cta" disabled={pending}>
           {pending ? <AuthButtonLoader /> : t.login.cta}
         </button>
       </form>
 
-      <div className="sklyvo-divider">
-        <span className="sklyvo-divider__label">{t.login.or}</span>
+      <div className="l2-divider">
+        <span className="l2-divider__label">{t.login.orShort ?? t.login.or}</span>
       </div>
 
       <OAuthProviderButtons
@@ -395,9 +389,9 @@ export function LoginScreen() {
         }}
       />
 
-      <p className="sklyvo-form__footer">
+      <p className="l2-foot">
         <span>{t.login.noAccount}</span>
-        <Link className="sklyvo-link" href="/register">
+        <Link className="l2-link" href="/register">
           {t.login.signUp}
         </Link>
       </p>

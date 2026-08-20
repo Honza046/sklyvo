@@ -7,7 +7,7 @@ import { MetricsStripSkeleton } from "@/components/dashboard/animated-metric-val
 import { DashboardLoadingSubtitle } from "@/components/dashboard/dashboard-loading-client";
 import { DashboardFrame } from "@/components/dashboard/dashboard-frame";
 import { DashboardOnboardingGate } from "@/components/dashboard-onboarding-gate";
-import { LandingPage } from "@/components/sklyvo/landing-page";
+import { LandingPage } from "@/components/sklyvo/landing-v2";
 
 export const dynamic = "force-dynamic";
 

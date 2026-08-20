@@ -98,8 +98,9 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
   const subscriptionPeriodEnd = workspace?.subscriptionPeriodEnd;
   const subscriptionStatus = workspace?.subscriptionStatus ?? "FREE";
 
+  const status = (subscriptionStatus ?? "FREE").toUpperCase();
   const isTrialWithFutureEnd =
-    subscriptionStatus === "TRIAL" &&
+    (status === "TRIAL" || status === "TRIALING") &&
     trialEndsAt &&
     !Number.isNaN(trialEndsAt.getTime()) &&
     nowMs < trialEndsAt.getTime();

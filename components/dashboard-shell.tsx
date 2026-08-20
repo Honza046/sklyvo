@@ -669,7 +669,7 @@ export function DashboardShell({
               }
               {...navPendingProps("/help")}
             >
-              <BotGlyphIcon className="sk-nav-icon size-4" aria-hidden />
+              <BotGlyphIcon aria-hidden />
               {t("nav.help")}
             </Link>
             <Link

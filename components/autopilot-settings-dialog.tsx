@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Radio, Rocket, Sparkles } from "lucide-react";
+import { Check, Repeat2, Rocket, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,10 +44,13 @@ import { DATE_LOCALE } from "@/lib/i18n/types";
 
 export type AutopilotSettingsSection = "radar" | "sniper" | "full-auto";
 
-const SECTION_ICONS: Record<AutopilotSettingsSection, typeof Radio> = {
-  radar: Radio,
+const SECTION_ICONS: Record<
+  AutopilotSettingsSection,
+  typeof SlidersHorizontal
+> = {
+  radar: SlidersHorizontal,
   sniper: Rocket,
-  "full-auto": Sparkles,
+  "full-auto": Repeat2,
 };
 
 const WEEKDAY_I18N: Record<number, string> = {
@@ -170,9 +173,9 @@ export function AutopilotSettingsDialog({
         data-theme="dark"
         className={cn(
           "sklyvo-app sk-dialog-flat sk-settings-dialog flex w-full flex-col gap-0 overflow-hidden p-0",
-          "left-[50%] top-[50%] h-auto max-h-[min(90vh,720px)] w-full translate-x-[-50%] translate-y-[-50%] rounded-[18px]",
-          section === "radar"
-            ? "max-w-3xl"
+          "left-[50%] top-[50%] h-auto w-full translate-x-[-50%] translate-y-[-50%] rounded-[18px]",
+            section === "radar"
+            ? "max-h-[min(94vh,760px)] max-w-[52rem]"
             : section === "sniper"
               ? "max-h-none max-w-2xl"
               : "max-h-none max-w-lg",
@@ -186,13 +189,16 @@ export function AutopilotSettingsDialog({
               ? "scrollbar-hide space-y-1.5 overflow-y-auto overscroll-contain sm:space-y-1.5 sm:overflow-visible sm:pt-7 sm:pb-6"
               : section === "full-auto"
                 ? "scrollbar-hide space-y-2 overflow-visible pt-6 pb-4 sm:px-5 sm:pt-7 sm:pb-5"
-                : "scrollbar-hide overflow-y-auto overscroll-contain",
+                : "sk-settings-scroll--radar scrollbar-hide space-y-2.5 overflow-y-auto overscroll-contain px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7",
           )}
         >
           <DialogHeader
             className={cn(
               "space-y-1 text-left",
-              (section === "sniper" || section === "full-auto") && "space-y-0.5",
+              (section === "sniper" ||
+                section === "full-auto" ||
+                section === "radar") &&
+                "space-y-0.5",
             )}
           >
             <DialogTitle className="flex items-center gap-3 pr-10 text-base">
@@ -204,7 +210,9 @@ export function AutopilotSettingsDialog({
               </span>
               {meta.title}
             </DialogTitle>
-            {section === "sniper" || section === "full-auto" ? null : (
+            {section === "sniper" ||
+            section === "full-auto" ||
+            section === "radar" ? null : (
               <DialogDescription className="text-xs">
                 {meta.description}
               </DialogDescription>
@@ -215,7 +223,9 @@ export function AutopilotSettingsDialog({
             <div
               className={cn(
                 "sk-settings-row flex items-center justify-between gap-3 px-3",
-                section === "sniper" || section === "full-auto"
+                section === "sniper" ||
+                  section === "full-auto" ||
+                  section === "radar"
                   ? "py-1.5"
                   : "py-2.5",
                 featureEnabled && "sk-settings-row--on",
@@ -225,7 +235,9 @@ export function AutopilotSettingsDialog({
                 <p className="text-sm font-semibold text-foreground">
                   {featureEnabled ? t("autopilot.settings.automationOn") : t("autopilot.settings.automationOff")}
                 </p>
-                {section === "sniper" || section === "full-auto" ? null : (
+                {section === "sniper" ||
+                section === "full-auto" ||
+                section === "radar" ? null : (
                   <p className="text-[11px] text-muted-foreground">
                     {section === "radar"
                       ? t("autopilot.settings.radarAutomationHint")
@@ -244,11 +256,11 @@ export function AutopilotSettingsDialog({
 
           {section === "radar" && (
             <div className="grid items-stretch gap-3 md:grid-cols-2">
-              <section className="sk-settings-panel flex h-full min-h-0 flex-col overflow-hidden">
+              <section className="sk-settings-panel flex h-full flex-col overflow-hidden">
                 <div className="sk-settings-panel__head">
                   <p>{t("autopilot.settings.whenToSearch")}</p>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+                <div className="flex flex-1 flex-col gap-3 p-3.5">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <Label className="text-sm">{t("autopilot.settings.days")}</Label>
@@ -303,8 +315,8 @@ export function AutopilotSettingsDialog({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div className="space-y-1.5">
                       <Label htmlFor="radar-run-time" className="text-sm">
                         {t("autopilot.settings.time")}
                       </Label>
@@ -319,7 +331,7 @@ export function AutopilotSettingsDialog({
                         className="h-9"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor="radar-min-companies" className="text-sm">
                         {t("autopilot.settings.minCompanies")}
                       </Label>
@@ -343,7 +355,7 @@ export function AutopilotSettingsDialog({
                         className="h-9"
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       <Label htmlFor="radar-max-companies" className="text-sm">
                         {t("autopilot.settings.maxCompanies")}
                       </Label>
@@ -378,7 +390,7 @@ export function AutopilotSettingsDialog({
                     </p>
                   ) : (
                     <p className="sk-settings-note sk-settings-note--warn px-3 py-2 text-xs">
-                      Vyber alespoň jeden den, jinak se sběr nespustí.
+                      {t("autopilot.settings.radarPickDay")}
                     </p>
                   )}
 
@@ -409,10 +421,10 @@ export function AutopilotSettingsDialog({
 
               <section className="sk-settings-panel flex h-full flex-col overflow-hidden">
                 <div className="sk-settings-panel__head">
-<p>{t("autopilot.settings.whoToSearch")}</p>
+                  <p>{t("autopilot.settings.whoToSearch")}</p>
                 </div>
-                <div className="flex flex-col gap-2.5 p-3">
-                  <div className="space-y-1">
+                <div className="flex flex-1 flex-col gap-3.5 p-3.5">
+                  <div className="sk-settings-keywords space-y-1.5">
                     <div className="flex items-baseline justify-between gap-2">
                       <Label htmlFor="radar-industries" className="text-sm">
                         {t("autopilot.settings.industries")}
@@ -423,18 +435,18 @@ export function AutopilotSettingsDialog({
                     </div>
                     <Textarea
                       id="radar-industries"
-                      rows={2}
+                      rows={4}
                       placeholder={t("autopilot.settings.industriesPlaceholder")}
                       value={settings.targetIndustries}
                       onChange={(e) =>
                         patch({ targetIndustries: e.target.value })
                       }
                       disabled={disabled}
-                      className="min-h-[52px] resize-none text-sm"
+                      className="sk-settings-keywords__field sk-settings-keywords__field--industries"
                     />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="sk-settings-keywords space-y-1.5">
                     <div className="flex items-baseline justify-between gap-2">
                       <Label htmlFor="radar-locations" className="text-sm">
                         {t("autopilot.settings.locations")}
@@ -450,66 +462,74 @@ export function AutopilotSettingsDialog({
                       value={settings.locations}
                       onChange={(e) => patch({ locations: e.target.value })}
                       disabled={disabled}
-                      className="min-h-[52px] resize-none text-sm"
+                      className="sk-settings-keywords__field sk-settings-keywords__field--locations"
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-sm">{t("radar.country")}</Label>
-                    <Select
-                      value={settings.countryCode || "CZ"}
-                      onValueChange={(value) => patch({ countryCode: value })}
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder={t("radar.country")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card ">
-                        <SelectItem value={RADAR_COUNTRY_NONE}>
-                          {t("radar.countryAny")}
-                        </SelectItem>
-                        {RADAR_COUNTRY_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.code} value={opt.code}>
-                            {localizedCountryLabel(
-                              opt.code,
-                              DATE_LOCALE[language],
-                            ) ?? opt.label}
+                  <div className="mt-auto grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">{t("radar.country")}</Label>
+                      <Select
+                        value={settings.countryCode || "CZ"}
+                        onValueChange={(value) => patch({ countryCode: value })}
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder={t("radar.country")} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card ">
+                          <SelectItem value={RADAR_COUNTRY_NONE}>
+                            {t("radar.countryAny")}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                          {RADAR_COUNTRY_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.code} value={opt.code}>
+                              {localizedCountryLabel(
+                                opt.code,
+                                DATE_LOCALE[language],
+                              ) ?? opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-1">
-<Label className="text-sm">{t("autopilot.settings.companySize")}</Label>
-                    <Select
-                      value={settings.companySize}
-                      onValueChange={(value) =>
-                        patch({ companySize: value as RadarCompanySize })
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="h-9">
-<SelectValue placeholder={t("autopilot.settings.companySizePlaceholder")} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-card ">
-                        {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {t(
-                              option.value === "any"
-                                ? "autopilot.settings.companySizeAny"
-                                : option.value === "micro"
-                                  ? "autopilot.settings.companySizeMicro"
-                                  : option.value === "small"
-                                    ? "autopilot.settings.companySizeSmall"
-                                    : option.value === "medium"
-                                      ? "autopilot.settings.companySizeMedium"
-                                      : "autopilot.settings.companySizeLarge",
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">
+                        {t("autopilot.settings.companySize")}
+                      </Label>
+                      <Select
+                        value={settings.companySize}
+                        onValueChange={(value) =>
+                          patch({ companySize: value as RadarCompanySize })
+                        }
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue
+                            placeholder={t(
+                              "autopilot.settings.companySizePlaceholder",
                             )}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card ">
+                          {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {t(
+                                option.value === "any"
+                                  ? "autopilot.settings.companySizeAny"
+                                  : option.value === "micro"
+                                    ? "autopilot.settings.companySizeMicro"
+                                    : option.value === "small"
+                                      ? "autopilot.settings.companySizeSmall"
+                                      : option.value === "medium"
+                                        ? "autopilot.settings.companySizeMedium"
+                                        : "autopilot.settings.companySizeLarge",
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               </section>

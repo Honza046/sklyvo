@@ -44,7 +44,15 @@ function useLanguageToggleState(): {
   throw new Error("LanguageToggle must be used inside a LanguageProvider");
 }
 
-export function LanguageToggle() {
+/**
+ * `default` keeps the existing sklyvo-lang chrome; `night` matches Matej's
+ * dark login chips (`.lang.lang--night`).
+ */
+export function LanguageToggle({
+  variant = "default",
+}: {
+  variant?: "default" | "night";
+}) {
   const { displayLanguage, toggleSlots, pickLanguage } =
     useLanguageToggleState();
   const index = Math.max(
@@ -54,6 +62,44 @@ export function LanguageToggle() {
     ),
   );
   const single = toggleSlots.length < 2;
+
+  if (variant === "night") {
+    return (
+      <div
+        className="lang lang--night"
+        data-single={single ? "true" : undefined}
+      >
+        <span
+          className="lang__thumb"
+          style={{ transform: `translateX(${index * 42}px)` }}
+        />
+        {toggleSlots.map((slot) => {
+          const pressed = slot.enabled && slot.code === displayLanguage;
+          return (
+            <button
+              key={slot.code}
+              type="button"
+              className="lang__btn"
+              disabled={!slot.enabled}
+              aria-disabled={!slot.enabled}
+              aria-pressed={pressed}
+              title={
+                slot.enabled
+                  ? undefined
+                  : "Translation coming soon — using English"
+              }
+              onClick={() => {
+                if (!slot.enabled) return;
+                pickLanguage(slot.code);
+              }}
+            >
+              {slot.code.toUpperCase()}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div

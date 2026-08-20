@@ -794,7 +794,7 @@ export const cz = {
   settings: {
     title: "Nastavení Sklyvo",
     hubSubtitle:
-      "Čím víc Sklyvo o vaší firmě ví, tím lépe píše.",
+      "Firma, e-mail, propojení a tým na jednom místě.",
 
     integrationsPanel: {
       intro: "Propojte Sklyvo s nástroji, které už používáte.",
@@ -814,7 +814,7 @@ export const cz = {
     hubUsageHint: "Tarif a spotřeba najdete v Můj profil → Fakturace.",
     hub: {
       progressTitle: "Stav nastavení",
-      progressDone: "{done} z {total} hotovo",
+      progressDone: "{done} ze {total} hotovo",
       progressDismiss: "Skrýt dokončený postup nastavení",
       progressCta: "Pokračovat v nastavení",
       teamManage: "Spravovat tým",
@@ -1048,10 +1048,14 @@ export const cz = {
     subtitle:
       "Spravujte své osobní údaje, zabezpečení, fakturaci a integrace.",
     profileTitle: "Profil",
-    profileSubtitle: "Váš účet, tarif a přístupy.",
-    profilePlanLabel: "TARIF",
-    profileUsageLabel: "VYUŽITÍ",
-    profileSeatsLabel: "OBSAZENÁ MÍSTA",
+    profileSubtitle: "Vaše údaje, zabezpečení, fakturace a plán.",
+    profilePlanLabel: "Plán a využití",
+    profileUsageLabel: "Spotřeba tento měsíc",
+    profileSeatsLabel: "Obsazená místa",
+    trialStripLabel: "ZKUŠEBNÍ OBDOBÍ",
+    trialStripDays: "Zbývají {days} {dayWord}",
+    trialStripCredits: "Kredity ve zkušební verzi",
+    upgradePlan: "Navýšit plán",
     agencyTitle: "Nastavení agentury",
     agencyLocked: "Jen správce",
     agencyNameLabel: "NÁZEV AGENTURY",

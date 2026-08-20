@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Globe, Sparkles } from "lucide-react";
+import { Globe, Repeat2 } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { FilterSearch } from "@/components/autopilot/filter-search";
 import { CopyEmailButton } from "@/components/copy-email-button";
@@ -418,7 +418,7 @@ export function AutopilotFullAutoView() {
 
       <div className="sk-autopilot__panel">
         <AutopilotControlPanel
-          icon={<Sparkles className="h-5 w-5" />}
+          icon={<Repeat2 className="h-5 w-5" />}
           iconAccent="amber"
           title={t("autopilot.fullAutoTitle")}
           powerEnabled={featureEnabled}

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { DashboardLanguageSwitcher } from "@/components/dashboard-language-switcher";
 import {
   DASHBOARD_RANGE_KEYS,
   useDashboardRange,
@@ -50,8 +49,6 @@ export function DashboardPageHeader({ firstName }: { firstName: string }) {
         </div>
 
         <span className="sk-dashboard-toolbar__divider" aria-hidden />
-
-        <DashboardLanguageSwitcher variant="compact" />
 
         <Link href="/crm" className="sk-dash-btn sk-dash-btn--raised">
           {t("dashboard.viewCrm")}

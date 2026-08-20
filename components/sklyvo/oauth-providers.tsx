@@ -78,17 +78,17 @@ export function OAuthProviderButtons({
   onSelect: (provider: OAuthProvider) => void;
 }) {
   return (
-    <div className="sklyvo-providers">
+    <div className="l2-providers">
       {PROVIDERS.map(({ id, label, Icon }) => (
         <button
           key={id}
           type="button"
-          className="sklyvo-btn-provider"
+          className="l2-provider"
           aria-label={label}
           onClick={() => onSelect(id)}
           disabled={disabled}
         >
-          <Icon size={20} />
+          <Icon size={id === "linkedin_oidc" ? 20 : 17} />
         </button>
       ))}
     </div>

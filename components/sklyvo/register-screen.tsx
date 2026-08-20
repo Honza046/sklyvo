@@ -43,16 +43,13 @@ export function RegisterScreen() {
 
   return (
     <>
-      <h1 className="sklyvo-card__title">{t.register.title}</h1>
-      <p className="sklyvo-card__sub">{t.register.sub}</p>
+      <h1 className="l2-title">{t.register.title}</h1>
+      <p className="l2-sub">{t.register.sub}</p>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="sklyvo-fields">
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={nameId}>
-              {t.register.name}
-            </label>
-            <div className="sklyvo-field">
+        <div className="l2-fields">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -69,22 +66,20 @@ export function RegisterScreen() {
               </svg>
               <input
                 id={nameId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type="text"
                 name="name"
                 autoComplete="name"
                 placeholder={t.register.namePlaceholder}
+                aria-label={t.register.name}
                 required
                 disabled={pending}
               />
             </div>
           </div>
 
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={emailId}>
-              {t.register.email}
-            </label>
-            <div className="sklyvo-field">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -101,22 +96,20 @@ export function RegisterScreen() {
               </svg>
               <input
                 id={emailId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type="email"
                 name="email"
                 autoComplete="email"
                 placeholder={t.register.emailPlaceholder}
+                aria-label={t.register.email}
                 required
                 disabled={pending}
               />
             </div>
           </div>
 
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={passwordId}>
-              {t.register.password}
-            </label>
-            <div className="sklyvo-field">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -133,18 +126,19 @@ export function RegisterScreen() {
               </svg>
               <input
                 id={passwordId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type={showPassword ? "text" : "password"}
                 name="password"
                 autoComplete="new-password"
                 placeholder={t.register.passwordPlaceholder}
+                aria-label={t.register.password}
                 required
                 minLength={8}
                 disabled={pending}
               />
               <button
                 type="button"
-                className="sklyvo-field__reveal"
+                className="l2-field__reveal"
                 aria-label={
                   showPassword
                     ? t.register.hidePassword
@@ -167,7 +161,7 @@ export function RegisterScreen() {
                   <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
                   <circle cx="12" cy="12" r="3" />
                   <line
-                    className="sklyvo-field__slash"
+                    className="field__slash"
                     x1="3"
                     y1="21"
                     x2="21"
@@ -183,21 +177,21 @@ export function RegisterScreen() {
           </div>
         </div>
 
-        <div className="sklyvo-form__aside" />
+        <div className="l2-forgot-row" aria-hidden />
 
         {errorMessage ? (
-          <p className="sklyvo-error" role="alert">
+          <p className="l2-error" role="alert">
             {errorMessage}
           </p>
         ) : null}
 
-        <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
+        <button type="submit" className="l2-cta" disabled={pending}>
           {pending ? <AuthButtonLoader /> : t.register.cta}
         </button>
       </form>
 
-      <div className="sklyvo-divider">
-        <span className="sklyvo-divider__label">{t.register.or}</span>
+      <div className="l2-divider">
+        <span className="l2-divider__label">{t.register.or}</span>
       </div>
 
       <OAuthProviderButtons
@@ -208,9 +202,9 @@ export function RegisterScreen() {
         }}
       />
 
-      <p className="sklyvo-form__footer">
+      <p className="l2-foot">
         <span>{t.register.hasAccount}</span>
-        <Link className="sklyvo-link" href="/login">
+        <Link className="l2-link" href="/login">
           {t.register.signIn}
         </Link>
       </p>

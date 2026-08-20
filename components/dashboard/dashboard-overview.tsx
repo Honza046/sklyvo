@@ -565,7 +565,7 @@ export function DashboardOverview({
                 {t("dashboard.queueSniper")}
               </Link>
               <Link href="/help" className="sk-queue-panel__bot">
-                <BotGlyphIcon className="h-[15px] w-[15px]" aria-hidden />
+                <BotGlyphIcon aria-hidden />
                 <span>
                   {t("dashboard.botHintQuestion")}{" "}
                   <strong>{t("dashboard.botHintAnswer")}</strong>

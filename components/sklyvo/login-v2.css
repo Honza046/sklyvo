@@ -1,0 +1,717 @@
+/* Matej login 2.0 + night language toggle — ported from design sandbox */
+
+.field__slash {
+  stroke-dasharray: 26;
+  transition:
+    stroke-dashoffset 0.28s ease,
+    opacity 0.2s ease;
+}
+
+
+.lang {
+  position: absolute;
+  top: 26px;
+  right: 28px;
+  z-index: 20;
+  display: flex;
+  padding: 3px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  box-shadow:
+    inset 0 2px 5px rgba(30, 70, 110, 0.22),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.lang__thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: 42px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(248, 252, 255, 0.88) 100%
+  );
+  box-shadow:
+    0 6px 12px -7px rgba(30, 70, 110, 0.42),
+    inset 0 1.5px 0 #fff;
+  transition: transform 0.28s cubic-bezier(0.34, 1.35, 0.5, 1);
+}
+
+.lang__btn {
+  position: relative;
+  z-index: 1;
+  width: 42px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  color: oklch(0.42 0.03 245);
+}
+
+.lang__btn[aria-pressed="true"] {
+  color: var(--ink);
+}
+
+
+
+/* ========================================================= /login2 page == */
+
+/* the dark rebuild of the login screen: flat surfaces, hairline borders,
+   no soft UI shadows */
+.l2-page {
+  --n-bg: #08090a;
+  --n-card: #0e0f11;
+  --n-field: #15161a;
+  --n-field-focus: #1d1f24;
+  --n-hover: #191a1e;
+  --n-hairline: rgba(255, 255, 255, 0.09);
+  --n-edge: rgba(255, 255, 255, 0.1);
+  --n-edge-hover: rgba(255, 255, 255, 0.22);
+  --n-text: #fafafb;
+  --n-text-soft: #f2f3f5;
+  --n-muted: #8a8f98;
+  --n-dim: #6b7078;
+
+  position: relative;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  /* symmetric, so the card lands on dead centre; the 64px keeps it clear of the
+     fixed brand and language switch on short screens */
+  padding: 64px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--n-bg);
+  color: var(--n-text-soft);
+}
+
+.l2-page input::placeholder {
+  color: var(--n-dim);
+}
+
+.l2-brand {
+  position: absolute;
+  top: 26px;
+  left: 28px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.l2-brand__word {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--n-text-soft);
+}
+
+/* language switch: two flat chips, no sliding thumb */
+.lang--night {
+  top: 26px;
+  right: 28px;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: #101113;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.lang--night .lang__thumb {
+  display: none;
+}
+
+.lang--night .lang__btn {
+  width: 40px;
+  height: 26px;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7078;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.lang--night .lang__btn[aria-pressed="true"] {
+  background: #22242a;
+  color: #fafafb;
+}
+
+.l2-auth {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: stretch;
+  gap: 16px;
+}
+
+/* the seats banner: collapses its own height so the card closes up behind it */
+.l2-seats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #ffee00;
+  padding: 0 18px;
+  height: 0;
+  opacity: 0;
+  transition: height 0.42s cubic-bezier(0.4, 0, 0.2, 1) 0.12s, opacity 0s linear;
+}
+
+.l2-seats[data-open="true"] {
+  height: 38px;
+  opacity: 1;
+}
+
+.l2-seats__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.l2-seats__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 99px;
+  background: #08090a;
+  animation: l2SeatPulse 1.6s ease-in-out infinite;
+}
+
+.l2-seats__text {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #08090a;
+}
+
+.l2-seats__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin-right: -6px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.l2-seats__close:hover { background: rgba(8, 9, 10, 0.13); }
+
+@keyframes l2SeatPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.l2-legal {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 14px;
+}
+
+.l2-legal a,
+.l2-legal button {
+  font-family: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  color: #55595f;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.14s ease;
+}
+
+.l2-legal a:hover,
+.l2-legal button:hover {
+  color: #8a8f98;
+}
+
+.l2-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 420px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--n-hairline);
+  background: var(--n-card);
+}
+
+.l2-auth[data-animating="true"] .l2-card,
+.l2-auth[data-animating="true"] .l2-globe-card {
+  will-change: height;
+  overflow: hidden;
+}
+
+.l2-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 32px;
+}
+
+.sklyvo-auth-panel {
+  animation: l2-panel-in 0.42s cubic-bezier(0.22, 0.75, 0, 1) both;
+}
+
+@keyframes l2-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sklyvo-auth-panel {
+    animation: none;
+  }
+
+  .l2-auth[data-animating="true"] .l2-card,
+  .l2-auth[data-animating="true"] .l2-globe-card {
+    transition: none !important;
+  }
+}
+
+.l2-crest {
+  display: flex;
+  justify-content: center;
+}
+
+.l2-crest__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--n-edge);
+  background: var(--n-field);
+}
+
+.l2-title {
+  margin: 18px 0 8px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--n-text);
+}
+
+.l2-sub {
+  margin: 0 auto 26px;
+  max-width: 300px;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.55;
+  text-wrap: pretty;
+  color: var(--n-muted);
+}
+
+.l2-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.l2-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.l2-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--n-muted);
+}
+
+.l2-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--n-edge);
+  background: var(--n-field);
+  color: var(--n-dim);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.l2-field:focus-within {
+  background: var(--n-field-focus);
+  border-color: var(--n-edge-hover);
+}
+
+.l2-field__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--n-text-soft);
+  caret-color: #02a7ff;
+}
+
+.l2-field__input:focus,
+.l2-field__input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Safari / Chrome paint their own autofill sheet + focus ring on the control */
+.l2-field__input:-webkit-autofill,
+.l2-field__input:-webkit-autofill:hover,
+.l2-field__input:-webkit-autofill:focus,
+.l2-field__input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--n-text-soft);
+  caret-color: #02a7ff;
+  box-shadow: 0 0 0 1000px var(--n-field) inset;
+  transition: background-color 99999s ease-out;
+}
+
+.l2-field__reveal {
+  display: flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+}
+
+.l2-forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 18px;
+}
+
+.l2-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--n-muted);
+  transition: color 0.16s ease;
+}
+
+.l2-link:hover {
+  color: #ffffff;
+}
+
+.l2-cta {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background-color: #ffffff;
+  color: var(--n-bg);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background-color 0.14s ease,
+    transform 0.1s ease;
+}
+
+.l2-cta:hover {
+  background-color: #f0f2f5;
+}
+
+.l2-cta:active {
+  background-color: #dfe3e8;
+  transform: scale(0.985);
+}
+
+.l2-cta:disabled {
+  cursor: wait;
+  opacity: 1;
+}
+
+.l2-cta .sklyvo-btn-loader {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+}
+
+.l2-cta .sklyvo-btn-loader__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #08090a;
+  opacity: 0.35;
+  animation: l2-btn-typing 1.05s ease-in-out infinite;
+}
+
+.l2-cta .sklyvo-btn-loader__dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.l2-cta .sklyvo-btn-loader__dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes l2-btn-typing {
+  0%,
+  80%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0) scale(0.88);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1);
+  }
+}
+
+.l2-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+}
+
+.l2-divider::before,
+.l2-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.l2-divider__label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--n-dim);
+}
+
+.l2-providers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.l2-provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: 10px;
+  border: 1px solid var(--n-edge);
+  background: var(--n-field);
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.l2-provider:hover {
+  border-color: var(--n-edge-hover);
+  background: var(--n-hover);
+}
+
+.l2-foot {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin: 22px 0 0;
+  font-size: 12.5px;
+  color: var(--n-muted);
+}
+
+.l2-foot a {
+  font-weight: 700;
+  color: var(--n-text-soft);
+  transition: color 0.16s ease;
+}
+
+.l2-foot a:hover {
+  color: #ffffff;
+}
+
+/* globe panel */
+
+.l2-globe-card {
+  position: relative;
+  box-sizing: border-box;
+  width: 356px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 20px;
+  background: linear-gradient(
+    175deg,
+    #07182b 0%,
+    #0a3670 38%,
+    #0271b8 70%,
+    #02a7ff 100%
+  );
+}
+
+.l2-globe-card__head {
+  padding: 32px 30px 0;
+}
+
+.l2-globe-card__title {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-wrap: pretty;
+  color: #ffffff;
+}
+
+.l2-globe-card__body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  text-wrap: pretty;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.l2-globe-card__stage {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+}
+
+.l2-globe-card__canvas {
+  position: absolute;
+  left: 50%;
+  bottom: -70px;
+  transform: translateX(calc(-56% - 30px)) rotate(-12deg);
+}
+
+@media (max-width: 860px) {
+  .l2-page {
+    padding: 88px 20px 24px;
+  }
+
+  .l2-card {
+    width: min(420px, 100%);
+  }
+
+  .l2-globe-card {
+    display: none;
+  }
+
+  .l2-brand {
+    top: 20px;
+    left: 20px;
+  }
+
+  .lang--night {
+    top: 18px;
+    right: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .l2-card {
+    padding: 26px 22px;
+  }
+}
+
+
+
+/* product bridges */
+.l2-error {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #ff6b6b;
+  text-align: left;
+}
+
+.l2-success {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #34d399;
+  text-align: left;
+}
+
+.l2-foot .l2-link {
+  font-weight: 700;
+  color: var(--n-text-soft);
+}
+
+.l2-foot .l2-link:hover {
+  color: #ffffff;
+}
+
+/* recovery: keep matched card height, center crest + form as one block */
+.l2-auth[data-mode="recovery"] .l2-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.l2-auth[data-mode="recovery"] .l2-card__body {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.l2-auth[data-mode="recovery"] .l2-forgot-row {
+  display: block;
+  height: 10px;
+  margin: 0;
+  padding: 0;
+  min-height: 10px;
+  pointer-events: none;
+}
+
+.l2-auth[data-mode="recovery"] .l2-cta {
+  margin-top: 0;
+}
+
+.l2-auth[data-mode="recovery"] .l2-foot {
+  margin-top: 22px;
+}

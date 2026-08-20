@@ -2,7 +2,19 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const connectionString = process.env.DATABASE_URL;
+/**
+ * Supabase pooler uses TLS; local Node often rejects the chain
+ * ("self-signed certificate in certificate chain"). Encrypt, don't verify CA.
+ */
+function prepareDatabaseUrl(url: string | undefined): string | undefined {
+  if (!url?.trim()) return url;
+  let next = url.replace(/([?&])sslmode=[^&]*/gi, "$1").replace(/[?&]$/, "");
+  next = next.replace(/\?&/, "?").replace(/&&+/g, "&");
+  const sep = next.includes("?") ? "&" : "?";
+  return `${next}${sep}sslmode=no-verify`;
+}
+
+const connectionString = prepareDatabaseUrl(process.env.DATABASE_URL);
 
  // Bump when schema changes require a fresh client
  const PRISMA_SCHEMA_FINGERPRINT = "lead-replied-at-v3";
@@ -65,7 +77,20 @@ const prismaClientSingleton = (): PrismaClient => {
 
  // Nejdřív nový pool + client, teprve pak úklid starého
  // (jinak in-flight requesty dostanou "Cannot use a pool after calling end")
- const pool = new Pool({ connectionString });
+ if (!connectionString) {
+   throw new Error("DATABASE_URL is not set");
+ }
+
+ // Pooler (Supabase :6543) can drop idle connections — keep pool fresh and fail fast.
+ const pool = new Pool({
+   connectionString,
+   max: 10,
+   idleTimeoutMillis: 20_000,
+   connectionTimeoutMillis: 10_000,
+   keepAlive: true,
+   allowExitOnIdle: true,
+   ssl: { rejectUnauthorized: false },
+ });
  const adapter = new PrismaPg(pool);
  const client = new PrismaClient({ adapter }) as PrismaSingleton;
  client.__fingerprint = PRISMA_SCHEMA_FINGERPRINT;
@@ -177,17 +202,69 @@ function isRepliedAtValidationError(error: unknown): boolean {
  );
 }
 
-/** Dev safety net — po prisma generate obnoví singleton, když runtime ještě nezná repliedAt. */
+function isDbUnreachableError(error: unknown): boolean {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    // P1001 can't reach, P1002 timed out, P1017 server closed connection
+    return error.code === "P1001" || error.code === "P1002" || error.code === "P1017";
+  }
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return (
+    /Can't reach database server/i.test(message) ||
+    /Connection terminated unexpectedly/i.test(message) ||
+    /self-signed certificate/i.test(message) ||
+    /ECONNREFUSED|ETIMEDOUT|ENOTFOUND|ECONNRESET/i.test(message) ||
+    /sorry, too many clients already/i.test(message)
+  );
+}
+
+function shouldResetPrismaClient(error: unknown): boolean {
+  if (isDbUnreachableError(error)) return true;
+  return (
+    process.env.NODE_ENV !== "production" && isRepliedAtValidationError(error)
+  );
+}
+
+/** Dev / transient-outage safety — obnoví pool a zkusí znovu. */
 export async function runPrismaQuery<T>(fn: () => Promise<T>): Promise<T> {
  try {
    return await fn();
  } catch (error) {
-   if (process.env.NODE_ENV !== "production" && isRepliedAtValidationError(error)) {
-     resetPrismaSingleton();
-     return fn();
-   }
-   throw error;
+   if (!shouldResetPrismaClient(error)) throw error;
+   resetPrismaSingleton();
+   return fn();
  }
+}
+
+function wrapDelegateWithRetry(
+  delegate: object,
+  modelKey: string,
+): object {
+  return new Proxy(delegate, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value !== "function") return value;
+      return (...args: unknown[]) => {
+        const result = value.apply(target, args);
+        if (!result || typeof (result as Promise<unknown>).then !== "function") {
+          return result;
+        }
+        return (result as Promise<unknown>).catch(async (error: unknown) => {
+          if (!shouldResetPrismaClient(error)) throw error;
+          resetPrismaSingleton();
+          const fresh = getPrismaClient();
+          const freshDelegate = Reflect.get(fresh, modelKey, fresh) as
+            | Record<string, unknown>
+            | undefined;
+          const freshMethod =
+            freshDelegate && typeof freshDelegate[prop as string] === "function"
+              ? (freshDelegate[prop as string] as (...a: unknown[]) => unknown)
+              : null;
+          if (!freshMethod) throw error;
+          return freshMethod.apply(freshDelegate, args);
+        });
+      };
+    },
+  });
 }
 
 function getPrismaClient(): PrismaClient {
@@ -211,11 +288,24 @@ function getPrismaClient(): PrismaClient {
  *
  * Important: Reflect.get must use the real client as receiver so Prisma
  * model getters (userEmailConnection, lead, …) keep the correct `this`.
+ * Model delegates are wrapped to rebuild the pool once on transient DB outages.
  */
 export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
  get(_target, prop) {
  const client = getPrismaClient();
  const value = Reflect.get(client, prop, client);
- return typeof value === "function" ? value.bind(client) : value;
+ if (typeof value === "function") {
+   return value.bind(client);
+ }
+ if (
+   value &&
+   typeof value === "object" &&
+   typeof prop === "string" &&
+   !prop.startsWith("$") &&
+   !prop.startsWith("_")
+ ) {
+   return wrapDelegateWithRetry(value, prop);
+ }
+ return value;
  },
 });

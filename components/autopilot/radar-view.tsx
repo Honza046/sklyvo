@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Globe, Mail, Phone, Radio } from "lucide-react";
+import { Building2, Globe, Mail, Phone } from "lucide-react";
 import { AutopilotSettingsDialog } from "@/components/autopilot-settings-dialog";
 import { FilterSearch } from "@/components/autopilot/filter-search";
 import { CopyEmailButton } from "@/components/copy-email-button";
@@ -453,7 +453,7 @@ export function AutopilotRadarView() {
 
       <div className="sk-autopilot__panel">
         <AutopilotControlPanel
-          icon={<Radio className="h-5 w-5" />}
+          icon={<Building2 className="h-5 w-5" />}
           iconAccent="cyan"
           title={t("autopilot.radarTitle")}
           powerEnabled={featureEnabled}

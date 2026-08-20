@@ -1031,6 +1031,22 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   transition: color 0.12s ease;
 }
 
+/* Skly Bot flat glyph — same size as other nav icons, inherits color */
+.sklyvo-app .sk-nav-bot-mark.sk-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: inherit;
+}
+
+.sklyvo-app .sk-nav-bot-mark.sk-nav-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
 .sklyvo-app [data-accent="blue"] {
   --sk-accent: var(--sk-blue);
   --sk-accent-soft: #60a5fa;
@@ -2601,50 +2617,180 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 /* Settings hub — fill viewport: stretched cards + compact progress strip */
 .sklyvo-app .sk-settings-hub {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   height: 100%;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .sklyvo-app .sk-settings-hub__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   flex: none;
-  text-align: center;
 }
 
-.sklyvo-app .sk-settings-hub__grid {
+.sklyvo-app .sk-settings-hub__head .sk-page-head {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.sklyvo-app .sk-settings-hub .sk-page-head--tool .sk-page-head__title {
+  margin: 0 0 4px;
+}
+
+.sklyvo-app .sk-settings-hub__cards {
   display: grid;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  grid-template-columns: 1fr;
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 0.65rem;
-  align-content: stretch;
-}
-
-@media (min-width: 640px) {
-  .sklyvo-app .sk-settings-hub__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .sklyvo-app .sk-settings-hub__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.sklyvo-app .sk-settings-hub__foot {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
   flex: none;
+  align-content: start;
+  align-items: stretch;
+}
+
+@media (min-width: 780px) {
+  .sklyvo-app .sk-settings-hub__cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.sklyvo-app .sk-settings-hub__legal {
+  margin-top: auto;
+  padding-top: 12px;
+  padding-bottom: 0;
+  flex: none;
+  flex-shrink: 0;
 }
 
 .sklyvo-app .sk-settings-hub-card {
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: auto;
+  padding: 16px 18px 18px;
+  border-radius: 16px;
+  background: #0a0b0d;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.sklyvo-app .sk-settings-hub-card:hover {
+  background: #0e0f12;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.sklyvo-app .sk-settings-hub-card__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 11px;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon[data-accent="amber"] {
+  background: rgba(255, 238, 0, 0.12);
+  color: #ffee00;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon[data-accent="sky"] {
+  background: rgba(2, 167, 255, 0.12);
+  color: #02a7ff;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon[data-accent="cyan"] {
+  background: rgba(127, 205, 251, 0.12);
+  color: #7fcdfb;
+}
+
+.sklyvo-app .sk-settings-hub-card__icon[data-accent="emerald"] {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
+}
+
+.sklyvo-app .sk-settings-hub-card__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sk-ink, #f2f3f5);
+}
+
+.sklyvo-app .sk-settings-hub-card__chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: #6b7078;
+}
+
+.sklyvo-app .sk-settings-hub-card__body {
+  margin: 10px 0 0;
+  flex: none;
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+  color: var(--sk-muted, #8a8f98);
+}
+
+.sklyvo-app .sk-settings-hub-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sklyvo-app .sk-settings-hub-card__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 99px;
+}
+
+.sklyvo-app .sk-settings-hub-card__dot.is-ok {
+  background: #10b981;
+}
+
+.sklyvo-app .sk-settings-hub-card__dot.is-warn {
+  background: #ff7802;
+}
+
+.sklyvo-app .sk-settings-hub-card__state {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sklyvo-app .sk-settings-hub-card__state.is-ok {
+  color: var(--sk-muted, #8a8f98);
+}
+
+.sklyvo-app .sk-settings-hub-card__state.is-warn {
+  color: #ffb877;
 }
 
 .sklyvo-app .sk-settings-hub-card__preview {
@@ -2800,10 +2946,12 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 .sklyvo-app .sk-settings-hub-progress {
   display: flex;
   align-items: center;
-  gap: 1rem 1.5rem;
-  padding: 0.875rem 1.25rem;
-  border-radius: 20px;
-  border: 1px dashed color-mix(in oklab, var(--sk-muted) 42%, transparent);
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
   background: transparent;
   transition:
     opacity 0.45s ease,
@@ -2822,17 +2970,17 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 
 .sklyvo-app .sk-settings-hub-progress__title {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 13.5px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-settings-hub-progress__meta {
-  margin: 0.15rem 0 0;
-  font-size: 0.6875rem;
+  margin: 3px 0 0;
+  font-size: 11.5px;
   line-height: 1.4;
-  color: var(--sk-muted);
+  color: #6b7078;
 }
 
 .sklyvo-app .sk-settings-hub-progress__steps {
@@ -2840,7 +2988,7 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   flex: 1;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.625rem 1.25rem;
+  gap: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2850,16 +2998,17 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 .sklyvo-app .sk-settings-hub-progress__step {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 8px;
   min-width: 0;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 12.5px;
+  font-weight: 600;
   line-height: 1.35;
-  color: var(--sk-muted);
+  white-space: nowrap;
+  color: #6b7078;
 }
 
 .sklyvo-app .sk-settings-hub-progress__step.is-done {
-  color: var(--sk-ink);
+  color: #c9cdd3;
 }
 
 .sklyvo-app .sk-settings-hub-progress__label {
@@ -2871,23 +3020,25 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  border-radius: 999px;
-  border: 2px dashed color-mix(in oklab, var(--sk-muted) 48%, transparent);
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  border: 1.6px solid #4a4e55;
   background: transparent;
+  color: #08090a;
 }
 
 .sklyvo-app .sk-settings-hub-progress__step.is-done .sk-settings-hub-progress__mark {
   border: none;
   background: #10b981;
-  color: #fff;
+  color: #08090a;
 }
 
 .sklyvo-app .sk-settings-hub-progress__pct {
   margin: 0;
   flex: none;
-  font-size: 1.375rem;
+  font-size: 20px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
@@ -6494,9 +6645,21 @@ body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
   padding-bottom: 1rem;
 }
 
+.sk-settings-dialog .sk-settings-scroll--radar {
+  padding-bottom: 0.75rem;
+}
+
+.sk-settings-dialog .sk-settings-scroll--radar .sk-settings-panel__head {
+  padding: 10px 14px;
+}
+
 @media (min-width: 640px) {
   .sk-settings-dialog .sk-settings-scroll {
     padding-bottom: 1.25rem;
+  }
+
+  .sk-settings-dialog .sk-settings-scroll--radar {
+    padding-bottom: 0.85rem;
   }
 }
 
@@ -6554,6 +6717,49 @@ body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
   border-color: rgba(255, 255, 255, 0.24) !important;
   background: #1d1f24 !important;
   box-shadow: none !important;
+}
+
+/* Keyword lists in Radar settings — must beat sk-dialog-flat textarea { height: 44px } */
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field,
+.sk-settings-dialog textarea.sk-settings-keywords__field {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  resize: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  line-height: 1.5 !important;
+  font-size: 0.875rem !important;
+  padding: 0.75rem 0.875rem !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field--industries,
+.sk-settings-dialog textarea.sk-settings-keywords__field--industries {
+  min-height: 7rem !important;
+}
+
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field--locations,
+.sk-settings-dialog textarea.sk-settings-keywords__field--locations {
+  min-height: 3.75rem !important;
+}
+
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field::-webkit-scrollbar,
+.sk-settings-dialog textarea.sk-settings-keywords__field::-webkit-scrollbar {
+  width: 8px;
+}
+
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field::-webkit-scrollbar-thumb,
+.sk-settings-dialog textarea.sk-settings-keywords__field::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+body:has(.sklyvo-app) .sk-dialog-flat.sk-settings-dialog[role="dialog"] textarea.sk-settings-keywords__field::-webkit-scrollbar-track,
+.sk-settings-dialog textarea.sk-settings-keywords__field::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .sk-settings-dialog button[role="switch"][data-state="checked"] {
@@ -12461,8 +12667,17 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-pricing-page > .sk-legal-footer,
-.sklyvo-app .sk-profile-legal {
+.sklyvo-app .sk-settings-hub > .sk-settings-hub__legal {
   margin-top: auto;
+  padding-top: 12px;
+  flex: none;
+  flex-shrink: 0;
+}
+
+.sklyvo-app .sk-profile-page > .sk-profile-legal {
+  margin-top: auto;
+  padding-top: 12px;
+  flex: 0 0 auto;
 }
 
 .sklyvo-app .sk-legal-links {
@@ -13095,12 +13310,15 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   cursor: not-allowed;
 }
 
-/* Profile — personal details (Matej ws2-panelcol) */
+/* Profile — Matej ws2-panelcol */
 .sklyvo-app .sk-profile-panel {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   min-height: 0;
-  padding: 16px 18px 18px;
+  min-width: 0;
+  align-self: stretch;
+  padding: 18px 20px 20px;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   background: #0a0b0d;
@@ -13116,33 +13334,33 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 
 .sklyvo-app .sk-profile-personal__names {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-  margin-top: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .sklyvo-app .sk-profile-field {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .sklyvo-app .sk-profile-field--grow {
   flex: 1;
-  min-width: 180px;
+  min-width: 160px;
 }
 
 .sklyvo-app .sk-profile-input {
   box-sizing: border-box;
   width: 100%;
-  height: 38px;
+  height: 36px;
   padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 11px;
+  border-radius: 10px;
   background: #131417;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 12.5px;
   color: #f2f3f5;
   outline: none;
   transition:
@@ -13164,36 +13382,46 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .sklyvo-app .sk-profile-personal__save {
-  height: 38px;
+  height: 36px;
   flex: none;
-  padding: 0 16px;
+  padding: 0 14px;
   border: none;
-  border-radius: 11px;
+  border-radius: 10px;
   font-size: 12px;
   font-weight: 700;
 }
 
 .sklyvo-app .sk-profile-personal__hint {
-  margin: 8px 0 0;
+  margin: auto 0 0;
+  padding-top: 8px;
   font-size: 10.5px;
   line-height: 1.5;
   color: var(--n-dim);
+}
+
+.sklyvo-app .sk-profile-panel--agency {
+  padding: 20px 22px 22px;
 }
 
 .sklyvo-app .sk-profile-agency__head {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-agency__head .sk-profile-panel__title {
   flex: 1;
   min-width: 0;
+}
+
+.sklyvo-app .sk-profile-panel--agency .sk-profile-panel__title {
+  font-size: 15px;
 }
 
 .sklyvo-app .sk-profile-agency__badge {
@@ -13212,43 +13440,78 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   color: var(--n-muted);
 }
 
+.sklyvo-app .sk-profile-panel--agency .sk-profile-agency__badge {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
 .sklyvo-app .sk-profile-locked {
   display: flex;
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  height: 38px;
+  height: 36px;
   padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 11px;
+  border-radius: 10px;
   background: #0e0f11;
-  font-size: 12px;
+  font-size: 12.5px;
   color: #6b7078;
+}
+
+.sklyvo-app .sk-profile-agency__fields {
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: center;
+  margin-top: 14px;
+  gap: 14px;
+}
+
+.sklyvo-app .sk-profile-panel--agency .sk-profile-field {
+  gap: 7px;
+}
+
+.sklyvo-app .sk-profile-panel--agency .sk-field-label {
+  font-size: 10.5px;
+}
+
+.sklyvo-app .sk-profile-panel--agency .sk-profile-locked {
+  height: 42px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  border-radius: 11px;
 }
 
 .sklyvo-app .sk-profile-agency__foot {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-agency__foot .sk-profile-personal__hint {
   flex: 1;
-  min-width: 180px;
+  min-width: 160px;
   margin: 0;
+  padding-top: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 .sklyvo-app .sk-profile-agency__manage {
   display: inline-flex;
-  height: 38px;
+  height: 40px;
   flex: none;
   align-items: center;
   justify-content: center;
   padding: 0 14px;
   border-radius: 11px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   text-decoration: none;
 }
@@ -13258,6 +13521,7 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-plan__badge {
@@ -13265,25 +13529,35 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   flex: none;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   color: var(--sk-brand);
 }
 
 .sklyvo-app .sk-profile-plan__bar {
-  height: 6px;
-  margin-top: 14px;
+  height: 5px;
+  margin-top: 10px;
   overflow: hidden;
   border-radius: 999px;
   background: #1b1d21;
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__bar {
+  height: 8px;
+  margin-top: 16px;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-plan__bar-fill {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #ffffff 0%, #ffd36b 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #ffd36b 55%, #ff7802 100%);
+}
+
+.sklyvo-app .sk-profile-plan__bar-fill[data-level="high"] {
+  background: linear-gradient(90deg, #ffd36b 0%, #ff7802 55%, #ff4d4f 100%);
 }
 
 .sklyvo-app .sk-profile-plan__usage {
@@ -13291,8 +13565,14 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 10.5px;
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__usage {
+  margin-top: 10px;
+  font-size: 12.5px;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-plan__usage-label {
@@ -13305,12 +13585,28 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   color: #ffd36b;
 }
 
+.sklyvo-app .sk-profile-plan__usage-value[data-level="mid"] {
+  color: #ffb877;
+}
+
+.sklyvo-app .sk-profile-plan__usage-value[data-level="high"] {
+  color: #ff4d4f;
+}
+
 .sklyvo-app .sk-profile-plan__lines {
   display: flex;
   flex-direction: column;
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__lines {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 14px;
+  padding-top: 6px;
+  justify-content: space-evenly;
 }
 
 .sklyvo-app .sk-profile-plan__line {
@@ -13318,8 +13614,13 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 0;
+  padding: 4px 0;
   font-size: 10.5px;
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__line {
+  padding: 0;
+  font-size: 13px;
 }
 
 .sklyvo-app .sk-profile-plan__line-label {
@@ -13343,17 +13644,24 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 .sklyvo-app .sk-profile-plan__note {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
   border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 11px;
+  border-radius: 10px;
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  flex: none;
+  border-radius: 12px;
 }
 
 .sklyvo-app .sk-profile-plan__note-icon {
   display: flex;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: none;
   align-items: center;
   justify-content: center;
@@ -13362,33 +13670,142 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   color: var(--n-muted);
 }
 
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__note-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .sklyvo-app .sk-profile-plan__note-text {
   flex: 1;
   min-width: 0;
-  font-size: 10.5px;
-  line-height: 1.45;
+  font-size: 10px;
+  line-height: 1.4;
   color: var(--n-muted);
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__note-text {
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 .sklyvo-app .sk-profile-plan__cta {
   display: flex;
   width: 100%;
-  height: 36px;
+  height: 40px;
   align-items: center;
   justify-content: center;
-  margin-top: 12px;
+  margin-top: auto;
+  padding-top: 12px;
   border: none;
   border-radius: 11px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
 }
 
+.sklyvo-app .sk-profile-panel--plan .sk-profile-plan__cta {
+  height: 44px;
+  margin-top: auto;
+  padding-top: 16px;
+  flex: none;
+  font-size: 13.5px;
+  border-radius: 12px;
+}
+
+.sklyvo-app .sk-profile-panel--plan .sk-profile-panel__title {
+  font-size: 15px;
+}
+
+.sklyvo-app .sk-profile-panel--plan {
+  padding: 20px 22px 22px;
+}
+
 .sklyvo-app .sk-profile-page {
   display: flex;
+  flex: 1 1 0;
   min-height: 0;
-  flex: 1;
+  width: 100%;
   flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+}
+
+.sklyvo-app .sk-profile-page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+.sklyvo-app .sk-profile-page__head .sk-page-head {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.sklyvo-app .sk-profile-page .sk-page-head--tool .sk-page-head__title {
+  margin: 0 0 4px;
+}
+
+.sklyvo-app .sk-profile-page .sk-page-head--tool .sk-page-head__sub {
+  line-height: 1.4;
+}
+
+.sklyvo-app .sk-trial-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  flex: none;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px dashed rgba(255, 238, 0, 0.34);
+}
+
+.sklyvo-app .sk-trial-strip__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  background: rgba(255, 238, 0, 0.14);
+  color: #ffee00;
+}
+
+.sklyvo-app .sk-trial-strip__cols {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.sklyvo-app .sk-trial-strip__col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sklyvo-app .sk-trial-strip__label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  color: #8a8f98;
+}
+
+.sklyvo-app .sk-trial-strip__value {
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--sk-ink, #f2f3f5);
+}
+
+.sklyvo-app .sk-trial-strip__value--accent {
+  font-variant-numeric: tabular-nums;
+  color: #ffee00;
 }
 
 .sklyvo-app .sk-profile-page__loading {
@@ -13405,10 +13822,11 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 .sklyvo-app .sk-profile-head {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-top: 20px;
-  padding-bottom: 20px;
+  flex: 0 0 auto;
+  margin-top: 12px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 }
 
@@ -13418,32 +13836,32 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-profile-head__avatar {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   overflow: hidden;
 }
 
 .sklyvo-app .sk-profile-head__avatar-fallback {
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--sk-brand, #02a7ff);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #ffffff;
 }
 
 .sklyvo-app .sk-profile-head__photo-btn {
   position: absolute;
-  right: -5px;
-  bottom: -5px;
+  right: -4px;
+  bottom: -4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
+  border-radius: 7px;
   background: #131417;
   color: #c9cdd3;
   cursor: pointer;
@@ -13464,15 +13882,15 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-profile-head__name {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--sk-ink);
 }
 
 .sklyvo-app .sk-profile-head__email {
-  margin-top: 3px;
-  font-size: 12.5px;
+  margin-top: 2px;
+  font-size: 12px;
   color: var(--sk-muted);
 }
 
@@ -13518,6 +13936,10 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   color: #ffd36b;
 }
 
+.sklyvo-app .sk-profile-head__stat-usage[data-level="high"] {
+  color: #ff4d4f;
+}
+
 .sklyvo-app .sk-profile-head__stat-seats {
   font-size: 13px;
   font-weight: 700;
@@ -13529,23 +13951,40 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
-  margin-top: 20px;
+  margin-top: 16px;
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: stretch;
+  justify-items: stretch;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 860px) {
   .sklyvo-app .sk-profile-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Top row = content; bottom row takes the rest so nav list fits */
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 859px) {
+  .sklyvo-app .sk-profile-page {
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
-  .sklyvo-app .sk-profile-grid .sk-profile-rows {
-    grid-column: 1;
+  .sklyvo-app .sk-profile-grid {
+    flex: none;
+    grid-auto-rows: auto;
   }
 }
 
 .sklyvo-app .sk-profile-rows {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  box-sizing: border-box;
+  min-height: 0;
+  min-width: 0;
+  align-self: stretch;
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.13);
@@ -13555,8 +13994,10 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 .sklyvo-app .sk-profile-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 16px;
+  gap: 8px;
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   background: transparent;
   text-decoration: none;

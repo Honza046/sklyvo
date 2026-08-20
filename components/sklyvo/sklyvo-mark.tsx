@@ -1,6 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, type CSSProperties } from "react";
+
+/** the exported logo with its eyes removed, so live ones can sit on top */
+export const EYELESS_ARTWORK = "/brand/sklyvo-mark-eyeless.png";
+/** the untouched logo, eyes painted in */
+export const STATIC_ARTWORK = "/brand/sklyvo-mark.png";
 
 /**
  * The Sklyvo mark: a blue tile with a glowing dome and two eyes that track the
@@ -39,6 +45,8 @@ type Gaze = {
   lid2: number;
   startle: number;
   hover: number;
+  /** extra eye scale a scripted pose can ask for, on top of startle and hover */
+  boost: number;
   t: number;
 };
 
@@ -51,6 +59,7 @@ const REST: Gaze = {
   lid2: 0,
   startle: 0,
   hover: 0,
+  boost: 0,
   t: 0,
 };
 
@@ -92,53 +101,66 @@ function orbBackground(g: Gaze, tone: MarkTone) {
   );
 }
 
-function eyeTransform(spec: EyeSpec, size: number, g: Gaze) {
+/**
+ * A scripted pose. While one is set the cursor is ignored, so an owner can pose
+ * the eyes deliberately: `gy` is not clamped, so a pose may look further than a
+ * mouse ever could, and `pop` swells the eyes.
+ */
+export type MarkGaze = { gx: number; gy: number; pop?: number };
+
+/** the landing draws the eyes with a shallower vertical reach than the app does */
+const REACH_Y_DEFAULT = 1.05;
+
+function eyeTransform(spec: EyeSpec, size: number, g: Gaze, reachY = REACH_Y_DEFAULT) {
   const range = size * 0.03;
   const gx = spec.trailing ? g.gx2 : g.gx;
   const gy = spec.trailing ? g.gy2 : g.gy;
   const lid = spec.trailing ? g.lid2 : g.lid;
-  const pop = 1 + g.startle * 0.11 + g.hover * 0.07;
+  const pop = 1 + g.startle * 0.11 + g.hover * 0.07 + g.boost;
   // Don't collapse to a sub-pixel slit — at ~30px that reads as a flash.
   const scaleY = Math.max(0.16, 1 - lid * 0.84);
   return (
     "translate(-50%, -50%) " +
-    `translate(${(gx * range).toFixed(2)}px, ${(gy * range * 1.05).toFixed(2)}px) ` +
+    `translate(${(gx * range).toFixed(2)}px, ${(gy * range * reachY).toFixed(2)}px) ` +
     `rotate(${EYE_ROT}deg) ` +
     `scaleX(${pop.toFixed(3)}) scaleY(${(scaleY * pop).toFixed(3)})`
   );
 }
 
+/** the mark's own corner radius, measured from the 450px artwork */
+function defaultRadius(size: number) {
+  return (size * 100) / 450;
+}
+
 function tileStyle(
   size: number,
-  tone: MarkTone,
+  radius: number,
   shadow: boolean,
-  embed: boolean,
+  tone: MarkTone,
 ): CSSProperties {
-  const radius = (size * 100) / 450;
   return {
     position: "relative",
     display: "block",
     width: size,
     height: size,
     flex: "none",
-    overflow: embed ? "visible" : "hidden",
-    borderRadius: embed ? undefined : radius,
-    boxShadow:
-      shadow && !embed
-        ? `0 ${(size * 0.09).toFixed(1)}px ${(size * 0.16).toFixed(1)}px ` +
-          `-${(size * 0.07).toFixed(1)}px ${TONE[tone].shadow}`
-        : undefined,
+    overflow: "hidden",
+    borderRadius: radius,
+    boxShadow: shadow
+      ? `0 ${(size * 0.09).toFixed(1)}px ${(size * 0.16).toFixed(1)}px ` +
+        `-${(size * 0.07).toFixed(1)}px ${TONE[tone].shadow}`
+      : undefined,
   };
 }
 
 /** only the blue plate fades out over the bottom fifth of the tile */
-function plateStyle(size: number, tone: MarkTone): CSSProperties {
+function plateStyle(radius: number, tone: MarkTone): CSSProperties {
   const mask =
     "linear-gradient(180deg, #000 0%, #000 80%, transparent 80%, transparent 100%)";
   return {
     position: "absolute",
     inset: 0,
-    borderRadius: (size * 100) / 450,
+    borderRadius: radius,
     background: TONE[tone].plate,
     pointerEvents: "none",
     WebkitMaskImage: mask,
@@ -146,15 +168,20 @@ function plateStyle(size: number, tone: MarkTone): CSSProperties {
   };
 }
 
+/**
+ * `round` swaps the flat-bottomed dome for a true circle, which is what the
+ * bare mark wants when it rises out of a surface. `glow` dims the white halo —
+ * at 300px the default reads as a floodlight.
+ */
 function orbStyle(
   size: number,
   tone: MarkTone,
-  embed: boolean,
-  blend = false,
+  round = false,
+  glow = 1,
 ): CSSProperties {
   const w = size * 1.06;
-  const h = size * 0.8;
-  const glow = (size * 0.1).toFixed(1);
+  const h = round ? w : size * 0.8;
+  const blur = (size * 0.1).toFixed(1);
   const inner = (size * 0.05).toFixed(1);
   return {
     position: "absolute",
@@ -162,19 +189,14 @@ function orbStyle(
     top: size * 0.24,
     width: w,
     height: h,
-    borderRadius: "50% 50% 0 0 / 62% 62% 0 0",
+    borderRadius: round ? "50%" : "50% 50% 0 0 / 62% 62% 0 0",
     transformOrigin: "50% 100%",
     transform: orbTransform(size, REST),
     background: orbBackground(REST, tone),
-    boxShadow: embed
-      ? blend
-        ? `0 0 ${(size * 0.22).toFixed(1)}px rgba(2,167,255,0.42), ` +
-          `0 0 ${(size * 0.4).toFixed(1)}px rgba(2,167,255,0.14)`
-        : `0 0 ${(size * 0.14).toFixed(1)}px rgba(255,255,255,0.28), ` +
-          `inset 0 0 ${inner}px rgba(0,0,0,0.04)`
-      : `0 0 ${glow}px rgba(0,0,0,0.10), ` +
-        `0 0 ${glow}px rgba(255,255,255,1), ` +
-        `inset 0 0 ${inner}px rgba(0,0,0,0.05)`,
+    boxShadow:
+      `0 0 ${blur}px rgba(0,0,0,0.10), ` +
+      `0 0 ${blur}px rgba(255,255,255,${glow}), ` +
+      `inset 0 0 ${inner}px rgba(0,0,0,0.05)`,
     pointerEvents: "none",
   };
 }
@@ -184,12 +206,14 @@ function eyeStyle(spec: EyeSpec, size: number, tone: MarkTone): CSSProperties {
   const blur = Math.max(1, 5 * k * 2.2).toFixed(1);
   const offset = (4 * k * 2.2).toFixed(1);
   const inner = Math.max(1, 5 * k * 2.2).toFixed(1);
+  // Skly Bot (grey) peeks a bit wider — reads as “kukate” in the sidebar.
+  const eyeScale = tone === "grey" ? 1.22 : 1;
   return {
     position: "absolute",
     left: `${spec.cx}%`,
     top: `${spec.cy}%`,
-    width: (size * EYE_W) / 100,
-    height: (size * EYE_H) / 100,
+    width: (size * EYE_W * eyeScale) / 100,
+    height: (size * EYE_H * eyeScale) / 100,
     borderRadius: "50%",
     background: TONE[tone].eye,
     boxShadow:
@@ -201,6 +225,37 @@ function eyeStyle(spec: EyeSpec, size: number, tone: MarkTone): CSSProperties {
     // the blink and causes the odd flicker.
     willChange: "transform",
     pointerEvents: "none",
+  };
+}
+
+/**
+ * Peek mode drives the eyes from a short script instead of the cursor: the mark
+ * rises from behind its strip, looks right, looks left, centres, blinks once and
+ * ducks back down. The orb keeps tracking the cursor throughout.
+ */
+type Peek = { gaze: number; lid: number };
+
+/** the peek's resting pose, and the two transforms the wrapper toggles between */
+const PEEK_DOWN = "translateY(105%)";
+const PEEK_UP = "translateY(14%)";
+
+function peekEyeTransform(size: number, p: Peek) {
+  const dx = p.gaze * size * 0.034;
+  const scaleY = Math.max(0.04, 1 - p.lid);
+  return (
+    "translate(-50%, -50%) " +
+    `translate(${dx.toFixed(2)}px, 0) ` +
+    `rotate(${EYE_ROT}deg) scaleY(${scaleY.toFixed(3)})`
+  );
+}
+
+function peekEyeStyle(spec: EyeSpec, size: number, tone: MarkTone): CSSProperties {
+  return {
+    ...eyeStyle(spec, size, tone),
+    transform: peekEyeTransform(size, { gaze: 0, lid: 0 }),
+    // the peek eyes ease between poses; the cursor-tracking ones do not
+    transition: "transform 0.5s cubic-bezier(0.34,0.9,0.3,1)",
+    willChange: "transform",
   };
 }
 
@@ -218,40 +273,81 @@ function lidCurve(dt: number, close: number, hold: number, open: number) {
 
 const clamp = (n: number) => Math.max(-1, Math.min(1, n));
 
+/**
+ * `css` draws the whole mark in CSS, `artwork` lays the live eyes over the
+ * exported logo with its eyes removed. Both share the same eye behaviour.
+ */
+export type MarkVariant = "css" | "artwork";
+
 export function SklyvoMark({
   size = 30,
-  className,
-  interactive = true,
+  variant = "css",
+  radius,
   shadow = true,
+  tone = "brand",
+  className,
+  peek = false,
+  bare = false,
   embed = false,
   blend = false,
-  tone = "brand",
+  interactive = true,
+  round = false,
+  glow = 1,
+  gaze = null,
+  reachY = REACH_Y_DEFAULT,
 }: {
   size?: number;
-  className?: string;
-  /** Sidebar / chrome — skip rAF + global mousemove (much lighter). */
-  interactive?: boolean;
-  /** Blue drop shadow the mark normally casts. */
-  shadow?: boolean;
-  /** Strip / banner — no square plate, blends into a gradient background. */
-  embed?: boolean;
-  /** Softer orb glow for gradient banners (today strip). */
-  blend?: boolean;
+  variant?: MarkVariant;
+  radius?: number;
   tone?: MarkTone;
+  /** the blue drop shadow the mark normally casts */
+  shadow?: boolean;
+  className?: string;
+  /** Sidebar / chrome — skip rAF + global mousemove. */
+  interactive?: boolean;
+  /** Alias for bare — strip / banner without a plate. */
+  embed?: boolean;
+  /** Softer orb glow for gradient banners. */
+  blend?: boolean;
+  /**
+   * Drop the tile and plate and run the peek script: the bare orb and eyes rise
+   * from behind whatever the mark is positioned against, look around, then hide.
+   */
+  peek?: boolean;
+  /**
+   * Drop the tile and plate but keep the cursor tracking: the dome and eyes sit
+   * straight on whatever is behind them, with no card of their own.
+   */
+  bare?: boolean;
+  /** make the dome a full circle instead of the flat-bottomed arch */
+  round?: boolean;
+  /** dial the white halo down: 1 is the default, 0 turns it off */
+  glow?: number;
+  /** hold a scripted pose instead of following the cursor */
+  gaze?: MarkGaze | null;
+  /** vertical gaze reach as a multiple of the horizontal one */
+  reachY?: number;
 }) {
   const tileRef = useRef<HTMLSpanElement>(null);
   const orbRef = useRef<HTMLSpanElement>(null);
   const leftRef = useRef<HTMLSpanElement>(null);
   const rightRef = useRef<HTMLSpanElement>(null);
+  const useBare = bare || embed;
+  const useGlow = blend ? Math.min(glow, 0.45) : glow;
+  // mirrored in an effect, not during render: the rAF loop reads it every frame
+  // and must not tear down when the pose changes
+  const gazeRef = useRef<MarkGaze | null>(null);
+  useEffect(() => {
+    gazeRef.current = gaze;
+  }, [gaze]);
 
   useEffect(() => {
     if (!interactive) return;
-
     const tile = tileRef.current;
-    const orb = orbRef.current;
+    const orb = orbRef.current; // the artwork variant has no orb to drive
     const left = leftRef.current;
     const right = rightRef.current;
-    if (!tile || !orb || !left || !right) return;
+    if (!tile || !left || !right) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -306,8 +402,19 @@ export function SklyvoMark({
       const now = performance.now();
       g.t = now / 1000;
 
+      // a scripted pose wins over both the cursor and the idle wander
+      const pose = gazeRef.current;
+      if (pose) {
+        target.gx = pose.gx;
+        target.gy = pose.gy;
+        lastMove = now;
+        nextWander = now + 1600;
+      }
+      g.boost += ((pose?.pop ?? 0) - g.boost) * 0.12;
+      if (Math.abs(g.boost - (pose?.pop ?? 0)) < 0.001) g.boost = pose?.pop ?? 0;
+
       // let the gaze drift on its own once the cursor goes quiet
-      if (now - lastMove > 2200 && now > nextWander) {
+      if (!pose && now - lastMove > 2200 && now > nextWander) {
         target.gx = (Math.random() * 2 - 1) * 0.8;
         target.gy = (Math.random() * 2 - 1) * 0.55;
         nextWander = now + 1600 + Math.random() * 2200;
@@ -345,12 +452,18 @@ export function SklyvoMark({
         }
       }
 
-      orb.style.transform = orbTransform(size, g);
-      orb.style.background = orbBackground(g, tone);
-      left.style.transform = eyeTransform(EYE_LEFT, size, g);
-      right.style.transform = eyeTransform(EYE_RIGHT, size, g);
+      if (orb) {
+        orb.style.transform = orbTransform(size, g);
+        orb.style.background = orbBackground(g, tone);
+      }
+      // in peek mode the script owns the eyes; the orb still follows the cursor
+      if (!peek) {
+        left.style.transform = eyeTransform(EYE_LEFT, size, g, reachY);
+        right.style.transform = eyeTransform(EYE_RIGHT, size, g, reachY);
+      }
 
       frameId = requestAnimationFrame(frame);
+
     };
 
     const onMove = (e: MouseEvent) => {
@@ -392,19 +505,116 @@ export function SklyvoMark({
       tile.removeEventListener("mouseenter", onEnter);
       tile.removeEventListener("mouseleave", onLeave);
     };
-  }, [size, interactive, tone]);
+  }, [size, variant, tone, peek, reachY, interactive]);
+
+  // the peek script: wait, rise, look right, look left, centre, blink, duck
+  useEffect(() => {
+    if (!peek) return;
+    const tile = tileRef.current;
+    const left = leftRef.current;
+    const right = rightRef.current;
+    if (!tile || !left || !right) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // no cycle — just rest in the visible pose
+      tile.style.transform = PEEK_UP;
+      return;
+    }
+
+    const p: Peek = { gaze: 0, lid: 0 };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const paint = () => {
+      left.style.transform = peekEyeTransform(size, p);
+      right.style.transform = peekEyeTransform(size, p);
+    };
+
+    // [delay before the step, what the step does]
+    const script: [number, () => void][] = [
+      [9000, () => { tile.style.transform = PEEK_UP; }],
+      [1600, () => { p.gaze = 1; paint(); }],
+      [1400, () => { p.gaze = -1; paint(); }],
+      [1300, () => { p.gaze = 0; paint(); }],
+      [900, () => { p.lid = 1; paint(); }],
+      [110, () => { p.lid = 0; paint(); }],
+      [1100, () => { tile.style.transform = PEEK_DOWN; }],
+    ];
+
+    const run = (i: number) => {
+      if (i === script.length) {
+        timer = setTimeout(() => run(0), 1200);
+        return;
+      }
+      const [wait, step] = script[i];
+      timer = setTimeout(() => {
+        step();
+        run(i + 1);
+      }, wait);
+    };
+    run(0);
+
+    return () => clearTimeout(timer);
+  }, [peek, size]);
+
+  const corner = radius ?? defaultRadius(size);
 
   return (
     <span
       ref={tileRef}
       className={className}
-      style={tileStyle(size, tone, shadow, embed)}
+      style={
+        peek
+          ? {
+              // No tile, no plate — just the dome and the eyes rising into view.
+              // Absolute so the mark costs the strip no layout space; the caller
+              // supplies right/bottom.
+              position: "absolute",
+              display: "block",
+              width: size,
+              height: size,
+              flex: "none",
+              pointerEvents: "none",
+              transform: PEEK_DOWN,
+              transition: "transform 1.05s cubic-bezier(0.22,1.08,0.3,1)",
+            }
+          : useBare
+            ? {
+                // no card of its own: the dome and eyes sit on whatever is behind
+                position: "relative",
+                display: "block",
+                width: size,
+                height: size,
+                flex: "none",
+                pointerEvents: "none",
+              }
+            : tileStyle(size, corner, shadow, tone)
+      }
       aria-hidden
     >
-      {!embed ? <span style={plateStyle(size, tone)} /> : null}
-      <span ref={orbRef} style={orbStyle(size, tone, embed, blend)} />
-      <span ref={leftRef} style={eyeStyle(EYE_LEFT, size, tone)} />
-      <span ref={rightRef} style={eyeStyle(EYE_RIGHT, size, tone)} />
+      {peek || bare ? (
+        <span ref={orbRef} style={orbStyle(size, tone, round, useGlow)} />
+      ) : variant === "css" ? (
+        <>
+          <span style={plateStyle(corner, tone)} />
+          <span ref={orbRef} style={orbStyle(size, tone)} />
+        </>
+      ) : (
+        <Image
+          src={EYELESS_ARTWORK}
+          alt=""
+          width={size}
+          height={size}
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      )}
+      <span
+        ref={leftRef}
+        style={peek ? peekEyeStyle(EYE_LEFT, size, tone) : eyeStyle(EYE_LEFT, size, tone)}
+      />
+      <span
+        ref={rightRef}
+        style={peek ? peekEyeStyle(EYE_RIGHT, size, tone) : eyeStyle(EYE_RIGHT, size, tone)}
+      />
     </span>
   );
 }

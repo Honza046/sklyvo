@@ -132,25 +132,20 @@ body:has(.sklyvo-login) {
 
 /* Landing → login/register transition (globals so it works before auth.css loads) */
 
-.sk-auth-curtain {
+/* Survives route change: logo + lang stay fixed while login rises underneath */
+.sk-auth-chrome-bridge {
   position: fixed;
   inset: 0;
-  z-index: 100000;
-  background: #08090a;
-  opacity: 0;
+  z-index: 100002;
   pointer-events: none;
+  /* keep clones on their own compositor layer */
+  transform: translateZ(0);
+  contain: layout style;
 }
 
-.sk-auth-curtain.is-entering {
-  opacity: 1;
-  pointer-events: auto;
-  transition: opacity 0.52s cubic-bezier(0.33, 0.01, 0.2, 1);
-}
-
-.sk-auth-curtain.is-exiting {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.68s cubic-bezier(0.22, 0.75, 0, 1);
+.sk-auth-chrome-bridge > * {
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .sklyvo-login[data-from-landing="true"] {
@@ -164,6 +159,27 @@ body:has(.sklyvo-login) {
 
 .sklyvo-login[data-from-landing="true"] .sklyvo-auth {
   animation: skAuthEnterCards 0.72s cubic-bezier(0.22, 0.75, 0, 1) 0.1s both;
+}
+
+/*
+ * Login 2.0 handoff: rise is applied imperatively on `.l2-auth-enter`.
+ * Real logo/lang stay visibility:hidden until the bridge is hard-cut away
+ * (same frame) — fading both layers caused the blink.
+ */
+.l2-page[data-from-landing="true"]:not([data-chrome-ready="true"]) .l2-brand,
+.l2-page[data-from-landing="true"]:not([data-chrome-ready="true"]) .lang--night {
+  visibility: hidden;
+}
+
+.l2-auth-enter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Nested panel enter fights the page rise — kill it during handoff */
+.l2-auth[data-from-landing="true"] .sklyvo-auth-panel {
+  animation: none !important;
 }
 
 @keyframes skAuthEnterShell {
@@ -201,7 +217,7 @@ body:has(.sklyvo-login) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sk-auth-curtain {
+  .sk-auth-chrome-bridge {
     display: none !important;
   }
 
@@ -210,5 +226,10 @@ body:has(.sklyvo-login) {
   .sklyvo-login[data-from-landing="true"] .sklyvo-lang,
   .sklyvo-login[data-from-landing="true"] .sklyvo-auth {
     animation: none !important;
+  }
+
+  .l2-page[data-from-landing="true"] .l2-brand,
+  .l2-page[data-from-landing="true"] .lang--night {
+    opacity: 1 !important;
   }
 }

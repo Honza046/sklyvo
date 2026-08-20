@@ -45,16 +45,13 @@ export function RecoveryScreen() {
 
   return (
     <>
-      <h1 className="sklyvo-card__title">{t.recovery.title}</h1>
-      <p className="sklyvo-card__sub">{t.recovery.sub}</p>
+      <h1 className="l2-title">{t.recovery.title}</h1>
+      <p className="l2-sub">{t.recovery.sub}</p>
 
       <form onSubmit={handleSubmit} noValidate>
-        <div className="sklyvo-fields">
-          <div className="sklyvo-group">
-            <label className="sklyvo-label" htmlFor={emailId}>
-              {t.recovery.email}
-            </label>
-            <div className="sklyvo-field">
+        <div className="l2-fields">
+          <div className="l2-group">
+            <div className="l2-field">
               <svg
                 width="15"
                 height="15"
@@ -71,11 +68,12 @@ export function RecoveryScreen() {
               </svg>
               <input
                 id={emailId}
-                className="sklyvo-field__input"
+                className="l2-field__input"
                 type="email"
                 name="email"
                 autoComplete="email"
                 placeholder={t.recovery.emailPlaceholder}
+                aria-label={t.recovery.email}
                 required
                 disabled={pending}
               />
@@ -83,27 +81,27 @@ export function RecoveryScreen() {
           </div>
         </div>
 
-        <div className="sklyvo-form__aside" />
+        <div className="l2-forgot-row" aria-hidden />
 
         {errorMessage ? (
-          <p className="sklyvo-error" role="alert">
+          <p className="l2-error" role="alert">
             {errorMessage}
           </p>
         ) : null}
         {successMessage ? (
-          <p className="sklyvo-success" role="status">
+          <p className="l2-success" role="status">
             {successMessage}
           </p>
         ) : null}
 
-        <button type="submit" className="sklyvo-btn-primary" disabled={pending}>
+        <button type="submit" className="l2-cta" disabled={pending}>
           {pending ? t.recovery.sending : t.recovery.cta}
         </button>
       </form>
 
-      <p className="sklyvo-form__footer">
+      <p className="l2-foot">
         <span>{t.recovery.remember}</span>
-        <Link className="sklyvo-link" href="/login">
+        <Link className="l2-link" href="/login">
           {t.recovery.signIn}
         </Link>
       </p>

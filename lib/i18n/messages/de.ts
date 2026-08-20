@@ -796,7 +796,7 @@ export const de: MessageTree = {
   settings: {
     title: "Sklyvo-Einstellungen",
     hubSubtitle:
-      "Wählen Sie einen Bereich — Firma, E-Mail, Verbindungen oder Tarif.",
+      "Firma, E-Mail, Integrationen und Team an einem Ort.",
 
     integrationsPanel: {
       intro: "Verbinden Sie Sklyvo mit den Tools, die Sie bereits nutzen.",
@@ -1046,10 +1046,14 @@ export const de: MessageTree = {
     subtitle:
       "Verwalten Sie persönliche Daten, Sicherheit, Abrechnung und Integrationen.",
     profileTitle: "Profil",
-    profileSubtitle: "Ihr Konto, Tarif und Zugang.",
-    profilePlanLabel: "TARIF",
-    profileUsageLabel: "NUTZUNG",
-    profileSeatsLabel: "PLÄTZE",
+    profileSubtitle: "Ihre Daten, Sicherheit, Abrechnung und Tarif.",
+    profilePlanLabel: "Tarif & Nutzung",
+    profileUsageLabel: "Verbrauch diesen Monat",
+    profileSeatsLabel: "Belegte Plätze",
+    trialStripLabel: "TESTZEITRAUM",
+    trialStripDays: "Noch {days} {dayWord}",
+    trialStripCredits: "Test-Credits",
+    upgradePlan: "Tarif erhöhen",
     agencyTitle: "Agentur-Einstellungen",
     agencyLocked: "Nur Admin",
     agencyNameLabel: "AGENTURNAME",
