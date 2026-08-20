@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -9,11 +17,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Popover,
-  PopoverAnchor,
-  PopoverContent,
-} from "@/components/ui/popover";
 import {
   Globe,
   Hand,
@@ -32,6 +35,120 @@ import { shortLeadAuthorName } from "@/lib/lead-provenance";
 
 const SCRAPE_CONTACT_HINT =
   "Důkladně prohledá web a doplní e-mail nebo telefon";
+
+const CRM_HINT_DELAY_MS = 1000;
+
+function useDelayedHint(delayMs = CRM_HINT_DELAY_MS) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const onEnter = () => {
+    clearTimer();
+    timerRef.current = setTimeout(() => setOpen(true), delayMs);
+  };
+
+  const onLeave = () => {
+    clearTimer();
+    setOpen(false);
+  };
+
+  useEffect(() => () => clearTimer(), []);
+
+  return { open, setOpen, onEnter, onLeave };
+}
+
+function CrmHintBubble({
+  open,
+  anchorRef,
+  side = "top",
+  children,
+}: {
+  open: boolean;
+  anchorRef: React.RefObject<HTMLElement | null>;
+  side?: "top" | "bottom";
+  children: ReactNode;
+}) {
+  const [coords, setCoords] = useState<{ left: number; top: number } | null>(
+    null,
+  );
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) {
+      setCoords(null);
+      return;
+    }
+
+    const update = () => {
+      const rect = anchorRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setCoords({
+        left: rect.left + rect.width / 2,
+        top: side === "bottom" ? rect.bottom + 6 : rect.top - 6,
+      });
+    };
+
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open, anchorRef, side]);
+
+  if (!open || !coords || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className={cn(
+        "sk-crm-hint",
+        side === "bottom" ? "sk-crm-hint--bottom" : "sk-crm-hint--top",
+      )}
+      role="tooltip"
+      style={{ left: coords.left, top: coords.top }}
+    >
+      {children}
+    </div>,
+    document.body,
+  );
+}
+
+export function CrmActionHint({
+  label,
+  description,
+  side = "top",
+  children,
+}: {
+  label: string;
+  description?: string;
+  side?: "top" | "bottom";
+  children: ReactElement;
+}) {
+  const { open, onEnter, onLeave } = useDelayedHint();
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div
+      ref={wrapRef}
+      className="sk-crm-hint-wrap"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {children}
+      <CrmHintBubble open={open} anchorRef={wrapRef} side={side}>
+        <p className="sk-crm-hint__label">{label}</p>
+        {description ? <p className="sk-crm-hint__desc">{description}</p> : null}
+      </CrmHintBubble>
+    </div>
+  );
+}
 
 export function leadFullWebsiteUrl(domainOrUrl: string): string {
   const raw = (domainOrUrl ?? "").trim();
@@ -62,51 +179,40 @@ export function WebsiteVisitedGlobeButton({
   onOpen: () => void;
 }) {
   const who = shortLeadAuthorName(visitedBy);
-  const [hintOpen, setHintOpen] = useState(false);
+  const { open: hintOpen, setOpen: setHintOpen, onEnter, onLeave } =
+    useDelayedHint();
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Popover open={hintOpen} onOpenChange={setHintOpen}>
-      <div
-        className="relative inline-flex shrink-0"
-        onMouseEnter={() => setHintOpen(true)}
-        onMouseLeave={() => setHintOpen(false)}
+    <div
+      ref={wrapRef}
+      className="sk-crm-hint-wrap"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        onFocus={() => setHintOpen(true)}
+        onBlur={() => setHintOpen(false)}
+        className={cn("sk-crm-iconbtn", visited && "sk-crm-iconbtn--visited")}
+        aria-label={
+          visited
+            ? who
+              ? `Web prohlédnut, první návštěva webu: ${who}`
+              : "Web prohlédnut"
+            : "Otevřít web firmy"
+        }
       >
-        <PopoverAnchor asChild>
-          <button
-            type="button"
-            onClick={onOpen}
-            onFocus={() => setHintOpen(true)}
-            onBlur={() => setHintOpen(false)}
-            className={cn(
-              "sk-crm-iconbtn",
-              visited && "sk-crm-iconbtn--visited",
-            )}
-            aria-label={
-              visited
-                ? who
-                  ? `Web prohlédnut, první návštěva webu: ${who}`
-                  : "Web prohlédnut"
-                : "Otevřít web firmy"
-            }
-          >
-            <Globe className="h-3.5 w-3.5" strokeWidth={2} />
-          </button>
-        </PopoverAnchor>
-      </div>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
-        className="z-[200] w-auto max-w-[15rem] rounded-xl border border-border bg-[color:var(--n-card)] px-3 py-2 shadow-lg"
-      >
+        <Globe className="h-3.5 w-3.5" strokeWidth={2} />
+      </button>
+      <CrmHintBubble open={hintOpen} anchorRef={wrapRef}>
         {visited ? (
           <>
-            <p className="text-xs font-semibold leading-snug text-emerald-400">
+            <p className="sk-crm-hint__label sk-crm-hint__label--success">
               Web už někdo prošel
             </p>
-            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
+            <p className="sk-crm-hint__desc">
               {who
                 ? `První návštěva webu: ${who}`
                 : "Někdo z týmu už web otevřel."}
@@ -114,16 +220,12 @@ export function WebsiteVisitedGlobeButton({
           </>
         ) : (
           <>
-            <p className="text-xs font-semibold leading-snug text-foreground">
-              Otevřít web
-            </p>
-            <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
-              Po první návštěvě zezelená.
-            </p>
+            <p className="sk-crm-hint__label">Otevřít web</p>
+            <p className="sk-crm-hint__desc">Po první návštěvě zezelená.</p>
           </>
         )}
-      </PopoverContent>
-    </Popover>
+      </CrmHintBubble>
+    </div>
   );
 }
 
@@ -136,46 +238,36 @@ export function ScrapeContactButton({
   disabled?: boolean;
   onClick: () => void;
 }) {
-  const [hintOpen, setHintOpen] = useState(false);
+  const { open: hintOpen, setOpen: setHintOpen, onEnter, onLeave } =
+    useDelayedHint();
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Popover open={hintOpen} onOpenChange={setHintOpen}>
-      <div
-        className="shrink-0"
-        onMouseEnter={() => setHintOpen(true)}
-        onMouseLeave={() => setHintOpen(false)}
+    <div
+      ref={wrapRef}
+      className="sk-crm-hint-wrap shrink-0"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <button
+        type="button"
+        disabled={disabled || isLoading}
+        onClick={onClick}
+        onFocus={() => setHintOpen(true)}
+        onBlur={() => setHintOpen(false)}
+        className="sk-crm-scan"
+        aria-label={SCRAPE_CONTACT_HINT}
       >
-        <PopoverAnchor asChild>
-          <button
-            type="button"
-            disabled={disabled || isLoading}
-            onClick={onClick}
-            onFocus={() => setHintOpen(true)}
-            onBlur={() => setHintOpen(false)}
-            className="sk-crm-scan"
-            aria-label={SCRAPE_CONTACT_HINT}
-          >
-            {isLoading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-[#02A7FF]" />
-            ) : (
-              <ScanSearch className="h-3.5 w-3.5 text-[#02A7FF]" strokeWidth={2} />
-            )}
-          </button>
-        </PopoverAnchor>
-      </div>
-      <PopoverContent
-        side="top"
-        align="center"
-        sideOffset={8}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-        onCloseAutoFocus={(e) => e.preventDefault()}
-        className="w-auto max-w-[15rem] rounded-xl border-border/70 bg-[color:var(--n-card)] px-3 py-2 shadow-lg"
-      >
-        <p className="text-xs font-medium leading-snug text-foreground">
-          {SCRAPE_CONTACT_HINT}
-        </p>
-      </PopoverContent>
-    </Popover>
+        {isLoading ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#02A7FF]" />
+        ) : (
+          <ScanSearch className="h-3.5 w-3.5 text-[#02A7FF]" strokeWidth={2} />
+        )}
+      </button>
+      <CrmHintBubble open={hintOpen} anchorRef={wrapRef}>
+        <p className="sk-crm-hint__label">{SCRAPE_CONTACT_HINT}</p>
+      </CrmHintBubble>
+    </div>
   );
 }
 
@@ -216,14 +308,15 @@ export function CrmRowActions({
 }) {
   return (
     <div className="sk-crm-actions">
-      <Link
-        href={sniperHref}
-        className="sk-crm-iconbtn"
-        title="Odeslat do Snipera"
-        aria-label="Odeslat do Snipera"
-      >
-        <Send className="h-3.5 w-3.5" strokeWidth={2} />
-      </Link>
+      <CrmActionHint label="Odeslat do Snipera">
+        <Link
+          href={sniperHref}
+          className="sk-crm-iconbtn"
+          aria-label="Odeslat do Snipera"
+        >
+          <Send className="h-3.5 w-3.5" strokeWidth={2} />
+        </Link>
+      </CrmActionHint>
       {companyWeb ? (
         <WebsiteVisitedGlobeButton
           visited={visited}
@@ -232,26 +325,35 @@ export function CrmRowActions({
         />
       ) : null}
       {hasSentEmails ? (
+        <CrmActionHint
+          label="Zobrazit odeslaný e-mail"
+          description="Náhled textu, který jsme firmě odeslali."
+        >
+          <button
+            type="button"
+            className="sk-crm-iconbtn"
+            aria-label="Zobrazit odeslaný e-mail"
+            disabled={isLoadingSentEmails}
+            onClick={onViewSentEmails}
+          >
+            {isLoadingSentEmails ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+            ) : (
+              <FileText className="h-3.5 w-3.5" strokeWidth={2} />
+            )}
+          </button>
+        </CrmActionHint>
+      ) : null}
+      <CrmActionHint label="Upravit deal">
         <button
           type="button"
           className="sk-crm-iconbtn"
-          title="Zobrazit odeslaný e-mail"
-          aria-label="Zobrazit odeslaný e-mail"
-          disabled={isLoadingSentEmails}
-          onClick={onViewSentEmails}
+          aria-label="Upravit deal"
+          onClick={onEdit}
         >
-          <FileText className="h-3.5 w-3.5" strokeWidth={2} />
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
         </button>
-      ) : null}
-      <button
-        type="button"
-        className="sk-crm-iconbtn"
-        title="Upravit deal"
-        aria-label="Upravit deal"
-        onClick={onEdit}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-      </button>
+      </CrmActionHint>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button

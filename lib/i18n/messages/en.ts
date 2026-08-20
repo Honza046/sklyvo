@@ -512,6 +512,7 @@ export const en: MessageTree = {
   },
   legal: {
     updatedLabel: "Last updated",
+    closeLabel: "Got it",
   },
   settings: {
     title: "Sklyvo Settings",

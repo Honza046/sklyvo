@@ -553,7 +553,7 @@ body:has(.sklyvo-app) .sk-popover-dark[role="dialog"] {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42) !important;
 }
 
-body:has(.sklyvo-app) .sk-dialog-flat[role="dialog"] {
+body:has(.sklyvo-app) .sk-dialog-flat[role="dialog"]:not(.sk-legal-dialog) {
   border-radius: 18px !important;
   border: 1px solid rgba(255, 255, 255, 0.13) !important;
   background: #0a0b0d !important;
@@ -562,7 +562,7 @@ body:has(.sklyvo-app) .sk-dialog-flat[role="dialog"] {
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.48) !important;
 }
 
-body:has(.sklyvo-app) .sk-dialog-flat[role="dialog"] > button.absolute {
+body:has(.sklyvo-app) .sk-dialog-flat[role="dialog"]:not(.sk-legal-dialog) > button.absolute {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -6267,7 +6267,7 @@ body:has(.sklyvo-app) [role="dialog"]:not(.sk-dialog-flat) .sk-dialog-actions > 
 
 body:has(.sklyvo-app) [data-radix-portal] [data-radix-select-viewport],
 body:has(.sklyvo-app) [data-radix-portal] [role="listbox"],
-body:has(.sklyvo-app) [data-radix-portal] [data-radix-popper-content-wrapper] > div {
+body:has(.sklyvo-app) [data-radix-portal] [data-radix-popper-content-wrapper] > div:not(.sk-crm-hint) {
   border-radius: 14px;
 }
 
@@ -12196,6 +12196,61 @@ body:has(.sklyvo-app) [data-radix-select-content] {
   color: #6ee7b7;
 }
 
+.sklyvo-app .sk-crm-hint-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+body:has(.sklyvo-app) .sk-crm-hint {
+  position: fixed;
+  z-index: 300;
+  width: max-content;
+  max-width: 13rem;
+  padding: 5px 10px;
+  border: 1px solid #3a3d44;
+  border-radius: 999px;
+  background: #131417;
+  background-image: none;
+  box-shadow: none;
+  outline: none;
+  filter: none;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+body:has(.sklyvo-app) .sk-crm-hint--top {
+  transform: translate(-50%, -100%);
+}
+
+body:has(.sklyvo-app) .sk-crm-hint--bottom {
+  transform: translateX(-50%);
+}
+
+body:has(.sklyvo-app) .sk-crm-hint__label {
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: #a8adb6;
+  white-space: nowrap;
+}
+
+body:has(.sklyvo-app) .sk-crm-hint__label--success {
+  color: #6ee7b7;
+}
+
+body:has(.sklyvo-app) .sk-crm-hint__desc {
+  margin: 2px 0 0;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #6b7078;
+  white-space: normal;
+}
+
 .sklyvo-app .sk-crm-table__row--ghost {
   pointer-events: none;
 }
@@ -12464,12 +12519,23 @@ body:has(.sklyvo-app) [data-radix-select-content] {
   transform: none !important;
 }
 
+body:has(.sklyvo-app) .sk-legal-dialog__overlay {
+  background: rgba(8, 9, 10, 0.78) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog {
+  display: flex !important;
+  flex-direction: column !important;
+  isolation: isolate;
   border-radius: 20px !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
   background: #0a0b0d !important;
-  background-image: none !important;
-  box-shadow: none !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 28px 64px rgba(0, 0, 0, 0.58),
+    0 8px 24px rgba(0, 0, 0, 0.32) !important;
   color: #fafafb;
   outline: none !important;
   --tw-ring-width: 0 !important;
@@ -12481,38 +12547,242 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog {
 body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog:focus,
 body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog:focus-visible {
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 28px 64px rgba(0, 0, 0, 0.58),
+    0 8px 24px rgba(0, 0, 0, 0.32) !important;
   --tw-ring-shadow: 0 0 #0000 !important;
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-body:has(.sklyvo-app) .sk-legal-dialog__body {
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog > button.absolute {
+  top: 14px !important;
+  right: 14px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(19, 20, 23, 0.72) !important;
+  color: #8a8f98 !important;
+  opacity: 1 !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog > button.absolute:hover {
+  background: #131417 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f2f3f5 !important;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 52px 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: #131417;
+  color: #c9cdd3;
+  box-shadow: none;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__title {
+  margin: 0;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #fafafb;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 5px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #6b7078;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot,
+.sklyvo-app .sk-live-dot {
+  position: relative;
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  flex: none;
+  border-radius: 999px;
+  background: #34d399;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
+.sklyvo-app .sk-live-dot::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.38);
+  animation: sk-live-dot-pulse 2s ease-out infinite;
+}
+
+@keyframes sk-live-dot-pulse {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.65;
+  }
+
+  70%,
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
+  .sklyvo-app .sk-live-dot::before,
+  .sklyvo-app .sk-outreach-status--connected .sk-outreach-status__dot::before,
+  .sklyvo-app .sk-integration-row__dot.is-connected::before {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+  }
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body {
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 14px 16px 14px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-body:has(.sklyvo-app) .sk-legal-dialog__body::-webkit-scrollbar {
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
 }
 
-.sklyvo-app .sk-legal-dialog {
-  box-shadow: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
-  background: #0a0b0d !important;
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.sklyvo-app .sk-legal-dialog__body {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #131417;
+  padding: 12px 13px 13px;
+  box-shadow: none;
 }
 
-.sklyvo-app .sk-legal-dialog__body::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0e0f11;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #8a8f98;
+  box-shadow: none;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #f2f3f5;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__paragraph {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.64;
+  color: #b8bcc4;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.018) 100%);
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 108px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 11px;
+  border: none;
+  background: #fafafb;
+  color: #08090a;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    transform 0.14s ease,
+    background 0.14s ease,
+    opacity 0.14s ease;
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:active {
+  transform: translateY(0);
 }
 
 .sklyvo-app .sk-help-chat {
@@ -12552,7 +12822,7 @@ body:has(.sklyvo-app) .sk-legal-dialog__body::-webkit-scrollbar {
 .sklyvo-app .sk-help-chat__dot {
   width: 5px;
   height: 5px;
-  border-radius: 99px;
+  border-radius: 999px;
   background: #34d399;
   flex: none;
 }
@@ -14753,16 +15023,26 @@ body:has(.sklyvo-app) .sk-legal-dialog__body::-webkit-scrollbar {
   background: rgba(52, 211, 153, 0.08);
 }
 
+.sklyvo-app .sk-outreach-status--connected .sk-outreach-status__dot {
+  background: #34d399;
+}
+
+.sklyvo-app .sk-outreach-status--connected .sk-outreach-status__dot::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.38);
+  animation: sk-live-dot-pulse 2s ease-out infinite;
+}
+
 .sklyvo-app .sk-outreach-status__dot {
+  position: relative;
   width: 6px;
   height: 6px;
   flex: none;
   border-radius: 999px;
   background: #ff7802;
-}
-
-.sklyvo-app .sk-outreach-status--connected .sk-outreach-status__dot {
-  background: #34d399;
 }
 
 .sklyvo-app .sk-outreach-status__copy {
@@ -15103,6 +15383,7 @@ body:has(.sklyvo-app) .sk-legal-dialog__body::-webkit-scrollbar {
 }
 
 .sklyvo-app .sk-integration-row__dot {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: 999px;
@@ -15111,6 +15392,15 @@ body:has(.sklyvo-app) .sk-legal-dialog__body::-webkit-scrollbar {
 
 .sklyvo-app .sk-integration-row__dot.is-connected {
   background: #34d399;
+}
+
+.sklyvo-app .sk-integration-row__dot.is-connected::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.38);
+  animation: sk-live-dot-pulse 2s ease-out infinite;
 }
 
 .sklyvo-app .sk-integration-row__status-text {

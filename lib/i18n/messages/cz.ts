@@ -517,6 +517,7 @@ export const cz = {
   },
   legal: {
     updatedLabel: "Poslední aktualizace",
+    closeLabel: "Rozumím",
   },
   settings: {
     title: "Nastavení Sklyvo",

@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/context/LanguageContext";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,7 @@ import {
   Hand,
   Mail,
   X,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -349,8 +350,12 @@ function CrmPageContent() {
     companyName: string;
     emails: LeadSentEmailRow[];
     activeId: string;
+    loading?: boolean;
   } | null>(null);
-  const [isLoadingSentEmails, setIsLoadingSentEmails] = useState(false);
+  const [loadingSentEmailsLeadId, setLoadingSentEmailsLeadId] = useState<
+    string | null
+  >(null);
+  const sentEmailsCacheRef = useRef<Map<string, LeadSentEmailRow[]>>(new Map());
 
   const [view, setView] = useState<"board" | "list">("list");
   /** Keep board mounted after first open so list↔board switch doesn’t remount & flash */
@@ -606,28 +611,53 @@ function CrmPageContent() {
     toast.success(
       `${OUTREACH_KIND_LABELS[kind]} odeslán${result.nextDueLabel ? ` · další: ${result.nextDueLabel}` : ""}`,
     );
+    sentEmailsCacheRef.current.delete(leadId);
     await loadLeads();
   };
 
   const handleViewSentEmails = async (lead: Lead) => {
-    setIsLoadingSentEmails(true);
+    const cached = sentEmailsCacheRef.current.get(lead.id);
+
+    setSentEmailPreview({
+      companyName: lead.company,
+      emails: cached ?? [],
+      activeId: cached?.[0]?.id ?? "",
+      loading: !cached,
+    });
+
+    if (cached) {
+      if (cached.length === 0) {
+        setSentEmailPreview(null);
+        toast.message("Pro tuto firmu zatím nemáme uložený odeslaný e-mail.");
+      }
+      return;
+    }
+
+    setLoadingSentEmailsLeadId(lead.id);
     try {
       const result = await getLeadSentEmails(lead.id);
       if ("error" in result) {
+        setSentEmailPreview(null);
         toast.error(result.error);
         return;
       }
+
+      sentEmailsCacheRef.current.set(lead.id, result.emails);
+
       if (result.emails.length === 0) {
+        setSentEmailPreview(null);
         toast.message("Pro tuto firmu zatím nemáme uložený odeslaný e-mail.");
         return;
       }
+
       setSentEmailPreview({
         companyName: lead.company,
         emails: result.emails,
         activeId: result.emails[0]!.id,
+        loading: false,
       });
     } finally {
-      setIsLoadingSentEmails(false);
+      setLoadingSentEmailsLeadId(null);
     }
   };
 
@@ -1080,7 +1110,7 @@ function CrmPageContent() {
           totalPages={totalPages}
           scrapingLeadIds={scrapingLeadIds}
           isBulkRunning={isBulkRunning}
-          isLoadingSentEmails={isLoadingSentEmails}
+          loadingSentEmailsLeadId={loadingSentEmailsLeadId}
           t={t}
           statusLabelMap={statusLabelMap}
           onToggleAll={() => {
@@ -1209,78 +1239,98 @@ function CrmPageContent() {
         }}
       >
         <DialogContent className="sk-dialog-flat flex max-h-[88vh] w-full max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl">
-          {sentEmailPreview &&
-            (() => {
-              const active =
-                sentEmailPreview.emails.find(
-                  (e) => e.id === sentEmailPreview.activeId,
-                ) ?? sentEmailPreview.emails[0]!;
-              const bodyText = htmlBodyToEditablePlainText(active.htmlBody);
-              return (
-                <>
-                  <DialogHeader className="space-y-1 border-b border-white/10 px-6 py-4 pr-12 text-left">
-                    <DialogTitle className="text-base font-semibold leading-snug">
-                      Odeslaný e-mail · {sentEmailPreview.companyName}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs">
-                      {OUTREACH_KIND_LABELS[active.kind]}
-                      {active.sentAt
-                        ? ` · ${new Date(active.sentAt).toLocaleString("cs-CZ")}`
-                        : ""}
-                    </DialogDescription>
-                  </DialogHeader>
+          {sentEmailPreview ? (
+            sentEmailPreview.loading ? (
+              <>
+                <DialogHeader className="space-y-1 border-b border-white/10 px-6 py-4 pr-12 text-left">
+                  <DialogTitle className="text-base font-semibold leading-snug">
+                    Odeslaný e-mail · {sentEmailPreview.companyName}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">
+                    Načítám uložený e-mail…
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex min-h-[220px] flex-1 items-center justify-center px-6 py-10">
+                  <Loader2
+                    className="h-7 w-7 animate-spin text-[#02A7FF]"
+                    aria-hidden
+                  />
+                </div>
+              </>
+            ) : (
+              (() => {
+                const active =
+                  sentEmailPreview.emails.find(
+                    (email) => email.id === sentEmailPreview.activeId,
+                  ) ?? sentEmailPreview.emails[0]!;
+                const bodyText = htmlBodyToEditablePlainText(active.htmlBody);
+                return (
+                  <>
+                    <DialogHeader className="space-y-1 border-b border-white/10 px-6 py-4 pr-12 text-left">
+                      <DialogTitle className="text-base font-semibold leading-snug">
+                        Odeslaný e-mail · {sentEmailPreview.companyName}
+                      </DialogTitle>
+                      <DialogDescription className="text-xs">
+                        {OUTREACH_KIND_LABELS[active.kind]}
+                        {active.sentAt
+                          ? ` · ${new Date(active.sentAt).toLocaleString("cs-CZ")}`
+                          : ""}
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  {sentEmailPreview.emails.length > 1 ? (
-                    <div className="flex gap-1 overflow-x-auto border-b border-white/10 px-4 py-2">
-                      {sentEmailPreview.emails.map((email, index) => {
-                        const selected = email.id === active.id;
-                        return (
-                          <button
-                            key={email.id}
-                            type="button"
-                            onClick={() =>
-                              setSentEmailPreview((prev) =>
-                                prev ? { ...prev, activeId: email.id } : prev,
-                              )
-                            }
-                            className={cn(
-                              "shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors",
-                              selected
-                                ? "bg-white text-[#08090a]"
-                                : "bg-[#131417] text-[#8a8f98] hover:text-[#f2f3f5]",
-                            )}
-                          >
-                            {OUTREACH_KIND_LABELS[email.kind]}
-                            {sentEmailPreview.emails.length > 1
-                              ? ` #${index + 1}`
-                              : ""}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
+                    {sentEmailPreview.emails.length > 1 ? (
+                      <div className="flex gap-1 overflow-x-auto border-b border-white/10 px-4 py-2">
+                        {sentEmailPreview.emails.map((email, index) => {
+                          const selected = email.id === active.id;
+                          return (
+                            <button
+                              key={email.id}
+                              type="button"
+                              onClick={() =>
+                                setSentEmailPreview((prev) =>
+                                  prev ? { ...prev, activeId: email.id } : prev,
+                                )
+                              }
+                              className={cn(
+                                "shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+                                selected
+                                  ? "bg-white text-[#08090a]"
+                                  : "bg-[#131417] text-[#8a8f98] hover:text-[#f2f3f5]",
+                              )}
+                            >
+                              {OUTREACH_KIND_LABELS[email.kind]}
+                              {sentEmailPreview.emails.length > 1
+                                ? ` #${index + 1}`
+                                : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
 
-                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Předmět
-                      </p>
-                      <p className="text-sm font-medium text-foreground">
-                        {active.subject}
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Tělo e-mailu
-                      </p>
-                      <div className="whitespace-pre-wrap rounded-xl border border-white/13 bg-[#131417] px-4 py-3 text-sm leading-relaxed text-[#f2f3f5]">
-                        {bodyText || "—"}
+                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Předmět
+                        </p>
+                        <p className="text-sm font-medium text-foreground">
+                          {active.subject}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Tělo e-mailu
+                        </p>
+                        <div className="whitespace-pre-wrap rounded-xl border border-white/13 bg-[#131417] px-4 py-3 text-sm leading-relaxed text-[#f2f3f5]">
+                          {bodyText || "—"}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </>
-              );
-            })()}
+                  </>
+                );
+              })()
+            )
+          ) : null}
         </DialogContent>
       </Dialog>
 

@@ -1078,16 +1078,11 @@ export async function getLeadSentEmails(
     const id = leadId?.trim();
     if (!id) return { error: "Chybí ID leadu." };
 
-    const lead = await prisma.lead.findFirst({
-      where: { id, workspaceId: session.workspace.id },
-      select: { id: true },
-    });
-    if (!lead) return { error: "Lead nenalezen." };
-
     const rows = await prisma.emailQueue.findMany({
       where: {
         leadId: id,
         status: "SENT",
+        lead: { workspaceId: session.workspace.id },
       },
       orderBy: [{ sentAt: "desc" }, { createdAt: "desc" }],
       take: 20,

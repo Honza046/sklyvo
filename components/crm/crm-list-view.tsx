@@ -63,7 +63,7 @@ type CrmListViewProps = {
   totalPages: number;
   scrapingLeadIds: string[];
   isBulkRunning: boolean;
-  isLoadingSentEmails: boolean;
+  loadingSentEmailsLeadId: string | null;
   t: (key: string, params?: Record<string, string | number>) => string;
   statusLabelMap: Record<CrmLeadStatusKey, string>;
   onToggleAll: () => void;
@@ -93,7 +93,7 @@ export function CrmListView({
   totalPages,
   scrapingLeadIds,
   isBulkRunning,
-  isLoadingSentEmails,
+  loadingSentEmailsLeadId,
   t,
   statusLabelMap,
   onToggleAll,
@@ -265,7 +265,7 @@ export function CrmListView({
                   hasSentEmails={Boolean(
                     lead.lastContactedAt || lead.contactedVia,
                   )}
-                  isLoadingSentEmails={isLoadingSentEmails}
+                  isLoadingSentEmails={loadingSentEmailsLeadId === lead.id}
                   isScraping={scrapingLeadIds.includes(lead.id)}
                   sniperHref={buildSniperLeadHref(lead)}
                   onOpenWebsite={() => onOpenWebsite(lead, companyWeb)}

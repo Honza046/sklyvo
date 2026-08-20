@@ -389,7 +389,7 @@ export const SklyBotChat = forwardRef<SklyBotChatHandle, SklyBotChatProps>(
             <div className="min-w-0">
               <div className="sk-help-chat__name">{t("copilot.title")}</div>
               <div className="sk-help-chat__status">
-                <span className="sk-help-chat__dot" aria-hidden />
+                <span className="sk-help-chat__dot sk-live-dot" aria-hidden />
                 {t("copilot.online")}
               </div>
             </div>

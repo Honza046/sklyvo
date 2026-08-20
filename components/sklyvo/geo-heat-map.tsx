@@ -82,15 +82,16 @@ export function GeoHeatMap({ stats }: { stats: GeoHeatMapStat[] }) {
       const rect = canvas.getBoundingClientRect();
       if (!rect.width || !rect.height || !land) return;
 
-      const pulse = prefersReducedMotion
+      // Field breathe (subtle) + stronger core blink.
+      const fieldPulse = prefersReducedMotion
         ? 1
-        : 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(timeSec * 2.2));
-      const breathe = prefersReducedMotion
+        : 0.9 + 0.1 * (0.5 + 0.5 * Math.sin(timeSec * 1.55));
+      const corePulse = prefersReducedMotion
         ? 1
-        : 0.94 + 0.06 * Math.sin(timeSec * 1.65 + 0.8);
-      const liveSigmaScale = prefersReducedMotion
-        ? 1
-        : 0.96 + 0.04 * Math.sin(timeSec * 1.35);
+        : 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(timeSec * 2.8));
+      const ringPulse = prefersReducedMotion
+        ? 0
+        : (0.5 + 0.5 * Math.sin(timeSec * 2.8 - 0.55));
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(rect.width * dpr);
@@ -110,10 +111,10 @@ export function GeoHeatMap({ stats }: { stats: GeoHeatMapStat[] }) {
       });
 
       const hotXY = hot.map((h) => ({ p: toXY(h.lon, h.lat), w: h.w }));
+      // One wider sigma → soft continuous falloff (no stepped bands).
       const sigma =
-        Math.max(13, rect.width * 0.032) *
-        Math.min(4, Math.max(0.6, v.zoom / 6)) *
-        liveSigmaScale;
+        Math.max(16, rect.width * 0.038) *
+        Math.min(3.6, Math.max(0.7, v.zoom / 6));
 
       for (let y = 0; y < rect.height; y += step) {
         for (let x = 0; x < rect.width; x += step) {
@@ -134,23 +135,80 @@ export function GeoHeatMap({ stats }: { stats: GeoHeatMapStat[] }) {
           let heat = 0;
           for (const h of hotXY) {
             const d = Math.hypot(x - h.p.x, y - h.p.y);
-            heat = Math.max(heat, h.w * Math.exp(-(d * d) / (2 * sigma * sigma)));
+            heat = Math.max(
+              heat,
+              h.w * Math.exp(-(d * d) / (2 * sigma * sigma)),
+            );
           }
 
-          const liveHeat = heat * pulse * breathe;
+          const live = Math.min(1, heat * fieldPulse);
+          // Smoothstep — continuous grey → blue, no hard edge.
+          const t = live * live * (3 - 2 * live);
 
-          if (liveHeat > 0.06) {
-            ctx.fillStyle = `rgba(2,167,255,${Math.min(1, 0.34 + liveHeat * 0.72).toFixed(3)})`;
-            ctx.beginPath();
-            ctx.arc(x, y, 1 + liveHeat * 1.4, 0, 6.2832);
-            ctx.fill();
-          } else {
-            ctx.fillStyle = "rgba(255,255,255,0.13)";
-            ctx.beginPath();
-            ctx.arc(x, y, 0.9, 0, 6.2832);
-            ctx.fill();
-          }
+          const r = Math.round(255 + (2 - 255) * t);
+          const g = Math.round(255 + (167 - 255) * t);
+          const b = Math.round(255 + (255 - 255) * t);
+          const a = 0.13 + t * 0.82;
+          const radius = 0.9 + t * 0.85;
+
+          ctx.fillStyle = `rgba(${r},${g},${b},${a.toFixed(3)})`;
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, 6.2832);
+          ctx.fill();
         }
+      }
+
+      // Pulsing core — soft halo + blinking center (no hard rings).
+      for (const h of hotXY) {
+        if (h.w < 0.12) continue;
+        const { x, y } = h.p;
+        if (x < -8 || y < -8 || x > rect.width + 8 || y > rect.height + 8) {
+          continue;
+        }
+
+        const strength = Math.min(1, 0.5 + h.w * 0.5);
+        const glowR = Math.max(18, sigma * 1.15) * (0.9 + 0.12 * corePulse);
+
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, glowR);
+        glow.addColorStop(
+          0,
+          `rgba(2,167,255,${(0.28 * strength * corePulse).toFixed(3)})`,
+        );
+        glow.addColorStop(
+          0.22,
+          `rgba(2,167,255,${(0.14 * strength * corePulse).toFixed(3)})`,
+        );
+        glow.addColorStop(
+          0.55,
+          `rgba(2,167,255,${(0.055 * strength).toFixed(3)})`,
+        );
+        glow.addColorStop(1, "rgba(2,167,255,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(x, y, glowR, 0, 6.2832);
+        ctx.fill();
+
+        // Soft expanding blink ring.
+        if (ringPulse > 0.05) {
+          const ringR = 4 + ringPulse * Math.max(10, sigma * 0.55);
+          const ringAlpha = (1 - ringPulse) * 0.35 * strength;
+          ctx.beginPath();
+          ctx.arc(x, y, ringR, 0, 6.2832);
+          ctx.strokeStyle = `rgba(2,167,255,${ringAlpha.toFixed(3)})`;
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        }
+
+        const coreR = (2.2 + h.w * 1.2) * (0.82 + 0.28 * corePulse);
+        ctx.fillStyle = `rgba(2,167,255,${(0.75 + 0.25 * corePulse).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, coreR, 0, 6.2832);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(255,255,255,${(0.55 + 0.4 * corePulse).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.9, coreR * 0.4), 0, 6.2832);
+        ctx.fill();
       }
     };
 
