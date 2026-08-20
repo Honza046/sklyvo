@@ -13653,6 +13653,7 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 
 .sklyvo-app .sk-profile-panel--plan .sk-profile-plan__note {
   margin-top: 12px;
+  margin-bottom: 0;
   padding: 12px 14px;
   flex: none;
   border-radius: 12px;
@@ -13690,24 +13691,24 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 
 .sklyvo-app .sk-profile-plan__cta {
   display: flex;
+  box-sizing: border-box;
   width: 100%;
   height: 40px;
   align-items: center;
   justify-content: center;
-  margin-top: auto;
-  padding-top: 12px;
+  margin-top: 12px;
+  padding: 0;
   border: none;
   border-radius: 11px;
   font-size: 13px;
   font-weight: 700;
   text-decoration: none;
+  flex: none;
 }
 
 .sklyvo-app .sk-profile-panel--plan .sk-profile-plan__cta {
   height: 44px;
-  margin-top: auto;
-  padding-top: 16px;
-  flex: none;
+  margin-top: 14px;
   font-size: 13.5px;
   border-radius: 12px;
 }
