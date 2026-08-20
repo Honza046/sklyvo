@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
+import {
+  clearAuthFromLanding,
+  peekAuthFromLanding,
+  revealAuthCurtain,
+} from "@/components/sklyvo/landing-auth-link";
 import { Globe } from "@/components/sklyvo/globe";
 import { LanguageToggle } from "@/components/sklyvo/language-toggle";
 import { useLanguage } from "@/components/sklyvo/language-provider";
@@ -147,6 +152,26 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   const [cardHeight, setCardHeight] = useState<number>(initialCardHeight);
   const [animating, setAnimating] = useState(false);
   const [authStep, setAuthStep] = useState<string | null>(null);
+  const [fromLanding, setFromLanding] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!peekAuthFromLanding()) return;
+
+    setFromLanding(true);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        revealAuthCurtain();
+      });
+    });
+
+    const timer = window.setTimeout(() => {
+      setFromLanding(false);
+      clearAuthFromLanding();
+    }, 820);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useLayoutEffect(() => {
     const root = document.querySelector(".sklyvo-auth");
@@ -273,7 +298,10 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   }, [mode, authStep]);
 
   return (
-    <main className="sklyvo-login">
+    <main
+      className="sklyvo-login"
+      data-from-landing={fromLanding ? "true" : undefined}
+    >
       <div className="scene__layer scene__layer--high" />
       <div className="scene__layer scene__layer--mid" />
       <div className="scene__layer scene__layer--low" />

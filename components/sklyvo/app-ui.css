@@ -6381,10 +6381,7 @@ body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
 .sk-settings-dialog .sk-choice--active {
   border-color: rgba(255, 255, 255, 0.38);
   background: #1a1c21;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 18px rgba(255, 255, 255, 0.07),
-    0 0 24px rgba(2, 167, 255, 0.14);
+  box-shadow: none;
   transform: none;
   color: #ffffff;
 }
@@ -6439,10 +6436,7 @@ body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
   z-index: 1;
   color: #ffffff;
   background: rgba(255, 255, 255, 0.09);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
-    0 0 14px rgba(255, 255, 255, 0.06),
-    0 0 18px rgba(2, 167, 255, 0.1) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16) !important;
   filter: none;
 }
 
@@ -6469,10 +6463,7 @@ body:has(.sklyvo-app) .sk-settings-dialog[role="dialog"] {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.34);
   background: #1a1c21;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 0 16px rgba(255, 255, 255, 0.06),
-    0 0 20px rgba(2, 167, 255, 0.12);
+  box-shadow: none;
 }
 
 .sk-settings-dialog .sk-settings-note {
@@ -9099,116 +9090,45 @@ body:has(.sklyvo-app) .sk-email-gate__card[role="dialog"] {
 }
 
 /*
-  driver.js arrow — bordered triangle that overlaps the popover edge (no gap).
-  side-right = popover right of target → arrow on left edge, points left.
+  Nativní driver.js šipka je nespolehlivá — schovaná.
+  Vlastní .sk-tour-pointer (trojúhelník) ukazuje na sidebar položku.
 */
-.sk-tour-popover .driver-popover-arrow {
-  --sk-tour-border: rgba(255, 255, 255, 0.13);
+.sk-tour-popover .driver-popover-arrow,
+.sk-tour-popover .driver-popover-arrow-none {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.sk-tour-popover .sk-tour-pointer {
   position: absolute;
   width: 0;
   height: 0;
-  border-style: solid !important;
-  border-width: 8px !important;
-  background: transparent !important;
-  filter: none !important;
-  box-shadow: none !important;
-  z-index: 2;
-}
-
-.sk-tour-popover .driver-popover-arrow::before {
-  content: "";
-  position: absolute;
+  z-index: 3;
   pointer-events: none;
-  z-index: -1;
 }
 
-.sk-tour-popover .driver-popover-arrow-side-left {
-  left: calc(100% - 1px) !important;
-  right: auto !important;
-  border-top-color: transparent !important;
-  border-right-color: transparent !important;
-  border-bottom-color: transparent !important;
-  border-left-color: var(--sk-tour-surface) !important;
+/* Šipka doleva (popover vpravo od sidebaru) */
+.sk-tour-popover .sk-tour-pointer[data-side="left"] {
+  left: -8px;
+  right: auto;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #0a0b0d;
+  border-left: 0;
+  filter: drop-shadow(-1px 0 0 rgba(255, 255, 255, 0.13));
 }
 
-.sk-tour-popover .driver-popover-arrow-side-left::before {
-  top: -9px;
-  right: 1px;
-  border: 9px solid transparent;
-  border-left-color: var(--sk-tour-border);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-right {
-  right: calc(100% - 1px) !important;
-  left: auto !important;
-  border-top-color: transparent !important;
-  border-left-color: transparent !important;
-  border-bottom-color: transparent !important;
-  border-right-color: var(--sk-tour-surface) !important;
-}
-
-.sk-tour-popover .driver-popover-arrow-side-right::before {
-  top: -9px;
-  left: 1px;
-  border: 9px solid transparent;
-  border-right-color: var(--sk-tour-border);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-top {
-  top: calc(100% - 1px) !important;
-  bottom: auto !important;
-  border-left-color: transparent !important;
-  border-right-color: transparent !important;
-  border-bottom-color: transparent !important;
-  border-top-color: var(--sk-tour-surface) !important;
-}
-
-.sk-tour-popover .driver-popover-arrow-side-top::before {
-  left: -9px;
-  bottom: 1px;
-  border: 9px solid transparent;
-  border-top-color: var(--sk-tour-border);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-bottom {
-  bottom: calc(100% - 1px) !important;
-  top: auto !important;
-  border-left-color: transparent !important;
-  border-right-color: transparent !important;
-  border-top-color: transparent !important;
-  border-bottom-color: var(--sk-tour-surface) !important;
-}
-
-.sk-tour-popover .driver-popover-arrow-side-bottom::before {
-  left: -9px;
-  top: 1px;
-  border: 9px solid transparent;
-  border-bottom-color: var(--sk-tour-border);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow-align-center,
-.sk-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow-align-center {
-  top: 50% !important;
-  margin-top: 0 !important;
-  transform: translateY(-50%);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow-align-center,
-.sk-tour-popover .driver-popover-arrow-side-bottom.driver-popover-arrow-align-center {
-  left: 50% !important;
-  margin-left: 0 !important;
-  transform: translateX(-50%);
-}
-
-.sk-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow-align-start,
-.sk-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow-align-start,
-.sk-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow-align-end,
-.sk-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow-align-end,
-.sk-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow-align-start,
-.sk-tour-popover .driver-popover-arrow-side-bottom.driver-popover-arrow-align-start,
-.sk-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow-align-end,
-.sk-tour-popover .driver-popover-arrow-side-bottom.driver-popover-arrow-align-end {
-  transform: none;
+/* Šipka doprava (popover vlevo od cíle — fallback) */
+.sk-tour-popover .sk-tour-pointer[data-side="right"] {
+  right: -8px;
+  left: auto;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 8px solid #0a0b0d;
+  border-right: 0;
+  filter: drop-shadow(1px 0 0 rgba(255, 255, 255, 0.13));
 }
 
 /*

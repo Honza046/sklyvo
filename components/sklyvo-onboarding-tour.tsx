@@ -150,10 +150,104 @@ async function goToTourStep(
   await new Promise<void>((r) => window.requestAnimationFrame(() => r()));
 }
 
-function refreshDriver(d: Driver) {
+const TOUR_POINTER_SIZE = 8;
+const TOUR_POPOVER_GAP = 12;
+/** Všechny kroky prohlídky cílí na položky v sidebaru. */
+const SIDEBAR_TOUR_INDEXES = new Set([0, 1, 2, 3, 4, 5, 6]);
+
+function setImportant(el: HTMLElement, prop: string, value: string) {
+  el.style.setProperty(prop, value, "important");
+}
+
+function ensureTourPointer(popover: HTMLElement) {
+  let pointer = popover.querySelector<HTMLElement>(".sk-tour-pointer");
+  if (!pointer) {
+    pointer = document.createElement("span");
+    pointer.className = "sk-tour-pointer";
+    pointer.setAttribute("aria-hidden", "true");
+    popover.appendChild(pointer);
+  }
+  return pointer;
+}
+
+/**
+ * Vynutí popover vpravo od sidebar položky + vlastní šipku na její střed.
+ * Driver.js arrow schováváme — jeho pozice je nespolehlivá.
+ */
+function positionTourPopover(activeIndex?: number) {
+  const popover = document.querySelector<HTMLElement>(
+    ".sk-tour-popover.driver-popover",
+  );
+  const target = document.querySelector<HTMLElement>(".driver-active-element");
+  if (!popover || !target) return;
+
+  const isSidebarStep =
+    activeIndex !== undefined && SIDEBAR_TOUR_INDEXES.has(activeIndex);
+  if (!isSidebarStep) return;
+
+  // Schovej nativní šipku driver.js
+  const nativeArrow = popover.querySelector<HTMLElement>(".driver-popover-arrow");
+  if (nativeArrow) {
+    nativeArrow.classList.add("driver-popover-arrow-none");
+    setImportant(nativeArrow, "display", "none");
+  }
+
+  const pointer = ensureTourPointer(popover);
+  const targetRect = target.getBoundingClientRect();
+  // Force layout after chrome insert
+  const popWidth = Math.max(popover.offsetWidth, 280);
+  const popHeight = Math.max(popover.offsetHeight, 160);
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const margin = 12;
+
+  let left = Math.round(targetRect.right + TOUR_POPOVER_GAP);
+  if (left + popWidth > vw - margin) {
+    left = Math.max(
+      margin,
+      Math.round(targetRect.left - popWidth - TOUR_POPOVER_GAP),
+    );
+  }
+
+  let top = Math.round(
+    targetRect.top + targetRect.height / 2 - popHeight / 2,
+  );
+  top = Math.min(Math.max(top, margin), Math.max(margin, vh - popHeight - margin));
+
+  setImportant(popover, "left", `${left}px`);
+  setImportant(popover, "right", "auto");
+  setImportant(popover, "top", `${top}px`);
+  setImportant(popover, "bottom", "auto");
+  setImportant(popover, "transform", "none");
+
+  const pointsLeft = left >= targetRect.right;
+  pointer.dataset.side = pointsLeft ? "left" : "right";
+
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+  let arrowTop = targetCenterY - top - TOUR_POINTER_SIZE;
+  arrowTop = Math.min(
+    Math.max(arrowTop, 28),
+    popHeight - 28 - TOUR_POINTER_SIZE * 2,
+  );
+  setImportant(pointer, "top", `${arrowTop}px`);
+}
+
+/** Po chrome + layout: několikrát přepočítat (subnav / fonty / animace). */
+function scheduleTourAnchor(activeIndex?: number) {
+  positionTourPopover(activeIndex);
+  requestAnimationFrame(() => {
+    positionTourPopover(activeIndex);
+    requestAnimationFrame(() => positionTourPopover(activeIndex));
+  });
+  window.setTimeout(() => positionTourPopover(activeIndex), 50);
+  window.setTimeout(() => positionTourPopover(activeIndex), 150);
+  window.setTimeout(() => positionTourPopover(activeIndex), 320);
+}
+
+function refreshDriver(d: Driver, activeIndex?: number) {
   window.requestAnimationFrame(() => {
     d.refresh();
-    window.requestAnimationFrame(() => d.refresh());
+    scheduleTourAnchor(activeIndex);
   });
 }
 
@@ -165,7 +259,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.overviewTitle"),
         description: t("tour.steps.overviewDesc"),
         side: "right",
-        align: "start",
+        align: "center",
       },
     },
     {
@@ -174,7 +268,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.sniperTitle"),
         description: t("tour.steps.sniperDesc"),
         side: "right",
-        align: "start",
+        align: "center",
       },
     },
     {
@@ -183,7 +277,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.radarTitle"),
         description: t("tour.steps.radarDesc"),
         side: "right",
-        align: "start",
+        align: "center",
       },
     },
     {
@@ -192,7 +286,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.autopilotTitle"),
         description: t("tour.steps.autopilotDesc"),
         side: "right",
-        align: "start",
+        align: "center",
       },
     },
     {
@@ -201,7 +295,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.crmTitle"),
         description: t("tour.steps.crmDesc"),
         side: "right",
-        align: "start",
+        align: "center",
       },
     },
     {
@@ -210,7 +304,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.settingsTitle"),
         description: t("tour.steps.settingsDesc"),
         side: "right",
-        align: "end",
+        align: "center",
       },
     },
     {
@@ -219,7 +313,7 @@ function buildDesktopSteps(t: TourTranslate): DriveStep[] {
         title: t("tour.steps.helpTitle"),
         description: t("tour.steps.helpDesc"),
         side: "right",
-        align: "end",
+        align: "center",
       },
     },
   ];
@@ -285,6 +379,7 @@ export function SklyvoOnboardingTour({
     let attempts = 0;
     let timeoutId: number | undefined;
     let started = false;
+    let reanchorOnViewport: (() => void) | null = null;
     const translate = (...args: Parameters<TourTranslate>) =>
       tRef.current(...args);
 
@@ -339,9 +434,15 @@ export function SklyvoOnboardingTour({
         if (cancelled) return;
         if (selector) await waitForSelector(selector);
         if (cancelled) return;
+        // Autopilot rozbalí subnav — počkej na layout, jinak driver položí okno mimo
+        if (index === 3) {
+          await waitForSelector(".sk-nav-tree__branch", 1200);
+          await new Promise<void>((r) => window.setTimeout(() => r(), 60));
+        }
+        if (cancelled) return;
 
         d.moveTo(index);
-        refreshDriver(d);
+        refreshDriver(d, index);
       } finally {
         navBusyRef.current = false;
       }
@@ -382,6 +483,11 @@ export function SklyvoOnboardingTour({
             TOUR_STEP_COUNT,
             translate,
           );
+          // NEvolat refresh() po anchoraži — driver.js by zase odhodil pozici.
+          scheduleTourAnchor(state.activeIndex ?? 0);
+        },
+        onHighlighted: (_el, _step, { state }) => {
+          scheduleTourAnchor(state.activeIndex ?? 0);
         },
         onHighlightStarted: (_el, _step, { driver: activeDriver, state }) => {
           const index = state.activeIndex ?? 0;
@@ -423,6 +529,14 @@ export function SklyvoOnboardingTour({
 
       driverRef.current = d;
 
+      const onViewportChange = () => {
+        if (!d.isActive()) return;
+        scheduleTourAnchor(d.getActiveIndex() ?? 0);
+      };
+      reanchorOnViewport = onViewportChange;
+      window.addEventListener("resize", onViewportChange);
+      window.addEventListener("scroll", onViewportChange, true);
+
       void (async () => {
         try {
           await goToTourStep(routerRef.current, TOUR_STEP_HREFS[0]);
@@ -431,7 +545,7 @@ export function SklyvoOnboardingTour({
           if (typeof first === "string") await waitForSelector(first);
           if (cancelled) return;
           d.drive(0);
-          refreshDriver(d);
+          refreshDriver(d, 0);
         } catch (error) {
           console.error("onboarding tour start failed:", error);
           driverRef.current = null;
@@ -466,6 +580,11 @@ export function SklyvoOnboardingTour({
       cancelled = true;
       window.cancelAnimationFrame(rafId);
       if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      if (reanchorOnViewport) {
+        window.removeEventListener("resize", reanchorOnViewport);
+        window.removeEventListener("scroll", reanchorOnViewport, true);
+        reanchorOnViewport = null;
+      }
       const activeDriver = driverRef.current;
       driverRef.current = null;
       // Strict Mode / remount: uvolni klíč, ať se tour může spustit znovu

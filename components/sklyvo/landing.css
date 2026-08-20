@@ -300,6 +300,30 @@
   color: var(--n-text-soft);
 }
 
+.lp-page--exit {
+  pointer-events: none;
+  animation: lpPageExit 0.52s cubic-bezier(0.33, 0.01, 0.2, 1) forwards;
+}
+
+@keyframes lpPageExit {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-page--exit {
+    animation: lpPageExitReduced 0.12s ease forwards;
+  }
+
+  @keyframes lpPageExitReduced {
+    to {
+      opacity: 0;
+    }
+  }
+}
+
 .lp-page ::selection {
   background: #ffee00;
   color: var(--n-bg);

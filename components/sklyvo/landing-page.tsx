@@ -1,8 +1,8 @@
 "use client";
 
 import "@/components/sklyvo/landing.css";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { LandingAuthLink } from "@/components/sklyvo/landing-auth-link";
 import { LanguageToggle } from "@/components/sklyvo/language-toggle";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import { useLanguage } from "@/context/LanguageContext";
@@ -214,12 +214,12 @@ export function LandingPage() {
         <p className="lp-hero__sub">{copy.sub}</p>
 
         <div className="lp-hero__actions">
-          <Link className="lp-cta lp-cta--dark" href="/register">
+          <LandingAuthLink className="lp-cta lp-cta--dark" href="/register">
             {copy.ctaPrimary}
-          </Link>
-          <Link className="lp-cta lp-cta--light" href="/login">
+          </LandingAuthLink>
+          <LandingAuthLink className="lp-cta lp-cta--light" href="/login">
             {copy.ctaSecondary}
-          </Link>
+          </LandingAuthLink>
         </div>
 
         <div className="lp-hero__note">
@@ -461,12 +461,12 @@ export function LandingPage() {
             <h2 className="lp-end__title">{copy.endTitle}</h2>
             <p className="lp-end__body">{copy.endBody}</p>
             <div className="lp-end__actions">
-              <Link className="lp-cta lp-cta--onDark" href="/register">
+              <LandingAuthLink className="lp-cta lp-cta--onDark" href="/register">
                 {copy.ctaPrimary}
-              </Link>
-              <Link className="lp-cta lp-cta--sunkDark" href="/login">
+              </LandingAuthLink>
+              <LandingAuthLink className="lp-cta lp-cta--sunkDark" href="/login">
                 {copy.ctaSecondary}
-              </Link>
+              </LandingAuthLink>
             </div>
             <div className="lp-end__note">{copy.endNote}</div>
           </div>

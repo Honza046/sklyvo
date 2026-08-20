@@ -129,3 +129,86 @@ body:has(.sklyvo-login) {
 .driver-active-element {
   outline: none !important;
 }
+
+/* Landing → login/register transition (globals so it works before auth.css loads) */
+
+.sk-auth-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: #08090a;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sk-auth-curtain.is-entering {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.52s cubic-bezier(0.33, 0.01, 0.2, 1);
+}
+
+.sk-auth-curtain.is-exiting {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.68s cubic-bezier(0.22, 0.75, 0, 1);
+}
+
+.sklyvo-login[data-from-landing="true"] {
+  animation: skAuthEnterShell 0.68s cubic-bezier(0.22, 0.75, 0, 1) both;
+}
+
+.sklyvo-login[data-from-landing="true"] .sklyvo-brand,
+.sklyvo-login[data-from-landing="true"] .sklyvo-lang {
+  animation: skAuthEnterChrome 0.64s cubic-bezier(0.22, 0.75, 0, 1) 0.06s both;
+}
+
+.sklyvo-login[data-from-landing="true"] .sklyvo-auth {
+  animation: skAuthEnterCards 0.72s cubic-bezier(0.22, 0.75, 0, 1) 0.1s both;
+}
+
+@keyframes skAuthEnterShell {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes skAuthEnterChrome {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes skAuthEnterCards {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-auth-curtain {
+    display: none !important;
+  }
+
+  .sklyvo-login[data-from-landing="true"],
+  .sklyvo-login[data-from-landing="true"] .sklyvo-brand,
+  .sklyvo-login[data-from-landing="true"] .sklyvo-lang,
+  .sklyvo-login[data-from-landing="true"] .sklyvo-auth {
+    animation: none !important;
+  }
+}
