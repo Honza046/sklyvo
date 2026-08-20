@@ -1,6 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -206,14 +207,6 @@ const COLUMN_BY_ID = Object.fromEntries(
   COLUMNS.map((col) => [col.id, col]),
 ) as Record<(typeof COLUMNS)[number]["id"], (typeof COLUMNS)[number]>;
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("cs-CZ", {
-    style: "currency",
-    currency: "CZK",
-    maximumFractionDigits: 0,
-  }).format(amount);
-};
-
 /** Čas pro řazení / filtr data: poslední odeslání, jinak přidání do CRM. */
 function leadActivityTime(
   lead: Pick<Lead, "lastContactedAt" | "createdAt">,
@@ -290,6 +283,15 @@ function leadPrimaryDateLabel(
 function CrmPageContent() {
   const { t, language } = useLanguage();
   const ITEMS_PER_PAGE = 50;
+  const formatCurrency = useCallback(
+    (amount: number) =>
+      new Intl.NumberFormat(DATE_LOCALE[language], {
+        style: "currency",
+        currency: "CZK",
+        maximumFractionDigits: 0,
+      }).format(amount),
+    [language],
+  );
   const translatedColumns = useMemo(
     () =>
       COLUMNS.map((col) => ({
@@ -447,9 +449,9 @@ function CrmPageContent() {
     return LEAD_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
       tag,
       count: counts.get(tag) ?? 0,
-      label: leadTagLabel(tag),
+      label: leadTagLabel(tag, t),
     }));
-  }, [leads]);
+  }, [leads, t]);
 
   const filteredLeads = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -1145,31 +1147,31 @@ function CrmPageContent() {
       >
         <DialogContent className="sk-dialog-flat sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Upravit deal</DialogTitle>
+            <DialogTitle>{t("crm.editDeal")}</DialogTitle>
             <DialogDescription className="text-[#8a8f98]">
-              Upravte detaily firmy a hodnotu dealu.
+              {t("crm.editDealDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="sk-fields">
             <div className="space-y-1.5">
-              <Label>Název firmy</Label>
+              <Label>{t("crm.companyName")}</Label>
               <Input
                 value={editForm.company}
                 onChange={(e) =>
                   setEditForm({ ...editForm, company: e.target.value })
                 }
-                placeholder="Název firmy"
+                placeholder={t("crm.companyName")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Webová adresa (url)</Label>
+              <Label>{t("crm.website")}</Label>
               <Input
                 value={editForm.url}
                 onChange={(e) =>
                   setEditForm({ ...editForm, url: e.target.value })
                 }
-                placeholder="např. example.com"
+                placeholder={t("crm.websitePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
@@ -1183,17 +1185,17 @@ function CrmPageContent() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Telefon</Label>
+              <Label>{t("crm.phone")}</Label>
               <Input
                 value={editForm.contactPhone}
                 onChange={(e) =>
                   setEditForm({ ...editForm, contactPhone: e.target.value })
                 }
-                placeholder="např. +420 123 456 789"
+                placeholder={t("crm.phonePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Odhadovaná hodnota (Kč)</Label>
+              <Label>{t("crm.estimatedValue")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -1207,7 +1209,7 @@ function CrmPageContent() {
                 placeholder="0"
               />
               <p className="text-[11px] text-[#6b7078]">
-                Odhadovaná cena zakázky. Ve fázích nahoře se sčítá automaticky.
+                {t("crm.estimatedValueHelp")}
               </p>
             </div>
           </div>
@@ -1339,33 +1341,33 @@ function CrmPageContent() {
           <DialogHeader>
             <DialogTitle>{t("crm.newDeal")}</DialogTitle>
             <DialogDescription className="text-[#8a8f98]">
-              Zadejte údaje o firmě a hodnotě dealu.
+              {t("crm.newDealDesc")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="sk-fields">
             <div className="space-y-1.5">
-              <Label>Název firmy</Label>
+              <Label>{t("crm.companyName")}</Label>
               <Input
                 value={newDealForm.company}
                 onChange={(e) =>
                   setNewDealForm({ ...newDealForm, company: e.target.value })
                 }
-                placeholder="Název firmy"
+                placeholder={t("crm.companyName")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Webová adresa (url)</Label>
+              <Label>{t("crm.website")}</Label>
               <Input
                 value={newDealForm.url}
                 onChange={(e) =>
                   setNewDealForm({ ...newDealForm, url: e.target.value })
                 }
-                placeholder="např. example.com"
+                placeholder={t("crm.websitePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>E-mail</Label>
+              <Label>Email</Label>
               <Input
                 value={newDealForm.contactEmail}
                 onChange={(e) =>
@@ -1374,11 +1376,11 @@ function CrmPageContent() {
                     contactEmail: e.target.value,
                   })
                 }
-                placeholder="např. info@example.com"
+                placeholder="info@example.com"
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Telefon</Label>
+              <Label>{t("crm.phone")}</Label>
               <Input
                 value={newDealForm.contactPhone}
                 onChange={(e) =>
@@ -1387,11 +1389,11 @@ function CrmPageContent() {
                     contactPhone: e.target.value,
                   })
                 }
-                placeholder="např. +420 123 456 789"
+                placeholder={t("crm.phonePlaceholder")}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Odhadovaná hodnota (Kč)</Label>
+              <Label>{t("crm.estimatedValue")}</Label>
               <Input
                 type="number"
                 min={0}
@@ -1405,7 +1407,7 @@ function CrmPageContent() {
                 placeholder="0"
               />
               <p className="text-[11px] text-[#6b7078]">
-                Odhadovaná cena zakázky. Ve fázích nahoře se sčítá automaticky.
+                {t("crm.estimatedValueHelp")}
               </p>
             </div>
           </div>
@@ -1417,7 +1419,7 @@ function CrmPageContent() {
               disabled={isCreating}
               onClick={() => setIsNewDealOpen(false)}
             >
-              Zrušit
+              {t("crm.cancel")}
             </Button>
             <Button
               type="button"
@@ -1425,7 +1427,7 @@ function CrmPageContent() {
               disabled={isCreating}
               onClick={() => void handleCreateDeal()}
             >
-              {isCreating ? "Vytvářím..." : "Vytvořit deal"}
+              {isCreating ? t("crm.creating") : t("crm.createDeal")}
             </Button>
           </div>
         </DialogContent>

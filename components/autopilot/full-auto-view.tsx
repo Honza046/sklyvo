@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   getFullAutoProcessHistory,
   type FullAutoAutomationStatus,
@@ -65,6 +66,7 @@ function endOfLocalDay(value: string): Date | null {
 }
 
 export function AutopilotFullAutoView() {
+  const { t } = useLanguage();
   const [fullAutoPage, setFullAutoPage] = useState(1);
   const [fullAutoRows, setFullAutoRows] = useState<FullAutoProcessHistoryRow[]>(
     [],
@@ -110,7 +112,7 @@ export function AutopilotFullAutoView() {
     } catch (e) {
       console.error("Autopilot loadFullAutoHistory error:", e);
       setFullAutoRows([]);
-      setFullAutoHistoryError("Nepodařilo se načíst historii Full Auto.");
+      setFullAutoHistoryError(t("autopilot.fullAutoUi.loadError"));
     } finally {
       setIsFullAutoHistoryLoading(false);
     }
@@ -183,7 +185,7 @@ export function AutopilotFullAutoView() {
         <FilterSearch
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Hledat firmu, e-mail, web…"
+          placeholder={t("autopilot.searchPlaceholder")}
           className="min-w-0 flex-1 sm:min-w-[160px]"
         />
         <Select
@@ -193,13 +195,13 @@ export function AutopilotFullAutoView() {
           <SelectTrigger
             className={cn(filterControlClass, "w-full sm:w-[150px]")}
           >
-            <SelectValue placeholder="Stav" />
+            <SelectValue placeholder={t("autopilot.colStatus")} />
           </SelectTrigger>
           <SelectContent className="z-[220]">
             {FULL_AUTO_STATUS_FILTERS.map((status) => (
               <SelectItem key={status} value={status}>
                 {status === "all"
-                  ? "Všechny stavy"
+                  ? t("autopilot.filterAll")
                   : FULL_AUTO_STATUS_BADGES[status].label}
               </SelectItem>
             ))}
@@ -212,12 +214,14 @@ export function AutopilotFullAutoView() {
           <SelectTrigger
             className={cn(filterControlClass, "w-full sm:w-[130px]")}
           >
-            <SelectValue placeholder="Datum" />
+            <SelectValue placeholder={t("autopilot.filterDate")} />
           </SelectTrigger>
           <SelectContent className="z-[220]">
-            <SelectItem value="newest">Nejnovější</SelectItem>
-            <SelectItem value="oldest">Nejstarší</SelectItem>
-            <SelectItem value="range">Od–do</SelectItem>
+            <SelectItem value="newest">{t("autopilot.filterNewest")}</SelectItem>
+            <SelectItem value="oldest">{t("autopilot.filterOldest")}</SelectItem>
+            <SelectItem value="range">
+              {t("autopilot.filterDateRange")}
+            </SelectItem>
           </SelectContent>
         </Select>
         {dateSort === "range" ? (
@@ -227,7 +231,7 @@ export function AutopilotFullAutoView() {
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
               className={cn(filterControlClass, "w-full sm:w-[132px]")}
-              title="Od data"
+              title={t("autopilot.filterDateFrom")}
             />
             <span className="text-[11px] text-muted-foreground">–</span>
             <Input
@@ -235,14 +239,14 @@ export function AutopilotFullAutoView() {
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
               className={cn(filterControlClass, "w-full sm:w-[132px]")}
-              title="Do data"
+              title={t("autopilot.filterDateTo")}
             />
           </div>
         ) : null}
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground">
-          Jen s e-mailem
+          {t("autopilot.filterWithEmail")}
         </span>
         <Switch
           checked={onlyWithEmail}
@@ -289,16 +293,16 @@ export function AutopilotFullAutoView() {
             <thead className="sticky top-0 z-20 bg-[color:var(--n-card)] ">
               <tr className="text-left">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
-                  Firma
+                  {t("autopilot.colCompany")}
                 </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
-                  Kontakt
+                  {t("autopilot.colContact")}
                 </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
-                  Zpracování
+                  {t("autopilot.fullAutoUi.colProcessed")}
                 </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[18%]")}>
-                  Stav automatizace
+                  {t("autopilot.fullAutoUi.colAutomationStatus")}
                 </th>
               </tr>
             </thead>
@@ -366,16 +370,14 @@ export function AutopilotFullAutoView() {
                     )}
                     {!fullAutoHistoryError && fullAutoRows.length === 0 && (
                       <AutopilotTableEmptyState colSpan={4}>
-                        Zatím žádné firmy z Full Auto. Po zapnutí a běhu se tady
-                        ukážou jen firmy, které Full Auto najde a pošle (ne ze
-                        Sběru / Odesílání).
+                        {t("autopilot.fullAutoUi.empty")}
                       </AutopilotTableEmptyState>
                     )}
                     {!fullAutoHistoryError &&
                       fullAutoRows.length > 0 &&
                       filteredRows.length === 0 && (
                         <AutopilotTableEmptyState colSpan={4}>
-                          Žádné firmy neodpovídají filtrům.
+                          {t("autopilot.fullAutoUi.emptyFiltered")}
                         </AutopilotTableEmptyState>
                       )}
                   </>
@@ -418,12 +420,12 @@ export function AutopilotFullAutoView() {
         <AutopilotControlPanel
           icon={<Sparkles className="h-5 w-5" />}
           iconAccent="amber"
-          title="Plná automatizace (Full Auto)"
+          title={t("autopilot.fullAutoTitle")}
           powerEnabled={featureEnabled}
           description={
             featureEnabled
-              ? "Cron kolem 8:00 najde firmy a pošle maily."
-              : "Cron neběží. Zapni, až budeš chtít celou smyčku."
+              ? t("autopilot.fullAutoUi.cronOn")
+              : t("autopilot.fullAutoUi.cronOff")
           }
           filters={renderFilters()}
           actions={
@@ -435,7 +437,7 @@ export function AutopilotFullAutoView() {
                 onClick={() => void toggleFeaturePower()}
               />
               <AutopilotSettingsIconButton
-                label="Nastavení Full Auto"
+                label={t("autopilot.fullAutoUi.settingsLabel")}
                 onClick={openSettings}
               />
             </>

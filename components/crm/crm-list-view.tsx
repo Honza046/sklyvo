@@ -211,6 +211,7 @@ export function CrmListView({
                       isLoading={scrapingLeadIds.includes(lead.id)}
                       disabled={isBulkRunning}
                       onClick={() => onScrapeContacts(lead)}
+                      t={t}
                     />
                   ) : null}
                 </div>
@@ -275,6 +276,7 @@ export function CrmListView({
                   onSendFollowUp={() => onSendOutreach(lead.id, "FOLLOW_UP")}
                   onSendBreakup={() => onSendOutreach(lead.id, "BREAKUP")}
                   onDelete={() => onDelete(lead.id)}
+                  t={t}
                 />
               </div>
             );

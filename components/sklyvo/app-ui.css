@@ -12519,13 +12519,13 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   transform: none !important;
 }
 
-body:has(.sklyvo-app) .sk-legal-dialog__overlay {
+.sk-legal-dialog__overlay {
   background: rgba(8, 9, 10, 0.78) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog {
+[role="dialog"].sk-legal-dialog {
   display: flex !important;
   flex-direction: column !important;
   isolation: isolate;
@@ -12544,8 +12544,8 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog {
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog:focus,
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog:focus-visible {
+[role="dialog"].sk-legal-dialog:focus,
+[role="dialog"].sk-legal-dialog:focus-visible {
   outline: none !important;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
@@ -12555,7 +12555,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog:focus-visible {
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog > button.absolute {
+[role="dialog"].sk-legal-dialog > button.absolute {
   top: 14px !important;
   right: 14px !important;
   width: 32px !important;
@@ -12567,13 +12567,13 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog > button.absolute {
   opacity: 1 !important;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog > button.absolute:hover {
+[role="dialog"].sk-legal-dialog > button.absolute:hover {
   background: #131417 !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: #f2f3f5 !important;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__head {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__head {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -12582,7 +12582,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__head {
   background: transparent;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__icon {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12596,7 +12596,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__icon {
   box-shadow: none;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__title {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__title {
   margin: 0;
   text-align: left;
   font-size: 15px;
@@ -12606,7 +12606,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__title {
   color: #fafafb;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__meta {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -12618,7 +12618,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta {
   color: #6b7078;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot,
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot,
 .sklyvo-app .sk-live-dot {
   position: relative;
   display: inline-block;
@@ -12629,7 +12629,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot
   background: #34d399;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
 .sklyvo-app .sk-live-dot::before {
   content: "";
   position: absolute;
@@ -12653,7 +12653,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
+  [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot::before,
   .sklyvo-app .sk-live-dot::before,
   .sklyvo-app .sk-outreach-status--connected .sk-outreach-status__dot::before,
   .sklyvo-app .sk-integration-row__dot.is-connected::before {
@@ -12663,7 +12663,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__meta-dot
   }
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body-wrap {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__body-wrap {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -12671,7 +12671,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body-wra
   min-height: 0;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__body {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -12680,19 +12680,19 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body {
   -ms-overflow-style: none;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__body::-webkit-scrollbar {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__body::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__sections {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__sections {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__section {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #131417;
@@ -12700,14 +12700,15 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section 
   box-shadow: none;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-head {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__section-head {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 9px;
   margin-bottom: 8px;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-num {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__section-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12725,8 +12726,10 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-
   box-shadow: none;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-title {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__section-title {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.35;
@@ -12734,20 +12737,20 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-
   color: #f2f3f5;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__section-body {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__section-body {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__paragraph {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__paragraph {
   margin: 0;
   font-size: 11.5px;
   line-height: 1.64;
   color: #b8bcc4;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__foot {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__foot {
   display: flex;
   justify-content: flex-end;
   padding: 12px 16px 16px;
@@ -12755,7 +12758,7 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__foot {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.018) 100%);
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12776,12 +12779,12 @@ body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-bt
     opacity 0.14s ease;
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:hover {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:hover {
   background: #ffffff;
   transform: translateY(-1px);
 }
 
-body:has(.sklyvo-app) [role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:active {
+[role="dialog"].sk-legal-dialog .sk-legal-dialog__close-btn:active {
   transform: translateY(0);
 }
 

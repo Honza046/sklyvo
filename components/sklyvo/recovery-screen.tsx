@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";
 import { requestPasswordReset } from "@/app/actions/auth";
 import { useLanguage } from "@/components/sklyvo/language-provider";
+import { authError, localizeAuthError } from "@/lib/sklyvo/auth-errors";
 
 export function RecoveryScreen() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -24,21 +25,19 @@ export function RecoveryScreen() {
       const emailRaw = formData.get("email");
       const email = typeof emailRaw === "string" ? emailRaw.trim() : "";
       if (!email) {
-        setErrorMessage("Vyplňte e-mailovou adresu.");
+        setErrorMessage(authError(language, "emailRequired"));
         return;
       }
 
       const result = await requestPasswordReset(email, window.location.origin);
       if ("error" in result && result.error) {
-        setErrorMessage(result.error);
+        setErrorMessage(localizeAuthError(language, result.error));
         return;
       }
       setSuccessMessage(t.recovery.success);
       form.reset();
     } catch {
-      setErrorMessage(
-        "Při odesílání e-mailu nastala chyba. Zkuste to později.",
-      );
+      setErrorMessage(authError(language, "resetSendFailed"));
     } finally {
       setPending(false);
     }

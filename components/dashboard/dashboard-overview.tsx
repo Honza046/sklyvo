@@ -327,7 +327,8 @@ export function DashboardOverview({
   chartSeries: chartInitialSeries,
   geoStats,
 }: DashboardOverviewProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const currencySuffix = language === "cz" ? " Kč" : " CZK";
   const { periodLabelKey, bundle, pending, seedBundle } =
     useDashboardRange();
 
@@ -472,7 +473,7 @@ export function DashboardOverview({
             {t("dashboard.statsPipelineValue")}
           </div>
           <div className="sk-metrics-strip__value">
-            <AnimatedMetricValue value={pipelineValue} delay={0} duration={OVERVIEW_ANIM_MS} suffix=" Kč" />
+            <AnimatedMetricValue value={pipelineValue} delay={0} duration={OVERVIEW_ANIM_MS} suffix={currencySuffix} />
             {pipelineValue > 0 ? (
               <span className="sk-metrics-strip__pipeline-change">
                 <span className="sk-metrics-strip__pipeline-arrow" aria-hidden>

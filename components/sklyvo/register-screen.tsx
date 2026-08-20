@@ -9,9 +9,10 @@ import {
   OAuthProviderButtons,
   useOAuthLogin,
 } from "@/components/sklyvo/oauth-providers";
+import { authError, localizeAuthError } from "@/lib/sklyvo/auth-errors";
 
 export function RegisterScreen() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -29,12 +30,12 @@ export function RegisterScreen() {
       const formData = new FormData(event.currentTarget);
       const result = await registerUser(formData);
       if ("error" in result && result.error) {
-        setErrorMessage(result.error);
+        setErrorMessage(localizeAuthError(language, result.error));
         return;
       }
       window.location.href = "/onboarding";
     } catch {
-      setErrorMessage("Registrace se nepodařila. Zkuste to prosím znovu.");
+      setErrorMessage(authError(language, "registerFailed"));
     } finally {
       setPending(false);
     }

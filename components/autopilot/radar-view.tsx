@@ -142,9 +142,9 @@ export function AutopilotRadarView() {
     return LEAD_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
       tag,
       count: counts.get(tag) ?? 0,
-      label: leadTagLabel(tag),
+      label: leadTagLabel(tag, t),
     }));
-  }, [workspaceLeads]);
+  }, [workspaceLeads, t]);
 
   const filteredLeads = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -200,7 +200,7 @@ export function AutopilotRadarView() {
       <FilterSearch
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="Hledat firmu, e-mail, web…"
+        placeholder={t("autopilot.searchPlaceholder")}
         className="min-w-0 flex-1 sm:min-w-[160px]"
       />
       <Select
@@ -210,22 +210,28 @@ export function AutopilotRadarView() {
         <SelectTrigger
           className={cn(filterControlClass, "w-full sm:w-[130px]")}
         >
-          <SelectValue placeholder="Kontakt" />
+          <SelectValue placeholder={t("autopilot.filterContact")} />
         </SelectTrigger>
         <SelectContent className="z-[220]">
-          <SelectItem value="all">Všechny</SelectItem>
-          <SelectItem value="with_email">S e-mailem</SelectItem>
-          <SelectItem value="without_email">Bez e-mailu</SelectItem>
+          <SelectItem value="all">{t("autopilot.filterAll")}</SelectItem>
+          <SelectItem value="with_email">
+            {t("autopilot.filterWithEmail")}
+          </SelectItem>
+          <SelectItem value="without_email">
+            {t("autopilot.filterWithoutEmail")}
+          </SelectItem>
         </SelectContent>
       </Select>
       <Select value={tagFilter} onValueChange={setTagFilter}>
         <SelectTrigger
           className={cn(filterControlClass, "w-full sm:w-[150px]")}
         >
-          <SelectValue placeholder="Obor" />
+          <SelectValue placeholder={t("autopilot.filterIndustry")} />
         </SelectTrigger>
         <SelectContent className="z-[220]">
-          <SelectItem value="all">Všechny obory</SelectItem>
+          <SelectItem value="all">
+            {t("autopilot.filterAllIndustries")}
+          </SelectItem>
           {availableTags.map(({ tag, label, count }) => (
             <SelectItem key={tag} value={tag}>
               {label} ({count})
@@ -240,12 +246,14 @@ export function AutopilotRadarView() {
         <SelectTrigger
           className={cn(filterControlClass, "w-full sm:w-[130px]")}
         >
-          <SelectValue placeholder="Datum" />
+          <SelectValue placeholder={t("autopilot.filterDate")} />
         </SelectTrigger>
         <SelectContent className="z-[220]">
-          <SelectItem value="newest">Nejnovější</SelectItem>
-          <SelectItem value="oldest">Nejstarší</SelectItem>
-          <SelectItem value="range">Od–do</SelectItem>
+          <SelectItem value="newest">{t("autopilot.filterNewest")}</SelectItem>
+          <SelectItem value="oldest">{t("autopilot.filterOldest")}</SelectItem>
+          <SelectItem value="range">
+            {t("autopilot.filterDateRange")}
+          </SelectItem>
         </SelectContent>
       </Select>
       {dateSort === "range" ? (
@@ -255,7 +263,7 @@ export function AutopilotRadarView() {
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
             className={cn(filterControlClass, "w-full sm:w-[132px]")}
-            title="Od data"
+            title={t("autopilot.filterDateFrom")}
           />
           <span className="text-[11px] text-muted-foreground">–</span>
           <Input
@@ -263,7 +271,7 @@ export function AutopilotRadarView() {
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
             className={cn(filterControlClass, "w-full sm:w-[132px]")}
-            title="Do data"
+            title={t("autopilot.filterDateTo")}
           />
         </div>
       ) : null}
@@ -303,15 +311,17 @@ export function AutopilotRadarView() {
             <thead className="sticky top-0 z-20 bg-[color:var(--n-card)] ">
               <tr className="text-left">
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[34%]")}>
-                  Firma
+                  {t("autopilot.colCompany")}
                 </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[28%]")}>
-                  Kontakt
+                  {t("autopilot.colContact")}
                 </th>
                 <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "w-[20%]")}>
-                  Datum nalezení
+                  {t("autopilot.colFoundAt")}
                 </th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Status</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>
+                  {t("autopilot.colStatus")}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -397,15 +407,14 @@ export function AutopilotRadarView() {
                     )}
                     {!loadError && workspaceLeads.length === 0 && (
                       <AutopilotTableEmptyState colSpan={4}>
-                        Zatím žádné nalezené firmy. Spusťte automatický sběr nebo
-                        přidejte leady v Radaru.
+                        {t("autopilot.emptyNoLeads")}
                       </AutopilotTableEmptyState>
                     )}
                     {!loadError &&
                       workspaceLeads.length > 0 &&
                       filteredLeads.length === 0 && (
                         <AutopilotTableEmptyState colSpan={4}>
-                          Žádné firmy neodpovídají filtrům.
+                          {t("autopilot.emptyNoMatch")}
                         </AutopilotTableEmptyState>
                       )}
                   </>
@@ -450,8 +459,8 @@ export function AutopilotRadarView() {
           powerEnabled={featureEnabled}
           description={
             featureEnabled
-              ? "Cron hledá firmy podle nastavení (~3:00 Praha)."
-              : "Cron vypnutý. Ruční hledání je v sekci Radar."
+              ? t("autopilot.radarCronOn")
+              : t("autopilot.radarCronOff")
           }
           filters={renderFilters()}
           actions={

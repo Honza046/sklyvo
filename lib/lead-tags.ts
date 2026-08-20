@@ -188,8 +188,15 @@ function uniqueTags(tags: string[]): string[] {
  return out;
 }
 
-export function leadTagLabel(tag: string): string {
- return LEAD_TAG_LABELS[tag] ?? tag;
+export function leadTagLabel(
+  tag: string,
+  t?: (path: string) => string,
+): string {
+  if (t) {
+    const translated = t(`leadTags.${tag}`);
+    if (translated && translated !== `leadTags.${tag}`) return translated;
+  }
+  return LEAD_TAG_LABELS[tag] ?? tag;
 }
 
 export type InferLeadTagsInput = {

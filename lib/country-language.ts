@@ -59,7 +59,25 @@ export function placesLanguageFromCountry(code: string | null | undefined): stri
 }
 
 export function countryLabel(code: string | null | undefined): string | null {
- return getRadarCountryOption(code)?.label ?? null;
+  return getRadarCountryOption(code)?.label ?? null;
+}
+
+/** Localized country name for the active UI language (falls back to Czech label). */
+export function localizedCountryLabel(
+  code: string | null | undefined,
+  locale: string,
+): string | null {
+  const normalized = normalizeCountryCode(code);
+  if (!normalized) return null;
+  try {
+    const name = new Intl.DisplayNames([locale], { type: "region" }).of(
+      normalized,
+    );
+    if (name) return name;
+  } catch {
+    // Ignore and fall back.
+  }
+  return countryLabel(normalized);
 }
 
 /** Soft country bias for Places Text Search (circle max radius is 50 km — use viewport). */

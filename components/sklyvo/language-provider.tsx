@@ -16,6 +16,11 @@ import {
   type Language,
 } from "@/lib/sklyvo/i18n";
 import {
+  persistAuthLanguage,
+  readAuthLanguage,
+  subscribeLanguageChange,
+} from "@/lib/sklyvo/language-storage";
+import {
   BASE_LANGUAGE,
   buildToggleSlots,
   defaultLanguageForRegional,
@@ -26,7 +31,6 @@ import {
   type ToggleSlot,
 } from "@/lib/sklyvo/locale";
 
-const STORAGE_KEY = "sklyvo.language";
 const REGIONAL_STORAGE_KEY = "sklyvo.regional-locale";
 
 let cached: Language | null = null;
@@ -38,31 +42,21 @@ function notify() {
 
 function getSnapshot(): Language {
   if (cached === null) {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    cached = isLanguage(stored) ? stored : DEFAULT_LANGUAGE;
+    cached = readAuthLanguage() ?? DEFAULT_LANGUAGE;
   }
   return cached;
 }
 
 function subscribe(listener: () => void) {
   listeners.add(listener);
-
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== STORAGE_KEY) return;
-    cached = isLanguage(event.newValue) ? event.newValue : DEFAULT_LANGUAGE;
-    notify();
-  };
-  window.addEventListener("storage", onStorage);
-
   return () => {
     listeners.delete(listener);
-    window.removeEventListener("storage", onStorage);
   };
 }
 
 function writeLanguage(next: Language) {
   cached = next;
-  window.localStorage.setItem(STORAGE_KEY, next);
+  persistAuthLanguage(next);
   notify();
 }
 
@@ -93,6 +87,14 @@ export function LanguageProvider({
 
   // Never read localStorage / navigator here — that breaks hydration.
   const [regionalCode, setRegionalCode] = useState(initialRegional);
+
+  useEffect(() => {
+    return subscribeLanguageChange(({ authLanguage }) => {
+      if (cached === authLanguage) return;
+      cached = authLanguage;
+      notify();
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,19 +128,22 @@ export function LanguageProvider({
       window.localStorage.setItem(REGIONAL_STORAGE_KEY, regional);
       setRegionalCode(regional);
 
+      // Re-read after await so a toggle during boot is not overwritten.
+      const stored = readAuthLanguage();
+      if (stored) {
+        if (cached !== stored) {
+          cached = stored;
+          notify();
+        }
+        return;
+      }
+
       if (!isTranslatedLocale(regional)) {
         writeLanguage(BASE_LANGUAGE);
         return;
       }
 
-      const slots = buildToggleSlots(regional);
-      const enabled = slots.filter((s) => s.enabled).map((s) => s.code);
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (!isLanguage(stored)) {
-        writeLanguage(defaultLanguageForRegional(regional));
-      } else if (!enabled.includes(stored)) {
-        writeLanguage(defaultLanguageForRegional(regional));
-      }
+      writeLanguage(defaultLanguageForRegional(regional));
     }
 
     void detect();

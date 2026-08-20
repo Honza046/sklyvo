@@ -775,7 +775,7 @@ function SniperContent() {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label="Parametry zprávy"
+                aria-label={t("sniper.messageParams")}
                 className="sk-tool-settings-btn sk-tool-settings-btn--cta"
               >
                 <Settings2 className="h-4 w-4" />
@@ -789,9 +789,9 @@ function SniperContent() {
             >
               <div className="space-y-4">
                 <div>
-                  <h4 className="sk-type-h3">Parametry zprávy</h4>
+                  <h4 className="sk-type-h3">{t("sniper.messageParams")}</h4>
                   <p className="sk-popover-dark__desc">
-                    Změňte výchozí nastavení pro tento konkrétní e-mail.
+                    {t("sniper.messageParamsDesc")}
                   </p>
                 </div>
                 <div className="space-y-3">

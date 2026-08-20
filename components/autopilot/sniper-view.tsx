@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 import { humanizeEmailError } from "@/lib/humanize-email-error";
 import {
   clearAutopilotEmailQueue,
@@ -108,6 +109,7 @@ type ActivePreviewEmail = {
 };
 
 export function AutopilotSniperView() {
+  const { t, language } = useLanguage();
   const [workspaceLeads, setWorkspaceLeads] = useState<WorkspaceLead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -179,7 +181,10 @@ export function AutopilotSniperView() {
               row.leadId,
               {
                 status: "error" as RunStatus,
-                message: humanizeEmailError(row.errorMessage ?? "Chyba ve frontě"),
+                message: humanizeEmailError(
+                  row.errorMessage ?? t("autopilot.sending.queueErrorFallback"),
+                  language,
+                ),
                 queueId: row.queueId,
                 subject: row.subject,
                 htmlBody: row.htmlBody,
@@ -319,9 +324,9 @@ export function AutopilotSniperView() {
     return LEAD_TAG_ORDER.filter((tag) => counts.has(tag)).map((tag) => ({
       tag,
       count: counts.get(tag) ?? 0,
-      label: leadTagLabel(tag),
+      label: leadTagLabel(tag, t),
     }));
-  }, [selectionBaseLeads]);
+  }, [selectionBaseLeads, t]);
 
   const leads = useMemo<AutopilotLead[]>(() => {
     const q = selectionSearch.trim().toLowerCase();
@@ -339,7 +344,7 @@ export function AutopilotSniperView() {
           lead.email.toLowerCase().includes(q) ||
           (lead.tags ?? []).some(
             (tag) =>
-              leadTagLabel(tag).toLowerCase().includes(q) || tag.includes(q),
+              leadTagLabel(tag, t).toLowerCase().includes(q) || tag.includes(q),
           )
         );
       })
@@ -351,7 +356,7 @@ export function AutopilotSniperView() {
         phone,
         createdAt,
       }));
-  }, [selectionBaseLeads, selectionTagFilter, selectionSearch]);
+  }, [selectionBaseLeads, selectionTagFilter, selectionSearch, t]);
 
   useEffect(() => {
     const allowed = new Set(leads.map((lead) => lead.id));
@@ -479,9 +484,9 @@ export function AutopilotSniperView() {
     queueTotalItems === 0 ? 0 : queuePageStart + paginatedQueueLeads.length;
 
   const queueFilterTabs = [
-    { id: "all" as const, label: "Vše", count: campaignLeads.length },
-    { id: "queued" as const, label: "Potvrzeno", count: queuedCount },
-    { id: "error" as const, label: "Chyby", count: errorCount },
+    { id: "all" as const, label: t("autopilot.sending.queueTabAll"), count: campaignLeads.length },
+    { id: "queued" as const, label: t("autopilot.sending.queueTabQueued"), count: queuedCount },
+    { id: "error" as const, label: t("autopilot.sending.queueTabErrors"), count: errorCount },
   ];
 
   const filterControlClass =
@@ -493,7 +498,7 @@ export function AutopilotSniperView() {
         <FilterSearch
           value={selectionSearch}
           onChange={setSelectionSearch}
-          placeholder="Hledat firmu…"
+          placeholder={t("autopilot.sending.searchCompany")}
           className="min-w-0 flex-1 sm:min-w-[180px]"
         />
         <Select value={selectionTagFilter} onValueChange={setSelectionTagFilter}>
@@ -503,7 +508,7 @@ export function AutopilotSniperView() {
             <SelectValue placeholder="Obor / tag" />
           </SelectTrigger>
           <SelectContent className="z-[220]">
-            <SelectItem value="all">Všechny obory</SelectItem>
+            <SelectItem value="all">{t("autopilot.filterAllIndustries")}</SelectItem>
             {availableSelectionTags.map(({ tag, label, count }) => (
               <SelectItem key={tag} value={tag}>
                 {label} ({count})
@@ -525,22 +530,22 @@ export function AutopilotSniperView() {
             <SelectValue placeholder="Datum" />
           </SelectTrigger>
           <SelectContent className="z-[220]">
-            <SelectItem value="all">Všechna data</SelectItem>
-            <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-            <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
-            <SelectItem value="this_year">Tento rok</SelectItem>
+            <SelectItem value="all">{t("autopilot.sending.allDates")}</SelectItem>
+            <SelectItem value="last_7_days">{t("autopilot.sending.last7Days")}</SelectItem>
+            <SelectItem value="last_30_days">{t("autopilot.sending.last30Days")}</SelectItem>
+            <SelectItem value="this_year">{t("autopilot.sending.thisYear")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">
         <span className="text-[11px] font-medium text-muted-foreground">
-          Jen s e-mailem
+          {t("autopilot.sending.onlyWithEmail")}
         </span>
         <Switch
           checked={onlyWithEmail}
           onCheckedChange={setOnlyWithEmail}
           className="sk-switch--sm shrink-0"
-          aria-label="Jen s e-mailem"
+          aria-label={t("autopilot.sending.onlyWithEmail")}
         />
       </div>
     </div>
@@ -551,7 +556,7 @@ export function AutopilotSniperView() {
       <FilterSearch
         value={queueSearch}
         onChange={setQueueSearch}
-        placeholder="Hledat firmu, e-mail, autora…"
+        placeholder={t("autopilot.sending.queueSearch")}
         className="min-w-0 w-full"
       />
       <div className="sk-ap-queue-filter-tabs">
@@ -688,7 +693,7 @@ export function AutopilotSniperView() {
     if (!canEdit) {
       return (
         <p className="truncate text-xs text-muted-foreground">
-          {lead.email || "Bez e-mailu"}
+          {lead.email || t("autopilot.sending.noEmail")}
         </p>
       );
     }
@@ -730,26 +735,35 @@ export function AutopilotSniperView() {
 
   const renderQueueStatusCell = (state: RunState) => {
     const meta = STATUS_META[state.status];
+    const statusLabel =
+      state.status === "pending"
+        ? t("autopilot.runStatus.pending")
+        : state.status === "processing"
+          ? t("autopilot.runStatus.processing")
+          : state.status === "queued"
+            ? t("autopilot.runStatus.queued")
+            : t("autopilot.runStatus.error");
     const errorDetail =
       state.status === "error"
         ? humanizeEmailError(
-            state.message?.trim() ||
-              "Neznámá chyba. Zkuste znovu vygenerovat nebo upravit e-mail.",
+            state.message?.trim() || t("autopilot.sending.unknownError"),
+            language,
           )
         : null;
 
     if (!errorDetail) {
       return (
         <span className={cn("text-xs font-semibold", meta.className)}>
-          {meta.label}
+          {statusLabel}
         </span>
       );
     }
 
     return (
       <QueueErrorStatus
-        label={meta.label}
+        label={statusLabel}
         detail={errorDetail}
+        reasonTitle={t("autopilot.sending.errorReasonTitle")}
         className={cn(meta.className, "text-xs")}
       />
     );
@@ -842,7 +856,7 @@ export function AutopilotSniperView() {
         if ("error" in result) {
           updateLead(lead.id, {
             status: "error",
-            message: humanizeEmailError(result.error),
+            message: humanizeEmailError(result.error, language),
           });
         } else {
           updateLead(lead.id, {
@@ -1111,18 +1125,18 @@ export function AutopilotSniperView() {
                     />
                   </div>
                 </th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Firma</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>{t("autopilot.colCompany")}</th>
                 <th
                   className={cn(
                     AUTOPILOT_TABLE_HEAD_CELL_CLASS,
                     "px-2 text-center",
                   )}
                 >
-                  Web
+                  {t("autopilot.sending.colWeb")}
                 </th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>E-mail</th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Telefon</th>
-                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>Nalezeno</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>{t("autopilot.sending.colEmail")}</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>{t("autopilot.sending.colPhone")}</th>
+                <th className={AUTOPILOT_TABLE_HEAD_CELL_CLASS}>{t("autopilot.sending.colFound")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1196,7 +1210,7 @@ export function AutopilotSniperView() {
                         </div>
                       ) : (
                         <span className="flex items-center text-sm text-muted-foreground">
-                          Bez e-mailu
+                          {t("autopilot.sending.noEmail")}
                         </span>
                       )}
                     </td>
@@ -1297,7 +1311,7 @@ export function AutopilotSniperView() {
               ) : (
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
               )}
-              {isRunning ? "Generuji…" : "Fronta připravena"}
+              {isRunning ? t("autopilot.sending.generating") : t("autopilot.sending.queueReady")}
             </span>
             <span className="sk-ap-queue__stat sk-ap-queue__stat--ok">
               ✓ {queuedCount}
@@ -1324,7 +1338,7 @@ export function AutopilotSniperView() {
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}
-                Odeslat vše
+                {t("autopilot.sending.sendAll")}
               </button>
             )}
             {errorCount > 0 && (
@@ -1340,7 +1354,7 @@ export function AutopilotSniperView() {
                     ) : (
                       <Trash2 className="h-3.5 w-3.5" />
                     )}
-                    Smazat chyby
+                    {t("autopilot.sending.deleteErrors")}
                   </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="border bg-card shadow-md ">
@@ -1362,7 +1376,7 @@ export function AutopilotSniperView() {
                       onClick={() => void handleClearQueue("failed")}
                       className="bg-red-600 text-white hover:bg-red-700"
                     >
-                      Smazat chyby
+                      {t("autopilot.sending.deleteErrors")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1382,7 +1396,7 @@ export function AutopilotSniperView() {
                   ) : (
                     <Trash2 className="h-3.5 w-3.5" />
                   )}
-                  Vyčistit
+                  {t("autopilot.sending.clear")}
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent className="border bg-card shadow-md ">
@@ -1417,11 +1431,9 @@ export function AutopilotSniperView() {
         )}
 
         <div className="sk-ap-queue__intro">
-          <h3 className="sk-ap-queue__title">Fronta k odeslání</h3>
+          <h3 className="sk-ap-queue__title">{t("autopilot.sending.queueTitle")}</h3>
           <p className="sk-ap-queue__hint">
-            E-maily ve sloupci Kontakt můžete upravit kliknutím. Platí, dokud se
-            zpráva neodešle. U chyby po opravě e-mailu se položka znovu zařadí
-            do fronty.
+            {t("autopilot.sending.queueHint")}
           </p>
         </div>
 
@@ -1435,19 +1447,19 @@ export function AutopilotSniperView() {
               <thead className="sticky top-0 z-20">
                 <tr className="text-left">
                   <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[180px]")}>
-                    Firma
+                    {t("autopilot.colCompany")}
                   </th>
                   <th
                     className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[180px]")}
-                    title="E-mail můžete upravit, dokud se zpráva neodešle"
+                    title={t("autopilot.sending.colContactTitle")}
                   >
-                    Kontakt
+                    {t("autopilot.sending.colContactEdit")}
                     <span className="ml-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
-                      (upravit)
+                      {t("autopilot.sending.colContactEditHint")}
                     </span>
                   </th>
                   <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[72px]")}>
-                    Autor
+                    {t("autopilot.sending.colAuthor")}
                   </th>
                   <th
                     className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[120px]")}
@@ -1457,16 +1469,16 @@ export function AutopilotSniperView() {
                         : "Automatické odesílání je vypnuté. Použij Odeslat u řádku"
                     }
                   >
-                    Odeslat
+                    {t("autopilot.sending.colSendAt")}
                   </th>
                   <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[120px]")}>
-                    Vytvořeno
+                    {t("autopilot.sending.colCreated")}
                   </th>
                   <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[140px]")}>
-                    Stav
+                    {t("autopilot.sending.colStatus")}
                   </th>
                   <th className={cn(AUTOPILOT_TABLE_HEAD_CELL_CLASS, "min-w-[150px]")}>
-                    Akce
+                    {t("autopilot.sending.colActions")}
                   </th>
                 </tr>
               </thead>
@@ -1526,16 +1538,16 @@ export function AutopilotSniperView() {
                                   htmlBody: state.htmlBody ?? "",
                                 })
                               }
-                              title="Náhled"
-                              aria-label="Náhled"
+                              title={t("autopilot.sending.preview")}
+                              aria-label={t("autopilot.sending.preview")}
                               className="sk-row-text-btn inline-flex h-7 w-7 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
                             >
                               <Eye className="h-4 w-4 shrink-0" />
                             </button>
                             <button
                               type="button"
-                              title="Odeslat"
-                              aria-label="Odeslat"
+                              title={t("autopilot.sending.send")}
+                              aria-label={t("autopilot.sending.send")}
                               disabled={
                                 isRunning || isForceSending || isSendingThis
                               }
@@ -1567,12 +1579,12 @@ export function AutopilotSniperView() {
                       className="px-3 py-6 text-center text-xs text-muted-foreground"
                     >
                       {queueSearch.trim()
-                        ? "Žádné výsledky pro hledaný výraz."
+                        ? t("autopilot.sending.emptySearch")
                         : queueStatusFilter === "all"
-                          ? "Fronta je prázdná."
+                          ? t("autopilot.sending.emptyQueue")
                           : queueStatusFilter === "queued"
-                            ? "Zatím žádné potvrzené e-maily ve frontě."
-                            : "Zatím žádné chyby."}
+                            ? t("autopilot.sending.emptyConfirmed")
+                            : t("autopilot.sending.emptyErrors")}
                     </td>
                   </tr>
                 )}
@@ -1615,12 +1627,12 @@ export function AutopilotSniperView() {
         <AutopilotControlPanel
           icon={<Send className="h-5 w-5" />}
           iconAccent="emerald"
-          title="Automatické odesílání e-mailů"
+          title={t("autopilot.sniperTitle")}
           powerEnabled={featureEnabled}
           description={
             featureEnabled
-              ? "Cron jen odesílá splatné maily z fronty (nezahajuje nové kampaně)."
-              : "Cron vypnutý. Maily z fronty se neodešlou, dokud nezapneš."
+              ? t("autopilot.sending.cronOn")
+              : t("autopilot.sending.cronOff")
           }
           filters={
             activeSubTab === "selection"
@@ -1638,7 +1650,7 @@ export function AutopilotSniperView() {
                 onClick={() => void toggleFeaturePower()}
               />
               <AutopilotSettingsIconButton
-                label="Nastavení odesílání"
+                label={t("autopilot.sending.settingsLabel")}
                 onClick={openSettings}
               />
             </>
@@ -1658,7 +1670,7 @@ export function AutopilotSniperView() {
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            Výběr firem
+            {t("autopilot.sending.tabSelection")}
           </button>
           <button
             type="button"
@@ -1670,7 +1682,7 @@ export function AutopilotSniperView() {
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            Fronta
+            {t("autopilot.sending.tabQueue")}
             {queuedCount > 0 && (
               <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                 {queuedCount}
@@ -1685,7 +1697,7 @@ export function AutopilotSniperView() {
               <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
                 {selectedIds.length > 0
                   ? `Vybráno ${selectedIds.length} ${selectedIds.length === 1 ? "firma" : "firem"}`
-                  : "Označ firmy k oslovení"}
+                  : t("autopilot.sending.markToOutreach")}
               </p>
               <Button
                 type="button"
@@ -1707,12 +1719,12 @@ export function AutopilotSniperView() {
                         ? `Do fronty (${selectedIds.length})`
                         : automationSettings.sendingStrategy === "immediate"
                           ? `Vygenerovat (${selectedIds.length})`
-                          : `Naplánovat (${selectedIds.length})`
+                          : t("autopilot.sending.scheduleCount", { count: selectedIds.length })
                       : automationSettings.sendingStrategy === "queue"
                         ? "Do fronty"
                         : automationSettings.sendingStrategy === "immediate"
                           ? "Vygenerovat"
-                          : "Naplánovat"}
+                          : t("autopilot.sending.schedule")}
                   </>
                 )}
               </Button>
@@ -1823,10 +1835,12 @@ export function AutopilotSniperView() {
 function QueueErrorStatus({
   label,
   detail,
+  reasonTitle,
   className,
 }: {
   label: string;
   detail: string;
+  reasonTitle: string;
   className?: string;
 }) {
   const [tip, setTip] = useState<{ top: number; left: number } | null>(null);
@@ -1862,7 +1876,7 @@ function QueueErrorStatus({
             className="pointer-events-none fixed z-[100] w-72 rounded-lg border border-[color-mix(in_oklab,#fb7185_32%,transparent)] bg-[color:var(--n-card)] p-3 text-left shadow-lg "
           >
             <p className="text-[11px] font-semibold uppercase tracking-wide text-rose-600 ">
-              Důvod chyby
+              {reasonTitle}
             </p>
             <p className="mt-1.5 whitespace-pre-wrap break-words text-sm font-normal leading-relaxed text-foreground">
               {detail}

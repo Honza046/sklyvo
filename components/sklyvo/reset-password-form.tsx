@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useId, useState, type FormEvent } from "react";
+import { useLanguage } from "@/components/sklyvo/language-provider";
+import { authError, localizeAuthError } from "@/lib/sklyvo/auth-errors";
 
 type ResetPasswordFormProps = {
   onSubmit: (password: string, confirmPassword: string) => Promise<string | null>;
@@ -13,9 +15,10 @@ type ResetPasswordFormProps = {
 export function ResetPasswordForm({
   onSubmit,
   invalidToken = false,
-  submitLabel = "Uložit heslo",
-  pendingLabel = "Ukládám…",
+  submitLabel,
+  pendingLabel,
 }: ResetPasswordFormProps) {
+  const { language } = useLanguage();
   const passwordId = useId();
   const confirmId = useId();
   const [password, setPassword] = useState("");
@@ -24,17 +27,77 @@ export function ResetPasswordForm({
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const resolvedSubmit =
+    submitLabel ??
+    (language === "en"
+      ? "Save password"
+      : language === "de"
+        ? "Passwort speichern"
+        : language === "es"
+          ? "Guardar contraseña"
+          : "Uložit heslo");
+  const resolvedPending =
+    pendingLabel ??
+    (language === "en"
+      ? "Saving…"
+      : language === "de"
+        ? "Wird gespeichert…"
+        : language === "es"
+          ? "Guardando…"
+          : "Ukládám…");
+
+  const copy =
+    language === "en"
+      ? {
+          title: "New password",
+          sub: "Enter a new password for your Sklyvo account.",
+          password: "New password",
+          confirm: "Confirm password",
+          invalidToken: "This link is invalid.",
+          requestNew: "Request a new one",
+          back: "Back to sign in",
+        }
+      : language === "de"
+        ? {
+            title: "Neues Passwort",
+            sub: "Geben Sie ein neues Passwort für Ihr Sklyvo-Konto ein.",
+            password: "Neues Passwort",
+            confirm: "Passwort bestätigen",
+            invalidToken: "Dieser Link ist ungültig.",
+            requestNew: "Neuen anfordern",
+            back: "Zurück zur Anmeldung",
+          }
+        : language === "es"
+          ? {
+              title: "Nueva contraseña",
+              sub: "Introduce una nueva contraseña para tu cuenta de Sklyvo.",
+              password: "Nueva contraseña",
+              confirm: "Confirmar contraseña",
+              invalidToken: "Este enlace no es válido.",
+              requestNew: "Solicitar uno nuevo",
+              back: "Volver al inicio de sesión",
+            }
+          : {
+              title: "Nové heslo",
+              sub: "Zadejte nové heslo pro svůj Sklyvo účet.",
+              password: "Nové heslo",
+              confirm: "Potvrzení hesla",
+              invalidToken: "Odkaz je neplatný.",
+              requestNew: "Požádat o nový",
+              back: "Zpět na přihlášení",
+            };
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
 
     if (password.length < 8) {
-      setErrorMessage("Nové heslo musí mít alespoň 8 znaků.");
+      setErrorMessage(authError(language, "newPasswordTooShort"));
       return;
     }
     if (password !== confirmPassword) {
-      setErrorMessage("Hesla se neshodují.");
+      setErrorMessage(authError(language, "passwordsMismatch"));
       return;
     }
 
@@ -42,12 +105,12 @@ export function ResetPasswordForm({
     try {
       const error = await onSubmit(password, confirmPassword);
       if (error) {
-        setErrorMessage(error);
+        setErrorMessage(localizeAuthError(language, error));
         return;
       }
-      setSuccessMessage("Heslo bylo změněno. Přesměrováváme na přihlášení…");
+      setSuccessMessage(authError(language, "passwordChanged"));
     } catch {
-      setErrorMessage("Nepodařilo se změnit heslo. Zkuste to znovu.");
+      setErrorMessage(authError(language, "resetFailed"));
     } finally {
       setPending(false);
     }
@@ -55,16 +118,14 @@ export function ResetPasswordForm({
 
   return (
     <>
-      <h1 className="sklyvo-card__title">Nové heslo</h1>
-      <p className="sklyvo-card__sub">
-        Zadejte nové heslo pro svůj Sklyvo účet.
-      </p>
+      <h1 className="sklyvo-card__title">{copy.title}</h1>
+      <p className="sklyvo-card__sub">{copy.sub}</p>
 
       {invalidToken ? (
         <p className="sklyvo-error" role="alert">
-          Odkaz je neplatný.{" "}
+          {copy.invalidToken}{" "}
           <Link href="/recovery" className="sklyvo-link">
-            Požádat o nový
+            {copy.requestNew}
           </Link>
           .
         </p>
@@ -73,7 +134,7 @@ export function ResetPasswordForm({
           <div className="sklyvo-fields">
             <div className="sklyvo-group">
               <label className="sklyvo-label" htmlFor={passwordId}>
-                Nové heslo
+                {copy.password}
               </label>
               <div className="sklyvo-field">
                 <svg
@@ -106,7 +167,7 @@ export function ResetPasswordForm({
 
             <div className="sklyvo-group">
               <label className="sklyvo-label" htmlFor={confirmId}>
-                Potvrzení hesla
+                {copy.confirm}
               </label>
               <div className="sklyvo-field">
                 <svg
@@ -156,14 +217,14 @@ export function ResetPasswordForm({
             className="sklyvo-btn-primary"
             disabled={pending || Boolean(successMessage)}
           >
-            {pending ? pendingLabel : submitLabel}
+            {pending ? resolvedPending : resolvedSubmit}
           </button>
         </form>
       )}
 
       <p className="sklyvo-form__footer">
         <Link className="sklyvo-link" href="/login">
-          Zpět na přihlášení
+          {copy.back}
         </Link>
       </p>
     </>

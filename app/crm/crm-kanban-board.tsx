@@ -23,6 +23,7 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { CrmKanbanSkeleton } from "@/components/crm/crm-table-skeleton";
+import { useLanguage } from "@/context/LanguageContext";
 
 /** Při tažení s DragOverlay ponechá zdroj v layoutu; kopii tahá overlay (@dnd-kit doporučení). */
 export type KanbanDragProps = {
@@ -175,6 +176,7 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
   onDelete: (leadId: string) => void;
   onQuickStatus: (leadId: string, status: string) => void;
 }) {
+  const { t } = useLanguage();
   const {
     columns,
     leads,
@@ -283,7 +285,11 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
               column={col}
               count={count}
               valueLabel={
-                count === 0 ? "Prázdné" : `Hodnota: ${formatCurrency(valueSum)}`
+                count === 0
+                  ? t("crm.emptyPhase")
+                  : t("crm.valueLabel", {
+                      amount: formatCurrency(valueSum),
+                    })
               }
               active={col.id === activeColumnId}
               onSelect={() => setActiveColumnId(col.id)}
@@ -291,10 +297,7 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
           ))}
         </div>
 
-        <p className="sk-crm-board__hint shrink-0">
-          Kartu přetáhni na fázi nahoře a změní se stav. Hodnota u fáze je
-          součet odhadovaných cen dealů.
-        </p>
+        <p className="sk-crm-board__hint shrink-0">{t("crm.dragHint")}</p>
 
         {isLoading ? (
           <CrmKanbanSkeleton />
@@ -311,9 +314,11 @@ export function CrmKanbanBoard<L extends KanbanLead>(props: {
               <span className="sk-crm-board__spacer" aria-hidden />
               <span
                 className="sk-crm-board__value"
-                title="Součet odhadovaných cen dealů v této fázi. Cenu nastavíš při vytvoření nebo úpravě dealu."
+                title={t("crm.valueTooltip")}
               >
-                Hodnota: {formatCurrency(activeStat?.valueSum ?? 0)}
+                {t("crm.valueLabel", {
+                  amount: formatCurrency(activeStat?.valueSum ?? 0),
+                })}
               </span>
             </div>
 

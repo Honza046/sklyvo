@@ -102,7 +102,9 @@ export default function SupportPage() {
               type="button"
               className="sk-help-actionbtn"
               onClick={() => {
-                const subject = encodeURIComponent("Dotaz z aplikace Sklyvo");
+                const subject = encodeURIComponent(
+                  t("help.supportEmailSubject"),
+                );
                 window.location.href = `mailto:${SKLYVO_BRAND.supportEmail}?subject=${subject}`;
               }}
             >

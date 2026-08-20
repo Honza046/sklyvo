@@ -37,35 +37,27 @@ import { RADAR_COMPANY_SIZE_OPTIONS } from "@/lib/radar-settings-meta";
 import {
   RADAR_COUNTRY_NONE,
   RADAR_COUNTRY_OPTIONS,
+  localizedCountryLabel,
 } from "@/lib/country-language";
+import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
 export type AutopilotSettingsSection = "radar" | "sniper" | "full-auto";
 
-const SECTION_META: Record<
-  AutopilotSettingsSection,
-  {
-    title: string;
-    description: string;
-    icon: typeof Radio;
-  }
-> = {
-  radar: {
-    title: "Nastavení Radaru",
-    description:
-      "Kdy a koho má Radar hledat. Změny platí od příštího automatického běhu.",
-    icon: Radio,
-  },
-  sniper: {
-    title: "Nastavení odesílání",
-    description: "Generování hned · odeslání podle dnů, oken a limitu dávky.",
-    icon: Rocket,
-  },
-  "full-auto": {
-    title: "Nastavení Full Auto",
-    description:
-      "Jak často spustit celou smyčku: Radar najde firmy → Sniper je osloví.",
-    icon: Sparkles,
-  },
+const SECTION_ICONS: Record<AutopilotSettingsSection, typeof Radio> = {
+  radar: Radio,
+  sniper: Rocket,
+  "full-auto": Sparkles,
+};
+
+const WEEKDAY_I18N: Record<number, string> = {
+  1: "mon",
+  2: "tue",
+  3: "wed",
+  4: "thu",
+  5: "fri",
+  6: "sat",
+  0: "sun",
 };
 
 type AutopilotSettingsDialogProps = {
@@ -94,8 +86,24 @@ export function AutopilotSettingsDialog({
   featureEnabled,
   onFeatureEnabledChange,
 }: AutopilotSettingsDialogProps) {
-  const meta = SECTION_META[section];
-  const SectionIcon = meta.icon;
+  const { t, language } = useLanguage();
+  const SectionIcon = SECTION_ICONS[section];
+  const meta = {
+    title:
+      section === "radar"
+        ? t("autopilot.settings.radarTitle")
+        : section === "sniper"
+          ? t("autopilot.settings.sniperTitle")
+          : t("autopilot.settings.fullAutoTitle"),
+    description:
+      section === "radar"
+        ? t("autopilot.settings.radarDescription")
+        : section === "sniper"
+          ? t("autopilot.settings.sniperDescription")
+          : t("autopilot.settings.fullAutoDescription"),
+  };
+  const weekdayLabel = (value: number) =>
+    t(`autopilot.settings.weekday.${WEEKDAY_I18N[value]}`);
 
   const patch = (partial: Partial<AutopilotAutomationSettings>) => {
     onChange({ ...settings, ...partial });
@@ -139,7 +147,7 @@ export function AutopilotSettingsDialog({
   const sendDayLabels = SEND_WEEKDAYS.filter((day) =>
     sendDays.includes(day.value),
   )
-    .map((day) => day.label)
+    .map((day) => weekdayLabel(day.value))
     .join(", ");
 
   const radarDayLabels = RADAR_WEEKDAYS.filter((day) =>
@@ -215,13 +223,13 @@ export function AutopilotSettingsDialog({
             >
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">
-                  {featureEnabled ? "Automatika zapnutá" : "Automatika vypnutá"}
+                  {featureEnabled ? t("autopilot.settings.automationOn") : t("autopilot.settings.automationOff")}
                 </p>
                 {section === "sniper" || section === "full-auto" ? null : (
                   <p className="text-[11px] text-muted-foreground">
                     {section === "radar"
-                      ? "Vypnuto = noční cron firmy nehledá (ruční sběr funguje dál)."
-                      : "Vypnuto = Full Auto cron neběží."}
+                      ? t("autopilot.settings.radarAutomationHint")
+                      : t("autopilot.settings.fullAutoAutomationHint")}
                   </p>
                 )}
               </div>
@@ -238,12 +246,12 @@ export function AutopilotSettingsDialog({
             <div className="grid items-stretch gap-3 md:grid-cols-2">
               <section className="sk-settings-panel flex h-full min-h-0 flex-col overflow-hidden">
                 <div className="sk-settings-panel__head">
-                  <p>1 · Kdy hledat</p>
+                  <p>{t("autopilot.settings.whenToSearch")}</p>
                 </div>
                 <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <Label className="text-sm">Dny</Label>
+                      <Label className="text-sm">{t("autopilot.settings.days")}</Label>
                       <div className="flex gap-1">
                         <button
                           type="button"
@@ -256,7 +264,7 @@ export function AutopilotSettingsDialog({
                             isWeekdaysOnly && "sk-mini-chip--active",
                           )}
                         >
-                          Po–Pá
+                          {t("autopilot.settings.weekdaysMonFri")}
                         </button>
                         <button
                           type="button"
@@ -269,7 +277,7 @@ export function AutopilotSettingsDialog({
                             isAllWeek && "sk-mini-chip--active",
                           )}
                         >
-                          Celý týden
+                          {t("autopilot.settings.allWeek")}
                         </button>
                       </div>
                     </div>
@@ -288,7 +296,7 @@ export function AutopilotSettingsDialog({
                               active && "sk-day-track__item--active",
                             )}
                           >
-                            {label}
+                            {weekdayLabel(value)}
                           </button>
                         );
                       })}
@@ -298,7 +306,7 @@ export function AutopilotSettingsDialog({
                   <div className="grid grid-cols-3 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="radar-run-time" className="text-sm">
-                        Čas
+                        {t("autopilot.settings.time")}
                       </Label>
                       <Input
                         id="radar-run-time"
@@ -313,7 +321,7 @@ export function AutopilotSettingsDialog({
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="radar-min-companies" className="text-sm">
-                        Od firem
+                        {t("autopilot.settings.minCompanies")}
                       </Label>
                       <Input
                         id="radar-min-companies"
@@ -337,7 +345,7 @@ export function AutopilotSettingsDialog({
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="radar-max-companies" className="text-sm">
-                        Do firem
+                        {t("autopilot.settings.maxCompanies")}
                       </Label>
                       <Input
                         id="radar-max-companies"
@@ -380,11 +388,10 @@ export function AutopilotSettingsDialog({
                         htmlFor="auto-start-outreach"
                         className="text-sm text-foreground"
                       >
-                        3 · Rovnou odesílat
+                        {t("autopilot.settings.autoOutreach")}
                       </Label>
                       <p className="text-[11px] leading-snug text-muted-foreground">
-                        Vypnuto = jen uloží do CRM. Zapni, až budeš chtít rovnou
-                        generovat a posílat.
+                        {t("autopilot.settings.autoOutreachHint")}
                       </p>
                     </div>
                     <Switch
@@ -402,22 +409,22 @@ export function AutopilotSettingsDialog({
 
               <section className="sk-settings-panel flex h-full flex-col overflow-hidden">
                 <div className="sk-settings-panel__head">
-                  <p>2 · Koho hledat</p>
+<p>{t("autopilot.settings.whoToSearch")}</p>
                 </div>
                 <div className="flex flex-col gap-2.5 p-3">
                   <div className="space-y-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <Label htmlFor="radar-industries" className="text-sm">
-                        Obory
+                        {t("autopilot.settings.industries")}
                       </Label>
                       <span className="text-[10px] text-muted-foreground">
-                        odděl čárkou
+                        {t("autopilot.settings.commaSeparated")}
                       </span>
                     </div>
                     <Textarea
                       id="radar-industries"
                       rows={2}
-                      placeholder="marketingová agentura, webové studio…"
+                      placeholder={t("autopilot.settings.industriesPlaceholder")}
                       value={settings.targetIndustries}
                       onChange={(e) =>
                         patch({ targetIndustries: e.target.value })
@@ -430,16 +437,16 @@ export function AutopilotSettingsDialog({
                   <div className="space-y-1">
                     <div className="flex items-baseline justify-between gap-2">
                       <Label htmlFor="radar-locations" className="text-sm">
-                        Města / regiony
+                        {t("autopilot.settings.locations")}
                       </Label>
                       <span className="text-[10px] text-muted-foreground">
-                        odděl čárkou
+                        {t("autopilot.settings.commaSeparated")}
                       </span>
                     </div>
                     <Textarea
                       id="radar-locations"
                       rows={2}
-                      placeholder="Praha, Brno, Ostrava…"
+                      placeholder={t("autopilot.settings.locationsPlaceholder")}
                       value={settings.locations}
                       onChange={(e) => patch({ locations: e.target.value })}
                       disabled={disabled}
@@ -448,22 +455,25 @@ export function AutopilotSettingsDialog({
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-sm">Země hledání</Label>
+                    <Label className="text-sm">{t("radar.country")}</Label>
                     <Select
                       value={settings.countryCode || "CZ"}
                       onValueChange={(value) => patch({ countryCode: value })}
                       disabled={disabled}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Vyberte zemi" />
+                        <SelectValue placeholder={t("radar.country")} />
                       </SelectTrigger>
                       <SelectContent className="bg-card ">
                         <SelectItem value={RADAR_COUNTRY_NONE}>
-                          Bez omezení
+                          {t("radar.countryAny")}
                         </SelectItem>
                         {RADAR_COUNTRY_OPTIONS.map((opt) => (
                           <SelectItem key={opt.code} value={opt.code}>
-                            {opt.label}
+                            {localizedCountryLabel(
+                              opt.code,
+                              DATE_LOCALE[language],
+                            ) ?? opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -471,7 +481,7 @@ export function AutopilotSettingsDialog({
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-sm">Velikost firmy</Label>
+<Label className="text-sm">{t("autopilot.settings.companySize")}</Label>
                     <Select
                       value={settings.companySize}
                       onValueChange={(value) =>
@@ -480,12 +490,22 @@ export function AutopilotSettingsDialog({
                       disabled={disabled}
                     >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Vyberte velikost" />
+<SelectValue placeholder={t("autopilot.settings.companySizePlaceholder")} />
                       </SelectTrigger>
                       <SelectContent className="bg-card ">
                         {RADAR_COMPANY_SIZE_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {t(
+                              option.value === "any"
+                                ? "autopilot.settings.companySizeAny"
+                                : option.value === "micro"
+                                  ? "autopilot.settings.companySizeMicro"
+                                  : option.value === "small"
+                                    ? "autopilot.settings.companySizeSmall"
+                                    : option.value === "medium"
+                                      ? "autopilot.settings.companySizeMedium"
+                                      : "autopilot.settings.companySizeLarge",
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -503,18 +523,18 @@ export function AutopilotSettingsDialog({
                   [
                     {
                       id: "queue" as const,
-                      title: "Jen do fronty",
-                      hint: "Jen napíše e-maily. Neodešle, dokud nezapneš odesílání nebo nepošleš ručně.",
+                      title: t("autopilot.settings.strategyQueue"),
+                      hint: t("autopilot.settings.strategyQueueHint"),
                     },
                     {
                       id: "batch" as const,
-                      title: "V časových oknech",
-                      hint: "Do fronty podle dnů a hodin (odesílá cron, když je zapnutý).",
+                      title: t("autopilot.settings.strategyWindows"),
+                      hint: t("autopilot.settings.strategyWindowsHint"),
                     },
                     {
                       id: "immediate" as const,
-                      title: "Hned po vygenerování",
-                      hint: "Vygeneruje a ihned odešle (jen když je Zapnout aktivní).",
+                      title: t("autopilot.settings.strategyImmediate"),
+                      hint: t("autopilot.settings.strategyImmediateHint"),
                     },
                   ] satisfies {
                     id: SendingStrategy;
@@ -550,7 +570,7 @@ export function AutopilotSettingsDialog({
                 className="sk-settings-row flex cursor-pointer items-center justify-between gap-3 px-3 py-1.5"
               >
                 <p className="text-[13px] font-semibold text-foreground">
-                  Pouze firmy s e-mailem
+                  {t("autopilot.settings.onlyWithEmail")}
                 </p>
                 <Switch
                   id="settings-sniper-only-email"
@@ -568,7 +588,7 @@ export function AutopilotSettingsDialog({
                   <section className="sk-settings-panel p-3">
                     <div className="mb-2 flex items-center justify-between gap-2">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Dny · Tempo
+                        {t("autopilot.settings.daysTempo")}
                       </p>
                       <button
                         type="button"
@@ -598,7 +618,7 @@ export function AutopilotSettingsDialog({
                                 active && "sk-day-track__item--active",
                               )}
                             >
-                              {label}
+                              {weekdayLabel(value)}
                             </button>
                           );
                         })}
@@ -608,7 +628,7 @@ export function AutopilotSettingsDialog({
                           htmlFor="modal-max-batch"
                           className="whitespace-nowrap text-[10px]"
                         >
-                          Max / dávka
+                          {t("autopilot.settings.maxPerBatch")}
                         </Label>
                         <Input
                           id="modal-max-batch"
@@ -633,11 +653,11 @@ export function AutopilotSettingsDialog({
 
                   <section className="sk-settings-panel p-3">
                     <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Časová okna
+                      {t("autopilot.settings.timeWindows")}
                     </p>
                     <div className="space-y-2.5">
                       <TimeWindowRow
-                        label="Základní"
+                        label={t("autopilot.settings.windowPrimary")}
                         start={settings.window1Start}
                         end={settings.window1End}
                         disabled={disabled}
@@ -646,11 +666,15 @@ export function AutopilotSettingsDialog({
                           patch({ window1Start: value })
                         }
                         onEndChange={(value) => patch({ window1End: value })}
+                      
+                        removeLabel={t("autopilot.settings.remove")}
+                        fromLabel={t("autopilot.settings.from")}
+                        toLabel={t("autopilot.settings.to")}
                       />
 
                       {settings.window2Enabled ? (
                         <TimeWindowRow
-                          label="2. okno"
+                          label={t("autopilot.settings.window2")}
                           start={settings.window2Start}
                           end={settings.window2End}
                           disabled={disabled}
@@ -660,10 +684,14 @@ export function AutopilotSettingsDialog({
                             patch({ window2Start: value })
                           }
                           onEndChange={(value) => patch({ window2End: value })}
-                        />
+                        
+                        removeLabel={t("autopilot.settings.remove")}
+                        fromLabel={t("autopilot.settings.from")}
+                        toLabel={t("autopilot.settings.to")}
+                      />
                       ) : (
                         <OptionalWindowToggle
-                          label="2. okno"
+                          label={t("autopilot.settings.window2")}
                           enabled={false}
                           disabled={disabled}
                           onEnabledChange={(enabled) =>
@@ -674,7 +702,7 @@ export function AutopilotSettingsDialog({
 
                       {settings.window3Enabled ? (
                         <TimeWindowRow
-                          label="3. okno"
+                          label={t("autopilot.settings.window3")}
                           start={settings.window3Start}
                           end={settings.window3End}
                           disabled={disabled}
@@ -684,10 +712,14 @@ export function AutopilotSettingsDialog({
                             patch({ window3Start: value })
                           }
                           onEndChange={(value) => patch({ window3End: value })}
-                        />
+                        
+                        removeLabel={t("autopilot.settings.remove")}
+                        fromLabel={t("autopilot.settings.from")}
+                        toLabel={t("autopilot.settings.to")}
+                      />
                       ) : (
                         <OptionalWindowToggle
-                          label="3. okno"
+                          label={t("autopilot.settings.window3")}
                           enabled={false}
                           disabled={disabled}
                           onEnabledChange={(enabled) =>
@@ -697,7 +729,7 @@ export function AutopilotSettingsDialog({
                       )}
                     </div>
                     <p className="sk-settings-note sk-settings-note--info mt-2.5 px-2.5 py-1.5 text-[10px] leading-snug">
-                      {sendDayLabels || "žádný den"} ·{" "}
+                      {sendDayLabels || t("autopilot.settings.noDay")} ·{" "}
                       {getActiveScheduleWindows(settings)
                         .map((w) => `${w.start}–${w.end}`)
                         .join(", ")}{" "}
@@ -722,24 +754,24 @@ export function AutopilotSettingsDialog({
           {section === "full-auto" && (
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <p className="sk-type-label">1 · Jak často</p>
+                <p className="sk-type-label">{t("autopilot.settings.howOften")}</p>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {(
                     [
                       {
                         id: "once_weekly" as const,
-                        title: "1× týdně",
-                        hint: "Klidnější tempo",
+                        title: t("autopilot.settings.freqOnceWeekly"),
+                        hint: t("autopilot.settings.freqOnceWeeklyHint"),
                       },
                       {
                         id: "twice_weekly" as const,
-                        title: "2× týdně",
-                        hint: "Doporučeno",
+                        title: t("autopilot.settings.freqTwiceWeekly"),
+                        hint: t("autopilot.settings.freqTwiceWeeklyHint"),
                       },
                       {
                         id: "daily" as const,
-                        title: "Každý pracovní den",
-                        hint: "Nejvíce leadů",
+                        title: t("autopilot.settings.freqDaily"),
+                        hint: t("autopilot.settings.freqDailyHint"),
                       },
                     ] satisfies {
                       id: FullAutoFrequency;
@@ -774,7 +806,7 @@ export function AutopilotSettingsDialog({
               <div className="flex flex-wrap items-end gap-3">
                 <div className="w-36 space-y-1">
                   <Label htmlFor="full-auto-run-time" className="sk-type-label">
-                    2 · Čas spuštění
+                    {t("autopilot.settings.runTime")}
                   </Label>
                   <Input
                     id="full-auto-run-time"
@@ -788,13 +820,12 @@ export function AutopilotSettingsDialog({
                   />
                 </div>
                 <p className="pb-1.5 text-[11px] text-muted-foreground">
-                  Pracovní dny · místní čas
+                  {t("autopilot.settings.workdaysLocal")}
                 </p>
               </div>
 
               <p className="sk-settings-note sk-settings-note--info px-2.5 py-1.5 text-[10px] leading-snug">
-                Běží jen při zapnuté automatice. Frekvence a čas určí rytmus
-                smyčky Radar → Sniper.
+                {t("autopilot.settings.fullAutoNote")}
               </p>
             </div>
           )}
@@ -808,7 +839,7 @@ export function AutopilotSettingsDialog({
             disabled={isSaving}
             className="sk-dialog-actions__cancel"
           >
-            Zavřít
+            {t("autopilot.settings.close")}
           </Button>
           <Button
             type="button"
@@ -821,7 +852,7 @@ export function AutopilotSettingsDialog({
               })();
             }}
           >
-            {isSaving ? "Ukládám…" : "Uložit nastavení"}
+            {isSaving ? t("autopilot.powerSaving") : t("autopilot.settings.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -907,6 +938,9 @@ function TimeWindowRow({
   onRemove,
   onStartChange,
   onEndChange,
+  removeLabel,
+  fromLabel,
+  toLabel,
 }: {
   label: string;
   start: string;
@@ -916,6 +950,9 @@ function TimeWindowRow({
   onRemove?: () => void;
   onStartChange: (value: string) => void;
   onEndChange: (value: string) => void;
+  removeLabel: string;
+  fromLabel: string;
+  toLabel: string;
 }) {
   if (compact) {
     return (
@@ -937,7 +974,7 @@ function TimeWindowRow({
             onClick={onRemove}
             className="ml-auto text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
           >
-            Odebrat
+            {removeLabel}
           </button>
         ) : null}
       </div>
@@ -951,7 +988,7 @@ function TimeWindowRow({
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-0.5">
-          <Label className="text-[10px]">Od</Label>
+          <Label className="text-[10px]">{fromLabel}</Label>
           <TimeSelect
             value={start}
             disabled={disabled}
@@ -960,7 +997,7 @@ function TimeWindowRow({
         </div>
         <span className="mb-1.5 text-xs text-muted-foreground">–</span>
         <div className="space-y-0.5">
-          <Label className="text-[10px]">Do</Label>
+          <Label className="text-[10px]">{toLabel}</Label>
           <TimeSelect value={end} disabled={disabled} onChange={onEndChange} />
         </div>
       </div>

@@ -42,8 +42,10 @@ import {
   RADAR_COUNTRY_OPTIONS,
   RADAR_COUNTRY_STORAGE_KEY,
   detectCountryFromQuery,
+  localizedCountryLabel,
   normalizeCountryCode,
 } from "@/lib/country-language";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
 const RADAR_RECENT_STORAGE_KEY = "sklyvo-radar-recent-searches";
 const RADAR_RECENT_MAX = 4;
@@ -390,7 +392,8 @@ export default function RadarPage() {
                 </SelectItem>
                 {RADAR_COUNTRY_OPTIONS.map((opt) => (
                   <SelectItem key={opt.code} value={opt.code}>
-                    {opt.label}
+                    {localizedCountryLabel(opt.code, DATE_LOCALE[language]) ??
+                      opt.label}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -31,12 +31,30 @@ export const landingCz = {
   footCols: [
     {
       title: "Produkt",
-      links: ["Jak to funguje", "Ceník", "Přihlásit se", "Vyzkoušet zdarma"],
+      links: [
+        { label: "Jak to funguje", href: "#how" },
+        { label: "Ceník", href: "/register" },
+        { label: "Přihlásit se", href: "/login" },
+        { label: "Vyzkoušet zdarma", href: "/register" },
+      ],
     },
-    { title: "Firma", links: ["O nás", "Venegard", "Blog", "Kariéra"] },
+    {
+      title: "Firma",
+      links: [
+        { label: "O nás", href: "#why" },
+        { label: "Venegard", href: "https://venegard.com", external: true },
+        { label: "Blog", href: "mailto:podpora@venegard.com" },
+        { label: "Kariéra", href: "mailto:podpora@venegard.com" },
+      ],
+    },
     {
       title: "Podpora",
-      links: ["Časté dotazy", "Dokumentace", "Napište nám", "Stav služby"],
+      links: [
+        { label: "Časté dotazy", href: "#faq" },
+        { label: "Dokumentace", href: "#faq" },
+        { label: "Napište nám", href: "mailto:podpora@venegard.com" },
+        { label: "Stav služby", href: "mailto:podpora@venegard.com" },
+      ],
     },
   ],
   why: [
@@ -123,10 +141,31 @@ export const landingEn = {
   footCols: [
     {
       title: "Product",
-      links: ["How it works", "Pricing", "Sign in", "Try for free"],
+      links: [
+        { label: "How it works", href: "#how" },
+        { label: "Pricing", href: "/register" },
+        { label: "Sign in", href: "/login" },
+        { label: "Try for free", href: "/register" },
+      ],
     },
-    { title: "Company", links: ["About", "Venegard", "Blog", "Careers"] },
-    { title: "Support", links: ["FAQ", "Docs", "Contact us", "Status"] },
+    {
+      title: "Company",
+      links: [
+        { label: "About", href: "#why" },
+        { label: "Venegard", href: "https://venegard.com", external: true },
+        { label: "Blog", href: "mailto:podpora@venegard.com" },
+        { label: "Careers", href: "mailto:podpora@venegard.com" },
+      ],
+    },
+    {
+      title: "Support",
+      links: [
+        { label: "FAQ", href: "#faq" },
+        { label: "Docs", href: "#faq" },
+        { label: "Contact us", href: "mailto:podpora@venegard.com" },
+        { label: "Status", href: "mailto:podpora@venegard.com" },
+      ],
+    },
   ],
   why: [
     {
@@ -182,7 +221,12 @@ export const landingEn = {
 type WhyItem = { title: string; body: string };
 type StepItem = { n: string; title: string; body: string };
 type FaqItem = { q: string; a: string };
-type FootCol = { title: string; links: readonly string[] };
+type FootLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+};
+type FootCol = { title: string; links: readonly FootLink[] };
 
 export type LandingMessages = {
   title: string;

@@ -33,8 +33,10 @@ import {
 import { cn } from "@/lib/utils";
 import { shortLeadAuthorName } from "@/lib/lead-provenance";
 
-const SCRAPE_CONTACT_HINT =
-  "Důkladně prohledá web a doplní e-mail nebo telefon";
+type CrmTranslate = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
 
 const CRM_HINT_DELAY_MS = 1000;
 
@@ -173,10 +175,12 @@ export function WebsiteVisitedGlobeButton({
   visited,
   visitedBy,
   onOpen,
+  t,
 }: {
   visited?: boolean;
   visitedBy?: string;
   onOpen: () => void;
+  t: CrmTranslate;
 }) {
   const who = shortLeadAuthorName(visitedBy);
   const { open: hintOpen, setOpen: setHintOpen, onEnter, onLeave } =
@@ -199,9 +203,9 @@ export function WebsiteVisitedGlobeButton({
         aria-label={
           visited
             ? who
-              ? `Web prohlédnut, první návštěva webu: ${who}`
-              : "Web prohlédnut"
-            : "Otevřít web firmy"
+              ? t("crm.actionWebVisitedAriaBy", { who })
+              : t("crm.actionWebVisitedAria")
+            : t("crm.actionOpenCompanyWeb")
         }
       >
         <Globe className="h-3.5 w-3.5" strokeWidth={2} />
@@ -210,18 +214,18 @@ export function WebsiteVisitedGlobeButton({
         {visited ? (
           <>
             <p className="sk-crm-hint__label sk-crm-hint__label--success">
-              Web už někdo prošel
+              {t("crm.actionWebVisited")}
             </p>
             <p className="sk-crm-hint__desc">
               {who
-                ? `První návštěva webu: ${who}`
-                : "Někdo z týmu už web otevřel."}
+                ? t("crm.actionWebVisitedBy", { who })
+                : t("crm.actionWebVisitedGeneric")}
             </p>
           </>
         ) : (
           <>
-            <p className="sk-crm-hint__label">Otevřít web</p>
-            <p className="sk-crm-hint__desc">Po první návštěvě zezelená.</p>
+            <p className="sk-crm-hint__label">{t("crm.actionOpenWeb")}</p>
+            <p className="sk-crm-hint__desc">{t("crm.actionOpenWebDesc")}</p>
           </>
         )}
       </CrmHintBubble>
@@ -233,11 +237,14 @@ export function ScrapeContactButton({
   isLoading,
   disabled,
   onClick,
+  t,
 }: {
   isLoading: boolean;
   disabled?: boolean;
   onClick: () => void;
+  t: CrmTranslate;
 }) {
+  const hint = t("crm.actionScrapeContactHint");
   const { open: hintOpen, setOpen: setHintOpen, onEnter, onLeave } =
     useDelayedHint();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -256,7 +263,7 @@ export function ScrapeContactButton({
         onFocus={() => setHintOpen(true)}
         onBlur={() => setHintOpen(false)}
         className="sk-crm-scan"
-        aria-label={SCRAPE_CONTACT_HINT}
+        aria-label={hint}
       >
         {isLoading ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[#02A7FF]" />
@@ -265,7 +272,7 @@ export function ScrapeContactButton({
         )}
       </button>
       <CrmHintBubble open={hintOpen} anchorRef={wrapRef}>
-        <p className="sk-crm-hint__label">{SCRAPE_CONTACT_HINT}</p>
+        <p className="sk-crm-hint__label">{hint}</p>
       </CrmHintBubble>
     </div>
   );
@@ -288,6 +295,7 @@ export function CrmRowActions({
   onSendFollowUp,
   onSendBreakup,
   onDelete,
+  t,
 }: {
   companyWeb: string;
   emailTrim: string;
@@ -305,14 +313,15 @@ export function CrmRowActions({
   onSendFollowUp: () => void;
   onSendBreakup: () => void;
   onDelete: () => void;
+  t: CrmTranslate;
 }) {
   return (
     <div className="sk-crm-actions">
-      <CrmActionHint label="Odeslat do Snipera">
+      <CrmActionHint label={t("crm.actionSendToSniper")}>
         <Link
           href={sniperHref}
           className="sk-crm-iconbtn"
-          aria-label="Odeslat do Snipera"
+          aria-label={t("crm.actionSendToSniper")}
         >
           <Send className="h-3.5 w-3.5" strokeWidth={2} />
         </Link>
@@ -322,17 +331,18 @@ export function CrmRowActions({
           visited={visited}
           visitedBy={visitedBy}
           onOpen={onOpenWebsite}
+          t={t}
         />
       ) : null}
       {hasSentEmails ? (
         <CrmActionHint
-          label="Zobrazit odeslaný e-mail"
-          description="Náhled textu, který jsme firmě odeslali."
+          label={t("crm.actionViewSentEmail")}
+          description={t("crm.actionViewSentEmailDesc")}
         >
           <button
             type="button"
             className="sk-crm-iconbtn"
-            aria-label="Zobrazit odeslaný e-mail"
+            aria-label={t("crm.actionViewSentEmail")}
             disabled={isLoadingSentEmails}
             onClick={onViewSentEmails}
           >
@@ -344,11 +354,11 @@ export function CrmRowActions({
           </button>
         </CrmActionHint>
       ) : null}
-      <CrmActionHint label="Upravit deal">
+      <CrmActionHint label={t("crm.actionEditDeal")}>
         <button
           type="button"
           className="sk-crm-iconbtn"
-          aria-label="Upravit deal"
+          aria-label={t("crm.actionEditDeal")}
           onClick={onEdit}
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
@@ -359,7 +369,7 @@ export function CrmRowActions({
           <button
             type="button"
             className="sk-crm-iconbtn"
-            aria-label="Další akce"
+            aria-label={t("crm.actionMore")}
           >
             <MoreHorizontal className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
@@ -371,7 +381,7 @@ export function CrmRowActions({
           {companyWeb && (!emailTrim || !phoneTrim) ? (
             <DropdownMenuItem disabled={isScraping} onClick={onScrape}>
               <ScanSearch className="mr-2 h-4 w-4" />
-              Doplnit kontakt z webu
+              {t("crm.actionScrapeContact")}
             </DropdownMenuItem>
           ) : null}
           {hasSentEmails ? (
@@ -381,16 +391,16 @@ export function CrmRowActions({
               className="whitespace-nowrap"
             >
               <Mail className="mr-2 h-4 w-4 shrink-0" />
-              Zobrazit odeslaný e-mail
+              {t("crm.actionViewSentEmail")}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuItem onClick={onSendFollowUp}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Poslat follow-up
+            {t("crm.actionSendFollowUp")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onSendBreakup}>
             <Hand className="mr-2 h-4 w-4" />
-            Poslat breakup
+            {t("crm.actionSendBreakup")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -398,7 +408,7 @@ export function CrmRowActions({
             className="text-red-400 focus:text-red-300"
           >
             <Trash className="mr-2 h-4 w-4" />
-            Smazat
+            {t("crm.actionDelete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -469,10 +479,12 @@ export function CrmFiltersPanel({
   open,
   onClose,
   children,
+  applyLabel,
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  applyLabel: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useCloseOnOutsideClick(open, onClose, ref, "[data-crm-filters-trigger]");
@@ -492,7 +504,7 @@ export function CrmFiltersPanel({
         className="sk-crm-btn sk-crm-btn--white sk-crm-filters__apply"
         onClick={onClose}
       >
-        Použít filtry
+        {applyLabel}
       </button>
     </div>
   );

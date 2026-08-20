@@ -38,6 +38,8 @@ import {
 import { toast } from "sonner";
 import { ProfilePageLoadingSpinner } from "@/components/profile-loading";
 import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
+import { formatCzk } from "@/lib/pricing/plan-catalog";
 import { cn } from "@/lib/utils";
 
 function formatPlanDisplayName(planTier: string) {
@@ -49,7 +51,7 @@ function formatPlanDisplayName(planTier: string) {
 }
 
 export default function AccountPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [user, setUser] = useState<{
     name: string;
@@ -465,7 +467,9 @@ export default function AccountPage() {
               [t("account.planTarif"), planName, "strong"],
               [
                 t("account.planPerMember"),
-                workspace?.planTier !== "NONE" ? "690 Kč" : "—",
+                workspace?.planTier !== "NONE"
+                  ? formatCzk(690, DATE_LOCALE[language])
+                  : "—",
                 "medium",
               ],
               [
@@ -476,7 +480,10 @@ export default function AccountPage() {
               [
                 t("account.planTotal"),
                 workspace?.planTier !== "NONE"
-                  ? `${(workspace?.memberCount ?? 0) * 690} Kč`
+                  ? formatCzk(
+                      (workspace?.memberCount ?? 0) * 690,
+                      DATE_LOCALE[language],
+                    )
                   : "—",
                 "strong",
               ],

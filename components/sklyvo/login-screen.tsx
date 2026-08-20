@@ -22,20 +22,16 @@ import {
   useOAuthLogin,
 } from "@/components/sklyvo/oauth-providers";
 import { TotpCodeInput } from "@/components/sklyvo/totp-code-input";
-
-const OAUTH_ERROR_MESSAGES: Record<string, string> = {
-  exchange: "Sociální přihlášení se nepodařilo dokončit. Zkuste to znovu.",
-  user: "Nepodařilo se načíst údaje z poskytovatele. Zkuste to prosím znovu.",
-  callback: "Chybí autorizační kód. Zkuste přihlášení znovu.",
-  provider: "Poskytovatel přihlášení požadavek odmítl. Zkuste to znovu.",
-  email:
-    "Poskytovatel nevrátil e-mail. V Supabase zapni „Allow users without an email“ a zkus to znovu.",
-};
+import {
+  authError,
+  localizeAuthError,
+  oauthAuthError,
+} from "@/lib/sklyvo/auth-errors";
 
 type TwoFactorMethods = ("totp" | "passkey")[];
 
 export function LoginScreen() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -66,11 +62,13 @@ export function LoginScreen() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const oauth = params.get("oauth_error");
-    if (oauth && OAUTH_ERROR_MESSAGES[oauth]) {
-      setErrorMessage(OAUTH_ERROR_MESSAGES[oauth]);
+    if (!oauth) return;
+    const message = oauthAuthError(language, oauth);
+    if (message) {
+      setErrorMessage(message);
       window.history.replaceState({}, "", "/login");
     }
-  }, []);
+  }, [language]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,7 +79,7 @@ export function LoginScreen() {
       const formData = new FormData(event.currentTarget);
       const result = await loginUser(formData);
       if ("error" in result && result.error) {
-        setErrorMessage(result.error);
+        setErrorMessage(localizeAuthError(language, result.error));
         return;
       }
       if ("requires2fa" in result && result.requires2fa) {
@@ -91,7 +89,7 @@ export function LoginScreen() {
       }
       window.location.href = "/";
     } catch {
-      setErrorMessage("Přihlášení se nepodařilo. Zkuste to prosím znovu.");
+      setErrorMessage(authError(language, "loginFailed"));
     } finally {
       setPending(false);
     }
@@ -101,7 +99,7 @@ export function LoginScreen() {
     event?.preventDefault();
     const code = totpCode.replace(/\D/g, "").slice(0, 6);
     if (code.length < 6) {
-      setErrorMessage("Zadejte 6místný kód z authenticatoru.");
+      setErrorMessage(authError(language, "totpCodeRequired"));
       return;
     }
     setErrorMessage("");
@@ -109,13 +107,13 @@ export function LoginScreen() {
     try {
       const result = await verifyLoginTotp(code);
       if ("error" in result) {
-        setErrorMessage(result.error);
+        setErrorMessage(localizeAuthError(language, result.error));
         setTotpCode("");
         return;
       }
       window.location.href = "/";
     } catch {
-      setErrorMessage("Ověření se nepodařilo. Zkuste to znovu.");
+      setErrorMessage(authError(language, "verifyFailed"));
     } finally {
       setPending(false);
     }
@@ -127,7 +125,7 @@ export function LoginScreen() {
     try {
       const begin = await beginLoginPasskey();
       if ("error" in begin) {
-        setErrorMessage(begin.error);
+        setErrorMessage(localizeAuthError(language, begin.error));
         return;
       }
       const assertion = await startAuthentication({
@@ -135,15 +133,15 @@ export function LoginScreen() {
       });
       const finish = await finishLoginPasskey({ response: assertion });
       if ("error" in finish) {
-        setErrorMessage(finish.error);
+        setErrorMessage(localizeAuthError(language, finish.error));
         return;
       }
       window.location.href = "/";
     } catch (err) {
       if (err instanceof Error && err.name === "NotAllowedError") {
-        setErrorMessage("Ověření passkey bylo zrušeno.");
+        setErrorMessage(authError(language, "passkeyCancelled"));
       } else {
-        setErrorMessage("Ověření passkey se nepodařilo.");
+        setErrorMessage(authError(language, "passkeyFailed"));
       }
     } finally {
       setPending(false);

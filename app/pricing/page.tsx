@@ -11,13 +11,16 @@ import { messages } from "@/lib/i18n/messages";
 import type { Language } from "@/lib/i18n/types";
 import {
   AGENCY_SIZE_CATALOG,
-  formatCzk,
+  formatPlanPrice,
+  planDisplayAmounts,
+  pricingCurrencyForLanguage,
   SINGLE_PLAN_CATALOG,
   type AccountTab,
   type AgencySize,
   type BillingCycle,
   type SinglePlanKey,
 } from "@/lib/pricing/plan-catalog";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 import { cn } from "@/lib/utils";
 import { LegalDocumentLinks } from "@/components/legal/legal-document-links";
 
@@ -83,6 +86,8 @@ export default function PricingPage() {
 
   const yearly = billingCycle === "yearly";
   const agency = AGENCY_SIZE_CATALOG[agencySize];
+  const currency = pricingCurrencyForLanguage(language);
+  const priceLocale = currency === "USD" ? "en-US" : DATE_LOCALE[language];
 
   const handleActivate = async (planTier: string, priceId: string) => {
     setLoadingTier(planTier);
@@ -107,10 +112,16 @@ export default function PricingPage() {
   const renderPrice = (monthly: number, yearlyMonthly: number) => (
     <div className="sk-pricing-plan__price">
       {yearly ? (
-        <span className="sk-pricing-plan__price-old">{formatCzk(monthly)}</span>
+        <span className="sk-pricing-plan__price-old">
+          {formatPlanPrice(monthly, currency, priceLocale)}
+        </span>
       ) : null}
       <span className="sk-pricing-plan__price-main">
-        {formatCzk(yearly ? yearlyMonthly : monthly)}
+        {formatPlanPrice(
+          yearly ? yearlyMonthly : monthly,
+          currency,
+          priceLocale,
+        )}
       </span>
       <span className="sk-pricing-plan__price-unit">
         {accountTab === "team" ? t("pricing.perSeat") : t("pricing.perMonth")}
@@ -180,7 +191,10 @@ export default function PricingPage() {
                     ) : null}
                   </div>
 
-                  {renderPrice(plan.priceMonthlyCzk, plan.priceYearlyMonthlyCzk)}
+                  {(() => {
+                    const amounts = planDisplayAmounts(plan, currency);
+                    return renderPrice(amounts.monthly, amounts.yearlyMonthly);
+                  })()}
 
                   <p className="sk-pricing-plan__tagline">{planCopy.tagline}</p>
 
@@ -260,7 +274,10 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                {renderPrice(agency.priceMonthlyCzk, agency.priceYearlyMonthlyCzk)}
+                {(() => {
+                  const amounts = planDisplayAmounts(agency, currency);
+                  return renderPrice(amounts.monthly, amounts.yearlyMonthly);
+                })()}
 
                 <p className="sk-pricing-plan__tagline">
                   {agencySize === "big"

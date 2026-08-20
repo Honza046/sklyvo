@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { LandingAuthLink } from "@/components/sklyvo/landing-auth-link";
 import { LanguageToggle } from "@/components/sklyvo/language-toggle";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
+import { LegalDocumentDialog } from "@/components/legal/legal-document-dialog";
+import type { LegalDocumentId } from "@/lib/legal/types";
 import { useLanguage } from "@/context/LanguageContext";
 import { messages } from "@/lib/i18n/messages";
 import { useReveal } from "@/lib/use-reveal";
@@ -71,6 +73,7 @@ export function LandingPage() {
   const [clients, setClients] = useState<string[]>(FIRST_CLIENTS);
   const [tally, setTally] = useState(TALLY_MIN);
   const [openFaq, setOpenFaq] = useState(0);
+  const [legalDoc, setLegalDoc] = useState<LegalDocumentId | null>(null);
 
   const seatCardRef = useRef<HTMLDivElement>(null);
   const seatNumRef = useRef<HTMLSpanElement>(null);
@@ -257,7 +260,7 @@ export function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------- why */}
-      <section className="lp-section">
+      <section id="why" className="lp-section">
         <div className="lp-heading" data-reveal>
           <div className="lp-kicker">{copy.whyKicker}</div>
           <h2 className="lp-h2">{copy.whyTitle}</h2>
@@ -388,7 +391,7 @@ export function LandingPage() {
       </section>
 
       {/* ----------------------------------------------------------- steps */}
-      <section className="lp-section">
+      <section id="how" className="lp-section">
         <div className="lp-steps" data-reveal>
           {copy.steps.map((step) => (
             <div key={step.n} className="lp-step">
@@ -401,7 +404,7 @@ export function LandingPage() {
       </section>
 
       {/* ------------------------------------------------------------- faq */}
-      <section className="lp-section lp-section--narrow">
+      <section id="faq" className="lp-section lp-section--narrow">
         <div className="lp-heading" data-reveal>
           <h2 className="lp-faq__title">{copy.faqTitle}</h2>
           <p className="lp-faq__sub">{copy.faqSub}</p>
@@ -514,11 +517,32 @@ export function LandingPage() {
               <div key={column.title}>
                 <div className="lp-footer__title">{column.title}</div>
                 <div className="lp-footer__links">
-                  {column.links.map((link) => (
-                    <a key={link} className="lp-footer__link" href="#">
-                      {link}
-                    </a>
-                  ))}
+                  {column.links.map((link) => {
+                    if (link.href === "/login" || link.href === "/register") {
+                      return (
+                        <LandingAuthLink
+                          key={link.label}
+                          className="lp-footer__link"
+                          href={link.href}
+                        >
+                          {link.label}
+                        </LandingAuthLink>
+                      );
+                    }
+
+                    return (
+                      <a
+                        key={link.label}
+                        className="lp-footer__link"
+                        href={link.href}
+                        {...(link.external
+                          ? { target: "_blank", rel: "noreferrer" }
+                          : {})}
+                      >
+                        {link.label}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -538,19 +562,37 @@ export function LandingPage() {
             </span>
             <div className="lp-spacer" />
             <div className="lp-footer__legal">
-              <a className="lp-footer__link" href="#">
+              <button
+                type="button"
+                className="lp-footer__link"
+                onClick={() => setLegalDoc("terms")}
+              >
                 {copy.footTerms}
-              </a>
-              <a className="lp-footer__link" href="#">
+              </button>
+              <button
+                type="button"
+                className="lp-footer__link"
+                onClick={() => setLegalDoc("privacy")}
+              >
                 {copy.footPrivacy}
-              </a>
-              <a className="lp-footer__link" href="#">
+              </button>
+              <a
+                className="lp-footer__link"
+                href="mailto:podpora@venegard.com"
+              >
                 {copy.footContact}
               </a>
             </div>
           </div>
         </div>
       </footer>
+
+      <LegalDocumentDialog
+        documentId={legalDoc}
+        onOpenChange={(open) => {
+          if (!open) setLegalDoc(null);
+        }}
+      />
     </div>
   );
 }

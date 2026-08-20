@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { LanguageProvider } from "@/components/sklyvo/language-provider";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import "@/components/sklyvo/auth.css";
 
@@ -32,28 +33,36 @@ function LockCrest() {
 
 export function StandaloneAuthShell({
   children,
+  initialRegional = "cs",
 }: {
   children: React.ReactNode;
+  initialRegional?: string;
 }) {
   return (
     <div className={`${jakarta.variable} min-h-dvh bg-[#08090a]`}>
-      <main className="sklyvo-login sklyvo-login--solo">
-        <Link className="sklyvo-brand" href="/" aria-label="Sklyvo — zpět na úvod">
-          <SklyvoMark size={30} />
-          <span className="sklyvo-brand__word">Sklyvo</span>
-        </Link>
+      <LanguageProvider initialRegional={initialRegional}>
+        <main className="sklyvo-login sklyvo-login--solo">
+          <Link
+            className="sklyvo-brand"
+            href="/"
+            aria-label="Sklyvo — zpět na úvod"
+          >
+            <SklyvoMark size={30} />
+            <span className="sklyvo-brand__word">Sklyvo</span>
+          </Link>
 
-        <div className="sklyvo-auth sklyvo-auth--solo" data-mode="recovery">
-          <section className="sklyvo-card sklyvo-card--form">
-            <div className="sklyvo-card__crest">
-              <span className="sklyvo-crest">
-                <LockCrest />
-              </span>
-            </div>
-            <div className="sklyvo-card__body">{children}</div>
-          </section>
-        </div>
-      </main>
+          <div className="sklyvo-auth sklyvo-auth--solo" data-mode="recovery">
+            <section className="sklyvo-card sklyvo-card--form">
+              <div className="sklyvo-card__crest">
+                <span className="sklyvo-crest">
+                  <LockCrest />
+                </span>
+              </div>
+              <div className="sklyvo-card__body">{children}</div>
+            </section>
+          </div>
+        </main>
+      </LanguageProvider>
     </div>
   );
 }

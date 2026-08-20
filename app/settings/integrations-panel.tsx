@@ -29,45 +29,43 @@ import {
 } from "@/app/actions/fakturoid";
 import { ExternalLink, RefreshCw, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { DATE_LOCALE } from "@/lib/i18n/types";
 
-const webhookIntegrations = [
-  {
-    id: "make",
-    name: "Make.com",
-    description: "Webhook do Make.com.",
-    fields: [
-      { label: "Webhook URL", placeholder: "https://hook.eu1.make.com/..." },
-    ],
-  },
-  {
-    id: "zapier",
-    name: "Zapier",
-    description: "Propojení přes Zapier.",
-    fields: [
-      { label: "Webhook URL", placeholder: "https://hooks.zapier.com/..." },
-    ],
-  },
-  {
-    id: "pipedrive",
-    name: "Pipedrive",
-    description: "Schůzky do pipeline.",
-    fields: [{ label: "API Klíč", placeholder: "Pipedrive API klíč" }],
-  },
-  {
-    id: "hubspot",
-    name: "HubSpot",
-    description: "Synchronizace kontaktů.",
-    fields: [{ label: "Access Token", placeholder: "HubSpot token" }],
-  },
+const webhookIntegrationIds = [
+  "make",
+  "zapier",
+  "pipedrive",
+  "hubspot",
 ] as const;
+
+type WebhookIntegrationId = (typeof webhookIntegrationIds)[number];
+
+const webhookFieldPlaceholders: Record<
+  WebhookIntegrationId,
+  { label: string; placeholder: string }[]
+> = {
+  make: [
+    { label: "Webhook URL", placeholder: "https://hook.eu1.make.com/..." },
+  ],
+  zapier: [
+    { label: "Webhook URL", placeholder: "https://hooks.zapier.com/..." },
+  ],
+  pipedrive: [{ label: "API key", placeholder: "Pipedrive API key" }],
+  hubspot: [{ label: "Access Token", placeholder: "HubSpot token" }],
+};
 
 const inputClass =
   "sk-integration-detail__input";
 
 function IntegrationStatus({
   connected,
+  connectedLabel,
+  disconnectedLabel,
 }: {
   connected: boolean;
+  connectedLabel: string;
+  disconnectedLabel: string;
 }) {
   return (
     <span className="sk-integration-row__status">
@@ -84,24 +82,51 @@ function IntegrationStatus({
           connected && "is-connected",
         )}
       >
-        {connected ? "Připojeno" : "Nepřipojeno"}
+        {connected ? connectedLabel : disconnectedLabel}
       </span>
     </span>
   );
 }
 
-function formatSyncedAt(iso: string | null) {
+function formatSyncedAt(iso: string | null, locale: string) {
   if (!iso) return null;
   try {
-    return new Date(iso).toLocaleString("cs-CZ");
+    return new Date(iso).toLocaleString(locale);
   } catch {
     return null;
   }
 }
 
 export function IntegrationsPanel() {
+  const { t, language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const webhookIntegrations = webhookIntegrationIds.map((id) => {
+    const names: Record<WebhookIntegrationId, string> = {
+      make: "Make.com",
+      zapier: "Zapier",
+      pipedrive: "Pipedrive",
+      hubspot: "HubSpot",
+    };
+    const descKeys: Record<WebhookIntegrationId, string> = {
+      make: "settings.integrationsPanel.makeDesc",
+      zapier: "settings.integrationsPanel.zapierDesc",
+      pipedrive: "settings.integrationsPanel.pipedriveDesc",
+      hubspot: "settings.integrationsPanel.hubspotDesc",
+    };
+    return {
+      id,
+      name: names[id],
+      description: t(descKeys[id]),
+      fields: webhookFieldPlaceholders[id],
+    };
+  });
+
+  const statusConnected = t("settings.integrationsPanel.connected");
+  const statusDisconnected = t("settings.integrationsPanel.disconnected");
+  const connectLabel = t("settings.integrationsPanel.connect");
+  const disconnectLabel = t("settings.integrationsPanel.disconnect");
   const [integrationValues, setIntegrationValues] = useState<
     Record<string, string>
   >({
@@ -430,9 +455,9 @@ export function IntegrationsPanel() {
                 {sheets.accountEmail ? ` · ${sheets.accountEmail}` : ""}
               </p>
             )}
-            {formatSyncedAt(sheets?.lastSyncedAt ?? null) && (
+            {formatSyncedAt(sheets?.lastSyncedAt ?? null, DATE_LOCALE[language]) && (
               <p className="sk-integration-detail__meta">
-                Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null)}
+                Sync: {formatSyncedAt(sheets?.lastSyncedAt ?? null, DATE_LOCALE[language])}
               </p>
             )}
             {sheets?.lastError && (
@@ -679,7 +704,7 @@ export function IntegrationsPanel() {
                 }
                 onClick={handleConnectFakturoid}
               >
-                Připojit
+                {connectLabel}
               </button>
             </div>
           </div>
@@ -747,7 +772,7 @@ export function IntegrationsPanel() {
   return (
     <div className="sk-integrations-panel">
       <p className="sk-integrations-panel__intro">
-        Propojte Sklyvo s nástroji, které už používáte.
+        {t("settings.integrationsPanel.intro")}
       </p>
 
       <div className="sk-integrations-panel__list">
@@ -760,10 +785,10 @@ export function IntegrationsPanel() {
             >
               <span className="sk-integration-row__name">Google Sheets</span>
               <span className="sk-integration-row__desc">
-                Live zrcadlo CRM podle stavů.
+                {t("settings.integrationsPanel.sheetsDesc")}
               </span>
             </button>
-            <IntegrationStatus connected={sheetsActive} />
+            <IntegrationStatus connected={sheetsActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
             <button
               type="button"
               className="sk-integration-row__action"
@@ -776,7 +801,7 @@ export function IntegrationsPanel() {
                 )
               }
             >
-              {sheetsActive ? "Odpojit" : "Připojit"}
+              {sheetsActive ? disconnectLabel : connectLabel}
             </button>
           </div>
           {renderSheetsDetail()}
@@ -794,7 +819,7 @@ export function IntegrationsPanel() {
                 OneDrive, Excel, Word.
               </span>
             </button>
-            <IntegrationStatus connected={msActive} />
+            <IntegrationStatus connected={msActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
             <button
               type="button"
               className="sk-integration-row__action"
@@ -807,7 +832,7 @@ export function IntegrationsPanel() {
                 )
               }
             >
-              {msActive ? "Odpojit" : "Připojit"}
+              {msActive ? disconnectLabel : connectLabel}
             </button>
           </div>
           {renderMicrosoftDetail()}
@@ -822,10 +847,10 @@ export function IntegrationsPanel() {
             >
               <span className="sk-integration-row__name">Fakturoid</span>
               <span className="sk-integration-row__desc">
-                Faktury z generátoru.
+                {t("settings.integrationsPanel.fakturoidDesc")}
               </span>
             </button>
-            <IntegrationStatus connected={fakturoidActive} />
+            <IntegrationStatus connected={fakturoidActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
             <button
               type="button"
               className="sk-integration-row__action"
@@ -838,7 +863,7 @@ export function IntegrationsPanel() {
                 setExpandedIntegration("fakturoid");
               }}
             >
-              {fakturoidActive ? "Odpojit" : "Připojit"}
+              {fakturoidActive ? disconnectLabel : connectLabel}
             </button>
           </div>
           {renderFakturoidDetail()}
@@ -861,7 +886,7 @@ export function IntegrationsPanel() {
                     {item.description}
                   </span>
                 </button>
-                <IntegrationStatus connected={isActive} />
+                <IntegrationStatus connected={isActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
                 <button
                   type="button"
                   className="sk-integration-row__action"
@@ -876,7 +901,7 @@ export function IntegrationsPanel() {
                     setExpandedIntegration(item.id);
                   }}
                 >
-                  {isActive ? "Odpojit" : "Připojit"}
+                  {isActive ? disconnectLabel : connectLabel}
                 </button>
               </div>
               {renderWebhookDetail(item)}

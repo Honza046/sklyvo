@@ -164,7 +164,9 @@ export function FullAutoStatusBadge({
 }: {
   status: FullAutoAutomationStatus;
 }) {
+  const { t } = useLanguage();
   const meta = FULL_AUTO_STATUS_BADGES[status] ?? FULL_AUTO_STATUS_BADGES.found;
+  const label = t(`autopilot.status.${status}`);
   return (
     <span
       className={cn(
@@ -172,7 +174,7 @@ export function FullAutoStatusBadge({
         meta.className,
       )}
     >
-      {meta.label}
+      {label && label !== `autopilot.status.${status}` ? label : meta.label}
     </span>
   );
 }
@@ -226,6 +228,7 @@ export function useAutopilotLabels() {
 }
 
 export function AutopilotPowerBadge({ enabled }: { enabled: boolean | null }) {
+  const { t } = useLanguage();
   return (
     <span
       className={cn(
@@ -237,7 +240,11 @@ export function AutopilotPowerBadge({ enabled }: { enabled: boolean | null }) {
             : "sk-autopilot-power-badge--off",
       )}
     >
-      {enabled === null ? "…" : enabled ? "Zapnuto" : "Vypnuto"}
+      {enabled === null
+        ? "…"
+        : enabled
+          ? t("autopilot.powerOn")
+          : t("autopilot.powerOff")}
     </span>
   );
 }
@@ -254,16 +261,17 @@ export function AutopilotPowerButton({
   accent?: "emerald" | "blue" | "violet";
 }) {
   void _accent;
+  const { t } = useLanguage();
   const loading = enabled === null || disabled;
   const isOn = enabled === true;
 
   const label = disabled
-    ? "Ukládám…"
+    ? t("autopilot.powerSaving")
     : enabled === null
       ? "…"
       : enabled
-        ? "Vypnout"
-        : "Zapnout";
+        ? t("autopilot.powerDisable")
+        : t("autopilot.powerEnable");
 
   return (
     <button
@@ -377,6 +385,7 @@ export function AutopilotTablePagination({
   selectedCount?: number;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div
       className={cn(
@@ -390,12 +399,16 @@ export function AutopilotTablePagination({
             {shownFrom}–{shownTo} / {totalItems}
           </span>
           <span className="hidden sm:inline">
-            Zobrazeno {shownFrom} až {shownTo} z {totalItems} firem
+            {t("autopilot.showingCompanies", {
+              from: shownFrom,
+              to: shownTo,
+              total: totalItems,
+            })}
           </span>
         </p>
         {selectedCount != null && selectedCount > 0 && (
           <p className="mt-1 text-[10px] leading-none text-muted-foreground sm:text-[11px]">
-            Vybráno: {selectedCount}
+            {t("autopilot.selectedCount", { count: selectedCount })}
           </p>
         )}
       </div>
@@ -409,7 +422,7 @@ export function AutopilotTablePagination({
           disabled={safePage <= 1}
         >
           <ChevronLeft className="!size-3.5 shrink-0" />
-          <span className="hidden sm:inline">Předchozí</span>
+          <span className="hidden sm:inline">{t("autopilot.previous")}</span>
         </Button>
         <span className="min-w-[2.5rem] text-center text-[11px] tabular-nums leading-none text-muted-foreground sm:text-xs">
           {safePage}/{totalPages}
@@ -422,7 +435,7 @@ export function AutopilotTablePagination({
           onClick={onNext}
           disabled={safePage >= totalPages}
         >
-          <span className="hidden sm:inline">Následující</span>
+          <span className="hidden sm:inline">{t("autopilot.next")}</span>
           <ChevronRight className="!size-3.5 shrink-0" />
         </Button>
       </div>

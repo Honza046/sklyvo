@@ -245,49 +245,55 @@ export function CrmToolbar({
           {t("crm.filters")}
         </button>
 
-        <CrmFiltersPanel open={filtersOpen} onClose={() => onFiltersOpenChange(false)}>
-          <FilterField label="Status">
+        <CrmFiltersPanel
+          open={filtersOpen}
+          onClose={() => onFiltersOpenChange(false)}
+          applyLabel={t("crm.applyFilters")}
+        >
+          <FilterField label={t("crm.filterStatus")}>
             <Select
               value={statusFilter}
               onValueChange={(v) => onStatusFilterChange(v as "all" | CrmLeadStatusDb)}
             >
               <SelectTrigger className="sk-crm-filters__select">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("crm.filterStatus")} />
               </SelectTrigger>
               <SelectContent className="z-[220] border bg-[color:var(--n-card)] shadow-md">
-                <SelectItem value="all">Všechny statusy</SelectItem>
-                <SelectItem value="NEW">NOVÝ LEAD</SelectItem>
-                <SelectItem value="CONTACTED">KONTAKTOVÁNO</SelectItem>
-                <SelectItem value="REPLIED">FOLLOW UP</SelectItem>
-                <SelectItem value="MEETING_SET">KOMUNIKACE</SelectItem>
-                <SelectItem value="CLOSED_WON">DOMLUVENO</SelectItem>
-                <SelectItem value="BREAK_UP">BREAKUP</SelectItem>
-                <SelectItem value="CLOSED_LOST">NEDOMLUVENO</SelectItem>
+                <SelectItem value="all">{t("crm.filterAllStatuses")}</SelectItem>
+                <SelectItem value="NEW">{t("leadStatus.NEW")}</SelectItem>
+                <SelectItem value="CONTACTED">{t("leadStatus.CONTACTED")}</SelectItem>
+                <SelectItem value="REPLIED">{t("leadStatus.REPLIED")}</SelectItem>
+                <SelectItem value="MEETING_SET">{t("leadStatus.MEETING_SET")}</SelectItem>
+                <SelectItem value="CLOSED_WON">{t("leadStatus.CLOSED_WON")}</SelectItem>
+                <SelectItem value="BREAK_UP">{t("leadStatus.BREAK_UP")}</SelectItem>
+                <SelectItem value="CLOSED_LOST">{t("leadStatus.CLOSED_LOST")}</SelectItem>
               </SelectContent>
             </Select>
           </FilterField>
 
-          <FilterField label="Datum">
+          <FilterField label={t("crm.filterDate")}>
             <Select value={dateFilter} onValueChange={(v) => onDateFilterChange(v as typeof dateFilter)}>
               <SelectTrigger className="sk-crm-filters__select">
-                <SelectValue placeholder="Čas" />
+                <SelectValue placeholder={t("crm.filterTime")} />
               </SelectTrigger>
               <SelectContent className="z-[220] border bg-[color:var(--n-card)] shadow-md">
-                <SelectItem value="all">Všechny datumy</SelectItem>
-                <SelectItem value="last_7_days">Posledních 7 dní</SelectItem>
-                <SelectItem value="last_30_days">Posledních 30 dní</SelectItem>
-                <SelectItem value="this_year">Tento rok</SelectItem>
+                <SelectItem value="all">{t("crm.filterAllDates")}</SelectItem>
+                <SelectItem value="last_7_days">{t("crm.filterLast7Days")}</SelectItem>
+                <SelectItem value="last_30_days">{t("crm.filterLast30Days")}</SelectItem>
+                <SelectItem value="this_year">{t("crm.filterThisYear")}</SelectItem>
               </SelectContent>
             </Select>
           </FilterField>
 
-          <FilterField label="Obor">
+          <FilterField label={t("crm.filterIndustry")}>
             <Select value={tagFilter} onValueChange={onTagFilterChange}>
               <SelectTrigger className="sk-crm-filters__select">
-                <SelectValue placeholder="Obor" />
+                <SelectValue placeholder={t("crm.filterIndustry")} />
               </SelectTrigger>
               <SelectContent className="z-[220] border border-border bg-[color:var(--n-card)] shadow-lg">
-                <SelectItem value="all">Všechny obory</SelectItem>
+                <SelectItem value="all">
+                  {t("autopilot.filterAllIndustries")}
+                </SelectItem>
                 {availableTags.map(({ tag, label, count }) => (
                   <SelectItem key={tag} value={tag}>
                     {label} ({count})
@@ -297,7 +303,7 @@ export function CrmToolbar({
             </Select>
           </FilterField>
 
-          <FilterField label="Zdroj">
+          <FilterField label={t("crm.filterSource")}>
             <Select
               value={sourceFilter}
               onValueChange={(v) =>
@@ -314,30 +320,34 @@ export function CrmToolbar({
               }
             >
               <SelectTrigger className="sk-crm-filters__select">
-                <SelectValue placeholder="Zdroj" />
+                <SelectValue placeholder={t("crm.filterSource")} />
               </SelectTrigger>
               <SelectContent className="z-[220] border border-border bg-[color:var(--n-card)] shadow-lg">
-                <SelectItem value="all">Všechny zdroje</SelectItem>
-                <SelectItem value="radar">Radar</SelectItem>
+                <SelectItem value="all">{t("crm.filterAllSources")}</SelectItem>
+                <SelectItem value="radar">{t("crm.sourceRadar")}</SelectItem>
                 <SelectItem value="ap_radar">Autopilot Radar</SelectItem>
                 <SelectItem value="full_auto">Full Auto</SelectItem>
-                <SelectItem value="ap_sniper">Autopilot Sniper</SelectItem>
+                <SelectItem value="ap_sniper">{t("crm.sourceAutopilotSniper")}</SelectItem>
                 <SelectItem value="sniper">Sniper</SelectItem>
                 <SelectItem value="manual">{t("crm.sourceManual")}</SelectItem>
               </SelectContent>
             </Select>
           </FilterField>
 
-          <FilterField label="Řazení">
+          <FilterField label={t("crm.filterSort")}>
             <Select value={sortBy} onValueChange={(v) => onSortByChange(v as typeof sortBy)}>
               <SelectTrigger className="sk-crm-filters__select">
-                <SelectValue placeholder="Řazení" />
+                <SelectValue placeholder={t("crm.filterSort")} />
               </SelectTrigger>
               <SelectContent className="z-[220] border bg-[color:var(--n-card)] shadow-md">
-                <SelectItem value="newest">Nejnovější (odesláno)</SelectItem>
-                <SelectItem value="oldest">Nejstarší (odesláno)</SelectItem>
-                <SelectItem value="value_high">Hodnota: nejvyšší</SelectItem>
-                <SelectItem value="value_low">Hodnota: nejnižší</SelectItem>
+                <SelectItem value="newest">{t("crm.sortNewestSent")}</SelectItem>
+                <SelectItem value="oldest">{t("crm.sortOldestSent")}</SelectItem>
+                <SelectItem value="value_high">
+                  {t("crm.sortValueHigh")}
+                </SelectItem>
+                <SelectItem value="value_low">
+                  {t("crm.sortValueLow")}
+                </SelectItem>
               </SelectContent>
             </Select>
           </FilterField>
