@@ -8,6 +8,263 @@
     transform: none;
   }
 }
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-60%);
+  }
+  100% {
+    transform: translateX(160%);
+  }
+}
+
+@keyframes tilePop {
+  0%,
+  12% {
+    transform: scale(0.6) rotate(var(--rot));
+    opacity: 0;
+  }
+  22% {
+    transform: scale(1.18) rotate(0deg);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(0.94) rotate(0deg);
+  }
+  38% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  84% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: scale(0.6) rotate(var(--rot));
+    opacity: 0;
+  }
+}
+
+@keyframes tileHit {
+  0%,
+  40% {
+    background: var(--n-hover);
+    box-shadow: none;
+  }
+  50% {
+    background: var(--n-accent);
+    box-shadow:
+      0 10px 22px -8px rgba(0, 110, 190, 0.55),
+      0 0 0 6px rgba(2, 167, 255, 0.16);
+  }
+  88% {
+    background: var(--n-accent);
+    box-shadow:
+      0 10px 22px -8px rgba(0, 110, 190, 0.4),
+      0 0 0 0 rgba(2, 167, 255, 0);
+  }
+  100% {
+    background: var(--n-hover);
+    box-shadow: none;
+  }
+}
+
+@keyframes scanner {
+  0% {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  88% {
+    transform: translateY(150px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(150px);
+    opacity: 0;
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  44% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  56% {
+    transform: scale(1.4) rotate(90deg);
+    opacity: 1;
+  }
+  70%,
+  100% {
+    transform: scale(0) rotate(160deg);
+    opacity: 0;
+  }
+}
+
+@keyframes badgeRise {
+  0%,
+  48% {
+    transform: translateY(10px) scale(0.7);
+    opacity: 0;
+  }
+  58% {
+    transform: translateY(0) scale(1.1);
+    opacity: 1;
+  }
+  64% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  88% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(4px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@keyframes queueRow {
+  0%,
+  3% {
+    transform: translateX(-14px);
+    opacity: 0;
+  }
+  9% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  92% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes stateQueued {
+  0%,
+  18% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  22%,
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes stateSending {
+  0%,
+  18% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  24% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  46% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes stateSent {
+  0%,
+  46% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  54% {
+    opacity: 1;
+    transform: scale(1.22);
+  }
+  60%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes barFill {
+  0%,
+  20% {
+    transform: scaleX(0);
+  }
+  48%,
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tallyTick {
+  0%,
+  44% {
+    transform: scale(1);
+  }
+  48% {
+    transform: scale(1.05);
+  }
+  52%,
+  53% {
+    transform: scale(1);
+  }
+  57% {
+    transform: scale(1.05);
+  }
+  61%,
+  62% {
+    transform: scale(1);
+  }
+  66% {
+    transform: scale(1.05);
+  }
+  72%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes seatSheen {
+  0% {
+    transform: translate3d(-110%, 0, 0);
+  }
+  16%,
+  100% {
+    transform: translate3d(360%, 0, 0);
+  }
+}
 [data-reveal] {
   opacity: 0;
   transform: translateY(24px);
