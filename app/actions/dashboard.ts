@@ -285,6 +285,7 @@ function localDateKey(date: Date): string {
 /** Denní počty odeslaných e-mailů a nových odpovědí za posledních `days` dní (včetně dneška). */
 export async function getDashboardChartSeries(
   days: number,
+  options?: { syncReplies?: boolean },
 ): Promise<DashboardChartPoint[]> {
   const session = await getSessionUser();
   const workspaceId = session.workspace?.id;
@@ -295,7 +296,9 @@ export async function getDashboardChartSeries(
   const todayStart = startOfLocalDay(new Date());
   const since = new Date(todayStart.getTime() - (safeDays - 1) * 86400000);
 
-  triggerWorkspaceEmailReplySync(workspaceId);
+  if (options?.syncReplies !== false) {
+    triggerWorkspaceEmailReplySync(workspaceId);
+  }
 
   const replySyncActive = await workspaceHasEmailReplySync(workspaceId);
 
@@ -396,4 +399,25 @@ export async function getDashboardFunnelStats(
     },
     { ...EMPTY_FUNNEL_COUNTS },
   );
+}
+
+export type DashboardRangeBundle = {
+  overview: Pick<
+    DashboardOverviewStats,
+    "newCompanies" | "emailsSent" | "totalLeadsInCrm"
+  >;
+  chartSeries: DashboardChartPoint[];
+  funnelCounts: Record<LeadStatus, number>;
+};
+
+/** One round-trip for overview + chart + funnel when switching dashboard ranges. */
+export async function getDashboardRangeBundle(
+  days: number,
+): Promise<DashboardRangeBundle> {
+  const [overview, chartSeries, funnelCounts] = await Promise.all([
+    getDashboardOverviewStats(days),
+    getDashboardChartSeries(days, { syncReplies: false }),
+    getDashboardFunnelStats(days),
+  ]);
+  return { overview, chartSeries, funnelCounts };
 }

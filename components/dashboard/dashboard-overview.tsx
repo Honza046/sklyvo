@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useLayoutEffect, useState, useTransition } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LeadStatus } from "@/app/actions/dashboard";
 import {
-  getDashboardChartSeries,
-  getDashboardOverviewStats,
   type DashboardTodayStats,
   type DashboardChartPoint,
   type DashboardGeoStat,
@@ -330,30 +328,35 @@ export function DashboardOverview({
   geoStats,
 }: DashboardOverviewProps) {
   const { t } = useLanguage();
-  const { days, periodLabelKey } = useDashboardRange();
-  const [newCompanies, setNewCompanies] = useState(initialNewCompanies);
-  const [emailsSent, setEmailsSent] = useState(initialEmailsSent);
-  const [totalLeadsInCrm, setTotalLeadsInCrm] = useState(initialTotalLeadsInCrm);
-  const [chartSeries, setChartSeries] =
-    useState<DashboardChartPoint[]>(chartInitialSeries);
-  const [metricsPending, startMetricsTransition] = useTransition();
-  const [chartPending, startChartTransition] = useTransition();
+  const { periodLabelKey, bundle, pending, seedBundle } =
+    useDashboardRange();
 
   useEffect(() => {
-    startMetricsTransition(() => {
-      void getDashboardOverviewStats(days).then((stats) => {
-        setNewCompanies(stats.newCompanies);
-        setEmailsSent(stats.emailsSent);
-        setTotalLeadsInCrm(stats.totalLeadsInCrm);
-      });
+    // Server body loads the default 30-day window once — seed cache so the first
+    // switches can animate immediately from real numbers.
+    seedBundle(30, {
+      overview: {
+        newCompanies: initialNewCompanies,
+        emailsSent: initialEmailsSent,
+        totalLeadsInCrm: initialTotalLeadsInCrm,
+      },
+      chartSeries: chartInitialSeries,
+      funnelCounts: funnelInitialCounts,
     });
-  }, [days]);
+  }, [
+    seedBundle,
+    initialNewCompanies,
+    initialEmailsSent,
+    initialTotalLeadsInCrm,
+    chartInitialSeries,
+    funnelInitialCounts,
+  ]);
 
-  useEffect(() => {
-    startChartTransition(() => {
-      void getDashboardChartSeries(days).then(setChartSeries);
-    });
-  }, [days]);
+  const newCompanies = bundle?.overview.newCompanies ?? initialNewCompanies;
+  const emailsSent = bundle?.overview.emailsSent ?? initialEmailsSent;
+  const totalLeadsInCrm =
+    bundle?.overview.totalLeadsInCrm ?? initialTotalLeadsInCrm;
+  const chartSeries = bundle?.chartSeries ?? chartInitialSeries;
 
   const chartTotalSent = chartSeries.reduce((sum, p) => sum + p.sent, 0);
   const chartTotalReplied = chartSeries.reduce((sum, p) => sum + p.replied, 0);
@@ -432,7 +435,7 @@ export function DashboardOverview({
 
       <div
         className="sk-metrics-strip shrink-0"
-        aria-busy={metricsPending}
+        aria-busy={pending}
       >
         <div className="sk-metrics-strip__cell">
           <div className="sk-metrics-strip__label">
@@ -492,7 +495,7 @@ export function DashboardOverview({
 
           <div
             className="sk-chart-panel min-h-0 flex-1"
-            aria-busy={chartPending}
+            aria-busy={pending}
           >
             <div className="sk-chart-panel__head">
               <h3 className="sk-type-h3 m-0">{t("dashboard.chartTitle")}</h3>

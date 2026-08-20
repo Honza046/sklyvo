@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useTransition } from "react";
-import { getDashboardFunnelStats } from "@/app/actions/dashboard";
+import { useLayoutEffect, useState } from "react";
 import type { LeadStatus } from "@/app/actions/dashboard";
 import { useDashboardRange } from "@/components/dashboard/dashboard-range-context";
 import { AnimatedMetricValue } from "@/components/dashboard/animated-metric-value";
@@ -31,17 +30,9 @@ export function DashboardConversionFunnel({
   initialCounts,
 }: DashboardConversionFunnelProps) {
   const { t } = useLanguage();
-  const { days, periodLabelKey } = useDashboardRange();
-  const [counts, setCounts] =
-    useState<Record<LeadStatus, number>>(initialCounts);
-  const [isPending, startTransition] = useTransition();
+  const { days, periodLabelKey, bundle, pending } = useDashboardRange();
+  const counts = bundle?.funnelCounts ?? initialCounts;
   const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    startTransition(() => {
-      void getDashboardFunnelStats(days).then(setCounts);
-    });
-  }, [days]);
 
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   const countsKey = `${days}|${FUNNEL_ROWS.map((row) =>
@@ -64,7 +55,7 @@ export function DashboardConversionFunnel({
   return (
     <div
       className="sk-surface sk-surface--pad flex shrink-0 flex-col"
-      aria-busy={isPending}
+      aria-busy={pending}
     >
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-1.5 sm:mb-2 sm:gap-2">
         <h2 className="sk-type-h3">{t("dashboard.funnelTitle")}</h2>
