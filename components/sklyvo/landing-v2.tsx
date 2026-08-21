@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import { LandingAuthLink } from "@/components/sklyvo/landing-auth-link";
 import { SklyvoMark, type MarkGaze } from "@/components/sklyvo/sklyvo-mark";
 import { BotGlyph } from "@/components/sklyvo/bot-glyph";
@@ -528,7 +528,7 @@ function scrollToLandingAnchor(hash: string, behavior: ScrollBehavior = "smooth"
 }
 
 function onLandingAnchorClick(
-  e: MouseEvent<HTMLAnchorElement>,
+  e: ReactMouseEvent<HTMLAnchorElement>,
   href: string,
   after?: () => void,
 ) {
