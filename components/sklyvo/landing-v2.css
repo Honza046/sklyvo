@@ -111,26 +111,27 @@ body:has(.l2-page) {
 }
 
 /*
- * Live status dot in the hero seat chip — core breathes, ring expands outward.
+ * Live status dot in the hero seat chip — soft breath + a tight ring that
+ * stays inside the pill (height 26px).
  */
 .lp2-dot {
   position: relative;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   flex: none;
   border-radius: 99px;
   background: #34d399;
-  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
-  animation: lp2DotPulse 1.7s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.14);
+  animation: lp2DotPulse 2s ease-in-out infinite;
 }
 
 .lp2-dot::before {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -3px;
   border-radius: 999px;
-  background: rgba(52, 211, 153, 0.42);
-  animation: lp2DotRing 2s ease-out infinite;
+  background: rgba(52, 211, 153, 0.35);
+  animation: lp2DotRing 2.2s ease-out infinite;
   pointer-events: none;
 }
 
@@ -141,19 +142,19 @@ body:has(.l2-page) {
     transform: scale(1);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(0.82);
+    opacity: 0.65;
+    transform: scale(0.9);
   }
 }
 
 @keyframes lp2DotRing {
   0% {
-    transform: scale(0.7);
-    opacity: 0.7;
+    transform: scale(0.85);
+    opacity: 0.55;
   }
   70%,
   100% {
-    transform: scale(2.25);
+    transform: scale(1.55);
     opacity: 0;
   }
 }
@@ -608,6 +609,7 @@ html:has(.lp2-page) {
   font-size: 11px;
   font-weight: 600;
   color: #8a8f98;
+  overflow: hidden;
   animation: lp2RiseIn var(--lp2-rise-dur) var(--lp2-ease) 0.06s both;
 }
 
