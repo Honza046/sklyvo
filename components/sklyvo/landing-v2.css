@@ -111,18 +111,63 @@ body:has(.l2-page) {
 }
 
 /*
- * The live dot, exactly as the design system draws its "running" state: the dot
- * itself dims and shrinks on d2DotPulse behind a static ring of colour. No
- * halo of its own, so it reads the same as every other live dot in the app.
+ * Live status dot in the hero seat chip — core breathes, ring expands outward.
  */
 .lp2-dot {
+  position: relative;
   width: 7px;
   height: 7px;
   flex: none;
   border-radius: 99px;
   background: #34d399;
   box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.16);
-  animation: d2DotPulse 1.7s ease-in-out infinite;
+  animation: lp2DotPulse 1.7s ease-in-out infinite;
+}
+
+.lp2-dot::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, 0.42);
+  animation: lp2DotRing 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes lp2DotPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.82);
+  }
+}
+
+@keyframes lp2DotRing {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+  70%,
+  100% {
+    transform: scale(2.25);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp2-dot {
+    animation: none;
+  }
+
+  .lp2-dot::before {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+  }
 }
 
 /*
