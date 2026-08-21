@@ -16,10 +16,13 @@ import {
 } from "@/lib/platform-admin";
 import {
   SESSION_COOKIE,
-  createSessionToken,
   sessionCookieOptions,
   verifySessionToken,
 } from "@/lib/session";
+import {
+  createSessionTokenForUser,
+  mintSessionCookie,
+} from "@/lib/session-cookie";
 
 const USER_SAFE_SELECT = {
   id: true,
@@ -35,9 +38,7 @@ const USER_SAFE_SELECT = {
 } as const;
 
 async function setSessionCookie(userId: string) {
-  const token = await createSessionToken(userId);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
+  await mintSessionCookie(userId);
 }
 
 /** Dedicated Admin login — allowlisted platform admins only. */
@@ -48,6 +49,7 @@ export async function loginPlatformAdmin(formData: FormData) {
   const limited = await consumeRateLimit({
     key: `admin-login:${ip}`,
     ...RATE_LIMITS.authIp,
+    failClosed: true,
   });
   if (!limited.ok) {
     return { error: "Příliš mnoho pokusů. Zkuste to za chvíli." };
@@ -496,7 +498,7 @@ export async function startImpersonation(
   cookieStore.set(ADMIN_RETURN_COOKIE, returnToken, adminReturnCookieOptions());
   cookieStore.set(
     SESSION_COOKIE,
-    await createSessionToken(target.id),
+    await createSessionTokenForUser(target.id),
     sessionCookieOptions(),
   );
 
@@ -538,7 +540,7 @@ export async function stopImpersonation(): Promise<
 
   cookieStore.set(
     SESSION_COOKIE,
-    await createSessionToken(actor.id),
+    await createSessionTokenForUser(actor.id),
     sessionCookieOptions(),
   );
   cookieStore.delete(ADMIN_RETURN_COOKIE);

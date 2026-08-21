@@ -9,12 +9,13 @@ import {
   sendPasswordResetEmail,
 } from "@/lib/emails/auth-mail";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { SESSION_COOKIE } from "@/lib/session";
 import {
-  SESSION_COOKIE,
-  createSessionToken,
-  sessionCookieOptions,
-  verifySessionToken,
-} from "@/lib/session";
+  clearSessionCookie,
+  mintSessionCookie,
+  readSessionUserId,
+  revokeAllSessions,
+} from "@/lib/session-cookie";
 import { isPlatformAdminEmail } from "@/lib/platform-admin";
 
 const ACTIVE_STATUSES = new Set(["ACTIVE", "TRIALING"]);
@@ -34,19 +35,7 @@ function getFirstName(fullName: string | null | undefined) {
 }
 
 async function setSessionCookie(userId: string) {
-  const token = await createSessionToken(userId);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
-}
-
-async function clearSessionCookie() {
-  const cookieStore = await cookies();
-  cookieStore.delete(SESSION_COOKIE);
-}
-
-async function readSessionUserId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
+  await mintSessionCookie(userId);
 }
 
 export async function checkIfUserExists(email: string) {
@@ -56,6 +45,7 @@ export async function checkIfUserExists(email: string) {
   const limited = await consumeRateLimit({
     key: `auth-exists:${ip}`,
     ...RATE_LIMITS.authIp,
+    failClosed: true,
   });
   if (!limited.ok) {
     return { exists: false as const };
@@ -79,6 +69,7 @@ export async function registerUser(formData: FormData) {
   const limited = await consumeRateLimit({
     key: `register:${ip}`,
     ...RATE_LIMITS.registerIp,
+    failClosed: true,
   });
   if (!limited.ok) {
     return { error: "Příliš mnoho registrací. Zkuste to později." };
@@ -325,6 +316,7 @@ export async function loginUser(formData: FormData) {
   const limited = await consumeRateLimit({
     key: `login:${ip}`,
     ...RATE_LIMITS.authIp,
+    failClosed: true,
   });
   if (!limited.ok) {
     return { error: "Příliš mnoho pokusů. Zkuste to za chvíli." };
@@ -335,6 +327,15 @@ export async function loginUser(formData: FormData) {
 
   if (!email || !password) {
     return { error: "E-mail a heslo jsou povinné." };
+  }
+
+  const accountLimited = await consumeRateLimit({
+    key: `login-account:${email.toLowerCase()}`,
+    ...RATE_LIMITS.authAccount,
+    failClosed: true,
+  });
+  if (!accountLimited.ok) {
+    return { error: "Příliš mnoho pokusů. Zkuste to za chvíli." };
   }
 
   const user = await prisma.user.findUnique({
@@ -417,6 +418,9 @@ export async function updateUserPassword(input: {
     where: { id: userId },
     data: { passwordHash: await hashPassword(newPassword) },
   });
+  // Invalidate any stolen cookies; keep this browser signed in with a fresh token.
+  await revokeAllSessions(userId);
+  await setSessionCookie(userId);
 
   return { success: true };
 }
@@ -547,6 +551,7 @@ export async function requestPasswordReset(
   const limited = await consumeRateLimit({
     key: `reset:${ip}`,
     ...RATE_LIMITS.authIp,
+    failClosed: true,
   });
   if (!limited.ok) {
     return { error: "Příliš mnoho požadavků. Zkuste to později." };
@@ -635,9 +640,11 @@ export async function resetPassword(
       passwordHash: await hashPassword(newPassword),
       passwordResetToken: null,
       passwordResetExpiresAt: null,
+      sessionVersion: { increment: 1 },
     },
   });
 
+  await clearSessionCookie();
   return { success: true };
 }
 

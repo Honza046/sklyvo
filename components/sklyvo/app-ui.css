@@ -1014,14 +1014,6 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   box-shadow: var(--sk-nav-active-shadow);
 }
 
-/* Sliding track owns the pill — item itself stays flat */
-.sklyvo-app .sk-nav-track .sk-nav-item.is-active,
-.sklyvo-app .sk-nav-track .sk-nav-item.is-active:hover {
-  background: transparent;
-  box-shadow: none;
-  color: var(--sk-nav-active-ink);
-}
-
 /* Icon has no color of its own — it inherits from .sk-nav-item's `color`,
    exactly like Matěj's mockup (stroke="currentColor", no icon-level styling). */
 .sklyvo-app .sk-nav-icon {

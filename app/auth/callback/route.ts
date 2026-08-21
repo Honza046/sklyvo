@@ -4,9 +4,9 @@ import { createServerClient } from "@supabase/ssr";
 import { prisma } from "@/lib/prisma";
 import {
   SESSION_COOKIE,
-  createSessionToken,
   sessionCookieOptions,
 } from "@/lib/session";
+import { createSessionTokenForUser } from "@/lib/session-cookie";
 
 function resolveOrigin(request: NextRequest): string {
   const forwardedHost = request.headers
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const token = await createSessionToken(dbUser.id);
+  const token = await createSessionTokenForUser(dbUser.id);
   response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
 
   // Prompt user to set a real email when Facebook never provided one.

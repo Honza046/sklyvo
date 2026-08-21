@@ -6,7 +6,16 @@
 - `CRON_SECRET` — already used for cron routes; also signs internal workspace tokens for server-only AI/mail helpers
 - Keep `GOOGLE_API_KEY` / Places / Stripe secrets **server-only** (never `NEXT_PUBLIC_*`)
 
-After deploying signed sessions, all users must log in again (old raw user-id cookies are rejected).
+## Sessions
+
+- Signed HMAC JWT cookie (`SESSION_SECRET`, min 32 chars).
+- Claim `sv` (sessionVersion) is checked against `User.sessionVersion` on every authenticated request path via `readVerifiedSession`.
+- Password change / reset / 2FA disable bumps `sessionVersion` (stolen cookies die immediately).
+- Product rate limits stay fail-open on DB errors; **auth** rate limits use `failClosed: true`.
+
+## Security headers
+
+Set in `next.config.mjs` → `headers()`: CSP, HSTS, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy.
 
 ## Supabase Storage (#02 / #07)
 

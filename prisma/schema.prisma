@@ -103,6 +103,12 @@ model User {
   /** Platform ops: account suspended — login / session rejected. */
   disabledAt        DateTime?
 
+  /**
+   * Bumped on password change / reset / revoke-all so stolen session JWTs stop
+   * verifying even before their 30-day exp.
+   */
+  sessionVersion    Int      @default(0)
+
   emailConnection UserEmailConnection?
   documents       WorkspaceDocument[]
   passkeys        PasskeyCredential[]

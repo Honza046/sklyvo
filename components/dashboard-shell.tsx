@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SklyvoMark } from "@/components/sklyvo/sklyvo-mark";
 import { ImpersonationBanner } from "@/components/admin/impersonation-banner";
-import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
 import { useLanguage } from "@/context/LanguageContext";
 import { DATE_LOCALE } from "@/lib/i18n/types";
 import {
@@ -38,7 +37,7 @@ import {
   WORK_NAV_HREFS,
 } from "@/components/nav-config";
 import { normalizeActiveHref } from "@/lib/nav-active-href";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 
 const SklyvoOnboardingTour = dynamic(
   () =>
@@ -127,39 +126,6 @@ export function DashboardShell({
   const showAutopilotSubnav =
     activeHref === "/autopilot" || pathname.startsWith("/autopilot");
   const isWorkspaceSettingsActive = navMatches(navActiveHref, "/settings");
-
-  /** Flat order of [data-slide-item]: Overview → Autopilot → Sniper → Radar → CRM → Úložiště */
-  const sidebarSlideIndex = useMemo(() => {
-    if (navActiveHref === "/") return 0;
-    if (isAutopilotActive) return 1;
-    const ordered = [
-      ...MAIN_NAV.filter(({ href }) => TOOL_NAV_HREFS.has(href)),
-      ...MAIN_NAV.filter(({ href }) => WORK_NAV_HREFS.has(href)),
-    ];
-    const i = ordered.findIndex(({ href }) => navMatches(navActiveHref, href));
-    return i >= 0 ? i + 2 : -1;
-  }, [navActiveHref, isAutopilotActive]);
-  const { trackRef: sidebarNavRef, thumbStyle: sidebarThumbStyle } =
-    useSlidingThumb(
-      sidebarSlideIndex,
-      // Remeasure when Autopilot subnav mounts/unmounts — RO only sees size
-      // changes, not Sniper/Radar/CRM shifting up after the branch collapses.
-      [navActiveHref, isAutopilotActive, showAutopilotSubnav],
-      { axis: "y" },
-    );
-
-  /** Footer nav: Help → Workspace */
-  const footerSlideIndex = useMemo(() => {
-    if (navActiveHref === "/help" || pathname.startsWith("/help/")) return 0;
-    if (isWorkspaceSettingsActive) return 1;
-    return -1;
-  }, [navActiveHref, pathname, isWorkspaceSettingsActive]);
-  const { trackRef: footerNavRef, thumbStyle: footerThumbStyle } =
-    useSlidingThumb(
-      footerSlideIndex,
-      [navActiveHref, isWorkspaceSettingsActive],
-      { axis: "y" },
-    );
 
   const lockMainScroll =
     pathname.startsWith("/autopilot") ||
@@ -512,16 +478,7 @@ export function DashboardShell({
         </div>
 
         {/* NAV — Přehled stays outside overflow so active glow isn't clipped under the logo */}
-        <nav
-          ref={sidebarNavRef as RefObject<HTMLElement>}
-          className="sk-nav-track relative flex min-h-0 flex-1 flex-col overflow-visible"
-        >
-          <span
-            className="sk-nav-thumb"
-            style={sidebarThumbStyle}
-            aria-hidden
-          />
-
+        <nav className="relative flex min-h-0 flex-1 flex-col overflow-visible">
           <div className="relative z-[1] shrink-0 px-3 pb-1 pt-1">
             {MAIN_NAV.filter(({ href }) => href === "/").map(
               ({ href, labelKey, icon: Icon }) => {
@@ -530,7 +487,6 @@ export function DashboardShell({
                   <Link
                     key={href}
                     href={href}
-                    data-slide-item
                     data-tour="onboarding-overview"
                     className={navItemClass(active)}
                     aria-current={active ? "page" : undefined}
@@ -552,7 +508,6 @@ export function DashboardShell({
             <div className="sk-nav-tree flex flex-col gap-0.5">
               <Link
                 href="/autopilot/radar"
-                data-slide-item
                 data-accent="amber"
                 data-tour="onboarding-autopilot"
                 className={navItemClass(isAutopilotActive, premiumToolsLocked)}
@@ -601,7 +556,6 @@ export function DashboardShell({
                   <Link
                     key={href}
                     href={href}
-                    data-slide-item
                     data-tour={
                       href === "/radar"
                         ? "onboarding-radar"
@@ -630,7 +584,6 @@ export function DashboardShell({
                   <Link
                     key={href}
                     href={href}
-                    data-slide-item
                     data-tour={href === "/crm" ? "onboarding-crm" : undefined}
                     className={navItemClass(active, locked)}
                     aria-current={active ? "page" : undefined}
@@ -650,18 +603,9 @@ export function DashboardShell({
 
         {/* SPODNÍ ČÁST S NASTAVENÍM A PROFILEM — vždy pinned dole */}
         <div className="flex shrink-0 flex-col gap-1.5 px-3 pb-5 pt-3">
-          <nav
-            ref={footerNavRef as RefObject<HTMLElement>}
-            className="sk-nav-track sk-nav-track--flush relative flex flex-col gap-1"
-          >
-            <span
-              className="sk-nav-thumb"
-              style={footerThumbStyle}
-              aria-hidden
-            />
+          <nav className="relative flex flex-col gap-1">
             <Link
               href="/help"
-              data-slide-item
               data-tour="onboarding-help"
               className={navItemClass(navMatches(navActiveHref, "/help"))}
               aria-current={
@@ -674,7 +618,6 @@ export function DashboardShell({
             </Link>
             <Link
               href="/settings"
-              data-slide-item
               data-tour="onboarding-settings"
               className={navItemClass(isWorkspaceSettingsActive)}
               aria-current={isWorkspaceSettingsActive ? "page" : undefined}

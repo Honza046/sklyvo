@@ -15,11 +15,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import {
-  SESSION_COOKIE,
-  createSessionToken,
-  sessionCookieOptions,
-  verifySessionToken,
-} from "@/lib/session";
+  mintSessionCookie,
+  readSessionUserId,
+  revokeAllSessions,
+} from "@/lib/session-cookie";
 import { encryptTotpSecret, decryptTotpSecret, totpSecretNeedsReencrypt } from "@/lib/totp-crypto";
 import { SKLYVO_BRAND } from "@/lib/sklyvo-brand";
 import {
@@ -32,15 +31,8 @@ import {
   webauthnChallengeCookieOptions,
 } from "@/lib/two-factor";
 
-async function readSessionUserId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
-}
-
 async function setSessionCookie(userId: string) {
-  const token = await createSessionToken(userId);
-  const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions());
+  await mintSessionCookie(userId);
 }
 
 async function clearPending2faCookie() {
@@ -198,6 +190,8 @@ export async function disableTotp(input: {
       totpPendingEnc: null,
     },
   });
+  await revokeAllSessions(userId);
+  await setSessionCookie(userId);
 
   return { success: true };
 }

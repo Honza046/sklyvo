@@ -14,6 +14,50 @@ const withSerwist = withSerwistInit({
   additionalPrecacheEntries: [{ url: "/~offline", revision }],
 });
 
+const isProd = process.env.NODE_ENV === "production";
+
+/**
+ * Browser hardening. HSTS + upgrade-insecure-requests only in production —
+ * on http://localhost they force HTTPS subresources and CSS/JS die.
+ */
+const SECURITY_HEADERS = [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=(), payment=(self), usb=()",
+  },
+  ...(isProd
+    ? [
+        {
+          key: "Strict-Transport-Security",
+          value: "max-age=63072000; includeSubDomains; preload",
+        },
+      ]
+    : []),
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "form-action 'self' https://accounts.google.com https://login.microsoftonline.com https://*.supabase.co",
+      // Next hydration + Stripe.js still need inline/eval in practice without nonces.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.supabase.co",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      // http/ws needed for local Next HMR; production traffic is https/wss anyway.
+      "connect-src 'self' https: http: wss: ws:",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://accounts.google.com https://login.microsoftonline.com https://*.supabase.co",
+      "worker-src 'self' blob:",
+      ...(isProd ? ["upgrade-insecure-requests"] : []),
+    ].join("; "),
+  },
+];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Serwist injects webpack config; Next 16 defaults to Turbopack for `next dev`.
@@ -40,6 +84,14 @@ const nextConfig = {
       /** Base64 PDF v `generateEmailContent` — výchozí limit Next je příliš malý. */
       bodySizeLimit: "8mb",
     },
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: SECURITY_HEADERS,
+      },
+    ];
   },
   async rewrites() {
     /**

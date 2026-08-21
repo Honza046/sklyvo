@@ -1,12 +1,11 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import {
-  SESSION_COOKIE,
   createSessionToken,
   sessionCookieOptions,
   verifySessionToken,
 } from "@/lib/session";
+import { readSessionUserId } from "@/lib/session-cookie";
 
 export const ADMIN_RETURN_COOKIE = "sklyvo_admin_return";
 
@@ -41,8 +40,7 @@ export type PlatformAdminActor = {
 };
 
 export async function getPlatformAdminActor(): Promise<PlatformAdminActor | null> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const userId = await verifySessionToken(token);
+  const userId = await readSessionUserId();
   if (!userId) return null;
 
   const user = await prisma.user.findUnique({
@@ -61,8 +59,7 @@ export async function getPlatformAdminActor(): Promise<PlatformAdminActor | null
 
 /** Hard gate for /admin console — redirects to Admin login when needed. */
 export async function requirePlatformAdmin(): Promise<PlatformAdminActor> {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const userId = await verifySessionToken(token);
+  const userId = await readSessionUserId();
   if (!userId) {
     redirect("/admin/login");
   }
