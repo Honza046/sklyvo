@@ -4,7 +4,9 @@
 
 .lp2-page {
   position: relative;
-  overflow-x: hidden;
+  /* clip avoids creating a scroll container (overflow-x:hidden does), which
+     breaks native hash scroll-margin against the fixed header */
+  overflow-x: clip;
   background: #08090a;
   /*
    * One card recipe for the whole page, taken from the design system's .d2-card
@@ -372,9 +374,16 @@ body:has(.l2-page) {
   will-change: backdrop-filter;
 }
 
-/* Keep section targets clear of the fixed header when jumping from nav/footer */
+/* Keep section targets clear of the fixed header when jumping from nav/footer.
+   Anchors sit on the visible content (not the section padding), so the block
+   frames fully under the bar instead of wasting the top of the viewport. */
 .lp2-anchor {
-  scroll-margin-top: 88px;
+  scroll-margin-top: 96px;
+}
+
+html:has(.lp2-page) {
+  scroll-padding-top: 96px;
+  scroll-behavior: smooth;
 }
 
 .lp2-nav {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { LandingAuthLink } from "@/components/sklyvo/landing-auth-link";
 import { SklyvoMark, type MarkGaze } from "@/components/sklyvo/sklyvo-mark";
 import { BotGlyph } from "@/components/sklyvo/bot-glyph";
@@ -438,6 +438,16 @@ export function LandingV2() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   useReveal();
 
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+    // Wait a frame so layout/fonts settle before offsetting under the header.
+    const id = window.requestAnimationFrame(() => {
+      scrollToLandingAnchor(hash, "auto");
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
   return (
     <div className="lp2-page">
       <div style={{ position: "relative", paddingTop: 72 }}>
@@ -502,6 +512,33 @@ function useReveal() {
 }
 
 /* --------------------------------------------------------------- header -- */
+
+/** Scroll hash targets under the fixed header; native hash alone lands on
+ *  padded section boxes and clips the block on shorter viewports. */
+function scrollToLandingAnchor(hash: string, behavior: ScrollBehavior = "smooth") {
+  const id = hash.replace(/^#/, "");
+  if (!id) return false;
+  const el = document.getElementById(id);
+  if (!el) return false;
+  const header = document.querySelector<HTMLElement>(".lp2-header");
+  const offset = (header?.offsetHeight ?? 72) + 20;
+  const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset);
+  window.scrollTo({ top, behavior });
+  return true;
+}
+
+function onLandingAnchorClick(
+  e: MouseEvent<HTMLAnchorElement>,
+  href: string,
+  after?: () => void,
+) {
+  if (!href.startsWith("#")) return;
+  e.preventDefault();
+  after?.();
+  if (scrollToLandingAnchor(href)) {
+    history.pushState(null, "", href);
+  }
+}
 
 function langBtn(active: boolean): CSSProperties {
   return {
@@ -588,7 +625,13 @@ function Header({
               );
             }
             return (
-              <a key={n.label} data-navlink href={n.href} className="lp2-navlink">
+              <a
+                key={n.label}
+                data-navlink
+                href={n.href}
+                className="lp2-navlink"
+                onClick={(e) => onLandingAnchorClick(e, n.href)}
+              >
                 {n.label}
               </a>
             );
@@ -643,7 +686,7 @@ function Header({
                 key={n.label}
                 href={n.href}
                 className="lp2-menu__link"
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => onLandingAnchorClick(e, n.href, () => setMenuOpen(false))}
               >
                 {n.label}
               </a>
@@ -1260,8 +1303,8 @@ function WhySection({ t }: { t: Copy }) {
   }, []);
 
   return (
-    <section id="why" className="lp2-anchor" ref={sectionRef} data-demo style={{ maxWidth: 1000, margin: "0 auto", padding: "132px 28px 0" }}>
-      <div data-reveal style={{ textAlign: "center" }}>
+    <section ref={sectionRef} data-demo style={{ maxWidth: 1000, margin: "0 auto", padding: "132px 28px 0" }}>
+      <div id="why" className="lp2-anchor" data-reveal style={{ textAlign: "center" }}>
         <div className="lp2-kicker">{t.whyKicker}</div>
         <h2 className="lp2-h2" style={{ margin: "12px auto 0", maxWidth: 560 }}>
           {t.whyTitle}
@@ -1329,8 +1372,8 @@ function StepsSection({ t }: { t: Copy }) {
 
 function PricingSection({ t, cs }: { t: Copy; cs: boolean }) {
   return (
-    <section id="pricing" className="lp2-anchor" style={{ maxWidth: 1000, margin: "0 auto", padding: "150px 28px 0" }}>
-      <div data-reveal style={{ textAlign: "center" }}>
+    <section style={{ maxWidth: 1000, margin: "0 auto", padding: "150px 28px 0" }}>
+      <div id="pricing" className="lp2-anchor" data-reveal style={{ textAlign: "center" }}>
         <div className="lp2-kicker">{t.priceKicker}</div>
         <h2 className="lp2-h2" style={{ margin: "12px auto 0", maxWidth: 520 }}>
           {t.priceTitle}
@@ -1479,8 +1522,8 @@ function FaqSection({
   setOpenFaq: (v: number | null) => void;
 }) {
   return (
-    <section id="faq" className="lp2-faqsection lp2-anchor">
-      <div className="lp2-faqgrid">
+    <section className="lp2-faqsection">
+      <div id="faq" className="lp2-faqgrid lp2-anchor">
         <div data-reveal>
           <h2 className="lp2-h2" style={{ margin: "0 0 12px", textWrap: "pretty" }}>
             {t.faqTitle}
@@ -2077,6 +2120,11 @@ function Footer({ t }: { t: Copy }) {
                       key={l.label}
                       href={l.href}
                       className="lp2-footlink"
+                      onClick={
+                        l.href.startsWith("#")
+                          ? (e) => onLandingAnchorClick(e, l.href)
+                          : undefined
+                      }
                       {...(l.external
                         ? { target: "_blank", rel: "noreferrer" }
                         : {})}

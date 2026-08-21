@@ -472,7 +472,7 @@ export const de: MessageTree = {
     actionMore: "Weitere Aktionen",
     actionScrapeContact: "Kontakt von Website ergänzen",
     actionScrapeContactHint:
-      "Durchsucht die Website gründlich und ergänzt E-Mail oder Telefon",
+      "Durchsucht die Website und ergänzt E-Mail oder Telefon",
     actionSendFollowUp: "Follow-up senden",
     actionSendBreakup: "Breakup senden",
     actionDelete: "Löschen",

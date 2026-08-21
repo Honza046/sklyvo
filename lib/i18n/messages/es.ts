@@ -469,7 +469,7 @@ export const es: MessageTree = {
     actionMore: "Más acciones",
     actionScrapeContact: "Completar contacto desde la web",
     actionScrapeContactHint:
-      "Escanea a fondo el sitio y completa e-mail o teléfono",
+      "Escanea el sitio y completa e-mail o teléfono",
     actionSendFollowUp: "Enviar follow-up",
     actionSendBreakup: "Enviar breakup",
     actionDelete: "Eliminar",

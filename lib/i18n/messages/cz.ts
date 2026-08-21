@@ -470,7 +470,7 @@ export const cz = {
     actionMore: "Další akce",
     actionScrapeContact: "Doplnit kontakt z webu",
     actionScrapeContactHint:
-      "Důkladně prohledá web a doplní e-mail nebo telefon",
+      "Prohledá web a doplní e-mail nebo telefon",
     actionSendFollowUp: "Poslat follow-up",
     actionSendBreakup: "Poslat breakup",
     actionDelete: "Smazat",
