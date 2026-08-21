@@ -67,7 +67,7 @@ const THEMES: Record<GlobeTheme, { land: DotRamp; ocean: DotRamp }> = {
   },
   night: {
     land: { rgb: "255,255,255", base: 0.62, shade: 0.38 },
-    ocean: { rgb: "255,255,255", base: 0, shade: 0 },
+    ocean: { rgb: "155,220,255", base: 0.1, shade: 0.3 },
   },
 };
 
@@ -186,7 +186,6 @@ export function Globe({
 
         const shade = 0.18 + 0.72 * Math.max(0, x * 0.45 + y * 0.35 + z * 0.7);
         const isLand = point.land === 1;
-        if (!isLand && theme === "night") continue;
         const dot = isLand ? ramp.land : ramp.ocean;
         const rKey = Math.round((isLand ? 0.9 + z * 0.95 : 0.6 + z * 0.6) * 8);
         const aKey = Math.round((dot.base + shade * dot.shade) * 60);
@@ -216,11 +215,22 @@ export function Globe({
       ctx.restore();
     };
 
-    void getLandMask().then((land) => {
-      if (cancelled || !land) return;
-      tagLand(points, land);
-      if (still) draw();
-    });
+    // Hold the globe hidden until the land mask has been folded in, otherwise a
+    // refresh shows a bare ocean sphere for a beat and the continents pop on.
+    const reveal = () => {
+      if (!cancelled) canvas.style.opacity = "1";
+    };
+
+    void getLandMask()
+      .then((land) => {
+        if (cancelled) return;
+        if (land) {
+          tagLand(points, land);
+          if (still) draw();
+        }
+        reveal();
+      })
+      .catch(reveal);
 
     if (still) {
       draw();
@@ -246,7 +256,12 @@ export function Globe({
     <canvas
       ref={canvasRef}
       className={className}
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        opacity: 0,
+        transition: "opacity 0.45s ease",
+      }}
       aria-hidden
     />
   );

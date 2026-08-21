@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   AUTH_HANDOFF_EASE,
   AUTH_HANDOFF_MS,
@@ -31,6 +31,14 @@ let persistedLoginHeight: number | null = null;
 /** Prevents Strict Mode remount from restarting the rise mid-flight. */
 let landingEnterActive = false;
 
+/** Kill nested panel-in for this auth visit after a landing handoff. */
+let suppressPanelInForVisit = false;
+
+function readInitialLandingHandoff() {
+  if (typeof window === "undefined") return false;
+  return peekAuthFromLanding();
+}
+
 function readStoredLoginHeight() {
   if (typeof window === "undefined") return null;
   const value = Number(sessionStorage.getItem(LOGIN_HEIGHT_KEY));
@@ -50,6 +58,8 @@ function resolveLoginHeight(natural: number) {
 /**
  * Natural height of the form card. Crest lives inside `.l2-card__body`, so we
  * only sum body + seats — counting crest again left empty space under the form.
+ * Prefer a non-destructive read when the card is already auto-sized so locking
+ * height after the landing rise does not flash the fields.
  */
 function measureContentHeight(card: HTMLElement) {
   const body = card.querySelector(".l2-card__body");
@@ -59,16 +69,20 @@ function measureContentHeight(card: HTMLElement) {
       ? seats.offsetHeight
       : 0;
 
-  let bodyH = 0;
-  if (body instanceof HTMLElement) {
-    const prevHeight = card.style.height;
-    const prevFlex = body.style.flex;
-    card.style.height = "auto";
-    body.style.flex = "0 0 auto";
-    bodyH = body.scrollHeight;
-    body.style.flex = prevFlex;
-    card.style.height = prevHeight;
+  if (!(body instanceof HTMLElement)) return seatsH;
+
+  const locked = Boolean(card.style.height);
+  if (!locked) {
+    return Math.ceil(body.scrollHeight + seatsH);
   }
+
+  const prevHeight = card.style.height;
+  const prevFlex = body.style.flex;
+  card.style.height = "auto";
+  body.style.flex = "0 0 auto";
+  const bodyH = body.scrollHeight;
+  body.style.flex = prevFlex;
+  card.style.height = prevHeight;
 
   return Math.ceil(bodyH + seatsH);
 }
@@ -155,17 +169,38 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
   const enterRef = useRef<HTMLDivElement>(null);
   const prevModeRef = useRef<AuthMode | null>(null);
   const prevStepRef = useRef<string | null>(null);
+  const panelModeRef = useRef<AuthMode | null>(null);
 
   const [cardHeight, setCardHeight] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
   const [authStep, setAuthStep] = useState<string | null>(null);
-  const [fromLanding, setFromLanding] = useState(false);
+  const [fromLanding, setFromLanding] = useState(readInitialLandingHandoff);
+  /** Keep panel-in killed after handoff — clearing data-from-landing would
+   *  otherwise re-apply l2-panel-in and make the fields flicker once more. */
+  const [suppressPanelIn, setSuppressPanelIn] = useState(
+    () => suppressPanelInForVisit || readInitialLandingHandoff(),
+  );
   const [chromeReady, setChromeReady] = useState(false);
   const [globeReady, setGlobeReady] = useState(true);
+  /** Fit must wait until the rise transform is gone — enabling it on the same
+   *  tick as setFromLanding(false) scaled the form and read as a blink. */
+  const [fitReady, setFitReady] = useState(() => !readInitialLandingHandoff());
   const [banner, setBanner] = useState(true);
+  const [seatsMotion, setSeatsMotion] = useState(false);
   const [legalDoc, setLegalDoc] = useState<LegalDocumentId | null>(null);
 
-  useFitToViewport(authRef, !fromLanding);
+  // Panel enter only when switching modes — never on first paint / landing rise.
+  const panelEnter =
+    panelModeRef.current != null && panelModeRef.current !== mode;
+  panelModeRef.current = mode;
+
+  useFitToViewport(authRef, fitReady);
+
+  useEffect(() => {
+    // Enable seats close animation only after the first paint is committed.
+    const id = window.setTimeout(() => setSeatsMotion(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   // Imperative enter: avoid CSS keyframes tied to React state (Strict Mode
   // remounts restart them mid-flight and it reads as stutter).
@@ -173,8 +208,13 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     if (!peekAuthFromLanding()) return;
 
     // Hide real logo/lang before paint (layout effect re-render is sync enough).
+    // Keep the globe mounted — delaying it left the blue card empty until
+    // after the rise finished.
+    suppressPanelInForVisit = true;
     setFromLanding(true);
-    setGlobeReady(false);
+    setSuppressPanelIn(true);
+    setFitReady(false);
+    setGlobeReady(true);
 
     const stage = enterRef.current;
     const legal = document.querySelector(".l2-page .l2-legal");
@@ -207,7 +247,7 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     const bridge = document.getElementById("sk-auth-chrome-bridge");
     let settled = false;
     let settleTimer = 0;
-    let globeTimer = 0;
+    let fitTimer = 0;
 
     // Hard cut after the FULL spread — settling on the first transitionend
     // (top OR left) cut the bridge away mid-move and read as a blink.
@@ -234,9 +274,6 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       bridge ? AUTH_HANDOFF_MS + 32 : 0,
     );
 
-    // Mount the heavy globe after the rise is underway so it doesn't hitch frames.
-    globeTimer = window.setTimeout(() => setGlobeReady(true), 420);
-
     const clearTimer = window.setTimeout(() => {
       landingEnterActive = false;
       setFromLanding(false);
@@ -255,12 +292,14 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
         legal.style.transition = "";
         legal.style.opacity = "";
       }
+      // Wait until rise transform is fully cleared before any scale fit.
+      fitTimer = window.setTimeout(() => setFitReady(true), 180);
     }, AUTH_HANDOFF_MS + 160);
 
     return () => {
       window.clearTimeout(settleTimer);
-      window.clearTimeout(globeTimer);
       window.clearTimeout(clearTimer);
+      window.clearTimeout(fitTimer);
     };
   }, []);
 
@@ -281,10 +320,18 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
+  // Re-arm panel enter only when switching login ↔ register ↔ recovery.
   useLayoutEffect(() => {
-    // Don't thrash card heights while the landing enter is running.
-    if (fromLanding || peekAuthFromLanding()) return;
+    const prev = prevModeRef.current;
+    if (prev != null && prev !== mode) {
+      suppressPanelInForVisit = false;
+      setSuppressPanelIn(false);
+    }
+  }, [mode]);
 
+  useLayoutEffect(() => {
+    // Lock height during the rise too — waiting until fromLanding flips caused
+    // a post-arrival measure/paint that made the form blink.
     const form = formCardRef.current;
     const globe = globeCardRef.current;
     if (!form || !globe) return;
@@ -317,13 +364,20 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
         el.style.transition = transition;
         el.style.height = `${px}px`;
       }
-      setCardHeight(px);
+      setCardHeight((prev) => (prev === px ? prev : px));
     };
 
     const prevMode = prevModeRef.current;
     const prevStep = prevStepRef.current;
     prevModeRef.current = mode;
     prevStepRef.current = liveStep;
+
+    // Never animate height while the landing rise owns the stage.
+    if (fromLanding || peekAuthFromLanding()) {
+      persistedCardHeight = target;
+      paint(target, "none");
+      return;
+    }
 
     const stepChanged = prevStep !== liveStep;
     const modeChanged = prevMode != null && prevMode !== mode;
@@ -334,6 +388,15 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
       (modeChanged || stepChanged);
 
     if (!shouldAnimate) {
+      // Same size already locked (e.g. during the landing rise) — skip a
+      // redundant paint that would flash the fields after the stage stops.
+      if (
+        persistedCardHeight != null &&
+        Math.abs(persistedCardHeight - target) <= 1 &&
+        form.style.height === `${persistedCardHeight}px`
+      ) {
+        return;
+      }
       persistedCardHeight = target;
       paint(target, "none");
       return;
@@ -413,6 +476,7 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
           data-mode={mode}
           data-animating={animating ? "true" : undefined}
           data-from-landing={fromLanding ? "true" : undefined}
+          data-suppress-panel-in={suppressPanelIn ? "true" : undefined}
         >
           <section
             ref={formCardRef}
@@ -420,7 +484,11 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
             style={cardHeight != null ? { height: cardHeight } : undefined}
           >
             {mode === "login" ? (
-              <div className="l2-seats" data-open={banner}>
+              <div
+                className="l2-seats"
+                data-open={banner ? "true" : "false"}
+                data-motion={seatsMotion ? "true" : undefined}
+              >
                 <span className="l2-seats__label">
                   <span className="l2-seats__dot" />
                   <span className="l2-seats__text">
@@ -456,7 +524,11 @@ export function AuthChrome({ children }: { children: React.ReactNode }) {
                   <Crest mode={mode} />
                 </span>
               </div>
-              <div key={mode} className="sklyvo-auth-panel">
+              <div
+                key={mode}
+                className="sklyvo-auth-panel"
+                data-enter={panelEnter ? "true" : undefined}
+              >
                 {children}
               </div>
             </div>

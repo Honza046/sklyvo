@@ -800,6 +800,7 @@ export const cz = {
       intro: "Propojte Sklyvo s nástroji, které už používáte.",
       connected: "Připojeno",
       disconnected: "Nepřipojeno",
+      unavailable: "Zatím nedostupné",
       connect: "Připojit",
       disconnect: "Odpojit",
       sheetsDesc: "Live zrcadlo CRM podle stavů.",
@@ -818,6 +819,8 @@ export const cz = {
       progressDismiss: "Skrýt dokončený postup nastavení",
       progressCta: "Pokračovat v nastavení",
       teamManage: "Spravovat tým",
+      languageTitle: "Jazyk aplikace",
+      languageHint: "Přepíná rozhraní Sklyvo mezi češtinou a angličtinou.",
       steps: {
         profile: "Profil firmy",
         services: "Nabízené služby",
@@ -1190,6 +1193,7 @@ export const cz = {
       productTipsTitle: "Produktové novinky a tipy",
       productTipsDesc:
         "Nové funkce platformy a rady pro lepší konverze.",
+      disableAll: "Vypnout všechna upozornění",
     },
     toast: {
       needsEmailTitle: "Doplňte svůj e-mail",
@@ -1197,6 +1201,8 @@ export const cz = {
         "Facebook nevrátil e-mailovou adresu. Nastavte ji tady v účtu.",
       notifOn: "Upozornění zapnuto",
       notifOff: "Upozornění vypnuto",
+      notifAllOff: "Všechna e-mailová upozornění byla vypnuta.",
+      notifAlreadyOff: "Všechna upozornění už jsou vypnutá.",
       pickImage: "Vyberte obrázek (JPG, PNG, WebP…).",
       uploadError: "Chyba nahrávání",
       photoSaved: "Profilová fotka byla uložena.",

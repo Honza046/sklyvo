@@ -177,9 +177,16 @@ body:has(.sklyvo-login) {
   justify-content: center;
 }
 
-/* Nested panel enter fights the page rise — kill it during handoff */
-.l2-auth[data-from-landing="true"] .sklyvo-auth-panel {
+/* Nested panel enter is opt-in via data-enter; keep these kills as a
+ * hard stop if anything still tries to animate during handoff. */
+.l2-auth[data-from-landing="true"] .sklyvo-auth-panel,
+.l2-auth[data-suppress-panel-in="true"] .sklyvo-auth-panel {
   animation: none !important;
+}
+
+.l2-auth[data-from-landing="true"] .l2-seats,
+.l2-auth[data-suppress-panel-in="true"] .l2-seats {
+  transition: none !important;
 }
 
 @keyframes skAuthEnterShell {

@@ -30,7 +30,7 @@ type EmailIntegrationPanelProps = {
 
 type ConnectionTab = "google" | "smtp";
 
-const inputClass = "sk-settings-field h-9 text-sm";
+const inputClass = "sk-settings-field !h-[42px] !px-3.5 !py-0 text-[13px]";
 
 function smtpModeToggleClass(active: boolean, compact?: boolean) {
   return cn(

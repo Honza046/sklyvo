@@ -25,10 +25,24 @@ const REACH_Y = 0.72;
 const BAND_MARK_SIZE = 310;
 const BAND_MARK_DROP = 48;
 
+type NavLink = {
+  label: string;
+  href: string;
+  /** use LandingAuthLink for handoff from landing → auth */
+  auth?: "login" | "register";
+};
+
+type FootLink = {
+  label: string;
+  href: string;
+  external?: boolean;
+  auth?: "login" | "register";
+};
+
 type Copy = {
   title: string;
   sub: string;
-  navLinks: string[];
+  navLinks: NavLink[];
   menuLabel: string;
   ctaPrimary: string;
   ctaSecondary: string;
@@ -58,7 +72,7 @@ type Copy = {
   footNote: string;
   legalList: string[];
   footClaim: string;
-  footCols: { title: string; links: string[] }[];
+  footCols: { title: string; links: FootLink[] }[];
   why: { title: string; body: string }[];
   steps: { n: string; title: string; body: string }[];
   faq: { q: string; a: string }[];
@@ -67,7 +81,13 @@ type Copy = {
 const CS: Copy = {
   title: "Přístup je otevřený. Zatím.",
   sub: "Zatímco ostatní hledají klienty ručně, vy už jim fakturujete. Sklyvo firmy najde a osloví za vás. První vlna míst je otevřená pro omezený počet.",
-  navLinks: ["Jak to funguje", "Pro agentury", "Ceník", "Časté otázky", "Přihlásit se"],
+  navLinks: [
+    { label: "Jak to funguje", href: "#how" },
+    { label: "Pro agentury", href: "#why" },
+    { label: "Ceník", href: "#pricing" },
+    { label: "Časté otázky", href: "#faq" },
+    { label: "Přihlásit se", href: "/login", auth: "login" },
+  ],
   menuLabel: "Menu",
   ctaPrimary: "Vyzkoušet zdarma",
   ctaSecondary: "Přihlásit se",
@@ -98,10 +118,41 @@ const CS: Copy = {
   legalList: ["Zásady ochrany osobních údajů", "Podmínky použití", "Zpracování dat", "Cookies"],
   footClaim: "Najde klienty, které potřebujete, a osloví je automaticky za vás. V jakémkoli odvětví, kdekoli na světě.",
   footCols: [
-    { title: "Sítě", links: ["@sklyvo", "@venegard", "Novinky"] },
-    { title: "Produkt", links: ["Jak to funguje", "Ceník", "Přihlásit se", "Vyzkoušet zdarma"] },
-    { title: "Firma", links: ["O nás", "Sklyvo", "Affiliate", "Kontakt"] },
-    { title: "Podpora", links: ["Časté dotazy", "Stav služby", "Nápověda", "Skly Bot"] },
+    {
+      title: "Sítě",
+      links: [
+        { label: "@sklyvo", href: "mailto:podpora@venegard.com?subject=Sklyvo" },
+        { label: "@venegard", href: "https://venegard.com", external: true },
+        { label: "Novinky", href: "mailto:podpora@venegard.com?subject=Novinky" },
+      ],
+    },
+    {
+      title: "Produkt",
+      links: [
+        { label: "Jak to funguje", href: "#how" },
+        { label: "Ceník", href: "#pricing" },
+        { label: "Přihlásit se", href: "/login", auth: "login" },
+        { label: "Vyzkoušet zdarma", href: "/register", auth: "register" },
+      ],
+    },
+    {
+      title: "Firma",
+      links: [
+        { label: "O nás", href: "#why" },
+        { label: "Sklyvo", href: "#" },
+        { label: "Affiliate", href: "mailto:podpora@venegard.com?subject=Affiliate" },
+        { label: "Kontakt", href: "mailto:podpora@venegard.com" },
+      ],
+    },
+    {
+      title: "Podpora",
+      links: [
+        { label: "Časté dotazy", href: "#faq" },
+        { label: "Stav služby", href: "mailto:podpora@venegard.com?subject=Stav%20slu%C5%BEby" },
+        { label: "Nápověda", href: "#faq" },
+        { label: "Skly Bot", href: "#faq" },
+      ],
+    },
   ],
   why: [
     {
@@ -153,7 +204,13 @@ const CS: Copy = {
 const EN: Copy = {
   title: "Access is open. For now.",
   sub: "While others hunt for clients by hand, you are already invoicing them. Sklyvo finds companies and reaches out for you. The first wave of seats is open to a limited number.",
-  navLinks: ["How it works", "For agencies", "Pricing", "FAQ", "Sign in"],
+  navLinks: [
+    { label: "How it works", href: "#how" },
+    { label: "For agencies", href: "#why" },
+    { label: "Pricing", href: "#pricing" },
+    { label: "FAQ", href: "#faq" },
+    { label: "Sign in", href: "/login", auth: "login" },
+  ],
   menuLabel: "Menu",
   ctaPrimary: "Try for free",
   ctaSecondary: "Sign in",
@@ -184,10 +241,41 @@ const EN: Copy = {
   legalList: ["Privacy policy", "Terms of use", "Data processing", "Cookies"],
   footClaim: "It automatically finds the clients you need and reaches them for you. Any industry, anywhere on Earth.",
   footCols: [
-    { title: "Socials", links: ["@sklyvo", "@venegard", "News"] },
-    { title: "Product", links: ["How it works", "Pricing", "Sign in", "Try for free"] },
-    { title: "Company", links: ["About", "Sklyvo", "Affiliate", "Contact"] },
-    { title: "Support", links: ["FAQ", "Service status", "Help", "Skly Bot"] },
+    {
+      title: "Socials",
+      links: [
+        { label: "@sklyvo", href: "mailto:podpora@venegard.com?subject=Sklyvo" },
+        { label: "@venegard", href: "https://venegard.com", external: true },
+        { label: "News", href: "mailto:podpora@venegard.com?subject=News" },
+      ],
+    },
+    {
+      title: "Product",
+      links: [
+        { label: "How it works", href: "#how" },
+        { label: "Pricing", href: "#pricing" },
+        { label: "Sign in", href: "/login", auth: "login" },
+        { label: "Try for free", href: "/register", auth: "register" },
+      ],
+    },
+    {
+      title: "Company",
+      links: [
+        { label: "About", href: "#why" },
+        { label: "Sklyvo", href: "#" },
+        { label: "Affiliate", href: "mailto:podpora@venegard.com?subject=Affiliate" },
+        { label: "Contact", href: "mailto:podpora@venegard.com" },
+      ],
+    },
+    {
+      title: "Support",
+      links: [
+        { label: "FAQ", href: "#faq" },
+        { label: "Service status", href: "mailto:podpora@venegard.com?subject=Service%20status" },
+        { label: "Help", href: "#faq" },
+        { label: "Skly Bot", href: "#faq" },
+      ],
+    },
   ],
   why: [
     {
@@ -467,33 +555,41 @@ function Header({
   return (
     <header className="lp2-header" data-open={menuOpen ? "" : undefined}>
       <div className="lp2-header__inner">
-        <div
+        <a
+          href="#"
           className="lp2-brand"
           data-eyes
-          style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 1160 }}
+          style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 1160, textDecoration: "none" }}
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
         >
           <SklyvoMark size={28} reachY={REACH_Y} />
           <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em", color: "#F2F3F5" }}>
             Sklyvo
           </span>
-        </div>
+        </a>
 
         {/* the class does the hiding: an inline `display` would beat the
             stylesheet and the bar stayed broken on phones */}
         <nav className="lp2-nav">
-          {t.navLinks.map((n, i) => {
-            const href =
-              i === 2 ? "/pricing" : i === 3 ? "#faq" : i === 4 ? "/login" : `#section-${i}`;
-            if (i === 4) {
+          {t.navLinks.map((n) => {
+            if (n.auth) {
               return (
-                <LandingAuthLink key={i} data-navlink href="/login" className="lp2-navlink">
-                  {n}
+                <LandingAuthLink
+                  key={n.label}
+                  data-navlink
+                  href={n.auth === "login" ? "/login" : "/register"}
+                  className="lp2-navlink"
+                >
+                  {n.label}
                 </LandingAuthLink>
               );
             }
             return (
-              <a key={i} data-navlink href={href} className="lp2-navlink">
-                {n}
+              <a key={n.label} data-navlink href={n.href} className="lp2-navlink">
+                {n.label}
               </a>
             );
           })}
@@ -529,11 +625,30 @@ function Header({
             two, the second landed in an implicit auto row and stayed open */}
         <div className="lp2-menu__inner">
         <nav className="lp2-menu__nav">
-          {t.navLinks.map((n, i) => (
-            <a key={i} href="#" className="lp2-menu__link" onClick={() => setMenuOpen(false)}>
-              {n}
-            </a>
-          ))}
+          {t.navLinks.map((n) => {
+            if (n.auth) {
+              return (
+                <LandingAuthLink
+                  key={n.label}
+                  href={n.auth === "login" ? "/login" : "/register"}
+                  className="lp2-menu__link"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {n.label}
+                </LandingAuthLink>
+              );
+            }
+            return (
+              <a
+                key={n.label}
+                href={n.href}
+                className="lp2-menu__link"
+                onClick={() => setMenuOpen(false)}
+              >
+                {n.label}
+              </a>
+            );
+          })}
         </nav>
 
         {/* the action sits under the last link on the left, the language goes
@@ -579,7 +694,9 @@ function Hero({ t }: { t: Copy }) {
         {t.note}
       </div>
 
-      <h1 className="lp2-h1">{t.title}</h1>
+      <h1 id="how" className="lp2-h1 lp2-anchor">
+        {t.title}
+      </h1>
 
       <p className="lp2-sub">{t.sub}</p>
 
@@ -1143,7 +1260,7 @@ function WhySection({ t }: { t: Copy }) {
   }, []);
 
   return (
-    <section ref={sectionRef} data-demo style={{ maxWidth: 1000, margin: "0 auto", padding: "132px 28px 0" }}>
+    <section id="why" className="lp2-anchor" ref={sectionRef} data-demo style={{ maxWidth: 1000, margin: "0 auto", padding: "132px 28px 0" }}>
       <div data-reveal style={{ textAlign: "center" }}>
         <div className="lp2-kicker">{t.whyKicker}</div>
         <h2 className="lp2-h2" style={{ margin: "12px auto 0", maxWidth: 560 }}>
@@ -1212,7 +1329,7 @@ function StepsSection({ t }: { t: Copy }) {
 
 function PricingSection({ t, cs }: { t: Copy; cs: boolean }) {
   return (
-    <section style={{ maxWidth: 1000, margin: "0 auto", padding: "150px 28px 0" }}>
+    <section id="pricing" className="lp2-anchor" style={{ maxWidth: 1000, margin: "0 auto", padding: "150px 28px 0" }}>
       <div data-reveal style={{ textAlign: "center" }}>
         <div className="lp2-kicker">{t.priceKicker}</div>
         <h2 className="lp2-h2" style={{ margin: "12px auto 0", maxWidth: 520 }}>
@@ -1234,7 +1351,11 @@ function PricingSection({ t, cs }: { t: Copy; cs: boolean }) {
 
       <div data-reveal className="lp2-pricegrid">
         {priceCards(cs).map((p, i) => (
-          <div key={i} className="lp2-pricecard">
+          <div
+            key={i}
+            id={i === 1 ? "agencies" : undefined}
+            className={i === 1 ? "lp2-pricecard lp2-anchor" : "lp2-pricecard"}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: "-0.01em", color: "#C9CDD3" }}>
                 {p.name}
@@ -1358,7 +1479,7 @@ function FaqSection({
   setOpenFaq: (v: number | null) => void;
 }) {
   return (
-    <section id="faq" className="lp2-faqsection">
+    <section id="faq" className="lp2-faqsection lp2-anchor">
       <div className="lp2-faqgrid">
         <div data-reveal>
           <h2 className="lp2-h2" style={{ margin: "0 0 12px", textWrap: "pretty" }}>
@@ -1376,7 +1497,7 @@ function FaqSection({
           >
             {t.faqSub}
           </p>
-          <a data-faqbot href="#" className="lp2-faqbot">
+          <LandingAuthLink data-faqbot href="/register" className="lp2-faqbot">
             <span
               style={{
                 display: "flex",
@@ -1392,7 +1513,7 @@ function FaqSection({
             <span style={{ whiteSpace: "nowrap", fontSize: 12.5, color: "#8A8F98" }}>
               {t.botHintQ} <span style={{ fontWeight: 700, color: "#F2F3F5" }}>{t.botAskCta}</span>
             </span>
-          </a>
+          </LandingAuthLink>
         </div>
 
         <div data-reveal style={{ display: "flex", flexDirection: "column", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
@@ -1924,11 +2045,46 @@ function Footer({ t }: { t: Copy }) {
                 {col.title}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 9, marginTop: 14 }}>
-                {col.links.map((l) => (
-                  <a key={l} href="#" className="lp2-footlink">
-                    {l}
-                  </a>
-                ))}
+                {col.links.map((l) => {
+                  if (l.auth) {
+                    return (
+                      <LandingAuthLink
+                        key={l.label}
+                        href={l.auth === "login" ? "/login" : "/register"}
+                        className="lp2-footlink"
+                      >
+                        {l.label}
+                      </LandingAuthLink>
+                    );
+                  }
+                  if (l.href === "#") {
+                    return (
+                      <a
+                        key={l.label}
+                        href="#"
+                        className="lp2-footlink"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        {l.label}
+                      </a>
+                    );
+                  }
+                  return (
+                    <a
+                      key={l.label}
+                      href={l.href}
+                      className="lp2-footlink"
+                      {...(l.external
+                        ? { target: "_blank", rel: "noreferrer" }
+                        : {})}
+                    >
+                      {l.label}
+                    </a>
+                  );
+                })}
               </div>
             </div>
           ))}

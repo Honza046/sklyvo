@@ -162,7 +162,8 @@
   gap: 16px;
 }
 
-/* the seats banner: collapses its own height so the card closes up behind it */
+/* Seats open by default — never animate the first open (that reflow after the
+ * landing rise read as the form "loading twice"). Transition only after mount. */
 .l2-seats {
   display: flex;
   align-items: center;
@@ -172,14 +173,18 @@
   overflow: hidden;
   background: #ffee00;
   padding: 0 18px;
-  height: 0;
-  opacity: 0;
-  transition: height 0.42s cubic-bezier(0.4, 0, 0.2, 1) 0.12s, opacity 0s linear;
-}
-
-.l2-seats[data-open="true"] {
   height: 38px;
   opacity: 1;
+  transition: none;
+}
+
+.l2-seats[data-open="false"] {
+  height: 0;
+  opacity: 0;
+}
+
+.l2-seats[data-motion="true"] {
+  transition: height 0.42s cubic-bezier(0.4, 0, 0.2, 1) 0.12s, opacity 0s linear;
 }
 
 .l2-seats__label {
@@ -282,7 +287,7 @@
   padding: 32px;
 }
 
-.sklyvo-auth-panel {
+.sklyvo-auth-panel[data-enter="true"] {
   animation: l2-panel-in 0.42s cubic-bezier(0.22, 0.75, 0, 1) both;
 }
 
@@ -298,7 +303,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sklyvo-auth-panel {
+  .sklyvo-auth-panel[data-enter="true"] {
     animation: none;
   }
 

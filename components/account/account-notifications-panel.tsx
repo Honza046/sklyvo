@@ -50,12 +50,21 @@ const PREF_I18N: Record<
   },
 };
 
+function allOffPatch(): Record<NotificationPrefKey, boolean> {
+  return Object.fromEntries(PREF_ROWS.map((key) => [key, false])) as Record<
+    NotificationPrefKey,
+    boolean
+  >;
+}
+
 export function AccountNotificationsPanel() {
   const { t } = useLanguage();
   const [prefs, setPrefs] = useState<Record<NotificationPrefKey, boolean> | null>(
     null,
   );
-  const [busyKey, setBusyKey] = useState<NotificationPrefKey | null>(null);
+  const [busyKey, setBusyKey] = useState<NotificationPrefKey | "all" | null>(
+    null,
+  );
 
   useEffect(() => {
     void (async () => {
@@ -88,18 +97,58 @@ export function AccountNotificationsPanel() {
     }
   }
 
+  async function handleDisableAll() {
+    if (!prefs) return;
+    const anyOn = PREF_ROWS.some((key) => prefs[key]);
+    if (!anyOn) {
+      toast.message(t("account.toast.notifAlreadyOff"));
+      return;
+    }
+
+    setBusyKey("all");
+    const previous = { ...prefs };
+    setPrefs(allOffPatch());
+    try {
+      const result = await updateNotificationPreferences(allOffPatch());
+      if ("error" in result) {
+        setPrefs(previous);
+        toast.error(result.error);
+        return;
+      }
+      toast.success(t("account.toast.notifAllOff"));
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   if (!prefs) {
     return (
       <AccountPanel loading loadingLabel={t("account.notificationsLoading")} />
     );
   }
 
+  const anyEnabled = PREF_ROWS.some((key) => prefs[key]);
+  const busy = busyKey !== null;
+
   return (
-    <AccountPanel description={t("account.notificationsPanelDesc")}>
-      <ul className="sk-account-sub__toggle-list">
+    <AccountPanel
+      className="sk-account-panel--notifications"
+      description={t("account.notificationsPanelDesc")}
+      footer={
+        <button
+          type="button"
+          className="sk-btn sk-btn--secondary sk-btn--sm"
+          disabled={busy || !anyEnabled}
+          onClick={() => void handleDisableAll()}
+        >
+          {t("account.notifs.disableAll")}
+        </button>
+      }
+    >
+      <ul className="sk-account-sub__toggle-list sk-account-sub__toggle-list--flat">
         {PREF_ROWS.map((key) => {
           const copy = PREF_I18N[key];
-          const disabled = busyKey === key;
+          const disabled = busyKey === key || busyKey === "all";
           return (
             <li key={key} className="sk-account-sub__toggle-row">
               <div className="sk-account-sub__toggle-copy">
@@ -107,6 +156,7 @@ export function AccountNotificationsPanel() {
                 <p className="sk-account-sub__toggle-desc">{t(copy.desc)}</p>
               </div>
               <Switch
+                className="sk-switch--sm"
                 checked={prefs[key]}
                 disabled={disabled}
                 onCheckedChange={(checked) => void handleToggle(key, checked)}

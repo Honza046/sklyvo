@@ -3,10 +3,21 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Suspense } from "react";
+import type { FakturoidConnectionState } from "@/app/actions/fakturoid";
+import type { GoogleSheetsConnectionState } from "@/app/actions/google-sheets";
+import type { MicrosoftConnectionState } from "@/app/actions/microsoft";
 import { IntegrationsPanel } from "@/app/settings/integrations-panel";
 import { useLanguage } from "@/context/LanguageContext";
 
-export function SettingsIntegrationsView() {
+export function SettingsIntegrationsView({
+  initialSheets,
+  initialMicrosoft,
+  initialFakturoid,
+}: {
+  initialSheets: GoogleSheetsConnectionState;
+  initialMicrosoft: MicrosoftConnectionState;
+  initialFakturoid: FakturoidConnectionState;
+}) {
   const { t } = useLanguage();
 
   return (
@@ -42,7 +53,11 @@ export function SettingsIntegrationsView() {
             </div>
           }
         >
-          <IntegrationsPanel />
+          <IntegrationsPanel
+            initialSheets={initialSheets}
+            initialMicrosoft={initialMicrosoft}
+            initialFakturoid={initialFakturoid}
+          />
         </Suspense>
       </div>
     </div>

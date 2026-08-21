@@ -372,6 +372,11 @@ body:has(.l2-page) {
   will-change: backdrop-filter;
 }
 
+/* Keep section targets clear of the fixed header when jumping from nav/footer */
+.lp2-anchor {
+  scroll-margin-top: 88px;
+}
+
 .lp2-nav {
   display: flex;
   align-items: center;

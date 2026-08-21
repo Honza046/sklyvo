@@ -578,7 +578,6 @@ export default function RadarPage() {
                     <Checkbox
                       checked={selectedLeads.includes(result.id)}
                       onCheckedChange={() => toggleLead(result.id)}
-                      className="h-4 w-4 rounded-md border-border/80 data-[state=checked]:border-[color:var(--sk-brand)] data-[state=checked]:bg-[color:var(--sk-brand)] sm:h-5 sm:w-5"
                     />
                   </div>
 

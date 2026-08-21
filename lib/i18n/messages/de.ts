@@ -802,6 +802,7 @@ export const de: MessageTree = {
       intro: "Verbinden Sie Sklyvo mit den Tools, die Sie bereits nutzen.",
       connected: "Verbunden",
       disconnected: "Nicht verbunden",
+      unavailable: "Noch nicht verfügbar",
       connect: "Verbinden",
       disconnect: "Trennen",
       sheetsDesc: "Live-CRM-Spiegel nach Status.",
@@ -820,6 +821,8 @@ export const de: MessageTree = {
       progressDismiss: "Abgeschlossenen Fortschritt ausblenden",
       progressCta: "Einrichtung fortsetzen",
       teamManage: "Team verwalten",
+      languageTitle: "App-Sprache",
+      languageHint: "Wechselt die Sklyvo-Oberfläche zwischen Tschechisch und Englisch.",
       steps: {
         profile: "Firmenprofil",
         services: "Angebotene Leistungen",
@@ -1187,6 +1190,7 @@ export const de: MessageTree = {
       productTipsTitle: "Produktneuheiten & Tipps",
       productTipsDesc:
         "Neue Plattformfunktionen und Tipps für bessere Conversions.",
+      disableAll: "Alle Benachrichtigungen ausschalten",
     },
     toast: {
       needsEmailTitle: "E-Mail ergänzen",
@@ -1194,6 +1198,8 @@ export const de: MessageTree = {
         "Facebook hat keine E-Mail zurückgegeben. Legen Sie sie hier im Konto fest.",
       notifOn: "Benachrichtigung aktiviert",
       notifOff: "Benachrichtigung deaktiviert",
+      notifAllOff: "Alle E-Mail-Benachrichtigungen wurden ausgeschaltet.",
+      notifAlreadyOff: "Alle Benachrichtigungen sind bereits aus.",
       pickImage: "Bild auswählen (JPG, PNG, WebP…).",
       uploadError: "Upload-Fehler",
       photoSaved: "Profilfoto gespeichert.",

@@ -2668,6 +2668,109 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   flex-shrink: 0;
 }
 
+.sklyvo-app .sk-settings-hub-lang {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 12px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 16px;
+  background: #0a0b0d;
+  flex: none;
+}
+
+.sklyvo-app .sk-settings-hub-lang__copy {
+  min-width: 0;
+  flex: 1 1 200px;
+  padding-right: 8px;
+}
+
+.sklyvo-app .sk-settings-hub-lang__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sk-ink, #f2f3f5);
+}
+
+.sklyvo-app .sk-settings-hub-lang__hint {
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--n-muted, #8a8f98);
+}
+
+/* Full-pill track + matching pill thumb (same radius family). */
+.sklyvo-app .sk-settings-hub-lang__toggle {
+  --lang-toggle-pad: 3px;
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  height: 34px;
+  padding: var(--lang-toggle-pad);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: #101113;
+}
+
+.sklyvo-app .sk-settings-hub-lang__thumb {
+  position: absolute;
+  top: var(--lang-toggle-pad);
+  bottom: var(--lang-toggle-pad);
+  left: 0;
+  z-index: 0;
+  border-radius: 999px;
+  pointer-events: none;
+  background: #22252a;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
+    width 0.28s cubic-bezier(0.34, 1.25, 0.5, 1),
+    opacity 0.16s ease;
+  will-change: transform, width;
+}
+
+.sklyvo-app .sk-settings-hub-lang__btn {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #6b7078;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+
+.sklyvo-app .sk-settings-hub-lang__btn.is-active {
+  color: #fafafb;
+}
+
+.sklyvo-app .sk-settings-hub-lang__btn:hover:not(:disabled):not(.is-active) {
+  color: #c4c8ce;
+}
+
+.sklyvo-app .sk-settings-hub-lang__btn:disabled,
+.sklyvo-app .sk-settings-hub-lang__btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .sklyvo-app .sk-settings-hub-card {
   display: flex;
   flex-direction: column;
@@ -3277,6 +3380,22 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
     inset 0 1px 2px rgba(90, 130, 165, 0.16),
     inset 0 -1px 0 var(--sk-highlight-soft) !important;
   color: var(--sk-ink) !important;
+}
+
+.sklyvo-app input.sk-settings-field {
+  box-sizing: border-box !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  line-height: normal !important;
+  font-size: 13px !important;
+}
+
+.sklyvo-app textarea.sk-settings-field {
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+  line-height: 1.45 !important;
+  font-size: 13px !important;
 }
 
 .sklyvo-app .sk-settings-panel textarea::placeholder,
@@ -5304,23 +5423,27 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-/* Checkbox — flat, quiet; soft-UI shadows look wrong inside gray row pills */
+/* Checkbox — same as CRM (sk-crm-check): white fill + dark mark */
 .sklyvo-app [role="checkbox"],
 .sklyvo-app button[role="checkbox"] {
-  width: 16px !important;
-  height: 16px !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-  border-radius: 4px !important;
-  border: 1.5px solid color-mix(in oklab, var(--sk-ink) 22%, transparent) !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
-  color: #fff !important;
+  color: #08090a !important;
   transform: none !important;
   transition:
-    background 0.12s ease,
-    border-color 0.12s ease !important;
+    background 0.14s ease,
+    border-color 0.14s ease !important;
 }
 
 .sklyvo-app [role="checkbox"]:hover,
@@ -5329,11 +5452,11 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 .sklyvo-app button[role="checkbox"]:focus,
 .sklyvo-app [role="checkbox"]:focus-visible,
 .sklyvo-app button[role="checkbox"]:focus-visible {
-  border-color: color-mix(in oklab, var(--sk-ink) 40%, transparent) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
   box-shadow: none !important;
   outline: none !important;
   transform: none !important;
-  background: transparent !important;
   --tw-ring-width: 0 !important;
   --tw-ring-offset-width: 0px !important;
   --tw-ring-color: transparent !important;
@@ -5341,35 +5464,32 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
+.sklyvo-app [role="checkbox"][data-state="checked"],
+.sklyvo-app button[role="checkbox"][data-state="checked"],
+.sklyvo-app [role="checkbox"][data-state="indeterminate"],
+.sklyvo-app button[role="checkbox"][data-state="indeterminate"],
+.sklyvo-app [data-state="checked"][class*="bg-blue-600"]:not([role="switch"]) {
+  border-color: #ffffff !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #08090a !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 .sklyvo-app [role="checkbox"][data-state="checked"]:hover,
 .sklyvo-app button[role="checkbox"][data-state="checked"]:hover,
 .sklyvo-app [role="checkbox"][data-state="checked"]:focus-visible,
-.sklyvo-app button[role="checkbox"][data-state="checked"]:focus-visible {
-  background: var(--sk-ink) !important;
-  border-color: var(--sk-ink) !important;
+.sklyvo-app button[role="checkbox"][data-state="checked"]:focus-visible,
+.sklyvo-app [role="checkbox"][data-state="indeterminate"]:hover,
+.sklyvo-app button[role="checkbox"][data-state="indeterminate"]:hover,
+.sklyvo-app [role="checkbox"][data-state="indeterminate"]:focus-visible,
+.sklyvo-app button[role="checkbox"][data-state="indeterminate"]:focus-visible {
+  border-color: #f0f2f5 !important;
+  background: #f0f2f5 !important;
   box-shadow: none !important;
   outline: none !important;
   --tw-ring-shadow: 0 0 #0000 !important;
-}
-
-.sklyvo-app [role="checkbox"][data-state="checked"],
-.sklyvo-app button[role="checkbox"][data-state="checked"],
-.sklyvo-app [data-state="checked"][class*="bg-blue-600"]:not([role="switch"]) {
-  background: var(--sk-ink) !important;
-  background-image: none !important;
-  border-color: var(--sk-ink) !important;
-  color: #fff !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-.sklyvo-app [role="checkbox"][data-state="indeterminate"],
-.sklyvo-app button[role="checkbox"][data-state="indeterminate"] {
-  background: var(--sk-ink) !important;
-  background-image: none !important;
-  border-color: var(--sk-ink) !important;
-  box-shadow: none !important;
-  transform: none !important;
 }
 
 /* Switches — dark track off · brand blue on · white thumb when on (Radix only; not sk-tool-toggle) */
@@ -5456,6 +5576,23 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 
 .sklyvo-app button[role="switch"].sk-switch--sm[data-state="checked"] > span,
 .sklyvo-app [role="switch"].sk-switch--sm[data-state="checked"] > span {
+  transform: translate(16px, -50%) !important;
+}
+
+/* Compact account notification switches */
+.sklyvo-app .sk-account-sub__toggle-row [role="switch"].sk-switch--sm {
+  height: 20px !important;
+  width: 36px !important;
+  min-width: 36px !important;
+}
+
+.sklyvo-app .sk-account-sub__toggle-row [role="switch"].sk-switch--sm > span {
+  left: 2px !important;
+  height: 14px !important;
+  width: 14px !important;
+}
+
+.sklyvo-app .sk-account-sub__toggle-row [role="switch"].sk-switch--sm[data-state="checked"] > span {
   transform: translate(16px, -50%) !important;
 }
 
@@ -5669,8 +5806,8 @@ body:has(.sklyvo-app) .sk-popover-dark__hint {
 
 /* --- Form controls (Matěj: engraved / sunken) --- */
 
-.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(.sk-plain-field),
-.sklyvo-app textarea,
+.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(.sk-plain-field):not(.sk-integration-detail__input):not(.sk-outreach-input):not(.sk-settings-field),
+.sklyvo-app textarea:not(.sk-integration-detail__input):not(.sk-outreach-field):not(.sk-settings-field),
 .sklyvo-app [data-slot="input"] {
   border-radius: var(--sk-radius-control) !important;
   border: 1px solid var(--n-edge) !important;
@@ -5870,10 +6007,10 @@ body:has(.sklyvo-app) [role="dialog"] .sk-fields {
   --tw-ring-offset-shadow: 0 0 #0000 !important;
 }
 
-.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not(.sk-plain-field):focus,
-.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not(.sk-plain-field):focus-visible,
-.sklyvo-app textarea:focus,
-.sklyvo-app textarea:focus-visible {
+.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not(.sk-plain-field):not(.sk-integration-detail__input):not(.sk-outreach-input):not(.sk-settings-field):focus,
+.sklyvo-app input:not([type="checkbox"]):not([type="radio"]):not(.sk-plain-field):not(.sk-integration-detail__input):not(.sk-outreach-input):not(.sk-settings-field):focus-visible,
+.sklyvo-app textarea:not(.sk-integration-detail__input):not(.sk-outreach-field):not(.sk-settings-field):focus,
+.sklyvo-app textarea:not(.sk-integration-detail__input):not(.sk-outreach-field):not(.sk-settings-field):focus-visible {
   outline: none !important;
   border-color: var(--n-edge-hover) !important;
   background: var(--n-field-focus) !important;
@@ -12245,24 +12382,77 @@ body:has(.sklyvo-app) [data-radix-select-content] {
   color: #6b7078;
 }
 
-.sklyvo-app .sk-crm-check {
-  display: flex;
+.sklyvo-app .sk-crm-check,
+.sklyvo-app button.sk-crm-check[role="checkbox"] {
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
   flex: none;
-  padding: 0;
-  border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: transparent;
+  padding: 0 !important;
+  border-radius: 5px !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: #08090a !important;
   cursor: pointer;
-  transition: background 0.14s ease, border-color 0.14s ease;
+  transform: none !important;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease !important;
 }
 
-.sklyvo-app .sk-crm-check--on {
-  border-color: #ffffff;
-  background: #ffffff;
+.sklyvo-app .sk-crm-check:hover,
+.sklyvo-app .sk-crm-check:focus,
+.sklyvo-app .sk-crm-check:focus-visible,
+.sklyvo-app button.sk-crm-check[role="checkbox"]:hover,
+.sklyvo-app button.sk-crm-check[role="checkbox"]:focus-visible {
+  border-color: rgba(255, 255, 255, 0.45) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-crm-check--on,
+.sklyvo-app .sk-crm-check[data-state="checked"],
+.sklyvo-app .sk-crm-check[data-state="indeterminate"],
+.sklyvo-app button.sk-crm-check[role="checkbox"].sk-crm-check--on,
+.sklyvo-app button.sk-crm-check[role="checkbox"][data-state="checked"],
+.sklyvo-app button.sk-crm-check[role="checkbox"][data-state="indeterminate"] {
+  border-color: #ffffff !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #08090a !important;
+}
+
+.sklyvo-app .sk-crm-check--on:hover,
+.sklyvo-app .sk-crm-check--on:focus-visible,
+.sklyvo-app .sk-crm-check[data-state="checked"]:hover,
+.sklyvo-app .sk-crm-check[data-state="checked"]:focus-visible,
+.sklyvo-app .sk-crm-check[data-state="indeterminate"]:hover,
+.sklyvo-app .sk-crm-check[data-state="indeterminate"]:focus-visible,
+.sklyvo-app button.sk-crm-check[role="checkbox"].sk-crm-check--on:hover,
+.sklyvo-app button.sk-crm-check[role="checkbox"][data-state="checked"]:hover,
+.sklyvo-app button.sk-crm-check[role="checkbox"][data-state="indeterminate"]:hover {
+  border-color: #f0f2f5 !important;
+  background: #f0f2f5 !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-crm-check__dash {
+  display: block;
+  width: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: #08090a;
+}
+
+.sklyvo-app .sk-crm-table__row.is-selected {
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .sklyvo-app .sk-crm-firm {
@@ -14213,6 +14403,14 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   overflow: hidden;
 }
 
+/* Flat list inside account panel — no nested card. */
+.sklyvo-app .sk-account-sub__toggle-list--flat {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
 .sklyvo-app .sk-account-sub__toggle-row {
   display: flex;
   align-items: center;
@@ -14222,12 +14420,22 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sklyvo-app .sk-account-sub__toggle-list--flat .sk-account-sub__toggle-row {
+  padding: 14px 0;
+}
+
 .sklyvo-app .sk-account-sub__toggle-row:first-child {
   border-top: none;
+  padding-top: 2px;
+}
+
+.sklyvo-app .sk-account-sub__toggle-list--flat .sk-account-sub__toggle-row:first-child {
+  padding-top: 2px;
 }
 
 .sklyvo-app .sk-account-sub__toggle-copy {
   min-width: 0;
+  flex: 1;
 }
 
 .sklyvo-app .sk-account-sub__toggle-title {
@@ -14242,6 +14450,14 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   font-size: 12px;
   line-height: 1.5;
   color: var(--n-dim);
+}
+
+.sklyvo-app .sk-account-panel--notifications .sk-account-panel__footer {
+  justify-content: flex-start;
+}
+
+.sklyvo-app .sk-account-panel--notifications .sk-account-sub__lead {
+  margin-bottom: 4px;
 }
 
 .sklyvo-app .sk-account-sub__email-card {
@@ -14381,6 +14597,7 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
+  align-items: stretch;
 }
 
 @media (min-width: 720px) {
@@ -14393,6 +14610,9 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
+  align-self: stretch;
+  height: 100%;
   min-height: 100%;
   padding: 14px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -14400,10 +14620,20 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   background: rgba(255, 255, 255, 0.02);
 }
 
+.sklyvo-app .sk-account-sub__2fa-block > .sk-btn,
+.sklyvo-app .sk-account-sub__2fa-block > .sk-account-sub__actions {
+  margin-top: auto;
+}
+
+.sklyvo-app .sk-account-sub__2fa-block > .sk-btn {
+  width: 100%;
+}
+
 .sklyvo-app .sk-account-sub__2fa-head {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  flex: none;
 }
 
 .sklyvo-app .sk-account-sub__2fa-icon {
@@ -15168,14 +15398,14 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   box-sizing: border-box;
   width: 100%;
   min-height: 0;
-  padding: 12px 14px;
+  padding: 10px 14px !important;
   border: 1px solid rgba(255, 255, 255, 0.13) !important;
   border-radius: 11px;
   background: #131417 !important;
   box-shadow: none !important;
   font-family: inherit;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
   color: #f2f3f5 !important;
   overflow-y: auto;
   scrollbar-width: none;
@@ -15302,17 +15532,18 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-company-chip--selected {
-  border-color: rgba(255, 255, 255, 0.35);
-  background: #131417;
-  color: #ffffff;
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #08090a;
 }
 
 .sklyvo-app .sk-company-chip--selected:hover,
 .sklyvo-app .sk-company-chip--selected:focus-visible {
   transform: none !important;
   box-shadow: none !important;
-  background: #1a1c21;
-  color: #ffffff;
+  border-color: #f0f2f5;
+  background: #f0f2f5;
+  color: #08090a;
 }
 
 .sklyvo-app .sk-company-services__count {
@@ -15681,36 +15912,48 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 
 .sklyvo-app .sk-outreach-input,
 .sklyvo-app .sk-outreach-field {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   width: 100%;
   min-height: 0;
-  padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.13) !important;
-  border-radius: 11px;
+  border-radius: 11px !important;
   background: #131417 !important;
+  background-image: none !important;
   box-shadow: none !important;
   font-family: inherit;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 13px !important;
   color: #f2f3f5 !important;
+  outline: none !important;
 }
 
+/* Single-line: equal vertical centering (no line-height = height trick). */
 .sklyvo-app .sk-outreach-input {
-  height: 42px;
-  padding: 0 14px;
-  line-height: 42px;
+  display: block;
+  height: 42px !important;
+  padding: 0 14px !important;
+  line-height: normal !important;
+}
+
+/* Textareas: symmetric padding so text doesn't sit low. */
+.sklyvo-app .sk-outreach-field {
+  display: block;
+  padding: 10px 14px !important;
+  line-height: 1.45 !important;
+  resize: none;
 }
 
 .sklyvo-app .sk-outreach-field::placeholder,
 .sklyvo-app .sk-outreach-input::placeholder {
   color: color-mix(in oklab, var(--sk-muted) 80%, transparent);
+  line-height: normal !important;
+  opacity: 1;
 }
 
 .sklyvo-app .sk-outreach-field:focus,
 .sklyvo-app .sk-outreach-field:focus-visible,
 .sklyvo-app .sk-outreach-input:focus,
 .sklyvo-app .sk-outreach-input:focus-visible {
-  outline: none;
+  outline: none !important;
   border-color: rgba(255, 255, 255, 0.24) !important;
   background: #1d1f24 !important;
 }
@@ -15720,7 +15963,7 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-outreach-field--input {
-  min-height: 42px;
+  min-height: 72px;
 }
 
 .sklyvo-app .sk-outreach-field--grow {
@@ -15770,6 +16013,14 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sklyvo-app .sk-integrations-panel__list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .sklyvo-app .sk-integration-row-wrap {
@@ -15791,6 +16042,18 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 
 .sklyvo-app .sk-integration-row:hover {
   background: rgba(255, 255, 255, 0.035);
+}
+
+.sklyvo-app .sk-integration-row.is-unavailable {
+  opacity: 0.72;
+}
+
+.sklyvo-app .sk-integration-row.is-unavailable:hover {
+  background: transparent;
+}
+
+.sklyvo-app .sk-integration-row.is-unavailable .sk-integration-row__info {
+  cursor: default;
 }
 
 .sklyvo-app .sk-integration-row__info {
@@ -15827,6 +16090,22 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   gap: 8px;
 }
 
+.sklyvo-app .sk-integration-row__spinner {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.72);
+  animation: sk-integration-spin 0.7s linear infinite;
+}
+
+@keyframes sk-integration-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .sklyvo-app .sk-integration-row__dot {
   position: relative;
   width: 6px;
@@ -15859,6 +16138,10 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
   color: #34d399;
 }
 
+.sklyvo-app .sk-integration-row__status-text.is-unavailable {
+  color: #8a8f98;
+}
+
 .sklyvo-app .sk-integration-row__action {
   display: inline-flex;
   flex: none;
@@ -15889,73 +16172,116 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 }
 
 .sklyvo-app .sk-integration-row__detail {
-  padding: 0 20px 16px;
-  background: rgba(255, 255, 255, 0.02);
+  box-sizing: border-box;
+  padding: 6px 20px 22px;
+  background: transparent;
 }
 
 .sklyvo-app .sk-integration-detail__body {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 36rem;
+  gap: 14px;
+  max-width: none;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #0e0f12;
 }
 
 .sklyvo-app .sk-integration-detail__grid {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .sklyvo-app .sk-integration-detail__label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #8a8f98;
+  color: #7a8088;
 }
 
 .sklyvo-app .sk-integration-detail__hint {
   margin: 0;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.45;
   color: #8a8f98;
 }
 
 .sklyvo-app .sk-integration-detail__meta {
   margin: 0;
-  font-size: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
   color: #c9cdd3;
+}
+
+.sklyvo-app .sk-integration-detail__meta + .sk-integration-detail__meta {
+  margin-top: -8px;
+  font-size: 11.5px;
+  color: #8a8f98;
 }
 
 .sklyvo-app .sk-integration-detail__error {
   margin: 0;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(251, 113, 133, 0.22);
+  background: rgba(251, 113, 133, 0.07);
   font-size: 12px;
-  color: #fb7185;
+  line-height: 1.45;
+  color: #fda4af;
 }
 
 .sklyvo-app .sk-integration-detail__warn {
-  margin: 0 0 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(251, 191, 36, 0.28);
-  background: rgba(251, 191, 36, 0.08);
-  font-size: 11.5px;
+  margin: 0 0 12px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  background: rgba(251, 191, 36, 0.07);
+  font-size: 12px;
   line-height: 1.45;
   color: #fcd34d;
 }
 
 .sklyvo-app .sk-integration-detail__warn code {
-  font-size: 10px;
+  font-size: 11px;
+  color: #fde68a;
 }
 
 .sklyvo-app .sk-integration-detail__check {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 12.5px;
   color: #c9cdd3;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sklyvo-app .sk-integration-detail__check input[type="checkbox"] {
+  appearance: none;
+  box-sizing: border-box;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex: none;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  background: #131417;
+  cursor: pointer;
+}
+
+.sklyvo-app .sk-integration-detail__check input[type="checkbox"]:checked {
+  border-color: rgba(255, 255, 255, 0.45);
+  background-color: #22252a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%23f2f3f5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 6.2 4.8 8.5 9.5 3.5'/%3E%3C/svg%3E");
+  background-size: 10px 10px;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .sklyvo-app .sk-integration-detail__actions {
@@ -15968,60 +16294,134 @@ body:has(.sklyvo-app) .sk-crm-hint__desc {
 .sklyvo-app .sk-integration-detail__linkbtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9px;
-  background: transparent;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: #14161a;
   font-family: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: #c9cdd3;
+  letter-spacing: -0.01em;
+  color: #e8eaed;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.14s ease;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
 }
 
 .sklyvo-app .sk-integration-detail__linkbtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
+  background: #1a1c21;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fafafb;
+}
+
+.sklyvo-app .sk-integration-detail__linkbtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .sklyvo-app .sk-integration-detail__linkbtn.is-danger {
   border-color: rgba(251, 113, 133, 0.28);
+  background: transparent;
   color: #fb7185;
+}
+
+.sklyvo-app .sk-integration-detail__linkbtn.is-danger:hover:not(:disabled) {
+  background: rgba(251, 113, 133, 0.08);
+  border-color: rgba(251, 113, 133, 0.4);
+  color: #fda4af;
 }
 
 .sklyvo-app .sk-integration-detail__block {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.sklyvo-app .sk-integration-detail__block-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sklyvo-app .sk-integration-detail__block .sk-integration-detail__label {
+  margin-bottom: 0;
+}
+
+.sklyvo-app .sk-integration-detail__danger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
+.sklyvo-app .sk-integrations-panel input.sk-integration-detail__input,
+.sklyvo-app .sk-integration-detail__body input.sk-integration-detail__input,
 .sklyvo-app .sk-integration-detail__input {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
+  display: block;
   width: 100%;
-  min-height: 38px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 11px;
-  background: #131417;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 11px !important;
+  background: #0a0b0d !important;
+  background-image: none !important;
+  box-shadow: none !important;
   font-family: inherit;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #c9cdd3;
-  outline: none;
+  font-size: 13px !important;
+  line-height: 42px !important;
+  color: #e8eaed !important;
+  outline: none !important;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease;
 }
 
+.sklyvo-app .sk-integrations-panel input.sk-integration-detail__input::placeholder,
+.sklyvo-app .sk-integration-detail__body input.sk-integration-detail__input::placeholder,
 .sklyvo-app .sk-integration-detail__input::placeholder {
-  color: #6b7078;
+  color: #6b7078 !important;
+  opacity: 1 !important;
+  line-height: 42px !important;
 }
 
+.sklyvo-app .sk-integrations-panel input.sk-integration-detail__input:focus,
+.sklyvo-app .sk-integrations-panel input.sk-integration-detail__input:focus-visible,
+.sklyvo-app .sk-integration-detail__body input.sk-integration-detail__input:focus,
+.sklyvo-app .sk-integration-detail__body input.sk-integration-detail__input:focus-visible,
 .sklyvo-app .sk-integration-detail__input:focus,
 .sklyvo-app .sk-integration-detail__input:focus-visible {
-  border-color: rgba(255, 255, 255, 0.24);
-  background: #1d1f24;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: #101113 !important;
+  box-shadow: none !important;
+}
+
+.sklyvo-app .sk-integration-detail__input--confirm {
+  width: auto !important;
+  min-width: 7.5rem !important;
+  max-width: 9rem !important;
+  flex: none;
+  text-align: center;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 

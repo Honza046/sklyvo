@@ -795,6 +795,7 @@ export const en: MessageTree = {
       intro: "Connect Sklyvo with the tools you already use.",
       connected: "Connected",
       disconnected: "Not connected",
+      unavailable: "Not available yet",
       connect: "Connect",
       disconnect: "Disconnect",
       sheetsDesc: "Live CRM mirror by status.",
@@ -813,6 +814,8 @@ export const en: MessageTree = {
       progressDismiss: "Dismiss completed setup bar",
       progressCta: "Continue setup",
       teamManage: "Manage team",
+      languageTitle: "App language",
+      languageHint: "Switches the Sklyvo interface between Czech and English.",
       steps: {
         profile: "Company profile",
         services: "Offered services",
@@ -1178,6 +1181,7 @@ export const en: MessageTree = {
       productTipsTitle: "Product news & tips",
       productTipsDesc:
         "New platform features and tips for better conversions.",
+      disableAll: "Turn off all notifications",
     },
     toast: {
       needsEmailTitle: "Add your email",
@@ -1185,6 +1189,8 @@ export const en: MessageTree = {
         "Facebook didn’t return an email address. Set it here in your account.",
       notifOn: "Notification enabled",
       notifOff: "Notification disabled",
+      notifAllOff: "All email notifications have been turned off.",
+      notifAlreadyOff: "All notifications are already off.",
       pickImage: "Choose an image (JPG, PNG, WebP…).",
       uploadError: "Upload error",
       photoSaved: "Profile photo saved.",

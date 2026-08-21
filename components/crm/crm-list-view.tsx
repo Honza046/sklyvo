@@ -29,6 +29,7 @@ import {
   CrmTableLoadingSpinner,
   CrmTableSkeleton,
 } from "@/components/crm/crm-table-skeleton";
+import { cn } from "@/lib/utils";
 import { buildLeadFaviconUrl } from "@/lib/lead-favicon";
 
 export type CrmListLead = {
@@ -160,7 +161,13 @@ export function CrmListView({
                     : parts.sourceLabel;
 
             return (
-              <div key={lead.id} className="sk-crm-table__row">
+              <div
+                key={lead.id}
+                className={cn(
+                  "sk-crm-table__row",
+                  selectedIds.includes(lead.id) && "is-selected",
+                )}
+              >
                 <CrmMatejCheckbox
                   checked={selectedIds.includes(lead.id)}
                   onChange={() => onToggleRow(lead.id)}

@@ -9,22 +9,30 @@ import { cn } from "@/lib/utils";
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
-    ref={ref}
-    className={cn(
-      "peer grid h-4 w-4 shrink-0 place-content-center rounded-[4px] border-[1.5px] border-[color-mix(in_oklab,var(--sk-ink)_22%,transparent)] bg-transparent text-white shadow-none transition-[background,border-color] duration-150 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[color:var(--sk-ink)] data-[state=checked]:bg-[color:var(--sk-ink)] data-[state=checked]:shadow-none data-[state=indeterminate]:border-[color:var(--sk-ink)] data-[state=indeterminate]:bg-[color:var(--sk-ink)] data-[state=indeterminate]:shadow-none",
-      className,
-    )}
-    {...props}
-  >
-    <CheckboxPrimitive.Indicator
-      className={cn("grid place-content-center text-current")}
+>(({ className, checked, ...props }, ref) => {
+  const on = checked === true || checked === "indeterminate";
+
+  return (
+    <CheckboxPrimitive.Root
+      ref={ref}
+      checked={checked}
+      className={cn("sk-crm-check", on && "sk-crm-check--on", className)}
+      {...props}
     >
-      <Check className="h-3 w-3 stroke-[3]" aria-hidden />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-));
+      <CheckboxPrimitive.Indicator className="grid place-content-center">
+        {checked === "indeterminate" ? (
+          <span className="sk-crm-check__dash" aria-hidden />
+        ) : (
+          <Check
+            className="h-3 w-3 text-[#08090A]"
+            strokeWidth={3}
+            aria-hidden
+          />
+        )}
+      </CheckboxPrimitive.Indicator>
+    </CheckboxPrimitive.Root>
+  );
+});
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
 export { Checkbox };

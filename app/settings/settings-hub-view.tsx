@@ -11,7 +11,12 @@ import {
 } from "lucide-react";
 import { TrialStrip } from "@/components/account/trial-strip";
 import { LegalDocumentLinks } from "@/components/legal/legal-document-links";
-import { useLanguage } from "@/context/LanguageContext";
+import { useSlidingThumb } from "@/components/sklyvo/use-sliding-thumb";
+import {
+  displayCodeForLanguage,
+  languageFromToggleCode,
+  useLanguage,
+} from "@/context/LanguageContext";
 import type { WorkspaceSettingsData } from "@/lib/settings/load-workspace-settings";
 import { cn } from "@/lib/utils";
 
@@ -92,7 +97,18 @@ function SettingsHubProgress(props: {
 }
 
 export function SettingsHubView(props: WorkspaceSettingsData) {
-  const { t } = useLanguage();
+  const { t, language, setLanguage, toggleSlots } = useLanguage();
+  const displayLanguage = displayCodeForLanguage(language);
+  const activeLangIndex = Math.max(
+    0,
+    toggleSlots.findIndex(
+      (slot) => slot.enabled && slot.code === displayLanguage,
+    ),
+  );
+  const { trackRef, thumbStyle } = useSlidingThumb(activeLangIndex, [
+    displayLanguage,
+    toggleSlots.length,
+  ]);
 
   const emailConnected = props.emailConnection?.connected === true;
   const integrationTotal = 6;
@@ -234,6 +250,60 @@ export function SettingsHubView(props: WorkspaceSettingsData) {
           );
         })}
       </div>
+
+      <section
+        className="sk-settings-hub-lang"
+        aria-label={t("settings.hub.languageTitle")}
+      >
+        <div className="sk-settings-hub-lang__copy">
+          <h2 className="sk-settings-hub-lang__title">
+            {t("settings.hub.languageTitle")}
+          </h2>
+          <p className="sk-settings-hub-lang__hint">
+            {t("settings.hub.languageHint")}
+          </p>
+        </div>
+        <div
+          ref={trackRef as React.RefObject<HTMLDivElement>}
+          className="sk-settings-hub-lang__toggle"
+          role="group"
+          aria-label={t("settings.hub.languageTitle")}
+        >
+          <span
+            className="sk-settings-hub-lang__thumb"
+            style={thumbStyle}
+            aria-hidden
+          />
+          {toggleSlots.map((slot) => {
+            const pressed = slot.enabled && slot.code === displayLanguage;
+            return (
+              <button
+                key={slot.code}
+                type="button"
+                data-slide-item
+                className={cn(
+                  "sk-settings-hub-lang__btn",
+                  pressed && "is-active",
+                )}
+                disabled={!slot.enabled}
+                aria-pressed={pressed}
+                title={
+                  slot.enabled
+                    ? undefined
+                    : "Translation coming soon — using English"
+                }
+                onClick={() => {
+                  if (!slot.enabled) return;
+                  const next = languageFromToggleCode(slot.code);
+                  if (next) setLanguage(next);
+                }}
+              >
+                {slot.code.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
       <LegalDocumentLinks className="sk-settings-hub__legal" />
     </div>

@@ -23,12 +23,17 @@ export function CrmMatejCheckbox({
       type="button"
       role="checkbox"
       aria-checked={indeterminate ? "mixed" : checked}
+      data-state={
+        indeterminate ? "indeterminate" : checked ? "checked" : "unchecked"
+      }
       aria-label={ariaLabel}
       className={cn("sk-crm-check", on && "sk-crm-check--on", className)}
       onClick={onChange}
     >
       {checked ? (
         <Check className="h-3 w-3 text-[#08090A]" strokeWidth={3} aria-hidden />
+      ) : indeterminate ? (
+        <span className="sk-crm-check__dash" aria-hidden />
       ) : null}
     </button>
   );

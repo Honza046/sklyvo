@@ -56,17 +56,45 @@ const webhookFieldPlaceholders: Record<
 };
 
 const inputClass =
-  "sk-integration-detail__input";
+  "sk-integration-detail__input !h-[42px] !min-h-[42px] !px-3.5 !py-0 !text-[13px]";
 
 function IntegrationStatus({
   connected,
+  pending = false,
+  unavailable = false,
   connectedLabel,
   disconnectedLabel,
+  unavailableLabel,
+  loadingLabel = "…",
 }: {
   connected: boolean;
+  pending?: boolean;
+  unavailable?: boolean;
   connectedLabel: string;
   disconnectedLabel: string;
+  unavailableLabel?: string;
+  loadingLabel?: string;
 }) {
+  if (pending) {
+    return (
+      <span className="sk-integration-row__status" aria-busy="true">
+        <span className="sk-integration-row__spinner" aria-hidden />
+        <span className="sk-integration-row__status-text">{loadingLabel}</span>
+      </span>
+    );
+  }
+
+  if (unavailable) {
+    return (
+      <span className="sk-integration-row__status">
+        <span className="sk-integration-row__dot is-unavailable" aria-hidden />
+        <span className="sk-integration-row__status-text is-unavailable">
+          {unavailableLabel ?? disconnectedLabel}
+        </span>
+      </span>
+    );
+  }
+
   return (
     <span className="sk-integration-row__status">
       <span
@@ -97,7 +125,15 @@ function formatSyncedAt(iso: string | null, locale: string) {
   }
 }
 
-export function IntegrationsPanel() {
+export function IntegrationsPanel({
+  initialSheets = null,
+  initialMicrosoft = null,
+  initialFakturoid = null,
+}: {
+  initialSheets?: GoogleSheetsConnectionState | null;
+  initialMicrosoft?: MicrosoftConnectionState | null;
+  initialFakturoid?: FakturoidConnectionState | null;
+} = {}) {
   const { t, language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -125,8 +161,10 @@ export function IntegrationsPanel() {
 
   const statusConnected = t("settings.integrationsPanel.connected");
   const statusDisconnected = t("settings.integrationsPanel.disconnected");
+  const statusUnavailable = t("settings.integrationsPanel.unavailable");
   const connectLabel = t("settings.integrationsPanel.connect");
   const disconnectLabel = t("settings.integrationsPanel.disconnect");
+  const microsoftUnavailable = true;
   const [integrationValues, setIntegrationValues] = useState<
     Record<string, string>
   >({
@@ -140,13 +178,13 @@ export function IntegrationsPanel() {
   );
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const [sheets, setSheets] = useState<GoogleSheetsConnectionState | null>(
-    null,
+    initialSheets,
   );
   const [microsoft, setMicrosoft] = useState<MicrosoftConnectionState | null>(
-    null,
+    initialMicrosoft,
   );
   const [fakturoid, setFakturoid] = useState<FakturoidConnectionState | null>(
-    null,
+    initialFakturoid,
   );
   const [fakturoidClientId, setFakturoidClientId] = useState("");
   const [fakturoidClientSecret, setFakturoidClientSecret] = useState("");
@@ -179,6 +217,7 @@ export function IntegrationsPanel() {
   };
 
   useEffect(() => {
+    // Background refresh; SSR initial state already shows the real status.
     refreshSheetsState();
     refreshMicrosoftState();
     refreshFakturoidState();
@@ -500,10 +539,12 @@ export function IntegrationsPanel() {
             </div>
 
             <div className="sk-integration-detail__block">
-              <p className="sk-integration-detail__label">Archiv outreach DB</p>
-              <p className="sk-integration-detail__hint">
-                Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
-              </p>
+              <div className="sk-integration-detail__block-head">
+                <p className="sk-integration-detail__label">Archiv outreach DB</p>
+                <p className="sk-integration-detail__hint">
+                  Staré leady jen ve Sheets. Radar z archivu vylučuje firmy.
+                </p>
+              </div>
               <input
                 type="url"
                 className={inputClass}
@@ -538,10 +579,10 @@ export function IntegrationsPanel() {
                   Doplnit Autory
                 </button>
               </div>
-              <div className="sk-integration-detail__actions">
+              <div className="sk-integration-detail__danger">
                 <input
                   type="text"
-                  className={cn(inputClass, "max-w-[8rem]")}
+                  className={cn(inputClass, "sk-integration-detail__input--confirm")}
                   value={clearConfirm}
                   onChange={(e) => setClearConfirm(e.target.value)}
                   placeholder="SMAZAT"
@@ -562,9 +603,11 @@ export function IntegrationsPanel() {
             </div>
           </div>
         ) : (
-          <p className="sk-integration-detail__hint">
-            Po připojení vznikne sheet s listy podle stavů CRM.
-          </p>
+          <div className="sk-integration-detail__body">
+            <p className="sk-integration-detail__hint">
+              Po připojení vznikne sheet s listy podle stavů CRM.
+            </p>
+          </div>
         )}
       </div>
     );
@@ -577,7 +620,10 @@ export function IntegrationsPanel() {
       <div className="sk-integration-row__detail">
         {!microsoft?.oauthConfigured && (
           <p className="sk-integration-detail__warn">
-            Chybí Microsoft OAuth (CLIENT_ID / SECRET). Redirect:{" "}
+            Microsoft OAuth není nastavený. V Azure App Registration vytvoř
+            aplikaci a do prostředí přidej{" "}
+            <code>MICROSOFT_CLIENT_ID</code> +{" "}
+            <code>MICROSOFT_CLIENT_SECRET</code>. Redirect URI:{" "}
             <code>/api/integrations/microsoft/callback</code>
           </p>
         )}
@@ -607,9 +653,11 @@ export function IntegrationsPanel() {
             </div>
           </div>
         ) : (
-          <p className="sk-integration-detail__hint">
-            Import z OneDrive, Word v Generátoru, Excel export.
-          </p>
+          <div className="sk-integration-detail__body">
+            <p className="sk-integration-detail__hint">
+              Import z OneDrive, Word v Generátoru, Excel export.
+            </p>
+          </div>
         )}
       </div>
     );
@@ -696,7 +744,7 @@ export function IntegrationsPanel() {
             <div className="sk-integration-detail__actions">
               <button
                 type="button"
-                className="sk-integration-row__action"
+                className="sk-integration-detail__linkbtn"
                 disabled={
                   isPending ||
                   !fakturoidClientId.trim() ||
@@ -750,7 +798,7 @@ export function IntegrationsPanel() {
           <div className="sk-integration-detail__actions">
             <button
               type="button"
-              className="sk-integration-row__action"
+              className="sk-integration-detail__linkbtn"
               onClick={handleSave}
             >
               Uložit
@@ -788,11 +836,19 @@ export function IntegrationsPanel() {
                 {t("settings.integrationsPanel.sheetsDesc")}
               </span>
             </button>
-            <IntegrationStatus connected={sheetsActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
+            <IntegrationStatus
+              pending={sheets === null}
+              connected={sheetsActive}
+              connectedLabel={statusConnected}
+              disconnectedLabel={statusDisconnected}
+            />
             <button
               type="button"
               className="sk-integration-row__action"
-              disabled={!sheetsActive && (!sheets?.oauthConfigured || isPending)}
+              disabled={
+                sheets === null ||
+                (!sheetsActive && (!sheets?.oauthConfigured || isPending))
+              }
               onClick={() =>
                 handleRowAction(
                   sheetsActive,
@@ -808,34 +864,60 @@ export function IntegrationsPanel() {
         </div>
 
         <div className="sk-integration-row-wrap">
-          <div className="sk-integration-row">
-            <button
-              type="button"
-              className="sk-integration-row__info"
-              onClick={() => toggleExpanded("microsoft")}
-            >
-              <span className="sk-integration-row__name">Microsoft 365</span>
-              <span className="sk-integration-row__desc">
-                OneDrive, Excel, Word.
-              </span>
-            </button>
-            <IntegrationStatus connected={msActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
+          <div
+            className={cn(
+              "sk-integration-row",
+              microsoftUnavailable && "is-unavailable",
+            )}
+          >
+            {microsoftUnavailable ? (
+              <div className="sk-integration-row__info">
+                <span className="sk-integration-row__name">Microsoft 365</span>
+                <span className="sk-integration-row__desc">
+                  OneDrive, Excel, Word.
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="sk-integration-row__info"
+                onClick={() => toggleExpanded("microsoft")}
+              >
+                <span className="sk-integration-row__name">Microsoft 365</span>
+                <span className="sk-integration-row__desc">
+                  OneDrive, Excel, Word.
+                </span>
+              </button>
+            )}
+            <IntegrationStatus
+              pending={!microsoftUnavailable && microsoft === null}
+              unavailable={microsoftUnavailable}
+              connected={msActive}
+              connectedLabel={statusConnected}
+              disconnectedLabel={statusDisconnected}
+              unavailableLabel={statusUnavailable}
+            />
             <button
               type="button"
               className="sk-integration-row__action"
-              disabled={!msActive && (!microsoft?.oauthConfigured || isPending)}
-              onClick={() =>
+              disabled={
+                microsoftUnavailable ||
+                microsoft === null ||
+                (!msActive && (!microsoft?.oauthConfigured || isPending))
+              }
+              onClick={() => {
+                if (microsoftUnavailable) return;
                 handleRowAction(
                   msActive,
                   handleConnectMicrosoft,
                   handleDisconnectMicrosoft,
-                )
-              }
+                );
+              }}
             >
               {msActive ? disconnectLabel : connectLabel}
             </button>
           </div>
-          {renderMicrosoftDetail()}
+          {!microsoftUnavailable && renderMicrosoftDetail()}
         </div>
 
         <div className="sk-integration-row-wrap">
@@ -850,11 +932,16 @@ export function IntegrationsPanel() {
                 {t("settings.integrationsPanel.fakturoidDesc")}
               </span>
             </button>
-            <IntegrationStatus connected={fakturoidActive} connectedLabel={statusConnected} disconnectedLabel={statusDisconnected} />
+            <IntegrationStatus
+              pending={fakturoid === null}
+              connected={fakturoidActive}
+              connectedLabel={statusConnected}
+              disconnectedLabel={statusDisconnected}
+            />
             <button
               type="button"
               className="sk-integration-row__action"
-              disabled={isPending}
+              disabled={fakturoid === null || isPending}
               onClick={() => {
                 if (fakturoidActive) {
                   handleDisconnectFakturoid();

@@ -64,102 +64,144 @@ export function scheduleCrmSheetsSync(workspaceId: string) {
 }
 
 async function refreshAccessToken(refreshToken: string) {
- const { clientId, clientSecret } = getGoogleSheetsOAuthConfig();
- if (!clientId || !clientSecret) {
- throw new Error("Google Sheets OAuth není nakonfigurován.");
- }
+  const { clientId, clientSecret } = getGoogleSheetsOAuthConfig();
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "Google Sheets OAuth není nakonfigurován (CLIENT_ID / SECRET).",
+    );
+  }
 
- const response = await fetch("https://oauth2.googleapis.com/token", {
- method: "POST",
- headers: { "Content-Type": "application/x-www-form-urlencoded" },
- body: new URLSearchParams({
- client_id: clientId,
- client_secret: clientSecret,
- refresh_token: refreshToken,
- grant_type: "refresh_token",
- }),
- });
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
 
- const json = (await response.json()) as {
- access_token?: string;
- expires_in?: number;
- error_description?: string;
- };
+  const json = (await response.json()) as {
+    access_token?: string;
+    expires_in?: number;
+    error?: string;
+    error_description?: string;
+  };
 
- if (!response.ok || !json.access_token) {
- throw new Error(json.error_description ?? "Obnova Google tokenu selhala.");
- }
+  if (!response.ok || !json.access_token) {
+    const detail =
+      json.error_description?.trim() ||
+      json.error?.trim() ||
+      `HTTP ${response.status}`;
+    throw new Error(
+      detail === "Bad Request" || detail === "invalid_grant"
+        ? "Google token vypršel nebo byl odvolán. Odpoj a znovu připoj Google Sheets."
+        : `Obnova Google tokenu selhala: ${detail}`,
+    );
+  }
 
- return {
- accessToken: json.access_token,
- expiresAt:
- typeof json.expires_in === "number"
- ? new Date(Date.now() + json.expires_in * 1000)
- : null,
- };
+  return {
+    accessToken: json.access_token,
+    expiresAt:
+      typeof json.expires_in === "number"
+        ? new Date(Date.now() + json.expires_in * 1000)
+        : null,
+  };
 }
 
 async function getValidAccessToken(workspaceId: string) {
- const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
- where: { workspaceId },
- });
+  const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
+    where: { workspaceId },
+  });
 
- if (!connection || connection.status !== "CONNECTED" || !connection.syncEnabled) {
- return null;
- }
- if (!connection.spreadsheetId || !connection.googleRefreshToken) {
- return null;
- }
+  if (
+    !connection ||
+    connection.status !== "CONNECTED" ||
+    !connection.syncEnabled
+  ) {
+    return null;
+  }
+  if (!connection.spreadsheetId || !connection.googleRefreshToken) {
+    return null;
+  }
 
- const accessToken = await resolveAccessToken(workspaceId, connection);
- if (!accessToken) return null;
- return { connection, accessToken };
+  try {
+    const accessToken = await resolveAccessToken(workspaceId, connection);
+    if (!accessToken) return null;
+    return { connection, accessToken };
+  } catch (error) {
+    console.error("getValidAccessToken:", error);
+    return null;
+  }
 }
 
 /** Access token for any Sheets API call (import historické DB, sync, …). */
-export async function getGoogleSheetsAccessToken(workspaceId: string): Promise<string | null> {
- const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
- where: { workspaceId },
- });
- if (!connection?.googleRefreshToken) return null;
- if (connection.status !== "CONNECTED" && connection.status !== "ERROR") {
- return null;
- }
- return resolveAccessToken(workspaceId, connection);
+export async function getGoogleSheetsAccessToken(
+  workspaceId: string,
+): Promise<string | null> {
+  const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
+    where: { workspaceId },
+  });
+  if (!connection?.googleRefreshToken) return null;
+  if (connection.status !== "CONNECTED" && connection.status !== "ERROR") {
+    return null;
+  }
+  try {
+    return await resolveAccessToken(workspaceId, connection);
+  } catch (error) {
+    console.error("getGoogleSheetsAccessToken:", error);
+    return null;
+  }
 }
 
 async function resolveAccessToken(
- workspaceId: string,
- connection: {
- googleAccessToken: string | null;
- googleRefreshToken: string | null;
- googleTokenExpiresAt: Date | null;
- },
+  workspaceId: string,
+  connection: {
+    googleAccessToken: string | null;
+    googleRefreshToken: string | null;
+    googleTokenExpiresAt: Date | null;
+  },
 ): Promise<string | null> {
- const refreshPlain = decryptSecret(connection.googleRefreshToken);
- if (!refreshPlain) return null;
+  const refreshPlain = decryptSecret(connection.googleRefreshToken);
+  if (!refreshPlain) return null;
 
- const stillValid =
- connection.googleAccessToken &&
- connection.googleTokenExpiresAt &&
- connection.googleTokenExpiresAt.getTime() > Date.now() + 60_000;
+  const stillValid =
+    connection.googleAccessToken &&
+    connection.googleTokenExpiresAt &&
+    connection.googleTokenExpiresAt.getTime() > Date.now() + 60_000;
 
- if (stillValid && connection.googleAccessToken) {
- const accessPlain = decryptSecret(connection.googleAccessToken);
- if (accessPlain) return accessPlain;
- }
+  if (stillValid && connection.googleAccessToken) {
+    const accessPlain = decryptSecret(connection.googleAccessToken);
+    if (accessPlain) return accessPlain;
+  }
 
- const refreshed = await refreshAccessToken(refreshPlain);
- await prisma.workspaceGoogleSheetsConnection.update({
- where: { workspaceId },
- data: {
- googleAccessToken: encryptSecret(refreshed.accessToken),
- googleTokenExpiresAt: refreshed.expiresAt,
- lastError: null,
- },
- });
-
- return refreshed.accessToken;
+  try {
+    const refreshed = await refreshAccessToken(refreshPlain);
+    await prisma.workspaceGoogleSheetsConnection.update({
+      where: { workspaceId },
+      data: {
+        googleAccessToken: encryptSecret(refreshed.accessToken),
+        googleTokenExpiresAt: refreshed.expiresAt,
+        status: "CONNECTED",
+        lastError: null,
+      },
+    });
+    return refreshed.accessToken;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Obnova Google tokenu selhala.";
+    await prisma.workspaceGoogleSheetsConnection.update({
+      where: { workspaceId },
+      data: {
+        status: "ERROR",
+        lastError: message,
+      },
+    });
+    throw error;
+  }
 }
 
 export function extractGoogleSpreadsheetId(input: string): string | null {

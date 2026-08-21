@@ -369,6 +369,23 @@ export async function importHistoricalOutreachSheet(input: {
   spreadsheetUrlOrId: string;
   sheetName?: string;
 }) {
+  try {
+    return await importHistoricalOutreachSheetInner(input);
+  } catch (error) {
+    console.error("importHistoricalOutreachSheet:", error);
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : "Import z Google Sheets selhal.",
+    };
+  }
+}
+
+async function importHistoricalOutreachSheetInner(input: {
+  spreadsheetUrlOrId: string;
+  sheetName?: string;
+}) {
   const session = await getSessionUser();
   const workspaceId = session.user?.workspaceId;
   if (!workspaceId) {
@@ -382,9 +399,14 @@ export async function importHistoricalOutreachSheet(input: {
 
   const accessToken = await getGoogleSheetsAccessToken(workspaceId);
   if (!accessToken) {
+    const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
+      where: { workspaceId },
+      select: { lastError: true, status: true },
+    });
     return {
       error:
-        "Nejdřív připoj Google Sheets v Integracích (stejný Google účet, který má k tabulce přístup).",
+        connection?.lastError?.trim() ||
+        "Nejdřív připoj Google Sheets v Integracích (stejný Google účet, který má k tabulce přístup). Pokud už je připojené, Odpoj a Připoj znovu.",
     };
   }
 
@@ -598,9 +620,14 @@ export async function backfillAuthorsFromOutreachSheet(input: {
 
   const accessToken = await getGoogleSheetsAccessToken(workspaceId);
   if (!accessToken) {
+    const connection = await prisma.workspaceGoogleSheetsConnection.findUnique({
+      where: { workspaceId },
+      select: { lastError: true },
+    });
     return {
       error:
-        "Nejdřív připoj Google Sheets v Integracích (stejný Google účet, který má k tabulce přístup).",
+        connection?.lastError?.trim() ||
+        "Nejdřív připoj Google Sheets v Integracích (stejný Google účet, který má k tabulce přístup). Pokud už je připojené, Odpoj a Připoj znovu.",
     };
   }
 

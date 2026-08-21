@@ -148,9 +148,11 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
     const hubExtras = await prisma.workspace.findUnique({
       where: { id: workspace.id },
       select: {
-        googleSheetsConnection: { select: { status: true } },
+        googleSheetsConnection: {
+          select: { status: true, spreadsheetId: true },
+        },
         microsoftConnection: { select: { status: true } },
-        fakturoidConnection: { select: { connectedAt: true } },
+        fakturoidConnection: { select: { status: true, connectedAt: true } },
         members: {
           orderBy: [{ role: "asc" }, { createdAt: "asc" }],
           select: {
@@ -163,11 +165,20 @@ export async function loadWorkspaceSettings(): Promise<WorkspaceSettingsData> {
         },
       },
     });
+    // Match getGoogleSheetsConnectionState / integrations panel: ERROR with a
+    // spreadsheet still counts as connected (sync may be broken, OAuth is live).
+    const sheets = hubExtras?.googleSheetsConnection;
     hubSheetsConnected =
-      hubExtras?.googleSheetsConnection?.status === "CONNECTED";
+      Boolean(sheets?.spreadsheetId) &&
+      (sheets?.status === "CONNECTED" || sheets?.status === "ERROR");
+    const microsoft = hubExtras?.microsoftConnection;
     hubMicrosoftConnected =
-      hubExtras?.microsoftConnection?.status === "CONNECTED";
-    hubFakturoidConnected = Boolean(hubExtras?.fakturoidConnection?.connectedAt);
+      microsoft?.status === "CONNECTED" || microsoft?.status === "ERROR";
+    const fakturoid = hubExtras?.fakturoidConnection;
+    hubFakturoidConnected =
+      fakturoid?.status === "CONNECTED" ||
+      fakturoid?.status === "ERROR" ||
+      Boolean(fakturoid?.connectedAt);
     hubTeamMembers =
       hubExtras?.members.map((member) => ({
         id: member.id,
