@@ -1502,9 +1502,9 @@ function PricingSection({ t, cs }: { t: Copy; cs: boolean }) {
         >
           {t.priceTrial} <span style={{ fontWeight: 700, color: "#F2F3F5" }}>{t.priceTrialStrong}</span>
         </span>
-        <a href="/pricing" className="lp2-comparebtn">
+        <LandingAuthLink href="/login" className="lp2-comparebtn">
           {t.priceCompare}
-        </a>
+        </LandingAuthLink>
       </div>
     </section>
   );

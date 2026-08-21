@@ -31,9 +31,10 @@ export function AppShell({
   const pathname = usePathname();
   const activeHref = useMemo(() => normalizeActiveHref(pathname), [pathname]);
 
+  // Guests must never see the dashboard chrome — soft-nav to a protected route
+  // (e.g. /pricing from the landing) used to flash an empty shell before login.
   const usePersistentShell =
-    PERSISTENT_SIDEBAR_PATHS.has(activeHref) &&
-    !(activeHref === "/" && homeMode === "landing");
+    homeMode === "dashboard" && PERSISTENT_SIDEBAR_PATHS.has(activeHref);
 
   if (usePersistentShell) {
     return (
