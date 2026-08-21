@@ -180,7 +180,7 @@ const CS: Copy = {
     },
     {
       q: "Kolik Sklyvo stojí a co všechno je v ceně?",
-      a: "Basic od 1 190 Kč měsíčně, Plus 2 690 Kč a Pro 6 390 Kč. Při roční platbě jsou dva měsíce zdarma.",
+      a: "Při roční platbě Basic od 990 Kč/měsíc, Plus 2 240 Kč a Pro 5 320 Kč (dva měsíce zdarma). Při měsíční platbě Basic 1 190 Kč, Plus 2 690 Kč a Pro 6 390 Kč.",
     },
     {
       q: "Musím být technický typ, abych to rozjel?",
@@ -303,7 +303,7 @@ const EN: Copy = {
     },
     {
       q: "What does Sklyvo cost and what is included?",
-      a: "Basic from $49 a month, Plus $109 and Pro $259. Yearly billing gives you two months free.",
+      a: "With yearly billing Basic from $39/month, Plus $79 and Pro $199 (two months free). Monthly is Basic $49, Plus $99 and Pro $249.",
     },
     {
       q: "Do I need to be technical to set it up?",
@@ -350,7 +350,7 @@ const priceCards = (cs: boolean) =>
     {
       name: cs ? "Jeden účet" : "Single account",
       badgeText: cs ? "PRO JEDNOHO" : "SOLO",
-      price: cs ? "990 Kč" : "$41",
+      price: cs ? "990 Kč" : "$39",
       unit: cs ? "/ měsíc" : "/ month",
       billing: cs ? "Účtováno ročně, Basic tarif" : "Billed yearly, Basic plan",
       ctaText: cs ? "Začít zdarma" : "Start for free",
@@ -375,7 +375,7 @@ const priceCards = (cs: boolean) =>
     {
       name: cs ? "Pro agentury" : "For agencies",
       badgeText: cs ? "PRO TÝMY" : "TEAMS",
-      price: cs ? "1 410 Kč" : "$58",
+      price: cs ? "1 410 Kč" : "$55",
       unit: cs ? "/ měsíc za uživatele" : "/ month per user",
       billing: cs ? "Účtováno ročně, Agency Pro" : "Billed yearly, Agency Pro",
       ctaText: cs ? "Založit tým" : "Set up your team",
